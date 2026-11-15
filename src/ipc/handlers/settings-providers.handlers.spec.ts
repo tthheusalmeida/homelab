@@ -1,0 +1,114 @@
+import { IpcChannels } from '../../shared/channels';
+import { IpcError, IpcErrorCode } from '../../shared/errors';
+import type { ExternalProvidersService } from '../../providers/external-providers.service';
+import type { LocalProvidersService } from '../../providers/local-providers.service';
+import type { SettingsService } from '../../settings/settings.service';
+import { IpcRegistrar } from '../ipc-registrar';
+import { FakeIpcMain } from '../testing/fake-ipc-main';
+
+import { ExternalProvidersHandler } from './external-providers.handler';
+import { LocalProvidersHandler } from './local-providers.handler';
+import { SettingsHandler } from './settings.handler';
+
+function register(...handlers: Parameters<IpcRegistrar['register']>[0]) {
+  const ipc = new FakeIpcMain();
+  new IpcRegistrar(ipc).register(handlers);
+
+  return ipc;
+}
+
+describe('SettingsHandler', () => {
+  const paths = { libraryDir: '/l', inboxDir: '/i', videoTempDir: '/v', audioTempDir: '/a' };
+
+  it('when settings:get is called, should answer the paths from the service', async () => {
+    const service = { getPaths: jest.fn().mockReturnValue(paths) } as unknown as SettingsService;
+    const ipc = register(new SettingsHandler(service));
+
+    await expect(ipc.invoke(IpcChannels.settings.get)).resolves.toEqual({ ok: true, data: paths });
+  });
+
+  it('when settings:update is called, should pass the patch and answer the save result', async () => {
+    const result = { value: paths, restartRequired: true };
+    const updatePaths = jest.fn().mockReturnValue(result);
+    const ipc = register(new SettingsHandler({ updatePaths } as unknown as SettingsService));
+
+    await expect(ipc.invoke(IpcChannels.settings.update, { libraryDir: '/x' })).resolves.toEqual({
+      ok: true,
+      data: result,
+    });
+    expect(updatePaths).toHaveBeenCalledWith({ libraryDir: '/x' });
+  });
+
+  it('when the service rejects the patch, should answer VALIDATION', async () => {
+    const updatePaths = jest.fn(() => {
+      throw new IpcError(IpcErrorCode.VALIDATION, 'Informe a pasta da biblioteca.');
+    });
+    const ipc = register(new SettingsHandler({ updatePaths } as unknown as SettingsService));
+
+    await expect(ipc.invoke(IpcChannels.settings.update, { libraryDir: '' })).resolves.toEqual({
+      ok: false,
+      error: { code: 'VALIDATION', message: 'Informe a pasta da biblioteca.' },
+    });
+  });
+});
+
+describe('ExternalProvidersHandler', () => {
+  it('when listing, getting, saving and testing, should delegate to the service', async () => {
+    const service = {
+      list: jest.fn().mockReturnValue([]),
+      get: jest.fn().mockReturnValue({ id: 'gemini' }),
+      save: jest.fn().mockReturnValue({ restartRequired: true }),
+      test: jest.fn().mockResolvedValue({ ok: true, message: 'ok' }),
+    };
+    const ipc = register(
+      new ExternalProvidersHandler(service as unknown as ExternalProvidersService),
+    );
+
+    await ipc.invoke(IpcChannels.providers.external.list);
+    await ipc.invoke(IpcChannels.providers.external.get, { id: 'gemini' });
+    await ipc.invoke(IpcChannels.providers.external.save, { id: 'gemini', apiKey: 'k' });
+    await ipc.invoke(IpcChannels.providers.external.test, { id: 'gemini', apiKey: 'k' });
+
+    expect(service.list).toHaveBeenCalledTimes(1);
+    expect(service.get).toHaveBeenCalledWith('gemini');
+    expect(service.save).toHaveBeenCalledWith('gemini', 'k');
+    expect(service.test).toHaveBeenCalledWith('gemini', 'k');
+  });
+
+  it('when the provider does not exist, should answer NOT_FOUND', async () => {
+    const service = {
+      get: jest.fn(() => {
+        throw new IpcError(IpcErrorCode.NOT_FOUND, 'Provider externo não encontrado: x');
+      }),
+    };
+    const ipc = register(
+      new ExternalProvidersHandler(service as unknown as ExternalProvidersService),
+    );
+
+    await expect(
+      ipc.invoke(IpcChannels.providers.external.get, { id: 'x' }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'NOT_FOUND' } });
+  });
+});
+
+describe('LocalProvidersHandler', () => {
+  it('when listing, getting, saving and testing, should delegate to the service', async () => {
+    const service = {
+      list: jest.fn().mockReturnValue([]),
+      get: jest.fn().mockReturnValue({ id: 'ollama' }),
+      save: jest.fn().mockReturnValue({ restartRequired: false }),
+      test: jest.fn().mockResolvedValue({ ok: true, message: 'ok' }),
+    };
+    const ipc = register(new LocalProvidersHandler(service as unknown as LocalProvidersService));
+
+    await ipc.invoke(IpcChannels.providers.local.list);
+    await ipc.invoke(IpcChannels.providers.local.get, { id: 'ollama' });
+    await ipc.invoke(IpcChannels.providers.local.save, { id: 'ollama', config: { url: 'u' } });
+    await ipc.invoke(IpcChannels.providers.local.test, { id: 'ollama' });
+
+    expect(service.list).toHaveBeenCalledTimes(1);
+    expect(service.get).toHaveBeenCalledWith('ollama');
+    expect(service.save).toHaveBeenCalledWith('ollama', { url: 'u' });
+    expect(service.test).toHaveBeenCalledWith('ollama', undefined);
+  });
+});

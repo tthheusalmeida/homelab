@@ -18,6 +18,13 @@ desktop/
   docs/
 ```
 
+## Back dentro do main, sem editá-lo
+- `BackRuntime` carrega pacotes (`@nestjs/core`, `@google/genai`) e módulos compilados (`back/dist/...`) **a partir do back**, para o Nest ser uma só instância.
+- `NestHost` monta o módulo raiz com os módulos do back (a lista do `AppModule` sem o `ConfigModule`), um módulo global que provê o `AppConfig` do back com o `DesktopAppConfig` (Settings) e sobe o HTTP enquanto o front ainda o usa.
+- Ponto de extensão: `replaceModuleProvider` troca um provider declarado por um módulo do back antes do Nest subir. Hoje serve ao `GeminiProvider` (declarado em `AIModule` e `VideoModule`).
+- `main/composition.ts` monta stores e serviços de configuração com dependências injetadas; `main/index.ts` só faz a cola com o Electron.
+- Os services do back leem a configuração **uma vez**, na criação; por isso mudar configuração exige reiniciar o app (`app:relaunch`).
+
 ## Nest como contêiner de DI
 - `NestFactory.createApplicationContext(AppModule)` no main. Os handlers recebem os services pelo construtor.
 - Os services do back não mudam de lugar nem de regra. Mudam só: `AppConfig` lê do `SettingsStore` e o `GeminiProvider` inicializa de forma tardia (sem chave, não derruba o boot).

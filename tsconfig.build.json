@@ -9,6 +9,7 @@
     "node_modules",
     "dist",
     "src/**/*.spec.ts",
-    "src/**/testing/**"
+    "src/**/testing/**",
+    "src/**/*.testing.ts"
   ]
 }

@@ -12,7 +12,17 @@ export const MainEnv = {
   BACK_DIR: 'HOMELAB_BACK_DIR',
   PORT: 'PORT',
   CORS_ORIGIN: 'CORS_ORIGIN',
+  USER_DATA_DIR: 'HOMELAB_USER_DATA_DIR',
 } as const;
+
+/** Arquivos de dados do usuário (dentro de userData). */
+export const DataFiles = {
+  settings: 'settings.json',
+  secrets: 'secrets.json',
+} as const;
+
+/** Pasta-raiz padrão dos dados do HomeLab, dentro de Documentos. */
+export const DATA_ROOT_FOLDER = 'HomeLab';
 
 /** Convenções do back atual (a fase 01 ainda usa o HTTP do Nest). */
 export const DEFAULT_API_PORT = '3000';

@@ -3,9 +3,11 @@ import { IpcHandler, type IpcRoute } from '../ipc-handler';
 
 export interface AppInfo {
   version(): string;
+  /** Reinicia o app (usado para aplicar mudanças de configuração). */
+  relaunch(): void;
 }
 
-/** Canais `app:*`: prova da infraestrutura IPC (fase 02). */
+/** Canais `app:*`. */
 export class AppHandler extends IpcHandler {
   constructor(private readonly appInfo: AppInfo) {
     super();
@@ -15,6 +17,7 @@ export class AppHandler extends IpcHandler {
     return [
       this.route(IpcChannels.app.ping, () => 'pong' as const),
       this.route(IpcChannels.app.version, () => this.appInfo.version()),
+      this.route(IpcChannels.app.relaunch, () => this.appInfo.relaunch()),
     ];
   }
 }

@@ -17,3 +17,17 @@ export function resolveBackEntry(backDir: string): string {
 export function resolveFrontDist(projectRoot: string, env: Env): string {
   return env[MainEnv.FRONT_DIST_DIR] ?? path.resolve(projectRoot, '..', 'front', 'dist');
 }
+
+/** `.env` antigo do back, usado só para importar a configuração na primeira execução (dev). */
+export function resolveLegacyEnvFile(backDir: string): string {
+  return path.join(backDir, '.env');
+}
+
+/** Pasta dos binários nativos da plataforma: `resources/bin/<platform>-<arch>`. */
+export function resolveBinDir(
+  projectRoot: string,
+  platform: NodeJS.Platform,
+  arch: string,
+): string {
+  return path.join(projectRoot, 'resources', 'bin', `${platform}-${arch}`);
+}

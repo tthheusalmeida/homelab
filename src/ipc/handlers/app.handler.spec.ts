@@ -6,7 +6,7 @@ import { AppHandler } from './app.handler';
 
 function setup() {
   const ipc = new FakeIpcMain();
-  const appInfo = { version: jest.fn().mockReturnValue('0.0.1') };
+  const appInfo = { version: jest.fn().mockReturnValue('0.0.1'), relaunch: jest.fn() };
   new IpcRegistrar(ipc).register([new AppHandler(appInfo)]);
 
   return { ipc, appInfo };
@@ -29,12 +29,20 @@ describe('AppHandler', () => {
     expect(appInfo.version).toHaveBeenCalledTimes(1);
   });
 
+  it('when app:relaunch is called, should ask AppInfo to relaunch', async () => {
+    const { ipc, appInfo } = setup();
+
+    await expect(ipc.invoke(IpcChannels.app.relaunch)).resolves.toMatchObject({ ok: true });
+    expect(appInfo.relaunch).toHaveBeenCalledTimes(1);
+  });
+
   it('when AppInfo fails, should answer a failed envelope instead of rejecting', async () => {
     const ipc = new FakeIpcMain();
     const appInfo = {
       version: () => {
         throw new Error('sem versão');
       },
+      relaunch: jest.fn(),
     };
     new IpcRegistrar(ipc).register([new AppHandler(appInfo)]);
 

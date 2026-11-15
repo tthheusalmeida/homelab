@@ -2,18 +2,36 @@
 
 Origem: os 37 endpoints HTTP atuais (`/api/v1`) + os canais novos de app, settings e providers. Convenção: `<domínio>:<ação>`; payload e retorno seguem o DTO/rota atual (ver `back/doc/`). Todos respondem `IpcResult<T>` (ver `arquitetura.md`). Status de cada grupo em `migracao.md`.
 
-## app (fase 2)
-| Canal | Retorno |
-|---|---|
-| `app:ping` | `"pong"` |
-| `app:version` | versão do app |
+## app (fases 02 e 03a; `app:open-settings` na 03b)
+| Canal | Payload | Retorno |
+|---|---|---|
+| `app:ping` | — | `"pong"` |
+| `app:version` | — | versão do app |
+| `app:relaunch` | — | nada (reinicia o app para aplicar configuração) |
 
-## settings e providers (fase 3, novos)
-| Canal | Para quê |
-|---|---|
-| `settings:get` / `settings:update` | Pastas (biblioteca, entrada, temporários) |
-| `providers:external:list` / `get` / `save` / `test` | IAs externas (Gemini…): chave mascarada, salvar, testar conexão |
-| `providers:local:list` / `get` / `save` / `test` | Locais (Whisper, Ollama, ffmpeg): caminho/URL, salvar, testar, detectar |
+## settings (fase 03a, novos)
+| Canal | Payload | Retorno |
+|---|---|---|
+| `settings:get` | — | `{ libraryDir, inboxDir, videoTempDir, audioTempDir }` |
+| `settings:update` | parte das pastas (`Partial`) | `{ value: pastas, restartRequired }`; pasta inválida → `VALIDATION` |
+
+## providers externos (fase 03a, novos)
+| Canal | Payload | Retorno |
+|---|---|---|
+| `providers:external:list` | — | `[{ id, label, configured, maskedKey }]` |
+| `providers:external:get` | `{ id }` | idem, de um provider; desconhecido → `NOT_FOUND` |
+| `providers:external:save` | `{ id, apiKey }` | `{ value: info, restartRequired }`; chave vazia → `VALIDATION` |
+| `providers:external:test` | `{ id, apiKey? }` | `{ ok, message }` (testa a chave candidata ou a salva) |
+
+## providers locais (fase 03a, novos)
+| Canal | Payload | Retorno |
+|---|---|---|
+| `providers:local:list` | — | `[{ id, label, editable, config }]` (`whisper`, `ollama`, `ffmpeg`) |
+| `providers:local:get` | `{ id }` | idem, de um provider |
+| `providers:local:save` | `{ id, config }` | `{ value: info, restartRequired }`; `ffmpeg` não é editável → `VALIDATION` |
+| `providers:local:test` | `{ id, config? }` | `{ ok, message }` (testa a config candidata ou a salva) |
+
+`config` do Whisper: `{ directory, executable, model }`. Do Ollama: `{ url }`. O ffmpeg não tem config.
 
 ## health (fase 4)
 | Canal | Substitui |

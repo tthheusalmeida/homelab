@@ -21,7 +21,7 @@ Estado: **migração em andamento, por fases**. Ver `docs/migracao.md`.
 | `docs/configuracoes.md` | Settings (substitui `.env`), providers externos e locais, segredos, binários por plataforma |
 | `docs/testing.md` | Convenções de teste, mocks, checklist manual e smoke E2E |
 | `docs/regras-de-negocio.md` | Onde ficam as regras que **não mudam** (`back/doc`, `front/doc`) |
-| `docs/fases/fase-00.md` … `fase-10.md` | Escopo, testes e checklist de cada entrega |
+| `docs/fases/fase-00.md` … `fase-10.md` (com 03a/03b, 06a/06b, 07a/07b) | Escopo, testes e checklist de cada entrega |
 
 Regras de negócio (biblioteca, jobs, IA, vídeo) continuam documentadas em `back/doc/` e `front/doc/`. Não duplique aqui; ao tocar nesses repos, leia o `CLAUDE.md` de cada um.
 
@@ -33,11 +33,12 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) continuam documentadas em `bac
 - `npm run lint` / `npm run format`
 
 ## Mapa do código (alvo; criado ao longo das fases)
-- `src/main/` — `index.ts` (bootstrap), `constants.ts`, `paths.ts`, `front-target.ts`, `window-options.ts`, `navigation-guard.ts`, `static-files.ts` (protocolo `app://`), `backend-launcher.ts` e `backend-ready.ts` (Nest do back no main). Contêiner Nest (DI) entra na fase 02+
+- `src/main/` — `index.ts` (bootstrap), `constants.ts`, `paths.ts`, `front-target.ts`, `window-options.ts`, `navigation-guard.ts`, `static-files.ts` (protocolo `app://`), `back-runtime.ts`, `nest-host.ts`, `module-patch.ts`, `gemini-provider-factory.ts` (Nest do back no main sem editá-lo), `backend-ready.ts`, `composition.ts`, `electron-cipher.ts`
 - `src/preload/` — `contextBridge` expondo `window.api` tipado
 - `src/shared/` — **contratos usados por main, preload e front**: `channels.ts` (`IpcChannels`), `errors.ts` (`IpcErrorCode`, `IpcError`), `result.ts` (`IpcResult`), `contracts/` (request/response por canal), `renderer-api.ts`, `ipc-client.ts` (cliente do front)
 - `src/ipc/` — `IpcHandler` (base, `routes()`), `IpcRegistrar`, `IpcErrorMapper`, `IpcMainLike`, `handlers/*.handler.ts` + `handlers/index.ts` (`createHandlers`), `testing/FakeIpcMain`
-- `src/settings/` — `SettingsStore`, segredos (`safeStorage`), `AppConfig` sobre o store
+- `src/settings/` — `SettingsStore`, `SecretStore` (`safeStorage`), validador, defaults, `DesktopAppConfig` (o `AppConfig` do back sobre o store), importação única do `.env`
+- `src/providers/` — serviços e definições dos providers externos (Gemini) e locais (Whisper, Ollama, ffmpeg)
 - `resources/bin/<platform>-<arch>/` — binários nativos (Whisper). Não versionados.
 - `docs/` — documentação
 
@@ -45,7 +46,7 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) continuam documentadas em `bac
 - Textos de interface e mensagens de erro em **português**; código e commits em inglês.
 - **Handlers IPC são classes** (`extends IpcHandler`), uma por domínio, com dependências injetadas (SOLID, clean code). Detalhes em `docs/arquitetura.md`.
 - **Nada repetido em string solta**: nomes de canal, códigos de erro e mensagens ficam em constantes (`shared/channels.ts`, `shared/errors.ts`). Handler e front importam as mesmas constantes.
-- **Sem `.env`**: caminhos, URLs e chaves vêm de `SettingsStore`, configurados pela tela de Configurações. Nenhum caminho fixo no código. Segredos cifrados com `safeStorage`.
+- **Sem `.env`**: caminhos, URLs e chaves vêm de `SettingsStore`/`SecretStore`, configurados pela tela de Configurações (fase 03b). O `.env` do back só é importado uma vez em dev. Nenhum caminho fixo no código. Segredos cifrados com `safeStorage`.
 - Providers separados: **externos** (Gemini e outras IAs) e **locais** (Whisper, Ollama, ffmpeg). Ver `docs/configuracoes.md`.
 - Segurança do renderer: `contextIsolation: true`, `nodeIntegration: false`; o preload expõe só métodos tipados, nunca `ipcRenderer`.
 - Durante a migração o Nest serve HTTP **e** IPC; cada domínio migrado troca só o `api.ts` do front de `fetch` para `window.api`. O HTTP só é removido na fase 9.

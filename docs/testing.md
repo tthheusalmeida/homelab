@@ -34,6 +34,8 @@ Toda feature (nova ou alterada) vem com testes unitários na mesma entrega. Cubr
 - `npm run lint` e `npm run format` (prettier usa o `.editorconfig`: 2 espaços, 100 colunas).
 
 ## Cobertura atual
+Fase 03a: settings (store, validador, segredos, importação do .env, config do back), serviços e definições de providers, handlers, patch de módulo, fábrica do Gemini, BackRuntime e composição (173 testes no total).
+
 Fase 02: canais, erros, resultado, cliente do front, mapper, registrar, handler base, `AppHandler`, cobertura de canais e ponte do preload (61 testes no total).
 
 Fase 01: `paths`, `front-target`, `window-options`, `navigation-guard`, `static-files`, `backend-ready`, `backend-launcher` (26 testes).

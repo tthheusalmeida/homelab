@@ -8,6 +8,25 @@ export const IpcChannels = {
   app: {
     ping: 'app:ping',
     version: 'app:version',
+    relaunch: 'app:relaunch',
+  },
+  settings: {
+    get: 'settings:get',
+    update: 'settings:update',
+  },
+  providers: {
+    external: {
+      list: 'providers:external:list',
+      get: 'providers:external:get',
+      save: 'providers:external:save',
+      test: 'providers:external:test',
+    },
+    local: {
+      list: 'providers:local:list',
+      get: 'providers:local:get',
+      save: 'providers:local:save',
+      test: 'providers:local:test',
+    },
   },
 } as const;
 

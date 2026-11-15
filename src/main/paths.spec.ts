@@ -1,6 +1,12 @@
 import * as path from 'node:path';
 
-import { resolveBackDir, resolveBackEntry, resolveFrontDist } from './paths';
+import {
+  resolveBackDir,
+  resolveBackEntry,
+  resolveBinDir,
+  resolveFrontDist,
+  resolveLegacyEnvFile,
+} from './paths';
 
 const root = path.resolve('/projects/desktop');
 
@@ -27,5 +33,19 @@ describe('resolveFrontDist', () => {
 
   it('when HOMELAB_FRONT_DIST_DIR is set, should use it', () => {
     expect(resolveFrontDist(root, { HOMELAB_FRONT_DIST_DIR: '/x/dist' })).toBe('/x/dist');
+  });
+});
+
+describe('resolveLegacyEnvFile', () => {
+  it('when called, should point to .env inside the back folder', () => {
+    expect(resolveLegacyEnvFile('/x/back')).toBe(path.join('/x/back', '.env'));
+  });
+});
+
+describe('resolveBinDir', () => {
+  it('when called, should point to resources/bin/<platform>-<arch>', () => {
+    expect(resolveBinDir(root, 'win32', 'x64')).toBe(
+      path.join(root, 'resources', 'bin', 'win32-x64'),
+    );
   });
 });

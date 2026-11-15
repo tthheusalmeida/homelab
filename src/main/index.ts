@@ -1,15 +1,19 @@
-import { createRequire } from 'node:module';
+import { execFile } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { promisify } from 'node:util';
 
 import { app, BrowserWindow, dialog, ipcMain, net, protocol, shell } from 'electron';
 
 import { createHandlers } from '../ipc/handlers';
 import { IpcRegistrar } from '../ipc/ipc-registrar';
+import { DesktopAppConfig } from '../settings/backend-config';
+import { importLegacyEnv } from '../settings/legacy-env-import';
 
+import { BackRuntime } from './back-runtime';
 import { waitForBackend } from './backend-ready';
-import { BackendLauncher } from './backend-launcher';
+import { createServices } from './composition';
 import {
   API_PREFIX,
   APP_ORIGIN,
@@ -21,15 +25,26 @@ import {
   MainEnv,
   Messages,
 } from './constants';
+import { electronCipher } from './electron-cipher';
 import { resolveFrontTarget, type FrontTarget } from './front-target';
 import { classifyNavigation } from './navigation-guard';
-import { resolveBackDir, resolveFrontDist } from './paths';
+import { NestHost } from './nest-host';
+import { resolveBackDir, resolveFrontDist, resolveLegacyEnvFile } from './paths';
 import { resolveStaticFile } from './static-files';
 import { createWindowOptions } from './window-options';
+
+const run = promisify(execFile);
 
 // dist/main/index.js -> raiz do projeto desktop
 const projectRoot = path.resolve(__dirname, '..', '..');
 const preloadPath = path.join(__dirname, '..', 'preload', 'index.js');
+
+// Permite isolar os dados (settings, segredos) em testes e desenvolvimento.
+const userDataOverride = process.env[MainEnv.USER_DATA_DIR];
+
+if (userDataOverride) {
+  app.setPath('userData', userDataOverride);
+}
 
 // Precisa ser chamado antes do app ficar pronto.
 protocol.registerSchemesAsPrivileged([
@@ -43,8 +58,6 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ]);
-
-const loadModule = createRequire(__filename);
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -60,24 +73,12 @@ function registerAppProtocol(distDir: string): void {
   });
 }
 
-function healthUrl(): string {
-  const port = process.env[MainEnv.PORT] ?? DEFAULT_API_PORT;
-
-  return `http://127.0.0.1:${port}/${API_PREFIX}/${HEALTH_PATH}`;
+function apiPort(): string {
+  return process.env[MainEnv.PORT] ?? DEFAULT_API_PORT;
 }
 
-async function startBackend(corsOrigin: string): Promise<void> {
-  new BackendLauncher({
-    env: process.env,
-    chdir: (dir) => process.chdir(dir),
-    load: (entry) => loadModule(entry) as unknown,
-  }).start(resolveBackDir(projectRoot, process.env), corsOrigin);
-
-  const ready = await waitForBackend({ url: healthUrl(), ...BACKEND_WAIT });
-
-  if (!ready) {
-    throw new Error(Messages.backendNotReady);
-  }
+function healthUrl(): string {
+  return `http://127.0.0.1:${apiPort()}/${API_PREFIX}/${HEALTH_PATH}`;
 }
 
 function createMainWindow(target: FrontTarget): void {
@@ -120,6 +121,69 @@ function createMainWindow(target: FrontTarget): void {
   void window.loadURL(target.url);
 }
 
+async function startCore(target: FrontTarget): Promise<void> {
+  const backDir = resolveBackDir(projectRoot, process.env);
+  const runtime = new BackRuntime(backDir);
+
+  const services = createServices({
+    userDataDir: app.getPath('userData'),
+    documentsDir: app.getPath('documents'),
+    projectRoot,
+    platform: process.platform,
+    arch: process.arch,
+    cipher: electronCipher,
+    exists: fs.existsSync,
+    fetchFn: (url, init) => fetch(url, init),
+    ffmpegVersion: async () => (await run('ffmpeg', ['-version'], { timeout: 5000 })).stdout,
+    checkGeminiKey: async (apiKey) => {
+      const { GoogleGenAI } = runtime.pkg<{
+        GoogleGenAI: new (options: { apiKey: string }) => { models: { list(): Promise<unknown> } };
+      }>('@google/genai');
+
+      await new GoogleGenAI({ apiKey }).models.list();
+    },
+  });
+
+  if (!app.isPackaged) {
+    importLegacyEnv({
+      settings: services.settings,
+      secrets: services.secrets,
+      envFile: resolveLegacyEnvFile(backDir),
+      exists: fs.existsSync,
+      readFile: (file) => fs.readFileSync(file, 'utf8'),
+    });
+  }
+
+  await new NestHost(runtime).start({
+    appConfig: new DesktopAppConfig(services.settings.get(), target.origin),
+    geminiApiKey: services.secrets.get('gemini.apiKey'),
+    corsOrigin: target.origin,
+    port: apiPort(),
+  });
+
+  if (!(await waitForBackend({ url: healthUrl(), ...BACKEND_WAIT }))) {
+    throw new Error(Messages.backendNotReady);
+  }
+
+  new IpcRegistrar(ipcMain).register(
+    createHandlers({
+      appInfo: {
+        version: () => app.getVersion(),
+        // No modo dev o Vite morre junto com o app, então só fecha (rode `npm run dev` de novo).
+        relaunch: () => {
+          if (target.kind === 'build') {
+            app.relaunch();
+          }
+          app.exit(0);
+        },
+      },
+      settings: services.settingsService,
+      externalProviders: services.externalProviders,
+      localProviders: services.localProviders,
+    }),
+  );
+}
+
 async function bootstrap(): Promise<void> {
   if (!app.requestSingleInstanceLock()) {
     app.quit();
@@ -152,10 +216,7 @@ async function bootstrap(): Promise<void> {
       registerAppProtocol(distDir);
     }
 
-    await startBackend(target.origin);
-    new IpcRegistrar(ipcMain).register(
-      createHandlers({ appInfo: { version: () => app.getVersion() } }),
-    );
+    await startCore(target);
     createMainWindow(target);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
