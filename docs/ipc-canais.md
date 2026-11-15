@@ -84,12 +84,17 @@ A pasta da biblioteca não gera `NOT_CONFIGURED`: ela é obrigatória nas Config
 | `library:documents:delete` | `DELETE library/documents/:id` | `{ id }` | nada (só pendente ou arquivado; publicado → `VALIDATION`) | 6b (feito) |
 
 ## livros (fases 7a e 7b)
+| Canal | Substitui | Payload | Retorno | Fase |
+|---|---|---|---|---|
+| `library:books:list` | `GET library/books` | `{ documentId? }` | resumos dos livros (capa, progresso, `moduleCount`; com `documentId`, cada um traz `containsDocument`) | 7a (feito) |
+| `library:books:get` | `GET library/books/:id` | `{ id }` | livro com módulos e capítulos (`available` é `false` se o documento saiu da biblioteca) e `readDocumentIds` | 7a (feito) |
+| `library:books:read` | `GET library/books/:id/read` | `{ id }` | livro + conteúdo dos capítulos disponíveis (os indisponíveis ficam de fora) | 7a (feito) |
+| `library:books:search` | `GET library/books/:id/search` | `{ id, q }` | até 50 trechos (`documentId`, `chapterTitle`, `moduleId`, `moduleTitle`, `line`, `snippet`), no máximo 3 por capítulo | 7a (feito) |
+
+A única "query" do `list` é o `documentId`; vazio ou ausente lista sem marcar `containsDocument`. A busca ignora acento e maiúscula, exige todas as palavras e, com termo vazio ou só de espaços, devolve lista vazia (não é erro). Livro inexistente em `get`, `read` e `search` → `NOT_FOUND` ("Livro não encontrado."). As colunas das linhas abaixo (07b) seguem só com "Substitui" e fase.
+
 | Canal | Substitui | Fase |
 |---|---|---|
-| `library:books:list` | `GET library/books` | 7a |
-| `library:books:get` | `GET library/books/:id` | 7a |
-| `library:books:read` | `GET library/books/:id/read` | 7a |
-| `library:books:search` | `GET library/books/:id/search` | 7a |
 | `library:books:create` | `POST library/books` | 7b |
 | `library:books:update` | `PATCH library/books/:id` | 7b |
 | `library:books:delete` | `DELETE library/books/:id` | 7b |

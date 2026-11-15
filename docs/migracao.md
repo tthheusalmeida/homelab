@@ -32,7 +32,7 @@
 | 05 | Chat | concluída |
 | 06a | Biblioteca, leitura | concluída |
 | 06b | Biblioteca, escrita | concluída |
-| 07a | Livros, leitura | pendente |
+| 07a | Livros, leitura | concluída |
 | 07b | Livros, escrita | pendente |
 | 08 | Jobs e resolvedor do Whisper (win32) | pendente |
 | 09 | Remover o HTTP, o `.env` e o `fetch` | pendente |
