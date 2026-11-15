@@ -66,3 +66,47 @@ export interface LibraryListFilters {
 export interface LibraryDocumentRequest {
   id: string;
 }
+
+export interface LibraryRebuildResult {
+  indexed: number;
+  errors: LibraryIndexError[];
+}
+
+/** Payload de `library:documents:create-article` (corpo do `POST library/documents/article`). */
+export interface LibraryCreateArticleRequest {
+  title: string;
+  category: string[];
+  tags?: string[];
+  content: string;
+}
+
+/** Payload de `library:documents:publish` (adicionar à biblioteca um pendente ou arquivado). */
+export interface LibraryPublishRequest {
+  id: string;
+  title?: string;
+  category: string[];
+  tags?: string[];
+}
+
+/** Payload de `library:documents:update`: só os campos informados mudam. */
+export interface LibraryUpdateRequest {
+  id: string;
+  title?: string;
+  category?: string[];
+  tags?: string[];
+  content?: string;
+}
+
+export interface LibrarySuggestRequest {
+  id: string;
+  /** Modelo do Gemini; sem ele usa o mais barato cadastrado. */
+  modelId?: string;
+}
+
+export interface LibraryClassificationSuggestion {
+  title: string;
+  category: string[];
+  tags: string[];
+  /** Modelo do Gemini que gerou a sugestão. */
+  model: string;
+}

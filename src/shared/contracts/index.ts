@@ -13,12 +13,18 @@ import type { ChatSendRequest, ChatSendResponse } from './chat';
 import type { HealthReport } from './health';
 import type {
   LibraryCategoryNode,
+  LibraryClassificationSuggestion,
+  LibraryCreateArticleRequest,
   LibraryDocumentDetail,
   LibraryDocumentRequest,
   LibraryDocumentSummary,
   LibraryIndexStatus,
   LibraryListFilters,
+  LibraryPublishRequest,
+  LibraryRebuildResult,
+  LibrarySuggestRequest,
   LibraryTagCount,
+  LibraryUpdateRequest,
 } from './library';
 import type {
   ExternalProviderInfo,
@@ -73,6 +79,28 @@ export interface IpcContracts {
     request: LibraryDocumentRequest;
     response: LibraryDocumentDetail;
   };
+  [IpcChannels.library.documents.createArticle]: {
+    request: LibraryCreateArticleRequest;
+    response: LibraryDocumentDetail;
+  };
+  [IpcChannels.library.documents.publish]: {
+    request: LibraryPublishRequest;
+    response: LibraryDocumentDetail;
+  };
+  [IpcChannels.library.documents.update]: {
+    request: LibraryUpdateRequest;
+    response: LibraryDocumentDetail;
+  };
+  [IpcChannels.library.documents.suggest]: {
+    request: LibrarySuggestRequest;
+    response: LibraryClassificationSuggestion;
+  };
+  [IpcChannels.library.documents.archive]: {
+    request: LibraryDocumentRequest;
+    response: LibraryDocumentDetail;
+  };
+  [IpcChannels.library.documents.delete]: { request: LibraryDocumentRequest; response: void };
+  [IpcChannels.library.reindex]: { request: void; response: LibraryRebuildResult };
   [IpcChannels.library.inbox]: { request: void; response: LibraryDocumentSummary[] };
   [IpcChannels.library.categories]: { request: void; response: LibraryCategoryNode[] };
   [IpcChannels.library.tags]: { request: void; response: LibraryTagCount[] };

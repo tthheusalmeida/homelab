@@ -33,11 +33,18 @@ export const IpcChannels = {
     documents: {
       list: 'library:documents:list',
       get: 'library:documents:get',
+      createArticle: 'library:documents:create-article',
+      publish: 'library:documents:publish',
+      update: 'library:documents:update',
+      suggest: 'library:documents:suggest',
+      archive: 'library:documents:archive',
+      delete: 'library:documents:delete',
     },
     inbox: 'library:inbox',
     categories: 'library:categories',
     tags: 'library:tags',
     index: 'library:index',
+    reindex: 'library:reindex',
   },
   providers: {
     external: {

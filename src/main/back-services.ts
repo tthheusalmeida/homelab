@@ -39,6 +39,10 @@ export const BackServiceSources = {
     service: ['modules/library/application/library.service', 'LibraryService'],
     module: ['modules/library/library.module', 'LibraryModule'],
   },
+  libraryClassifier: {
+    service: ['modules/library/application/library-classifier', 'LibraryClassifier'],
+    module: ['modules/library/library.module', 'LibraryModule'],
+  },
 } as const satisfies Record<string, ServiceSource>;
 
 /** Devolve a instância de `token` declarada em `moduleClass`. */
@@ -62,6 +66,7 @@ export class BackServices {
       aiUsage: this.service(BackServiceSources.aiUsage),
       chat: this.service(BackServiceSources.chat),
       library: this.service(BackServiceSources.library),
+      libraryClassifier: this.service(BackServiceSources.libraryClassifier),
     };
   }
 
