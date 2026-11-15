@@ -7,12 +7,16 @@ import { describe, expect, it } from "vitest";
 import userEvent from "@testing-library/user-event";
 
 import { EmptyState } from "#components/EmptyState";
+import { ReadingMode } from "#components/ReadingMode";
+import { TagInput } from "#components/TagInput";
 import { ErrorState } from "#components/ErrorState";
 
 // O CSS é lido do disco: o Vitest roda com `css: false` e não devolve o conteúdo de `?raw`.
 const css = fs.readFileSync(path.join(__dirname, "global.css"), "utf8");
 
 import { AppLayout } from "./app/layouts/AppLayout";
+import { JobStatusBadge } from "./pages/jobs/track/components/JobStatusBadge";
+import { JobStep } from "./pages/jobs/track/components/JobStep";
 import { ServiceCard } from "./pages/home/components/ServiceCard";
 import { services } from "./pages/home/types/services.types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "#ui/collapsible";
@@ -24,8 +28,8 @@ describe("motion css", () => {
     "animate-enter-scale",
     "animate-enter-left",
     "animate-exit-down",
-    "animate-collapsible-down",
-    "animate-collapsible-up",
+    "animate-collapse-down",
+    "animate-collapse-up",
   ])("when the stylesheet is read, should define the %s utility", (name) => {
     expect(css).toContain(`@utility ${name}`);
   });
@@ -37,8 +41,25 @@ describe("motion css", () => {
     expect(block).toContain("transition-duration: 0.01ms !important");
   });
 
+  it("when the keyframes are named, should not reuse a name from tw-animate-css", () => {
+    // `enter`, `exit` e `collapsible-*` já existem no tw-animate-css (com opacidade fixa em 1):
+    // reusar o nome faz a animação rodar sem efeito visível.
+    for (const reserved of ["enter", "exit", "collapsible-down", "collapsible-up"]) {
+      expect(css).not.toContain(`@keyframes ${reserved} `);
+    }
+
+    const animated = [...css.matchAll(/animation: ([\w-]+) /g)].map((match) => match[1])
+      .filter((name) => name !== "none" && name !== "confetti-fall");
+
+    expect(animated.length).toBeGreaterThan(0);
+    for (const name of animated) {
+      expect(name).toMatch(/^hl-/);
+      expect(css).toContain(`@keyframes ${name} `);
+    }
+  });
+
   it("when a list animates, should cap the stagger delay", () => {
-    expect(css).toContain("min(calc(var(--i, 0) * 45ms), 450ms)");
+    expect(css).toContain("min(calc(var(--i, 0) * 70ms), 700ms)");
   });
 });
 
@@ -49,7 +70,7 @@ function GoTo({ to }: { to: string }) {
 }
 
 describe("AppLayout route transition", () => {
-  it("when the route changes, should mount a fresh page block so it enters again", async () => {
+  it("when the route changes, should mount a fresh page block so it fades in again", async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter initialEntries={["/a"]}>
@@ -62,12 +83,12 @@ describe("AppLayout route transition", () => {
       </MemoryRouter>,
     );
     const before = screen.getByRole("button", { name: "ir /b" }).parentElement!;
-    expect(before).toHaveClass("animate-enter");
+    expect(before).toHaveClass("animate-enter-fade");
 
     await user.click(screen.getByRole("button", { name: "ir /b" }));
 
     const after = screen.getByText("página b").parentElement!;
-    expect(after).toHaveClass("animate-enter");
+    expect(after).toHaveClass("animate-enter-fade");
     expect(after).not.toBe(before);
   });
 });
@@ -109,7 +130,51 @@ describe("collapsible", () => {
     await user.click(screen.getByRole("button", { name: "abrir" }));
 
     const panel = screen.getByText("conteúdo");
-    expect(panel).toHaveClass("data-open:animate-collapsible-down");
-    expect(panel).toHaveClass("data-closed:animate-collapsible-up");
+    expect(panel).toHaveClass("data-open:animate-collapse-down");
+    expect(panel).toHaveClass("data-closed:animate-collapse-up");
+  });
+});
+
+describe("small state changes", () => {
+  it("when a tag is added, should pop in", () => {
+    render(<TagInput value={["química"]} onChange={() => undefined} />);
+
+    expect(screen.getByText("química").closest("li")).toHaveClass("animate-enter-scale");
+  });
+
+  it("when a job step is completed, should swap its icon with a pop and ease the colors", () => {
+    const { container } = render(<JobStep label="Baixar" state="completed" />);
+
+    expect(container.querySelector("svg")).toHaveClass("animate-enter-scale");
+    expect(container.firstElementChild?.firstElementChild).toHaveClass("transition-colors");
+  });
+
+  it("when a job step is active, should keep spinning instead of popping", () => {
+    const { container } = render(<JobStep label="Baixar" state="active" />);
+
+    expect(container.querySelector("svg")).toHaveClass("animate-spin");
+    expect(container.querySelector("svg")).not.toHaveClass("animate-enter-scale");
+  });
+
+  it("when a job is running, should keep the status icon spinning", () => {
+    const { container } = render(<JobStatusBadge status="running" />);
+
+    expect(container.querySelector("svg")).toHaveClass("animate-spin");
+  });
+
+  it("when a job is completed, should pop the status icon", () => {
+    const { container } = render(<JobStatusBadge status="completed" />);
+
+    expect(container.querySelector("svg")).toHaveClass("animate-enter-scale");
+  });
+
+  it("when the reading mode opens, should fade in over the page", () => {
+    render(
+      <ReadingMode title="Livro" onExit={() => undefined} toc={null}>
+        <p>texto</p>
+      </ReadingMode>,
+    );
+
+    expect(screen.getByRole("region", { name: "Modo leitura" })).toHaveClass("animate-enter-fade");
   });
 });
