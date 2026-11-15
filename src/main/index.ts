@@ -12,6 +12,7 @@ import { DesktopAppConfig } from '../settings/backend-config';
 import { importLegacyEnv } from '../settings/legacy-env-import';
 
 import { BackRuntime } from './back-runtime';
+import { BackServices } from './back-services';
 import { waitForBackend } from './backend-ready';
 import { createServices } from './composition';
 import { applyCspHeader, buildContentSecurityPolicy, CSP_HEADER } from './content-security-policy';
@@ -200,7 +201,9 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     });
   }
 
-  await new NestHost(runtime).start({
+  const host = new NestHost(runtime);
+
+  await host.start({
     appConfig: new DesktopAppConfig(services.settings.get(), target.origin),
     geminiApiKey: await services.secrets.get('gemini.apiKey'),
     corsOrigin: target.origin,
@@ -245,6 +248,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       settings: services.settingsService,
       externalProviders: services.externalProviders,
       localProviders: services.localProviders,
+      back: new BackServices(runtime, (token) => host.get(token)).readers(),
     }),
   );
 

@@ -1,4 +1,4 @@
-import { API_PREFIX } from './constants';
+import { API_PREFIX, Messages } from './constants';
 import { createGeminiProvider } from './gemini-provider-factory';
 import { replaceModuleProvider, type MetadataAccess } from './module-patch';
 import type { BackRuntime } from './back-runtime';
@@ -27,6 +27,7 @@ interface NestApp {
   setGlobalPrefix(prefix: string): void;
   listen(port: string | number): Promise<unknown>;
   close(): Promise<void>;
+  get(token: unknown): unknown;
 }
 
 interface NestCore {
@@ -72,6 +73,15 @@ export class NestHost {
     await app.listen(options.port);
 
     this.app = app;
+  }
+
+  /** Instância de um provider do Nest (os handlers IPC recebem os services do back por aqui). */
+  get<T>(token: unknown): T {
+    if (!this.app) {
+      throw new Error(Messages.hostNotStarted);
+    }
+
+    return this.app.get(token) as T;
   }
 
   async stop(): Promise<void> {

@@ -18,6 +18,12 @@ describe('createHandlers', () => {
         settings: {} as SettingsService,
         externalProviders: {} as ExternalProvidersService,
         localProviders: {} as LocalProvidersService,
+        back: {
+          healthSystem: { check: jest.fn() },
+          healthAi: { check: jest.fn() },
+          ai: { providersList: jest.fn(), models: jest.fn(), thinking: jest.fn() },
+          aiUsage: { getUsage: jest.fn() },
+        },
       }),
     );
 

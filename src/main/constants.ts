@@ -61,4 +61,5 @@ export const Messages = {
   backendEntryMissing: 'Build do back não encontrado. Rode "npm run build:back".',
   frontDistMissing: 'Build do front não encontrado. Rode "npm run build:front".',
   startupErrorTitle: 'Erro ao iniciar o HomeLab',
+  hostNotStarted: 'O contêiner do back ainda não foi iniciado.',
 } as const;
