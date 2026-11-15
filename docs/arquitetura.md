@@ -18,7 +18,15 @@ desktop/
   docs/
 ```
 
-## Back dentro do main, sem editá-lo
+## Back dentro do desktop (desde a fase 09a)
+- O código do back vive em `src/back` (copiado de `back/src`, mesma estrutura de módulos): `modules/{ai,chat,health,jobs,library,video}`, `utils` e `config/back-config.ts`. Não há controllers, Swagger, CORS, prefixo `api/v1`, `ConfigModule`, `.env` nem servidor HTTP. O `desktop` não lê mais `../back`.
+- `BackContainer` (`main/back-container.ts`) sobe o Nest só como contêiner de DI (`NestFactory.createApplicationContext`) com o `BackModule.forRoot({ config, whisper })`. Os dois entram como providers globais: a `BackConfig` (pastas, URL do Ollama, chave do Gemini; implementada pelo `SettingsBackConfig` sobre o Settings e os segredos) e o `WhisperService` (porta abstrata; quem transcreve é o `DesktopWhisperService`).
+- Cada service é declarado em **um só módulo** (o `VideoModule` importa o `AIModule` em vez de repetir `AIService`, `AiUsageService` e os providers), então o `usage` em memória é um só e não é preciso resolver "por módulo".
+- O `GeminiProvider` recebe a chave pela `BackConfig`; sem chave ele responde `NOT_CONFIGURED` (antes: provider substituto trocado por metadados do módulo).
+- `BackServices` (`main/back-services.ts`) pega as instâncias no contêiner e as entrega aos handlers pelas **portas mínimas** que eles declaram.
+- Testes do back foram copiados junto (`src/back/**/*.spec.ts`) e rodam com o Jest do desktop; o ESLint de `src/back` mantém as exceções que o back já tinha (`any` e mocks tipados).
+
+### Como era nas fases 01 a 08 (histórico)
 - `BackRuntime` carrega pacotes (`@nestjs/core`, `@google/genai`) e módulos compilados (`back/dist/...`) **a partir do back**, para o Nest ser uma só instância.
 - `NestHost` monta o módulo raiz com os módulos do back (a lista do `AppModule` sem o `ConfigModule`), um módulo global que provê o `AppConfig` do back com o `DesktopAppConfig` (Settings) e sobe o HTTP enquanto o front ainda o usa.
 - Ponto de extensão: `replaceModuleProvider` troca um provider declarado por um módulo do back antes do Nest subir. Hoje serve ao `GeminiProvider` (declarado em `AIModule` e `VideoModule`) e ao `WhisperService` (declarado só no `AIModule`; `main/whisper-provider.ts` o troca pelo `DesktopWhisperService`, que usa o `WhisperBinaryResolver` e o Settings).

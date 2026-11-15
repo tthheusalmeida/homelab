@@ -2,11 +2,11 @@
 
 App desktop (Windows primeiro; depois Linux e macOS) do HomeLab: **Electron + React + IPC**. É a raiz do projeto Electron e substitui a comunicação HTTP entre `front` e `back` por **IPC**. Objetivo da migração: o que já funciona hoje continua funcionando, agora dentro do Electron e via IPC. **Sem melhorias de produto** nesta migração.
 
-- `front/` (repo separado): renderer React 19 + Vite, **sem mudança de UI**, exceto a tela de Configurações (substitui o `.env`).
-- `back/` (repo separado): services do Nest 11 reaproveitados no processo main. Nest vira só contêiner de injeção de dependência (`createApplicationContext`, sem HTTP no final). Os controllers são trocados por handlers IPC.
-- `desktop/` (este repo): `main`, `preload`, `shared` (contratos IPC), handlers, settings e empacotamento.
+- **Back (fase 09a, feita):** os services do Nest 11 vivem em `src/back` (copiados do antigo `back/`). Nest é só contêiner de injeção de dependência (`createApplicationContext`): sem HTTP, sem controllers, sem `.env`, sem porta. Os handlers IPC substituíram os controllers.
+- **Front (fase 09b, pendente):** hoje o renderer ainda é compilado a partir de `../front` com overrides; na 09b ele passa a viver em `renderer/src` com a mesma estrutura de pastas do front (`pages/<rota>`, `components`, `ui`, `lib`, `hooks`, `app`).
+- `desktop/` (este repo): `main`, `preload`, `shared` (contratos IPC), `back`, handlers, settings e empacotamento.
 
-**Regra: não alterar `back/` nem `front/`.** Todo código novo, adaptação e override vive só em `desktop/`; nenhum arquivo ou commit nos outros repos. Só é permitido **ler** e rodar os scripts deles (`build`, `test`). Se uma fase exigir mudança neles, pare e pergunte antes.
+**Independência:** o desktop **não lê mais `../back`**; `back/` e `front/` são repositórios antigos, sem manutenção. **Não os edite nem commite neles** (e eles não são mais fonte de nada para o desktop, exceto o `front/` até a 09b). Mudanças de código vão só em `desktop/`.
 
 Estado: **migração em andamento, por fases**. Ver `docs/migracao.md`.
 
@@ -23,19 +23,20 @@ Estado: **migração em andamento, por fases**. Ver `docs/migracao.md`.
 | `docs/regras-de-negocio.md` | Onde ficam as regras que **não mudam** (`back/doc`, `front/doc`) |
 | `docs/fases/fase-00.md` … `fase-10.md` (com 03a/03b, 06a/06b, 07a/07b) | Escopo, testes e checklist de cada entrega |
 
-Regras de negócio (biblioteca, jobs, IA, vídeo) continuam documentadas em `back/doc/` e `front/doc/`. Não duplique aqui; ao tocar nesses repos, leia o `CLAUDE.md` de cada um.
+Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `back/doc/` e `front/doc/` (repositórios antigos; passam a viver em `docs/` na fase 09c). Leia a regra antes de mexer em `src/back`.
 
 ## Comandos
-- `npm run dev` — compila back e main e sobe: Vite do app principal (5173), Vite das Configurações (5174) e o Electron
-- `npm start` — build completo (back, renderer, main) e abre o app com os arquivos estáticos (`dist-renderer`)
-- `npm run build` / `build:back` / `build:renderer` (`:main`, `:settings`) / `build:main`
-- `npm test` (Jest, `src/**/*.spec.ts`) / `npm run test:watch` / `npm run test:cov`
+- `npm run dev` — compila o main e sobe: Vite do app principal (5173), Vite das Configurações (5174) e o Electron
+- `npm start` — build completo (renderer e main) e abre o app com os arquivos estáticos (`dist-renderer`)
+- `npm run build` / `build:renderer` (`:main`, `:settings`) / `build:main`
+- `npm test` (Jest, `src/**/*.spec.ts`, inclui os testes de `src/back`) / `npm run test:watch` / `npm run test:cov`
 - `npm run test:renderer` (Vitest do front, `renderer/**/*.test.tsx`) / `npm run typecheck:renderer`
 - `npm run overrides:check` (cópias do desktop em dia com o front?) / `npm run overrides:update` (depois de reconciliar)
 - `npm run lint` / `npm run format`
 
 ## Mapa do código (alvo; criado ao longo das fases)
-- `src/main/` — `index.ts` (bootstrap), `content-security-policy.ts`, `first-run.ts`, `shortcuts.ts`, `single-window.ts`, `constants.ts`, `paths.ts`, `front-target.ts`, `window-options.ts`, `navigation-guard.ts`, `static-files.ts` (protocolo `app://`), `back-runtime.ts`, `nest-host.ts`, `module-patch.ts`, `gemini-provider-factory.ts` (Nest do back no main sem editá-lo), `backend-ready.ts`, `composition.ts`, `electron-cipher.ts`
+- `src/main/` — `index.ts` (bootstrap), `content-security-policy.ts`, `first-run.ts`, `shortcuts.ts`, `single-window.ts`, `constants.ts`, `paths.ts`, `front-target.ts`, `window-options.ts`, `navigation-guard.ts`, `static-files.ts` (protocolo `app://`), `back-container.ts` (Nest como contêiner de DI), `back-services.ts` (instâncias do back para os handlers), `composition.ts`, `electron-cipher.ts`
+- `src/back/` — o back dentro do desktop: `back.module.ts` (`BackModule.forRoot`), `config/back-config.ts` (`BackConfig`), `modules/{ai,chat,health,jobs,library,video}` (services, domínio, providers; testes ao lado), `utils/`, `testing/` (helper de biblioteca temporária)
 - `src/preload/` — `bridge.ts` (ponte com lista de canais permitidos) e `index.ts` (`contextBridge` expõe `window.api`); empacotado com esbuild
 - `src/overrides/` — verificação (hash) das cópias do desktop contra o front (`overrides-lock.ts`, `cli.ts`)
 - `renderer/` — UI do desktop, **fora do `src/`**: `settings/` (janela de Configurações), `overrides/` (cópias de arquivos do front + `overrides.lock.json`), `vite/front-bridge.mts` (aliases, plugins e overrides do Vite), `ipc.ts` (cliente do `window.api`), `tsconfig.json` (para o editor)
@@ -43,7 +44,7 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) continuam documentadas em `bac
 - `dist-renderer/` — saída do build do renderer (não versionada)
 - `src/shared/` — **contratos usados por main, preload e front**: `channels.ts` (`IpcChannels`), `errors.ts` (`IpcErrorCode`, `IpcError`), `result.ts` (`IpcResult`), `contracts/` (request/response por canal), `renderer-api.ts`, `ipc-client.ts` (cliente do front)
 - `src/ipc/` — `IpcHandler` (base, `routes()`), `IpcRegistrar`, `IpcErrorMapper`, `IpcMainLike`, `handlers/*.handler.ts` + `handlers/index.ts` (`createHandlers`), `testing/FakeIpcMain`
-- `src/settings/` — `SettingsStore`, `SecretStore` (`safeStorage`), validador, defaults, `DesktopAppConfig` (o `AppConfig` do back sobre o store), importação única do `.env`
+- `src/settings/` — `SettingsStore`, `SecretStore` (`safeStorage`), validador, defaults, `SettingsBackConfig` (a `BackConfig` do back sobre o store e os segredos)
 - `src/providers/` — serviços e definições dos providers externos (Gemini) e locais (Whisper, Ollama, ffmpeg)
 - `resources/bin/<platform>-<arch>/` — binários nativos (Whisper). Não versionados.
 - `docs/` — documentação
@@ -52,10 +53,11 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) continuam documentadas em `bac
 - Textos de interface e mensagens de erro em **português**; código e commits em inglês.
 - **Handlers IPC são classes** (`extends IpcHandler`), uma por domínio, com dependências injetadas (SOLID, clean code). Detalhes em `docs/arquitetura.md`.
 - **Nada repetido em string solta**: nomes de canal, códigos de erro e mensagens ficam em constantes (`shared/channels.ts`, `shared/errors.ts`). Handler e front importam as mesmas constantes.
-- **Sem `.env`**: caminhos, URLs e chaves vêm de `SettingsStore`/`SecretStore`, configurados pela tela de Configurações (fase 03b). O `.env` do back só é importado uma vez em dev. Nenhum caminho fixo no código. Segredos cifrados com `safeStorage`.
+- **Sem `.env`**: caminhos, URLs e chaves vêm de `SettingsStore`/`SecretStore`, configurados pela tela de Configurações (fase 03b). Não existe mais `.env` nem importação dele. Nenhum caminho fixo no código. Segredos cifrados com `safeStorage`.
 - Providers separados: **externos** (Gemini e outras IAs) e **locais** (Whisper, Ollama, ffmpeg). Ver `docs/configuracoes.md`.
 - Segurança do renderer: `contextIsolation: true`, `nodeIntegration: false`; o preload expõe só métodos tipados, nunca `ipcRenderer`.
-- Durante a migração o Nest serve HTTP **e** IPC; cada domínio migrado troca só o `api.ts` do front de `fetch` para `window.api`. O HTTP só é removido na fase 9.
+- **Não há HTTP**: o front fala com o main só por `window.api` (IPC) e o back é só contêiner de DI. Ninguém abre porta; a CSP não libera `localhost`.
+- Código em `src/back` mantém a estrutura de módulos do back original (Nest com decorators) e imports relativos; o `BackConfig` é a única entrada de configuração dele (nada de `process.env`).
 - Imports relativos dentro de `desktop/src` (compilação com `tsc` puro, sem reescrita de alias).
 - **UI do desktop (`renderer/`)**: reaproveite os componentes do front por alias (`#ui/*`, `#components/*`, `#lib/*`) e siga as regras de componentes do `front/CLAUDE.md`; não duplique HTML/Tailwind solto. Pacotes (`react`, `lucide-react`…) vêm do front: **nunca instale React no desktop**.
 - **Arquivo do front que precisa mudar?** Não edite o front: copie para `renderer/overrides/`, registre em `overrides.lock.json` e rode `npm run overrides:update`. O teste de overrides avisa quando o front mudar.
