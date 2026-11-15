@@ -1,3 +1,5 @@
+import type { Appearance } from './appearance';
+
 /** Pastas usadas pelo app (antes: LIB_DIR, TEMP_DOCS_DIR, TEMP_VIDEO_DIR, TEMP_AUDIO_DIR). */
 export interface SettingsPaths {
   libraryDir: string;
@@ -20,6 +22,7 @@ export interface OllamaConfig {
 
 export interface SettingsData {
   paths: SettingsPaths;
+  appearance: Appearance;
   local: {
     whisper: WhisperConfig;
     ollama: OllamaConfig;
@@ -28,6 +31,7 @@ export interface SettingsData {
 
 export type SettingsPatch = {
   paths?: Partial<SettingsPaths>;
+  appearance?: Partial<Appearance>;
   local?: {
     whisper?: Partial<WhisperConfig>;
     ollama?: Partial<OllamaConfig>;

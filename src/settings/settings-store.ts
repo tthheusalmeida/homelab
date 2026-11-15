@@ -62,6 +62,7 @@ export class SettingsStore {
   private merge(base: SettingsData, patch: SettingsPatch): SettingsData {
     return {
       paths: { ...base.paths, ...patch.paths },
+      appearance: { ...base.appearance, ...patch.appearance },
       local: {
         whisper: { ...base.local.whisper, ...patch.local?.whisper },
         ollama: { ...base.local.ollama, ...patch.local?.ollama },

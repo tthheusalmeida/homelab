@@ -16,6 +16,10 @@ export const IpcChannels = {
     update: 'settings:update',
     pickFolder: 'settings:pick-folder',
   },
+  appearance: {
+    get: 'appearance:get',
+    update: 'appearance:update',
+  },
   health: {
     system: 'health:system',
     ai: 'health:ai',

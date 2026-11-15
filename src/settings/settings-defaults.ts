@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 
+import { DEFAULT_APPEARANCE } from '../shared/contracts/appearance';
 import type { SettingsData } from '../shared/contracts/settings';
 
 export const DEFAULT_OLLAMA_URL = 'http://localhost:11434';
@@ -26,6 +27,7 @@ export function createDefaultSettings({
       videoTempDir: path.join(rootDir, 'temp', 'video'),
       audioTempDir: path.join(rootDir, 'temp', 'audio'),
     },
+    appearance: { ...DEFAULT_APPEARANCE },
     local: {
       whisper: {
         directory: whisperDir,

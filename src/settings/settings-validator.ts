@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 
 import { IpcError, IpcErrorCode } from '../shared/errors';
+import { ACCENT_IDS, THEME_MODES } from '../shared/contracts/appearance';
 import type { SettingsData } from '../shared/contracts/settings';
 
 export const SettingsMessages = {
@@ -9,6 +10,8 @@ export const SettingsMessages = {
   urlInvalid: 'A URL do Ollama deve ser um endereço http ou https válido.',
   fileNameRequired: (label: string) => `Informe ${label}.`,
   fileNameHasPath: (label: string) => `${label} deve ser só o nome do arquivo, sem pastas.`,
+  themeInvalid: 'Escolha um tema válido: sistema, claro ou escuro.',
+  accentInvalid: 'Escolha uma das cores de destaque disponíveis.',
   modelInvalid:
     'O modelo do Whisper deve ser o nome do arquivo (na pasta do Whisper) ou o caminho completo.',
 } as const;
@@ -67,6 +70,14 @@ function capitalize(text: string): string {
 export function validateSettings(settings: SettingsData): void {
   for (const [key, label] of Object.entries(PATH_LABELS)) {
     requireAbsolutePath(settings.paths[key as keyof typeof PATH_LABELS], label);
+  }
+
+  if (!THEME_MODES.includes(settings.appearance.theme)) {
+    fail(SettingsMessages.themeInvalid);
+  }
+
+  if (!ACCENT_IDS.includes(settings.appearance.accent)) {
+    fail(SettingsMessages.accentInvalid);
   }
 
   const { whisper, ollama } = settings.local;

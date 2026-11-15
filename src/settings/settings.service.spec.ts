@@ -33,4 +33,24 @@ describe('SettingsService', () => {
   it('when nothing changes, should not require restart', () => {
     expect(create().updatePaths({}).restartRequired).toBe(false);
   });
+
+  it('when getting the appearance, should answer the defaults', () => {
+    expect(create().getAppearance()).toEqual({ theme: 'system', accent: 'cyan' });
+  });
+
+  it('when the appearance changes, should answer the new value and keep the rest', () => {
+    const service = create();
+
+    expect(service.updateAppearance({ theme: 'dark' })).toEqual({ theme: 'dark', accent: 'cyan' });
+    expect(service.updateAppearance({ accent: 'rose' })).toEqual({ theme: 'dark', accent: 'rose' });
+  });
+
+  it('when the accent is invalid, should reject and keep the previous appearance', () => {
+    const service = create();
+
+    expect(() => service.updateAppearance({ accent: 'pink' as never })).toThrow(
+      /cores de destaque/,
+    );
+    expect(service.getAppearance().accent).toBe('cyan');
+  });
 });

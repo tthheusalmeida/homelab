@@ -80,4 +80,19 @@ describe('validateSettings', () => {
 
     expect(() => validateSettings(settings)).not.toThrow();
   });
+
+  it('when the theme is unknown, should reject', () => {
+    expectValidation((s) => (s.appearance.theme = 'sepia' as never), /tema válido/);
+  });
+
+  it('when the accent is unknown, should reject', () => {
+    expectValidation((s) => (s.appearance.accent = 'pink' as never), /cores de destaque/);
+  });
+
+  it.each(['system', 'light', 'dark'] as const)('when the theme is %s, should accept', (theme) => {
+    const settings = testDefaults();
+    settings.appearance.theme = theme;
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
 });

@@ -94,4 +94,22 @@ describe('SettingsStore', () => {
 
     expect(store.get().paths.libraryDir).toBe(testDefaults().paths.libraryDir);
   });
+
+  it('when there is no saved appearance, should default to the system theme with the cyan accent', () => {
+    expect(create().get().appearance).toEqual({ theme: 'system', accent: 'cyan' });
+  });
+
+  it('when the appearance changes, should save only what changed and survive a reload', () => {
+    const store = create();
+
+    store.update({ appearance: { accent: 'violet' } });
+
+    expect(create().get().appearance).toEqual({ theme: 'system', accent: 'violet' });
+  });
+
+  it('when an old file has no appearance, should fill it with the defaults', () => {
+    fs.writeFileSync(target, JSON.stringify({ paths: { libraryDir: path.resolve('/x') } }));
+
+    expect(create().get().appearance).toEqual({ theme: 'system', accent: 'cyan' });
+  });
 });

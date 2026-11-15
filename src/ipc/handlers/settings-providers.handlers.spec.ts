@@ -149,4 +149,51 @@ describe('LocalProvidersHandler', () => {
     expect(service.save).toHaveBeenCalledWith('ollama', { url: 'u' });
     expect(service.test).toHaveBeenCalledWith('ollama', undefined);
   });
+
+  describe('SettingsHandler appearance', () => {
+    it('when appearance:get is called, should answer the current appearance', async () => {
+      const appearance = { theme: 'dark', accent: 'blue' };
+      const service = {
+        getAppearance: jest.fn().mockReturnValue(appearance),
+      } as unknown as SettingsService;
+      const ipc = register(new SettingsHandler(service, picker()));
+
+      await expect(ipc.invoke(IpcChannels.appearance.get)).resolves.toEqual({
+        ok: true,
+        data: appearance,
+      });
+    });
+
+    it('when appearance:update is called, should pass the patch and answer the new appearance', async () => {
+      const updateAppearance = jest.fn().mockReturnValue({ theme: 'light', accent: 'cyan' });
+      const ipc = register(
+        new SettingsHandler({ updateAppearance } as unknown as SettingsService, picker()),
+      );
+
+      await expect(ipc.invoke(IpcChannels.appearance.update, { theme: 'light' })).resolves.toEqual({
+        ok: true,
+        data: { theme: 'light', accent: 'cyan' },
+      });
+      expect(updateAppearance).toHaveBeenCalledWith({ theme: 'light' });
+    });
+
+    it('when the service rejects the accent, should answer VALIDATION', async () => {
+      const updateAppearance = jest.fn(() => {
+        throw new IpcError(
+          IpcErrorCode.VALIDATION,
+          'Escolha uma das cores de destaque disponíveis.',
+        );
+      });
+      const ipc = register(
+        new SettingsHandler({ updateAppearance } as unknown as SettingsService, picker()),
+      );
+
+      await expect(
+        ipc.invoke(IpcChannels.appearance.update, { accent: 'x' }),
+      ).resolves.toMatchObject({
+        ok: false,
+        error: { code: 'VALIDATION' },
+      });
+    });
+  });
 });

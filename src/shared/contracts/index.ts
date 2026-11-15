@@ -60,6 +60,7 @@ import type {
   LocalProviderTestRequest,
   ProviderTestResult,
 } from './providers';
+import type { Appearance } from './appearance';
 import type { SaveResult, SettingsPaths } from './settings';
 
 /**
@@ -77,6 +78,9 @@ export interface IpcContracts {
     request: Partial<SettingsPaths>;
     response: SaveResult<SettingsPaths>;
   };
+
+  [IpcChannels.appearance.get]: { request: void; response: Appearance };
+  [IpcChannels.appearance.update]: { request: Partial<Appearance>; response: Appearance };
 
   /** Abre o seletor de pasta do sistema; `null` se o usuário cancelar. */
   [IpcChannels.settings.pickFolder]: {
