@@ -47,7 +47,7 @@ desktop/
 ## Segurança de conteúdo (CSP)
 - `buildContentSecurityPolicy` (`src/main/content-security-policy.ts`) gera a política; **nunca** permite `unsafe-eval`.
 - **Build:** vai no cabeçalho da resposta do protocolo `app://` (`script-src 'self'`). **Dev:** o `webRequest.onHeadersReceived` troca o cabeçalho das páginas do Vite (permite `unsafe-inline` para o preâmbulo do React Refresh e as origens/WebSockets do HMR).
-- `connect-src` libera o HTTP local (`localhost` e `127.0.0.1`, porta do Nest) até a fase 09. `img-src` aceita `http:`/`https:` (imagens externas da biblioteca e capas de livros).
+- `connect-src` é só `'self'` (em dev, mais as origens e WebSockets do Vite): não há HTTP local nem porta do Nest. `img-src` aceita `http:`/`https:` (imagens externas da biblioteca e capas de livros).
 - Se uma tela deixar de carregar um recurso, a causa provável é esta política; ajuste só a diretiva necessária e documente aqui.
 
 ## Nest como contêiner de DI

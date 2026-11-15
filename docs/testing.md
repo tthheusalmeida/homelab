@@ -2,7 +2,7 @@
 
 ## Camadas
 - **Unitários do main** (`src/**/*.spec.ts`): Jest + ts-jest, mesmo padrão do back. Cobrem handlers, registrar, mapper de erro, settings, resolvedor de binário e as funções puras do main.
-- **Unitários do front** (`*.test.ts(x)`, Vitest): cobrem os `api.ts` migrados (mockando `window.api`), `#lib/ipc` e a tela de Configurações. Convenções em `front/doc/testing.md`.
+- **Unitários do front** (`*.test.ts(x)`, Vitest): cobrem os `api.ts` migrados (mockando `window.api`), `#lib/ipc` e a tela de Configurações. Convenções em `regras/front/testing.md`.
 - **Checklist manual** por fase (`docs/fases/fase-XX.md`): o que o usuário valida no ambiente real.
 - **Smoke E2E** (a partir da fase 9): Playwright para Electron, cobrindo abrir o app, navegar nas telas principais e criar um artigo.
 

@@ -1,8 +1,8 @@
 # Regras de negócio (não mudam na migração)
 
-Esta migração só troca o transporte (HTTP → IPC) e a origem da configuração (`.env` → Settings). As regras abaixo continuam valendo e ficam documentadas nos repos originais. Leia só o arquivo da área que a tarefa toca.
+A migração só troca o transporte (HTTP → IPC) e a origem da configuração (`.env` → Settings). As regras abaixo continuam valendo. Desde a fase 09c elas vivem aqui, em `docs/regras/` (copiadas dos repositórios antigos `back/doc` e `front/doc`, que não têm mais manutenção). Leia só o arquivo da área que a tarefa toca.
 
-## Back (`back/doc/`)
+## Back (`docs/regras/back/`, código em `src/back`)
 | Arquivo | Assunto |
 |---|---|
 | `ai.md` | Providers (Ollama/Gemini), modelos, thinking, custo, usage |
@@ -10,10 +10,11 @@ Esta migração só troca o transporte (HTTP → IPC) e a origem da configuraç�
 | `jobs.md` | Job, ciclo de vida, etapas, fila, pipelines, título/categoria/tags |
 | `video.md` | Download, ffmpeg, Whisper, resumo, temporários |
 | `library.md` | Documentos `.md`, frontmatter, nomes, categorias, ciclo pending/published/archived, livros |
-| `env.md` | Variáveis de ambiente de hoje (referência para `configuracoes.md`) |
 | `testing.md` | Convenções de teste do back |
 
-## Front (`front/doc/`)
+O antigo `env.md` (variáveis de ambiente) **não foi copiado**: foi substituído por `configuracoes.md` (Settings e segredos).
+
+## Front (`docs/regras/front/`, código em `renderer/src`)
 | Arquivo | Assunto |
 |---|---|
 | `home.md` | Home: status dos serviços, cards, relógio |
@@ -22,9 +23,13 @@ Esta migração só troca o transporte (HTTP → IPC) e a origem da configuraç�
 | `jobs.md` | Criar e acompanhar jobs |
 | `library.md` | Biblioteca, documento, edição, livros, entrada, novo artigo |
 | `components.md` | Reuso de componentes base |
-| `lib.md` | `api()`, formatadores, query client |
+| `lib.md` | Cliente IPC, formatadores, query client |
 | `testing.md` | Convenções de teste do front |
 
-## Quando a migração muda uma regra
-- Se uma fase alterar uma regra documentada (ex.: `lib.md` sobre `api()`, `env.md`, health da Home), atualize o doc original **e** registre a mudança na doc da fase.
-- Mudanças esperadas: `front/doc/lib.md` (`api()` → `#lib/ipc`), `back/doc/env.md` (substituído por Settings na fase 9), `front/doc/home.md` (health por IPC).
+## Onde as cópias já divergem do original
+- Textos que falam de rotas HTTP (`/library/*`, `/jobs`…) descrevem a regra; hoje o transporte é um canal IPC com o mesmo nome de ação (ver `ipc-canais.md`).
+- `lib.md`: `api()` com `fetch` virou `ipc.invoke`. `home.md`: o health é por canal IPC e o card não tem mais link.
+- Convenções de teste: valem as de `CLAUDE.md` e `testing.md` (`when ..., should ...`, Vitest no renderer, Jest no main).
+
+## Quando mudar uma regra
+Atualize o doc de `docs/regras/` **e** registre a mudança na doc da fase.

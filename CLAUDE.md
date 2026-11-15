@@ -20,10 +20,10 @@ Estado: **migração em andamento, por fases**. Ver `docs/migracao.md`.
 | `docs/ipc-canais.md` | Inventário dos 37 endpoints HTTP → canais IPC (nomes e payloads) |
 | `docs/configuracoes.md` | Settings (substitui `.env`), providers externos e locais, segredos, binários por plataforma |
 | `docs/testing.md` | Convenções de teste, mocks, checklist manual e smoke E2E |
-| `docs/regras-de-negocio.md` | Onde ficam as regras que **não mudam** (`back/doc`, `front/doc`) |
+| `docs/regras-de-negocio.md` | Onde ficam as regras que **não mudam** (`docs/regras/back`, `docs/regras/front`) |
 | `docs/fases/fase-00.md` … `fase-10.md` (com 03a/03b, 06a/06b, 07a/07b) | Escopo, testes e checklist de cada entrega |
 
-Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `back/doc/` e `front/doc/` (repositórios antigos; passam a viver em `docs/` na fase 09c). Leia a regra antes de mexer em `src/back`.
+Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/regras/back/` e `docs/regras/front/` (ver `docs/regras-de-negocio.md`). Leia a regra antes de mexer em `src/back`.
 
 ## Comandos
 - `npm run dev` — compila o main e sobe: Vite do app principal (5173), Vite das Configurações (5174) e o Electron
