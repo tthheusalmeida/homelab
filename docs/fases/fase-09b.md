@@ -1,6 +1,6 @@
 # Fase 09b — Front dentro do desktop
 
-Status: pendente
+Status: implementada, aguardando ok
 
 ## Objetivo
 O renderer do desktop passa a ser **o próprio front**, sem ler `../front`, sem overrides e sem `fetch`. (Decisão do usuário: manter a **mesma estrutura de pastas**, os componentes por rota e a base de componentes que nasce da pasta `ui`.)
@@ -18,3 +18,13 @@ Suítes do renderer (as 99 do front, adaptadas) e do main; typecheck do renderer
 
 ## O que testar
 Regressão visual e funcional de todas as telas (Home, Chat, Uso, Biblioteca, Livros, Jobs, Configurações), sem requisição HTTP.
+
+
+## Como ficou
+- `front/src` copiado para `renderer/src` (sem `assets`, que ninguém usa), mais `index.html` e `public`. Os `api.ts` (e `useAiChat`, `AppSidebar`) por IPC viraram os próprios arquivos; os testes dos overrides foram para ao lado de cada um.
+- Removidos: `renderer/overrides`, `overrides.lock.json`, `renderer/vite/front-bridge.mts`, `src/overrides` (CLI e teste de hash), `lib/api.ts` (`fetch`), `VITE_API_URL` e os testes que simulavam `fetch`.
+- Home: `services.types.ts` guarda o `healthChannel` de cada serviço em vez de URL; `checkService(channel)`. **Mudança de comportamento (inevitável):** a setinha de link do `ServiceCard` foi removida, porque apontava para um endereço HTTP que não existe mais.
+- Aliases novos: `#shared/*` e `#test/*`; `renderer/src/lib/ipc.ts` (antes `renderer/ipc.ts`) e `renderer/src/test/api-mock.ts` (antes dentro das Configurações).
+- Instalação com `npm install --legacy-peer-deps` (conflito de peer do Babel entre Jest e o plugin React do Vite) e `@testing-library/dom` como dependência explícita.
+- Verificação: typecheck do renderer limpo; Vitest 104 arquivos / 1047 testes; Jest 74 suítes / 847 testes (eram 75 / 860: saiu o teste de hash dos overrides); build do renderer e do main; Electron real com Início, Chat, Uso, Biblioteca e Jobs sem erro de console e sem recurso `http(s)`.
+- Sob carga (`--pool=vmThreads`) dois testes de `BookPage.progress` já falharam por tempo; isolados passam (49/49).

@@ -35,9 +35,8 @@ Toda feature (nova ou alterada) vem com testes unitários na mesma entrega. Cubr
 
 ## Testes do renderer (Vitest do front)
 - `npm run test:renderer` roda `renderer/**/*.test.tsx` com o Vitest, o jsdom e o `setup.ts` do front (config em `vitest.renderer.config.mts`). `npm run typecheck:renderer` confere os tipos.
-- Componentes são testados com `renderWithQuery` (`@front/test/utils`) e `window.api` falso (`mockApi`, `ok`, `failure` e `payloadsOf` em `renderer/settings/src/testing.ts`). Nome: `when ..., should ...`.
-- Teste e tipos usam sempre as cópias de pacotes do front (`front/node_modules`); o desktop não instala React.
-- `npm run overrides:check` (e o teste Jest `overrides-lock.spec.ts`) falha quando o `front` muda um arquivo que o desktop copiou.
+- Componentes são testados com `renderWithQuery` (`#test/utils`) e `window.api` falso (`mockApi`, `ok`, `failure` e `payloadsOf` em `renderer/src/test/api-mock.ts`). Nome: `when ..., should ...`.
+- O renderer tem suas próprias dependências (fase 09b); `npm run test:renderer` roda as suítes do front copiado e das Configurações.
 
 ## Cobertura atual
 Fase 03b: janela de Configurações (opções), controle de janela única, atalho, abertura automática, `FolderPicker`, mecanismo de overrides, CSP e `SecretStore` assíncrono (Jest, 220 testes no total); cards recolhíveis, snackbar, seções e cópia do `AppSidebar` (Vitest, 52 testes).

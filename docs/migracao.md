@@ -14,7 +14,7 @@
 - **Settings no lugar do `.env`**, com `safeStorage` para segredos. O app sobe sem configuração; o que faltar gera erro `NOT_CONFIGURED` e o front leva à tela de Configurações. Ver `configuracoes.md`.
 - **Providers separados**: externos (Gemini e outras IAs) e locais (Whisper, Ollama, ffmpeg).
 - **Whisper por plataforma**: `resources/bin/<platform>-<arch>/`; só `win32-x64` agora. O modelo (1,5 GB) não vai no instalador.
-- **Renderer do desktop:** o desktop tem o próprio build do renderer (Vite e Vitest do front, configs no desktop). Trocar um arquivo do front = copiar para `renderer/overrides/` e registrar no `overrides.lock.json`; um teste avisa se o front mudar. As fases 04 a 08 usam isso para trocar os `api.ts` por IPC. Detalhes em `arquitetura.md`.
+- **Renderer do desktop:** desde a 09b o renderer é o próprio front, copiado em `renderer/src`, com Vite/Vitest/React instalados no desktop e IPC nos `api.ts`. O mecanismo de overrides (fases 03b a 08) foi removido. Detalhes em `arquitetura.md`.
 - **Jobs continuam por polling de 1 s** e **em memória**, como hoje. Persistir ou usar eventos é melhoria, fora do escopo.
 - **`back/` e `front/` não são alterados** (decisão do usuário): as fases 00 a 08 implementaram tudo em `desktop/`, que só os lia e rodava seus builds, com overrides próprios.
 - **Independência (decisão do usuário na fase 09):** o desktop **absorve** o código do back (09a) e do front (09b) e deixa de ler `../back` e `../front`. Os dois repositórios antigos ficam como estão, sem manutenção ("eles vão acabar"). Submódulo e monorepo foram descartados. Documentação e regras de negócio também passam a viver em `desktop/docs`.
@@ -36,7 +36,7 @@
 | 07b | Livros, escrita | concluída |
 | 08 | Jobs e resolvedor do Whisper (win32) | concluída |
 | 09a | Back dentro do desktop: sem HTTP, sem `.env`, sem ler `../back` | concluída |
-| 09b | Front dentro do desktop: mesma estrutura de pastas, sem overrides nem `fetch` | pendente |
+| 09b | Front dentro do desktop: mesma estrutura de pastas, sem overrides nem `fetch` | implementada, aguardando ok |
 | 09c | Limpeza final, smoke E2E, usuário novo e docs consolidados | pendente |
 | 10 | Empacotamento Windows | pendente |
 
