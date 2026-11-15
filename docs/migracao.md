@@ -31,7 +31,7 @@
 | 04 | Health e AI (leitura) | concluída |
 | 05 | Chat | concluída |
 | 06a | Biblioteca, leitura | concluída |
-| 06b | Biblioteca, escrita | pendente |
+| 06b | Biblioteca, escrita | concluída |
 | 07a | Livros, leitura | pendente |
 | 07b | Livros, escrita | pendente |
 | 08 | Jobs e resolvedor do Whisper (win32) | pendente |

@@ -72,14 +72,16 @@ Erros: falha do provider (Gemini ou Ollama) → `PROVIDER_FAILED` com a mensagem
 
 Filtros de `library:documents:list` (iguais aos parâmetros de query de hoje, mas `category` e `tags` já são listas): `q` busca em título, nome do arquivo, tags, categorias e conteúdo; `category` é o caminho por nível (documentos dentro dele); `tags` exige todas; `type` (`summary`, `transcription`, `article`), `source` (`video`, `manual`), `status` (padrão `published`; também `archived`, `pending`) e `sort` (`title` padrão, ou `recent`). Valor fora dessas listas → `VALIDATION`; documento inexistente → `NOT_FOUND`. Não há paginação (o back devolve a lista inteira).
 
+Erros da escrita: `category` e `tags` que não são lista de textos → `VALIDATION` com "O campo "category" deve ser uma lista de textos." (validação no `LibraryHandler`, como o controller fazia); título ou conteúdo vazio, documento já publicado, editar o que não está publicado e descartar publicado → `VALIDATION` com a mensagem do service; id inexistente → `NOT_FOUND`; falha da IA em `suggest` → `PROVIDER_FAILED` ("Não foi possível obter a sugestão da IA. Tente novamente." ou "A IA não retornou uma sugestão válida..."); `suggest` sem chave do Gemini → `NOT_CONFIGURED`.
+
 A pasta da biblioteca não gera `NOT_CONFIGURED`: ela é obrigatória nas Configurações (com padrão em Documentos/HomeLab) e o back trata pasta inexistente como vazia.
-| `library:reindex` | `POST library/reindex` | 6b |
-| `library:documents:create-article` | `POST library/documents/article` | 6b |
-| `library:documents:publish` | `POST library/documents/:id/publish` | 6b |
-| `library:documents:update` | `PATCH library/documents/:id` | 6b |
-| `library:documents:suggest` | `POST library/documents/:id/suggest` | 6b |
-| `library:documents:archive` | `POST library/documents/:id/archive` | 6b |
-| `library:documents:delete` | `DELETE library/documents/:id` | 6b |
+| `library:reindex` | `POST library/reindex` | — | `{ indexed, errors }` | 6b (feito) |
+| `library:documents:create-article` | `POST library/documents/article` | `{ title, category, tags?, content }` | documento (`{ meta, content }`), já publicado | 6b (feito) |
+| `library:documents:publish` | `POST library/documents/:id/publish` | `{ id, title?, category, tags? }` | documento; move o arquivo da entrada (ou de arquivado) para a pasta da categoria | 6b (feito) |
+| `library:documents:update` | `PATCH library/documents/:id` | `{ id, title?, category?, tags?, content? }` (só o informado muda) | documento; renomeia/move o arquivo se título ou categoria mudarem | 6b (feito) |
+| `library:documents:suggest` | `POST library/documents/:id/suggest` | `{ id, modelId? }` | `{ title, category, tags, model }` (sem `modelId`, usa o modelo mais barato) | 6b (feito) |
+| `library:documents:archive` | `POST library/documents/:id/archive` | `{ id }` | documento com `status: archived` (o arquivo continua na pasta) | 6b (feito) |
+| `library:documents:delete` | `DELETE library/documents/:id` | `{ id }` | nada (só pendente ou arquivado; publicado → `VALIDATION`) | 6b (feito) |
 
 ## livros (fases 7a e 7b)
 | Canal | Substitui | Fase |
@@ -108,5 +110,5 @@ A pasta da biblioteca não gera `NOT_CONFIGURED`: ela é obrigatória nas Config
 
 ## Regras
 - Um endpoint HTTP = um canal. `:id` e query viram campos do payload.
-- Erros HTTP de hoje: 404 → `NOT_FOUND`, 400 → `VALIDATION`, demais → `INTERNAL`.
+- Erros HTTP de hoje: 404 → `NOT_FOUND`, 400 → `VALIDATION`, 502 → `PROVIDER_FAILED` (falha de serviço externo, como a IA), demais → `INTERNAL`. Um erro que traz um `IpcError` `NOT_CONFIGURED` na `cause` (ex.: sugestão de IA sem chave) responde `NOT_CONFIGURED`.
 - Antes de implementar cada grupo, confira o controller e o DTO atual e registre aqui o payload exato.
