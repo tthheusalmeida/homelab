@@ -1,8 +1,18 @@
 import type { BrowserWindowConstructorOptions } from 'electron';
 
-import { WINDOW } from './constants';
+import { SETTINGS_WINDOW, WINDOW, WINDOW_BACKGROUND } from './constants';
 
-/** Opções da janela principal. As flags de segurança são obrigatórias (ver docs/arquitetura.md). */
+/** Flags de segurança obrigatórias em toda janela (ver docs/arquitetura.md). */
+function secureWebPreferences(preloadPath: string) {
+  return {
+    preload: preloadPath,
+    contextIsolation: true,
+    nodeIntegration: false,
+    sandbox: true,
+  };
+}
+
+/** Opções da janela principal. */
 export function createWindowOptions(preloadPath: string): BrowserWindowConstructorOptions {
   return {
     width: WINDOW.width,
@@ -11,11 +21,22 @@ export function createWindowOptions(preloadPath: string): BrowserWindowConstruct
     minHeight: WINDOW.minHeight,
     show: false,
     autoHideMenuBar: true,
-    webPreferences: {
-      preload: preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
+    backgroundColor: WINDOW_BACKGROUND,
+    webPreferences: secureWebPreferences(preloadPath),
+  };
+}
+
+/** Opções da janela de Configurações. */
+export function createSettingsWindowOptions(preloadPath: string): BrowserWindowConstructorOptions {
+  return {
+    width: SETTINGS_WINDOW.width,
+    height: SETTINGS_WINDOW.height,
+    minWidth: SETTINGS_WINDOW.minWidth,
+    minHeight: SETTINGS_WINDOW.minHeight,
+    title: SETTINGS_WINDOW.title,
+    show: false,
+    autoHideMenuBar: true,
+    backgroundColor: WINDOW_BACKGROUND,
+    webPreferences: secureWebPreferences(preloadPath),
   };
 }

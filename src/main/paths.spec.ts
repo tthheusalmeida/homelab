@@ -27,8 +27,8 @@ describe('resolveBackEntry', () => {
 });
 
 describe('resolveFrontDist', () => {
-  it('when HOMELAB_FRONT_DIST_DIR is not set, should use ../front/dist', () => {
-    expect(resolveFrontDist(root, {})).toBe(path.resolve(root, '..', 'front', 'dist'));
+  it('when HOMELAB_FRONT_DIST_DIR is not set, should use dist-renderer inside the project', () => {
+    expect(resolveFrontDist(root, {})).toBe(path.join(root, 'dist-renderer'));
   });
 
   it('when HOMELAB_FRONT_DIST_DIR is set, should use it', () => {

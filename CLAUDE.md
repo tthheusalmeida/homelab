@@ -26,15 +26,21 @@ Estado: **migração em andamento, por fases**. Ver `docs/migracao.md`.
 Regras de negócio (biblioteca, jobs, IA, vídeo) continuam documentadas em `back/doc/` e `front/doc/`. Não duplique aqui; ao tocar nesses repos, leia o `CLAUDE.md` de cada um.
 
 ## Comandos
-- `npm run dev` — compila back e main, sobe o front (Vite) e abre o Electron apontando para ele
-- `npm start` — build completo (back, front, main) e abre o app com o front estático
-- `npm run build` / `build:back` / `build:front` / `build:main`
+- `npm run dev` — compila back e main e sobe: Vite do app principal (5173), Vite das Configurações (5174) e o Electron
+- `npm start` — build completo (back, renderer, main) e abre o app com os arquivos estáticos (`dist-renderer`)
+- `npm run build` / `build:back` / `build:renderer` (`:main`, `:settings`) / `build:main`
 - `npm test` (Jest, `src/**/*.spec.ts`) / `npm run test:watch` / `npm run test:cov`
+- `npm run test:renderer` (Vitest do front, `renderer/**/*.test.tsx`) / `npm run typecheck:renderer`
+- `npm run overrides:check` (cópias do desktop em dia com o front?) / `npm run overrides:update` (depois de reconciliar)
 - `npm run lint` / `npm run format`
 
 ## Mapa do código (alvo; criado ao longo das fases)
-- `src/main/` — `index.ts` (bootstrap), `constants.ts`, `paths.ts`, `front-target.ts`, `window-options.ts`, `navigation-guard.ts`, `static-files.ts` (protocolo `app://`), `back-runtime.ts`, `nest-host.ts`, `module-patch.ts`, `gemini-provider-factory.ts` (Nest do back no main sem editá-lo), `backend-ready.ts`, `composition.ts`, `electron-cipher.ts`
-- `src/preload/` — `contextBridge` expondo `window.api` tipado
+- `src/main/` — `index.ts` (bootstrap), `content-security-policy.ts`, `first-run.ts`, `shortcuts.ts`, `single-window.ts`, `constants.ts`, `paths.ts`, `front-target.ts`, `window-options.ts`, `navigation-guard.ts`, `static-files.ts` (protocolo `app://`), `back-runtime.ts`, `nest-host.ts`, `module-patch.ts`, `gemini-provider-factory.ts` (Nest do back no main sem editá-lo), `backend-ready.ts`, `composition.ts`, `electron-cipher.ts`
+- `src/preload/` — `bridge.ts` (ponte com lista de canais permitidos) e `index.ts` (`contextBridge` expõe `window.api`); empacotado com esbuild
+- `src/overrides/` — verificação (hash) das cópias do desktop contra o front (`overrides-lock.ts`, `cli.ts`)
+- `renderer/` — UI do desktop, **fora do `src/`**: `settings/` (janela de Configurações), `overrides/` (cópias de arquivos do front + `overrides.lock.json`), `vite/front-bridge.mts` (aliases, plugins e overrides do Vite), `ipc.ts` (cliente do `window.api`), `tsconfig.json` (para o editor)
+- `vite.renderer.main.config.mts`, `vite.renderer.settings.config.mts`, `vitest.renderer.config.mts`, `tsconfig.renderer.json` — build, testes e tipos do renderer (usam o Vite/Vitest/React do front)
+- `dist-renderer/` — saída do build do renderer (não versionada)
 - `src/shared/` — **contratos usados por main, preload e front**: `channels.ts` (`IpcChannels`), `errors.ts` (`IpcErrorCode`, `IpcError`), `result.ts` (`IpcResult`), `contracts/` (request/response por canal), `renderer-api.ts`, `ipc-client.ts` (cliente do front)
 - `src/ipc/` — `IpcHandler` (base, `routes()`), `IpcRegistrar`, `IpcErrorMapper`, `IpcMainLike`, `handlers/*.handler.ts` + `handlers/index.ts` (`createHandlers`), `testing/FakeIpcMain`
 - `src/settings/` — `SettingsStore`, `SecretStore` (`safeStorage`), validador, defaults, `DesktopAppConfig` (o `AppConfig` do back sobre o store), importação única do `.env`
@@ -51,6 +57,8 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) continuam documentadas em `bac
 - Segurança do renderer: `contextIsolation: true`, `nodeIntegration: false`; o preload expõe só métodos tipados, nunca `ipcRenderer`.
 - Durante a migração o Nest serve HTTP **e** IPC; cada domínio migrado troca só o `api.ts` do front de `fetch` para `window.api`. O HTTP só é removido na fase 9.
 - Imports relativos dentro de `desktop/src` (compilação com `tsc` puro, sem reescrita de alias).
+- **UI do desktop (`renderer/`)**: reaproveite os componentes do front por alias (`#ui/*`, `#components/*`, `#lib/*`) e siga as regras de componentes do `front/CLAUDE.md`; não duplique HTML/Tailwind solto. Pacotes (`react`, `lucide-react`…) vêm do front: **nunca instale React no desktop**.
+- **Arquivo do front que precisa mudar?** Não edite o front: copie para `renderer/overrides/`, registre em `overrides.lock.json` e rode `npm run overrides:update`. O teste de overrides avisa quando o front mudar.
 - Front: arquivos com CRLF e sem config do prettier; **não** rodar `prettier --write` em pastas, só em arquivos novos.
 
 ## Regra de entrega por fase (OBRIGATÓRIO)
@@ -64,6 +72,7 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) continuam documentadas em `bac
 - **Toda feature (nova ou alterada) vem com testes unitários na mesma entrega.** Sem teste, não está concluída; cubra caminho feliz, erros e casos de borda.
 - Teste ao lado do arquivo (`x.ts` → `x.spec.ts`).
 - **Nome de cada teste: `when <situação>, should <resultado>`.**
+- Componentes do `renderer/` são testados com Vitest (`npm run test:renderer`), mockando `window.api` (`renderer/settings/src/testing.ts`), nome `when ..., should ...`.
 - Handlers são testados com `FakeIpcMain` (registrados via `IpcRegistrar`) e service mockado, sem Electron real.
 - Não chamar serviços reais (rede, ffmpeg, Whisper, Gemini, Ollama) em testes: use mocks.
 - Se uma mudança quebrar um teste, decida se é regressão (corrija o código) ou mudança de regra (atualize teste **e** `docs/`).

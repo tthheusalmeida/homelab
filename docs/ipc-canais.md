@@ -2,18 +2,20 @@
 
 Origem: os 37 endpoints HTTP atuais (`/api/v1`) + os canais novos de app, settings e providers. Convenção: `<domínio>:<ação>`; payload e retorno seguem o DTO/rota atual (ver `back/doc/`). Todos respondem `IpcResult<T>` (ver `arquitetura.md`). Status de cada grupo em `migracao.md`.
 
-## app (fases 02 e 03a; `app:open-settings` na 03b)
+## app (fases 02, 03a e 03b)
 | Canal | Payload | Retorno |
 |---|---|---|
 | `app:ping` | — | `"pong"` |
 | `app:version` | — | versão do app |
 | `app:relaunch` | — | nada (reinicia o app para aplicar configuração) |
+| `app:open-settings` | — | nada (abre ou foca a janela de Configurações) |
 
-## settings (fase 03a, novos)
+## settings (fases 03a e 03b, novos)
 | Canal | Payload | Retorno |
 |---|---|---|
 | `settings:get` | — | `{ libraryDir, inboxDir, videoTempDir, audioTempDir }` |
 | `settings:update` | parte das pastas (`Partial`) | `{ value: pastas, restartRequired }`; pasta inválida → `VALIDATION` |
+| `settings:pick-folder` | `{ defaultPath? }` | pasta escolhida no seletor do sistema, ou `null` se cancelar |
 
 ## providers externos (fase 03a, novos)
 | Canal | Payload | Retorno |

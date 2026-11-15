@@ -17,12 +17,14 @@ function register(...handlers: Parameters<IpcRegistrar['register']>[0]) {
   return ipc;
 }
 
+const picker = (result: string | null = null) => ({ pick: jest.fn().mockResolvedValue(result) });
+
 describe('SettingsHandler', () => {
   const paths = { libraryDir: '/l', inboxDir: '/i', videoTempDir: '/v', audioTempDir: '/a' };
 
   it('when settings:get is called, should answer the paths from the service', async () => {
     const service = { getPaths: jest.fn().mockReturnValue(paths) } as unknown as SettingsService;
-    const ipc = register(new SettingsHandler(service));
+    const ipc = register(new SettingsHandler(service, picker()));
 
     await expect(ipc.invoke(IpcChannels.settings.get)).resolves.toEqual({ ok: true, data: paths });
   });
@@ -30,7 +32,9 @@ describe('SettingsHandler', () => {
   it('when settings:update is called, should pass the patch and answer the save result', async () => {
     const result = { value: paths, restartRequired: true };
     const updatePaths = jest.fn().mockReturnValue(result);
-    const ipc = register(new SettingsHandler({ updatePaths } as unknown as SettingsService));
+    const ipc = register(
+      new SettingsHandler({ updatePaths } as unknown as SettingsService, picker()),
+    );
 
     await expect(ipc.invoke(IpcChannels.settings.update, { libraryDir: '/x' })).resolves.toEqual({
       ok: true,
@@ -43,12 +47,46 @@ describe('SettingsHandler', () => {
     const updatePaths = jest.fn(() => {
       throw new IpcError(IpcErrorCode.VALIDATION, 'Informe a pasta da biblioteca.');
     });
-    const ipc = register(new SettingsHandler({ updatePaths } as unknown as SettingsService));
+    const ipc = register(
+      new SettingsHandler({ updatePaths } as unknown as SettingsService, picker()),
+    );
 
     await expect(ipc.invoke(IpcChannels.settings.update, { libraryDir: '' })).resolves.toEqual({
       ok: false,
       error: { code: 'VALIDATION', message: 'Informe a pasta da biblioteca.' },
     });
+  });
+});
+
+describe('SettingsHandler folder picker', () => {
+  const service = {} as unknown as SettingsService;
+
+  it('when settings:pick-folder is called, should answer the chosen folder and pass the default path', async () => {
+    const folderPicker = picker('D:/escolhida');
+    const ipc = register(new SettingsHandler(service, folderPicker));
+
+    await expect(
+      ipc.invoke(IpcChannels.settings.pickFolder, { defaultPath: 'D:/atual' }),
+    ).resolves.toEqual({ ok: true, data: 'D:/escolhida' });
+    expect(folderPicker.pick).toHaveBeenCalledWith('D:/atual');
+  });
+
+  it('when the user cancels the dialog, should answer null', async () => {
+    const ipc = register(new SettingsHandler(service, picker(null)));
+
+    await expect(ipc.invoke(IpcChannels.settings.pickFolder, {})).resolves.toEqual({
+      ok: true,
+      data: null,
+    });
+  });
+
+  it('when called without a payload, should still open the dialog', async () => {
+    const folderPicker = picker('D:/x');
+    const ipc = register(new SettingsHandler(service, folderPicker));
+
+    await ipc.invoke(IpcChannels.settings.pickFolder);
+
+    expect(folderPicker.pick).toHaveBeenCalledWith(undefined);
   });
 });
 

@@ -13,9 +13,9 @@ export function resolveBackEntry(backDir: string): string {
   return path.join(backDir, ...BACK_ENTRY_RELATIVE_PATH);
 }
 
-/** Pasta do build do front: `HOMELAB_FRONT_DIST_DIR` ou `../front/dist`. */
+/** Pasta do build do renderer: `HOMELAB_FRONT_DIST_DIR` ou `dist-renderer` do desktop. */
 export function resolveFrontDist(projectRoot: string, env: Env): string {
-  return env[MainEnv.FRONT_DIST_DIR] ?? path.resolve(projectRoot, '..', 'front', 'dist');
+  return env[MainEnv.FRONT_DIST_DIR] ?? path.join(projectRoot, 'dist-renderer');
 }
 
 /** `.env` antigo do back, usado só para importar a configuração na primeira execução (dev). */

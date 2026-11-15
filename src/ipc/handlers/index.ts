@@ -6,10 +6,11 @@ import type { IpcHandler } from '../ipc-handler';
 import { AppHandler, type AppInfo } from './app.handler';
 import { ExternalProvidersHandler } from './external-providers.handler';
 import { LocalProvidersHandler } from './local-providers.handler';
-import { SettingsHandler } from './settings.handler';
+import { SettingsHandler, type FolderPicker } from './settings.handler';
 
 export interface HandlerDeps {
   appInfo: AppInfo;
+  folderPicker: FolderPicker;
   settings: SettingsService;
   externalProviders: ExternalProvidersService;
   localProviders: LocalProvidersService;
@@ -19,7 +20,7 @@ export interface HandlerDeps {
 export function createHandlers(deps: HandlerDeps): IpcHandler[] {
   return [
     new AppHandler(deps.appInfo),
-    new SettingsHandler(deps.settings),
+    new SettingsHandler(deps.settings, deps.folderPicker),
     new ExternalProvidersHandler(deps.externalProviders),
     new LocalProvidersHandler(deps.localProviders),
   ];

@@ -32,15 +32,15 @@ export class ExternalProvidersService {
     this.definitions = new Map(definitions.map((definition) => [definition.id, definition]));
   }
 
-  list(): ExternalProviderInfo[] {
-    return [...this.definitions.values()].map((definition) => this.info(definition));
+  list(): Promise<ExternalProviderInfo[]> {
+    return Promise.all([...this.definitions.values()].map((definition) => this.info(definition)));
   }
 
-  get(id: ExternalProviderId): ExternalProviderInfo {
+  async get(id: ExternalProviderId): Promise<ExternalProviderInfo> {
     return this.info(this.definition(id));
   }
 
-  save(id: ExternalProviderId, apiKey: string): ExternalProviderSaveResult {
+  async save(id: ExternalProviderId, apiKey: string): Promise<ExternalProviderSaveResult> {
     const definition = this.definition(id);
     const key = apiKey?.trim();
 
@@ -48,16 +48,16 @@ export class ExternalProvidersService {
       throw new IpcError(IpcErrorCode.VALIDATION, ExternalProviderMessages.apiKeyRequired);
     }
 
-    const changed = this.secrets.get(definition.secretKey) !== key;
+    const changed = (await this.secrets.get(definition.secretKey)) !== key;
 
-    this.secrets.set(definition.secretKey, key);
+    await this.secrets.set(definition.secretKey, key);
 
-    return { value: this.info(definition), restartRequired: changed };
+    return { value: await this.info(definition), restartRequired: changed };
   }
 
   async test(id: ExternalProviderId, apiKey?: string): Promise<ProviderTestResult> {
     const definition = this.definition(id);
-    const key = apiKey?.trim() || this.secrets.get(definition.secretKey);
+    const key = apiKey?.trim() || (await this.secrets.get(definition.secretKey));
 
     if (!key) {
       return { ok: false, message: ExternalProviderMessages.apiKeyRequired };
@@ -82,8 +82,8 @@ export class ExternalProvidersService {
     return definition;
   }
 
-  private info(definition: ExternalProviderDefinition): ExternalProviderInfo {
-    const key = this.secrets.get(definition.secretKey);
+  private async info(definition: ExternalProviderDefinition): Promise<ExternalProviderInfo> {
+    const key = await this.secrets.get(definition.secretKey);
 
     return {
       id: definition.id,

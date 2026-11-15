@@ -25,6 +25,21 @@ desktop/
 - `main/composition.ts` monta stores e serviços de configuração com dependências injetadas; `main/index.ts` só faz a cola com o Electron.
 - Os services do back leem a configuração **uma vez**, na criação; por isso mudar configuração exige reiniciar o app (`app:relaunch`).
 
+## Renderer do desktop (sem editar o front)
+- O desktop compila o renderer com o **Vite do front** (`node ../front/node_modules/vite/bin/vite.js --config ...`), com as configs no desktop. Pacotes e plugins vêm de `front/node_modules`; React é uma só cópia.
+- **Dois builds, uma saída (`dist-renderer`):** o app principal (raiz em `front/`, com módulos trocados) e a janela de Configurações (raiz em `renderer/settings`, em `dist-renderer/settings/`). Em dev, dois servidores (5173 e 5174).
+- **`renderer/vite/front-bridge.mts`:** aliases (`#ui`, `#components`, `#lib`, `#hooks`, `@front`), `resolveFromFront` (pacotes dos arquivos do desktop saem do front) e `overrides` (troca um arquivo do front por uma cópia do desktop).
+- **Overrides:** `renderer/overrides/overrides.lock.json` registra cada arquivo trocado (`front → cópia`) e o hash do original. O teste `overrides-lock.spec.ts` e `npm run overrides:check` falham se o front mudar, apontando o arquivo a reconciliar; depois, `npm run overrides:update`.
+- **Hoje trocado:** `src/components/AppSidebar.tsx` (item "Configurações" no rodapé). As fases 04 a 08 acrescentam os `api.ts` migrados.
+- **Janelas:** `SingleWindowController` garante uma só janela de Configurações; `Ctrl+,`/`Cmd+,` (`shortcuts.ts`) abre de qualquer janela; abre sozinha na primeira execução sem chave do Gemini (`first-run.ts`).
+- **Tipos e testes do renderer:** `tsconfig.renderer.json` (paths explícitos para os pacotes do front), `renderer/tsconfig.json` (o mesmo, para o editor) e `vitest.renderer.config.mts` (Vitest e `setup.ts` do front).
+
+## Segurança de conteúdo (CSP)
+- `buildContentSecurityPolicy` (`src/main/content-security-policy.ts`) gera a política; **nunca** permite `unsafe-eval`.
+- **Build:** vai no cabeçalho da resposta do protocolo `app://` (`script-src 'self'`). **Dev:** o `webRequest.onHeadersReceived` troca o cabeçalho das páginas do Vite (permite `unsafe-inline` para o preâmbulo do React Refresh e as origens/WebSockets do HMR).
+- `connect-src` libera o HTTP local (`localhost` e `127.0.0.1`, porta do Nest) até a fase 09. `img-src` aceita `http:`/`https:` (imagens externas da biblioteca e capas de livros).
+- Se uma tela deixar de carregar um recurso, a causa provável é esta política; ajuste só a diretiva necessária e documente aqui.
+
 ## Nest como contêiner de DI
 - `NestFactory.createApplicationContext(AppModule)` no main. Os handlers recebem os services pelo construtor.
 - Os services do back não mudam de lugar nem de regra. Mudam só: `AppConfig` lê do `SettingsStore` e o `GeminiProvider` inicializa de forma tardia (sem chave, não derruba o boot).

@@ -13,7 +13,8 @@ describe('createHandlers', () => {
 
     new IpcRegistrar(ipc).register(
       createHandlers({
-        appInfo: { version: () => '0.0.1', relaunch: jest.fn() },
+        appInfo: { version: () => '0.0.1', relaunch: jest.fn(), openSettings: jest.fn() },
+        folderPicker: { pick: jest.fn() },
         settings: {} as SettingsService,
         externalProviders: {} as ExternalProvidersService,
         localProviders: {} as LocalProvidersService,

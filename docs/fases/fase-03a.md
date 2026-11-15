@@ -23,6 +23,7 @@ Trocar o `.env` por configuração guardada pelo app, com providers externos e l
 - **ffmpeg** só é testável: o back chama `ffmpeg` pelo PATH e não dá para configurar sem editá-lo. Entra como `editable: false`.
 - **Chave nunca volta em claro:** as respostas trazem só `configured` e a chave mascarada (`••••••••` + 4 últimos).
 - **Teste de conexão** aceita uma chave/config candidata antes de salvar. Falhas viram `{ ok: false, message }`, nunca exceção; a mensagem do Gemini é extraída do JSON da SDK.
+- **Cifragem assíncrona (ajustada na 03b):** o `SecretCipher` usa a API assíncrona do `safeStorage`; `SecretStore.get/set`, `ExternalProvidersService` e a importação do `.env` são assíncronos.
 - **Segredo ilegível** (ex.: outro usuário do Windows) conta como não configurado; `settings.json` corrompido vai para `.corrupt` e o app segue com os padrões.
 - **Dados isolados em testes e dev:** `HOMELAB_USER_DATA_DIR` aponta o `userData` para outra pasta.
 

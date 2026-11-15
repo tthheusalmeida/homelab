@@ -1,0 +1,77 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "allowArbitraryExtensions": true,
+    "esModuleInterop": true,
+    "types": [],
+    "typeRoots": [
+      "../front/node_modules/@types"
+    ],
+    "paths": {
+      "#components/*": [
+        "../front/src/components/*.tsx"
+      ],
+      "#ui/*": [
+        "../front/src/ui/*.tsx"
+      ],
+      "#lib/*": [
+        "../front/src/lib/*.ts"
+      ],
+      "#hooks/*": [
+        "../front/src/hooks/*.ts"
+      ],
+      "@front/*": [
+        "../front/src/*"
+      ],
+      "react": [
+        "../front/node_modules/@types/react"
+      ],
+      "react/*": [
+        "../front/node_modules/@types/react/*"
+      ],
+      "react-dom": [
+        "../front/node_modules/@types/react-dom"
+      ],
+      "react-dom/*": [
+        "../front/node_modules/@types/react-dom/*"
+      ],
+      "lucide-react": [
+        "../front/node_modules/lucide-react"
+      ],
+      "@tanstack/react-query": [
+        "../front/node_modules/@tanstack/react-query"
+      ],
+      "vitest": [
+        "../front/node_modules/vitest"
+      ],
+      "@testing-library/*": [
+        "../front/node_modules/@testing-library/*"
+      ],
+      "react-router": [
+        "../front/node_modules/react-router"
+      ]
+    }
+  },
+  "include": [
+    "renderer/**/*.ts",
+    "renderer/**/*.tsx",
+    "src/shared/**/*.ts"
+  ],
+  "exclude": [
+    "renderer/vite/**",
+    "src/**/*.spec.ts",
+    "src/**/testing/**"
+  ]
+}

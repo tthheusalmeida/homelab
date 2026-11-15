@@ -33,7 +33,15 @@ Toda feature (nova ou alterada) vem com testes unitários na mesma entrega. Cubr
 - Jest + ts-jest, `rootDir: src`, arquivos `*.spec.ts` (config no bloco `jest` do `package.json`).
 - `npm run lint` e `npm run format` (prettier usa o `.editorconfig`: 2 espaços, 100 colunas).
 
+## Testes do renderer (Vitest do front)
+- `npm run test:renderer` roda `renderer/**/*.test.tsx` com o Vitest, o jsdom e o `setup.ts` do front (config em `vitest.renderer.config.mts`). `npm run typecheck:renderer` confere os tipos.
+- Componentes são testados com `renderWithQuery` (`@front/test/utils`) e `window.api` falso (`mockApi`, `ok`, `failure` e `payloadsOf` em `renderer/settings/src/testing.ts`). Nome: `when ..., should ...`.
+- Teste e tipos usam sempre as cópias de pacotes do front (`front/node_modules`); o desktop não instala React.
+- `npm run overrides:check` (e o teste Jest `overrides-lock.spec.ts`) falha quando o `front` muda um arquivo que o desktop copiou.
+
 ## Cobertura atual
+Fase 03b: janela de Configurações (opções), controle de janela única, atalho, abertura automática, `FolderPicker`, mecanismo de overrides, CSP e `SecretStore` assíncrono (Jest, 220 testes no total); cards recolhíveis, snackbar, seções e cópia do `AppSidebar` (Vitest, 52 testes).
+
 Fase 03a: settings (store, validador, segredos, importação do .env, config do back), serviços e definições de providers, handlers, patch de módulo, fábrica do Gemini, BackRuntime e composição (173 testes no total).
 
 Fase 02: canais, erros, resultado, cliente do front, mapper, registrar, handler base, `AppHandler`, cobertura de canais e ponte do preload (61 testes no total).

@@ -8,6 +8,7 @@ Primeiros domínios por IPC, só leitura, para validar a ponte de ponta a ponta.
 ## Escopo
 - Handlers: `HealthHandler` (`health:system`, `health:ai`) e `AiHandler` (`ai:providers`, `ai:models`, `ai:thinking`, `ai:usage`).
 - Front: trocar o corpo dos `api` de Home (health, hoje `fetch` direto), chat (providers/models/thinking) e usage. Assinaturas e hooks iguais.
+- **Sem editar o front:** cada `api.ts` trocado vira uma cópia em `renderer/overrides/` (mesmas assinaturas, corpo por IPC), registrada em `overrides.lock.json` (ver `arquitetura.md`, "Renderer do desktop"). O mecanismo foi criado na fase 03b.
 - Atualizar `front/doc/lib.md`, `front/doc/home.md` e `docs/ipc-canais.md` se algo mudar.
 
 ## Testes unitários

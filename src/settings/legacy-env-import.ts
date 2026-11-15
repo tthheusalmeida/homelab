@@ -16,13 +16,13 @@ export interface LegacyEnvImportDeps {
  * (arquivo ilegível, valor inválido, sem criptografia) é ignorado: o app abre com os padrões.
  * Some junto com o `.env` na fase 09.
  */
-export function importLegacyEnv({
+export async function importLegacyEnv({
   settings,
   secrets,
   envFile,
   exists,
   readFile,
-}: LegacyEnvImportDeps): boolean {
+}: LegacyEnvImportDeps): Promise<boolean> {
   if (!settings.isFirstRun() || !exists(envFile)) {
     return false;
   }
@@ -33,7 +33,7 @@ export function importLegacyEnv({
     settings.update(seed.settings);
 
     if (seed.geminiApiKey) {
-      secrets.set('gemini.apiKey', seed.geminiApiKey);
+      await secrets.set('gemini.apiKey', seed.geminiApiKey);
     }
 
     return true;

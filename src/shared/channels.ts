@@ -9,10 +9,12 @@ export const IpcChannels = {
     ping: 'app:ping',
     version: 'app:version',
     relaunch: 'app:relaunch',
+    openSettings: 'app:open-settings',
   },
   settings: {
     get: 'settings:get',
     update: 'settings:update',
+    pickFolder: 'settings:pick-folder',
   },
   providers: {
     external: {

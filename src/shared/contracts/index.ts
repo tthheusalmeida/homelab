@@ -21,11 +21,18 @@ export interface IpcContracts {
   [IpcChannels.app.ping]: { request: void; response: 'pong' };
   [IpcChannels.app.version]: { request: void; response: string };
   [IpcChannels.app.relaunch]: { request: void; response: void };
+  [IpcChannels.app.openSettings]: { request: void; response: void };
 
   [IpcChannels.settings.get]: { request: void; response: SettingsPaths };
   [IpcChannels.settings.update]: {
     request: Partial<SettingsPaths>;
     response: SaveResult<SettingsPaths>;
+  };
+
+  /** Abre o seletor de pasta do sistema; `null` se o usuário cancelar. */
+  [IpcChannels.settings.pickFolder]: {
+    request: { defaultPath?: string };
+    response: string | null;
   };
 
   [IpcChannels.providers.external.list]: { request: void; response: ExternalProviderInfo[] };

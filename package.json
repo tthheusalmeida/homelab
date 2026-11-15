@@ -7,17 +7,23 @@
   "main": "dist/main/index.js",
   "scripts": {
     "build:back": "npm --prefix ../back run build",
-    "build:front": "npm --prefix ../front run build",
     "build:main": "tsc -p tsconfig.build.json && npm run build:preload",
-    "build": "npm run build:back && npm run build:front && npm run build:main",
+    "build": "npm run build:back && npm run build:renderer && npm run build:main",
     "start": "npm run build && electron .",
-    "dev": "npm run build:back && npm run build:main && concurrently -k -n front,app \"npm --prefix ../front run dev\" \"wait-on tcp:5173 && cross-env HOMELAB_FRONT_URL=http://localhost:5173 electron .\"",
+    "dev": "npm run build:back && npm run build:main && concurrently -k -n main,settings,app \"node ../front/node_modules/vite/bin/vite.js --config vite.renderer.main.config.mts\" \"node ../front/node_modules/vite/bin/vite.js --config vite.renderer.settings.config.mts\" \"wait-on tcp:5173 tcp:5174 && cross-env HOMELAB_FRONT_URL=http://localhost:5173 HOMELAB_SETTINGS_URL=http://localhost:5174 electron .\"",
     "lint": "eslint \"src/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/preload/index.js"
+    "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/preload/index.js",
+    "build:renderer:main": "node ../front/node_modules/vite/bin/vite.js build --config vite.renderer.main.config.mts",
+    "build:renderer:settings": "node ../front/node_modules/vite/bin/vite.js build --config vite.renderer.settings.config.mts",
+    "build:renderer": "npm run build:renderer:main && npm run build:renderer:settings",
+    "test:renderer": "node ../front/node_modules/vitest/vitest.mjs run --config vitest.renderer.config.mts",
+    "typecheck:renderer": "tsc -p tsconfig.renderer.json",
+    "overrides:check": "npm run build:main && node dist/overrides/cli.js check",
+    "overrides:update": "npm run build:main && node dist/overrides/cli.js update"
   },
   "jest": {
     "moduleFileExtensions": [

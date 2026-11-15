@@ -5,6 +5,10 @@ export const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
 export const APP_ENTRY_URL = `${APP_ORIGIN}/`;
 export const INDEX_FILE = 'index.html';
 
+/** Janela de Configurações: no build vive em app://front/settings/; em dev, no servidor do Vite dela. */
+export const SETTINGS_BUILD_PATH = '/settings/index.html';
+export const DEFAULT_SETTINGS_DEV_URL = 'http://localhost:5174';
+
 /** Variáveis de ambiente lidas pelo main (todas opcionais, exceto onde dito). */
 export const MainEnv = {
   FRONT_URL: 'HOMELAB_FRONT_URL',
@@ -13,6 +17,7 @@ export const MainEnv = {
   PORT: 'PORT',
   CORS_ORIGIN: 'CORS_ORIGIN',
   USER_DATA_DIR: 'HOMELAB_USER_DATA_DIR',
+  SETTINGS_URL: 'HOMELAB_SETTINGS_URL',
 } as const;
 
 /** Arquivos de dados do usuário (dentro de userData). */
@@ -32,6 +37,17 @@ export const BACK_ENTRY_RELATIVE_PATH = ['dist', 'main.js'] as const;
 
 /** Espera pelo back antes de abrir a janela. */
 export const BACKEND_WAIT = { retries: 60, delayMs: 500 } as const;
+
+/** Fundo escuro igual ao do tema, para a janela não piscar branca ao abrir. */
+export const WINDOW_BACKGROUND = '#0a0a0a';
+
+export const SETTINGS_WINDOW = {
+  width: 1000,
+  height: 740,
+  minWidth: 780,
+  minHeight: 560,
+  title: 'Configurações',
+} as const;
 
 export const WINDOW = {
   width: 1280,

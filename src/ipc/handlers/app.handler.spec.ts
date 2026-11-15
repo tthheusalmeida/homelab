@@ -6,7 +6,11 @@ import { AppHandler } from './app.handler';
 
 function setup() {
   const ipc = new FakeIpcMain();
-  const appInfo = { version: jest.fn().mockReturnValue('0.0.1'), relaunch: jest.fn() };
+  const appInfo = {
+    version: jest.fn().mockReturnValue('0.0.1'),
+    relaunch: jest.fn(),
+    openSettings: jest.fn(),
+  };
   new IpcRegistrar(ipc).register([new AppHandler(appInfo)]);
 
   return { ipc, appInfo };
@@ -36,6 +40,13 @@ describe('AppHandler', () => {
     expect(appInfo.relaunch).toHaveBeenCalledTimes(1);
   });
 
+  it('when app:open-settings is called, should ask AppInfo to open the settings window', async () => {
+    const { ipc, appInfo } = setup();
+
+    await expect(ipc.invoke(IpcChannels.app.openSettings)).resolves.toMatchObject({ ok: true });
+    expect(appInfo.openSettings).toHaveBeenCalledTimes(1);
+  });
+
   it('when AppInfo fails, should answer a failed envelope instead of rejecting', async () => {
     const ipc = new FakeIpcMain();
     const appInfo = {
@@ -43,6 +54,7 @@ describe('AppHandler', () => {
         throw new Error('sem versão');
       },
       relaunch: jest.fn(),
+      openSettings: jest.fn(),
     };
     new IpcRegistrar(ipc).register([new AppHandler(appInfo)]);
 

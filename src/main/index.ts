@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
-import { app, BrowserWindow, dialog, ipcMain, net, protocol, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell } from 'electron';
 
 import { createHandlers } from '../ipc/handlers';
 import { IpcRegistrar } from '../ipc/ipc-registrar';
@@ -14,6 +14,7 @@ import { importLegacyEnv } from '../settings/legacy-env-import';
 import { BackRuntime } from './back-runtime';
 import { waitForBackend } from './backend-ready';
 import { createServices } from './composition';
+import { applyCspHeader, buildContentSecurityPolicy, CSP_HEADER } from './content-security-policy';
 import {
   API_PREFIX,
   APP_ORIGIN,
@@ -26,12 +27,15 @@ import {
   Messages,
 } from './constants';
 import { electronCipher } from './electron-cipher';
+import { needsInitialSetup } from './first-run';
 import { resolveFrontTarget, type FrontTarget } from './front-target';
 import { classifyNavigation } from './navigation-guard';
 import { NestHost } from './nest-host';
 import { resolveBackDir, resolveFrontDist, resolveLegacyEnvFile } from './paths';
+import { isSettingsShortcut } from './shortcuts';
+import { SingleWindowController } from './single-window';
 import { resolveStaticFile } from './static-files';
-import { createWindowOptions } from './window-options';
+import { createSettingsWindowOptions, createWindowOptions } from './window-options';
 
 const run = promisify(execFile);
 
@@ -60,17 +64,37 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 let mainWindow: BrowserWindow | null = null;
+let settingsWindow: SingleWindowController<BrowserWindow> | null = null;
 
-function registerAppProtocol(distDir: string): void {
-  protocol.handle(APP_SCHEME, (request) => {
+/** Serve o build do renderer em `app://front`, com a política de segurança de conteúdo. */
+function registerAppProtocol(distDir: string, policy: string): void {
+  protocol.handle(APP_SCHEME, async (request) => {
     const file = resolveStaticFile(distDir, request.url, fs.existsSync);
 
     if (!file) {
       return new Response('Not found', { status: 404 });
     }
 
-    return net.fetch(pathToFileURL(file).toString());
+    const response = await net.fetch(pathToFileURL(file).toString());
+    const headers = new Headers(response.headers);
+    headers.set(CSP_HEADER, policy);
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
   });
+}
+
+/** No dev as páginas vêm dos servidores do Vite: a política entra pelos cabeçalhos da resposta. */
+function applyDevPolicy(target: FrontTarget, policy: string): void {
+  session.defaultSession.webRequest.onHeadersReceived(
+    { urls: [`${target.origin}/*`, `${target.settingsOrigin}/*`] },
+    (details, callback) => {
+      callback({ responseHeaders: applyCspHeader(details.responseHeaders ?? {}, policy) });
+    },
+  );
 }
 
 function apiPort(): string {
@@ -81,17 +105,8 @@ function healthUrl(): string {
   return `http://127.0.0.1:${apiPort()}/${API_PREFIX}/${HEALTH_PATH}`;
 }
 
-function createMainWindow(target: FrontTarget): void {
-  const window = new BrowserWindow(createWindowOptions(preloadPath));
-  mainWindow = window;
-
-  window.once('ready-to-show', () => window.show());
-  window.on('closed', () => {
-    mainWindow = null;
-  });
-
-  const allowedOrigins = [target.origin];
-
+/** Navegação só dentro das origens do app; links externos abrem no navegador do sistema. */
+function guardWindow(window: BrowserWindow, allowedOrigins: string[]): void {
   window.webContents.on('will-navigate', (event, url) => {
     const decision = classifyNavigation(url, allowedOrigins);
 
@@ -114,6 +129,25 @@ function createMainWindow(target: FrontTarget): void {
     return { action: 'deny' };
   });
 
+  window.webContents.on('before-input-event', (event, input) => {
+    if (isSettingsShortcut(input)) {
+      event.preventDefault();
+      settingsWindow?.open();
+    }
+  });
+}
+
+function createMainWindow(target: FrontTarget): void {
+  const window = new BrowserWindow(createWindowOptions(preloadPath));
+  mainWindow = window;
+
+  window.once('ready-to-show', () => window.show());
+  window.on('closed', () => {
+    mainWindow = null;
+  });
+
+  guardWindow(window, [target.origin, target.settingsOrigin]);
+
   if (target.kind === 'dev') {
     window.webContents.openDevTools({ mode: 'detach' });
   }
@@ -121,7 +155,17 @@ function createMainWindow(target: FrontTarget): void {
   void window.loadURL(target.url);
 }
 
-async function startCore(target: FrontTarget): Promise<void> {
+function createSettingsWindow(target: FrontTarget): BrowserWindow {
+  const window = new BrowserWindow(createSettingsWindowOptions(preloadPath));
+
+  window.once('ready-to-show', () => window.show());
+  guardWindow(window, [target.origin, target.settingsOrigin]);
+  void window.loadURL(target.settingsUrl);
+
+  return window;
+}
+
+async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> {
   const backDir = resolveBackDir(projectRoot, process.env);
   const runtime = new BackRuntime(backDir);
 
@@ -144,8 +188,10 @@ async function startCore(target: FrontTarget): Promise<void> {
     },
   });
 
+  const firstRun = services.settings.isFirstRun();
+
   if (!app.isPackaged) {
-    importLegacyEnv({
+    await importLegacyEnv({
       settings: services.settings,
       secrets: services.secrets,
       envFile: resolveLegacyEnvFile(backDir),
@@ -156,7 +202,7 @@ async function startCore(target: FrontTarget): Promise<void> {
 
   await new NestHost(runtime).start({
     appConfig: new DesktopAppConfig(services.settings.get(), target.origin),
-    geminiApiKey: services.secrets.get('gemini.apiKey'),
+    geminiApiKey: await services.secrets.get('gemini.apiKey'),
     corsOrigin: target.origin,
     port: apiPort(),
   });
@@ -176,12 +222,34 @@ async function startCore(target: FrontTarget): Promise<void> {
           }
           app.exit(0);
         },
+        openSettings: () => {
+          settingsWindow?.open();
+        },
+      },
+      folderPicker: {
+        pick: async (defaultPath) => {
+          const options = {
+            properties: ['openDirectory', 'createDirectory'] as Array<
+              'openDirectory' | 'createDirectory'
+            >,
+            defaultPath,
+          };
+          const parent = BrowserWindow.getFocusedWindow();
+          const result = parent
+            ? await dialog.showOpenDialog(parent, options)
+            : await dialog.showOpenDialog(options);
+
+          return result.canceled ? null : (result.filePaths[0] ?? null);
+        },
       },
       settings: services.settingsService,
       externalProviders: services.externalProviders,
       localProviders: services.localProviders,
     }),
   );
+
+  // Primeira execução sem chave do Gemini: leva o usuário direto às Configurações.
+  return { needsSetup: needsInitialSetup(firstRun, services.secrets.has('gemini.apiKey')) };
 }
 
 async function bootstrap(): Promise<void> {
@@ -206,6 +274,14 @@ async function bootstrap(): Promise<void> {
   try {
     const target = resolveFrontTarget(process.env, APP_ORIGIN);
 
+    settingsWindow = new SingleWindowController(() => createSettingsWindow(target));
+
+    const policy = buildContentSecurityPolicy({
+      mode: target.kind,
+      apiPort: apiPort(),
+      devOrigins: target.kind === 'dev' ? [target.origin, target.settingsOrigin] : [],
+    });
+
     if (target.kind === 'build') {
       const distDir = resolveFrontDist(projectRoot, process.env);
 
@@ -213,11 +289,18 @@ async function bootstrap(): Promise<void> {
         throw new Error(Messages.frontDistMissing);
       }
 
-      registerAppProtocol(distDir);
+      registerAppProtocol(distDir, policy);
+    } else {
+      applyDevPolicy(target, policy);
     }
 
-    await startCore(target);
+    const { needsSetup } = await startCore(target);
+
     createMainWindow(target);
+
+    if (needsSetup) {
+      settingsWindow.open();
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 

@@ -1,16 +1,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { fakeCipher } from '../settings/secret-cipher.testing';
 import { makeTempDir, removeDir } from '../settings/settings.testing';
-import type { SecretCipher } from '../settings/secret-store';
 
 import { createServices } from './composition';
-
-const cipher: SecretCipher = {
-  isAvailable: () => true,
-  encrypt: (plain) => Buffer.from(plain).toString('base64'),
-  decrypt: (encrypted) => Buffer.from(encrypted, 'base64').toString(),
-};
 
 describe('createServices', () => {
   let userData: string;
@@ -23,7 +17,7 @@ describe('createServices', () => {
       projectRoot: path.resolve('/projeto/desktop'),
       platform: 'win32',
       arch: 'x64',
-      cipher,
+      cipher: fakeCipher(),
       exists: () => true,
       fetchFn: () => Promise.resolve({ ok: true, status: 200 }),
       ffmpegVersion: () => Promise.resolve('ffmpeg version 7'),
@@ -56,11 +50,11 @@ describe('createServices', () => {
     expect(settings.get().local.whisper.executable).toBe('whisper-cli.exe');
   });
 
-  it('when saving through the services, should write settings.json and secrets.json in userData', () => {
+  it('when saving through the services, should write settings.json and secrets.json in userData', async () => {
     const services = create();
 
     services.settingsService.updatePaths({ libraryDir: path.resolve('/outra') });
-    services.externalProviders.save('gemini', 'AIza-chave-longa');
+    await services.externalProviders.save('gemini', 'AIza-chave-longa');
 
     expect(fs.existsSync(path.join(userData, 'settings.json'))).toBe(true);
     expect(fs.readFileSync(path.join(userData, 'secrets.json'), 'utf8')).not.toContain(
@@ -68,10 +62,10 @@ describe('createServices', () => {
     );
   });
 
-  it('when listing the providers, should expose gemini as external and whisper, ollama and ffmpeg as local', () => {
+  it('when listing the providers, should expose gemini as external and whisper, ollama and ffmpeg as local', async () => {
     const services = create();
 
-    expect(services.externalProviders.list().map((p) => p.id)).toEqual(['gemini']);
+    expect((await services.externalProviders.list()).map((p) => p.id)).toEqual(['gemini']);
     expect(services.localProviders.list().map((p) => p.id)).toEqual([
       'whisper',
       'ollama',

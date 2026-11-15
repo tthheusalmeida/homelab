@@ -6,9 +6,15 @@
 - O `.env` do back **não é mais lido pelo desktop**, exceto por uma importação única na primeira execução em desenvolvimento (para não redigitar tudo). Some na fase 09.
 - **Mudar configuração exige reiniciar o app**: os services do back leem tudo uma vez, ao serem criados. Toda gravação responde `restartRequired` e o canal `app:relaunch` reinicia.
 
+## Janela de Configurações
+- Abre pelo item **Configurações** no rodapé da barra lateral, por `Ctrl+,`/`Cmd+,` e sozinha na primeira execução sem chave do Gemini.
+- Seções: **Pastas** (com seletor de pasta do sistema), **IAs externas** (chave mascarada, Testar/Salvar) e **Serviços locais** (Whisper, Ollama e ffmpeg, só teste).
+- Cada provider é um item **recolhível**: fechado mostra nome, selo de status e uma descrição; clicar abre os campos.
+- "Salvo" aparece como **snackbar** no canto inferior direito (some em 3 s). Mostra "Reiniciar agora" quando uma gravação exige reinício. Código em `renderer/settings`.
+
 ## Armazenamento (`app.getPath('userData')`, ex.: `%APPDATA%\homelab-desktop`)
 - `settings.json`: pastas e providers locais. Escrita atômica; valores ausentes recebem o padrão; arquivo ilegível vai para `settings.json.corrupt`.
-- `secrets.json`: chaves de API **cifradas** com `safeStorage` (DPAPI no Windows, Keychain no macOS, libsecret no Linux). Sem criptografia disponível, o app recusa salvar. Segredo que não decifra conta como não configurado.
+- `secrets.json`: chaves de API **cifradas** com `safeStorage` (DPAPI no Windows, Keychain no macOS, libsecret no Linux), pela API **assíncrona** (`encryptStringAsync`/`decryptStringAsync`; a síncrona está obsoleta). Se o sistema trocar a chave de criptografia (`shouldReEncrypt`), o segredo é regravado. Sem criptografia disponível, o app recusa salvar. Segredo que não decifra conta como não configurado.
 - O renderer **nunca** recebe a chave: só `configured` e a versão mascarada (`••••••••` + 4 últimos caracteres).
 - `HOMELAB_USER_DATA_DIR` aponta o `userData` para outra pasta (testes e desenvolvimento).
 

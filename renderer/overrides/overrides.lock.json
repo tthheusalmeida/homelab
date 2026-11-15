@@ -1,0 +1,6 @@
+{
+  "src/components/AppSidebar.tsx": {
+    "override": "renderer/overrides/AppSidebar.tsx",
+    "sha256": "636319903bd69eda5b7af9c81dbe07e3641537f95713b32686f2f15cd6f8c4f6"
+  }
+}
