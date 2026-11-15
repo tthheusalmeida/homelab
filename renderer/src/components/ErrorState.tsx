@@ -1,3 +1,4 @@
+import { HexFrame } from "#components/Hex";
 import { Button } from "#ui/button";
 import { CircleAlert, RefreshCcw } from "lucide-react";
 
@@ -16,9 +17,9 @@ export function ErrorState({
 }: ErrorStateProps) {
   return (
     <div className="flex animate-enter flex-col items-center justify-center gap-2 text-center">
-      <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-red-500">
-        <CircleAlert className="size-6 text-white" />
-      </div>
+      <HexFrame className="mb-2 text-destructive">
+        <CircleAlert className="size-5" />
+      </HexFrame>
 
       <p className="text-sm font-semibold text-primary mt-2">
         {primaryMessage}

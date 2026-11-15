@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import type { LucideIcon } from "lucide-react";
 
+import { HexFrame } from "#components/Hex";
+
 interface EmptyStateProps {
   icon?: LucideIcon;
   title: string;
@@ -18,9 +20,9 @@ export function EmptyState({
   return (
     <div className="flex animate-enter flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-6 py-12 text-center">
       {Icon && (
-        <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-muted">
-          <Icon className="size-5 text-muted-foreground" />
-        </div>
+        <HexFrame className="mb-2">
+          <Icon className="size-5" />
+        </HexFrame>
       )}
 
       <p className="text-sm font-semibold">{title}</p>

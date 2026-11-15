@@ -1,26 +1,33 @@
+import { HexLoader } from "#components/Hex";
+import { cn } from "#lib/utils";
+
 interface LoadingStateProps {
   message: string;
   loading?: boolean;
+  /** Pequeno e na linha do texto (ex.: "Pensando" no chat); por padrão fica empilhado e maior. */
+  inline?: boolean;
 }
 
-export function LoadingState({ message, loading = true }: LoadingStateProps) {
+export function LoadingState({
+  message,
+  loading = true,
+  inline = false,
+}: LoadingStateProps) {
   return (
-    <div className="flex animate-enter-fade items-center gap-1 text-sm text-muted-foreground">
-      <span>{message}</span>
-
-      {loading && (
-        <span className="flex gap-0.5">
-          {[0, 150, 300].map((delay) => (
-            <span
-              key={delay}
-              className="animate-bounce"
-              style={{ animationDelay: `${delay}ms` }}
-            >
-              .
-            </span>
-          ))}
-        </span>
+    <div
+      className={cn(
+        "flex animate-enter-fade items-center text-sm text-muted-foreground",
+        inline ? "gap-2" : "flex-col gap-3",
       )}
+    >
+      {loading && (
+        <HexLoader
+          label={message}
+          className={cn("hex-loader", inline ? "size-5" : "size-12")}
+        />
+      )}
+
+      <span>{message}</span>
     </div>
   );
 }

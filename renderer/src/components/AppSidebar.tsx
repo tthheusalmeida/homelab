@@ -20,105 +20,92 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from '#ui/sidebar';
 
+import { Logo } from '#components/Hex';
 import { IpcChannels } from '#shared/channels';
 import { ipc } from '#lib/ipc';
 
-/** Navegação do app, com um item de Configurações no rodapé que abre a janela de Configurações do Electron. */
-const navigation = [
+/** Navegação do app. Ordem: HomeLab (Início), IA, Biblioteca e Tarefas; Configurações fica no rodapé. */
+export const navigation = [
   {
-    label: 'HomeLab',
+    // Sem rótulo: o logo do topo já diz "HomeLab".
+    label: '',
+    items: [{ title: 'Início', url: '/', icon: Home }],
+  },
+  {
+    label: 'IA',
     items: [
-      {
-        title: 'Início',
-        url: '/',
-        icon: Home,
-      },
+      { title: 'Conversa', url: '/ai/chat', icon: MessageSquare },
+      { title: 'Consumo', url: '/ai/usage', icon: Gauge },
     ],
   },
   {
     label: 'Biblioteca',
     items: [
-      {
-        title: 'Páginas',
-        url: '/library',
-        icon: Library,
-      },
-      {
-        title: 'Livros',
-        url: '/library/books',
-        icon: BookOpen,
-      },
-      {
-        title: 'Entrada',
-        url: '/library/inbox',
-        icon: Inbox,
-      },
-      {
-        title: 'Nova página',
-        url: '/library/new',
-        icon: FilePlus,
-      },
+      { title: 'Páginas', url: '/library', icon: Library },
+      { title: 'Livros', url: '/library/books', icon: BookOpen },
+      { title: 'Caixa de entrada', url: '/library/inbox', icon: Inbox },
+      { title: 'Nova página', url: '/library/new', icon: FilePlus },
     ],
   },
   {
-    label: 'AI',
+    label: 'Tarefas',
     items: [
-      {
-        title: 'Chat',
-        url: 'ai/chat',
-        icon: MessageSquare,
-      },
-      {
-        title: 'Uso',
-        url: 'ai/usage',
-        icon: Gauge,
-      },
-    ],
-  },
-  {
-    label: 'Jobs',
-    items: [
-      {
-        title: 'Criar',
-        url: 'jobs/create',
-        icon: LayersPlus,
-      },
-      {
-        title: 'Inspeção',
-        url: 'jobs/track',
-        icon: StepForward,
-      },
+      { title: 'Nova tarefa', url: '/jobs/create', icon: LayersPlus },
+      { title: 'Acompanhar', url: '/jobs/track', icon: StepForward },
     ],
   },
 ];
 
+/**
+ * Item do menu que representa a rota atual: o endereço mais específico que contém o caminho
+ * (ex.: `/library/books/abc` ativa "Livros", e `/library/new` ativa só "Nova página").
+ */
+export function findActiveUrl(pathname: string, urls: readonly string[]): string | null {
+  const matches = urls.filter(
+    (url) => pathname === url || (url !== '/' && pathname.startsWith(`${url}/`)),
+  );
+
+  return matches.sort((first, second) => second.length - first.length)[0] ?? null;
+}
+
+const navigationUrls = navigation.flatMap((group) => group.items.map((item) => item.url));
+
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const activeUrl = findActiveUrl(location.pathname, navigationUrls);
 
   return (
     <Sidebar>
+      <SidebarHeader>
+        <div className="flex items-center gap-2.5 px-2 pt-1 font-semibold tracking-tight select-none">
+          <Logo />
+          <span>HomeLab</span>
+        </div>
+      </SidebarHeader>
+
       <SidebarContent>
         {navigation.map((group) => (
           <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
 
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => {
-                  const isActive = location.pathname === item.url;
+                  const isActive = item.url === activeUrl;
 
                   return (
                     <SidebarMenuItem key={item.url}>
                       <SidebarMenuButton
                         isActive={isActive}
                         onClick={() => navigate(item.url)}
-                        className="select-none"
+                        className="select-none text-[13px] [&_svg]:size-[15px]"
                       >
                         <item.icon />
                         <span>{item.title}</span>
@@ -137,7 +124,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={() => void ipc.invoke(IpcChannels.app.openSettings)}
-              className="select-none"
+              className="select-none text-[13px] [&_svg]:size-[15px]"
             >
               <Settings />
               <span>Configurações</span>

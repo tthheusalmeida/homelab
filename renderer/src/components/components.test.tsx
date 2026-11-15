@@ -41,18 +41,24 @@ describe("ErrorState", () => {
 });
 
 describe("LoadingState", () => {
-  it("when loading (default), should show the message and three animated dots", () => {
+  it("when loading (default), should show the message and the animated hexagons", () => {
     render(<LoadingState message="Carregando" />);
 
     expect(screen.getByText("Carregando")).toBeInTheDocument();
-    expect(screen.getAllByText(".")).toHaveLength(3);
+    expect(screen.getByRole("img", { name: "Carregando" })).toHaveClass("hex-loader");
   });
 
   it("when loading is false, should show only the message", () => {
     render(<LoadingState message="Geração cancelada" loading={false} />);
 
     expect(screen.getByText("Geração cancelada")).toBeInTheDocument();
-    expect(screen.queryByText(".")).not.toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
+  it("when inline, should render the small loader next to the text", () => {
+    render(<LoadingState message="Pensando" inline />);
+
+    expect(screen.getByRole("img", { name: "Pensando" })).toHaveClass("size-5");
   });
 });
 

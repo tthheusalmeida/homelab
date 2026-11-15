@@ -17,6 +17,8 @@ interface MarkdownMessageProps {
   idPrefix?: string;
   /** Tamanho do texto: `sm` (padrão, chat) ou `base` (leitura em página). */
   size?: "sm" | "base";
+  /** `paper`: tinta escura sobre folha clara, mesmo no tema escuro (ver `PaperPage variant="sheet"`). */
+  tone?: "theme" | "paper";
   /** Classes extras no texto (ex.: tipografia de página). */
   className?: string;
 }
@@ -87,6 +89,7 @@ export function MarkdownMessage({
   headingIds,
   idPrefix,
   size = "sm",
+  tone = "theme",
   className,
 }: MarkdownMessageProps) {
   const mapping = useMemo(
@@ -100,7 +103,8 @@ export function MarkdownMessage({
   return (
     <div
       className={cn(
-        "prose max-w-none dark:prose-invert",
+        "prose max-w-none",
+        tone === "paper" ? "prose-stone" : "dark:prose-invert",
         size === "base" ? "prose-base" : "prose-sm",
         className,
       )}

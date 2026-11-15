@@ -1,13 +1,31 @@
 <!doctype html>
-<html lang="pt" class="dark">
+<html lang="pt">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HomeLab</title>
+    <script src="/theme-init.js"></script>
+    <style>
+      /* Crítico: fundo do tema e tamanho da colmeia antes de o CSS do app chegar (no dev ele vem por JS). */
+      html { background: #f1f1f1; }
+      html.dark { background: #1b1b1b; }
+      body { margin: 0; }
+      .boot-splash { display: flex; height: 100vh; align-items: center; justify-content: center; }
+      .boot-splash__mark { width: 4rem; height: 4rem; color: #22d3ee; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Colmeia carregando enquanto o app abre (o React troca este conteúdo ao montar). -->
+    <div id="root">
+      <div class="boot-splash">
+        <svg class="hex-loader boot-splash__mark" width="64" height="64" viewBox="0 0 48 48" role="img" aria-label="Carregando">
+        <path class="hex-cell" fill="currentColor" d="M24.00 8.90L29.72 12.20L29.72 18.80L24.00 22.10L18.28 18.80L18.28 12.20Z" />
+        <path class="hex-cell" fill="currentColor" d="M31.40 21.80L37.12 25.10L37.12 31.70L31.40 35.00L25.68 31.70L25.68 25.10Z" />
+        <path class="hex-cell" fill="currentColor" d="M16.60 21.80L22.32 25.10L22.32 31.70L16.60 35.00L10.88 31.70L10.88 25.10Z" />
+      </svg>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
