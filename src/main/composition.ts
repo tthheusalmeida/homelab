@@ -22,7 +22,8 @@ import { resolveBinDir } from './paths';
 export interface CompositionOptions {
   userDataDir: string;
   documentsDir: string;
-  projectRoot: string;
+  /** Pasta `resources` (do projeto em dev, ao lado do executável no instalador). */
+  resourcesDir: string;
   platform: NodeJS.Platform;
   arch: string;
   cipher: SecretCipher;
@@ -42,7 +43,7 @@ export interface CompositionOptions {
 export function createServices(options: CompositionOptions) {
   const defaults = createDefaultSettings({
     rootDir: path.join(options.documentsDir, DATA_ROOT_FOLDER),
-    whisperDir: resolveBinDir(options.projectRoot, options.platform, options.arch),
+    whisperDir: resolveBinDir(options.resourcesDir, options.platform, options.arch),
     platform: options.platform,
   });
 

@@ -21,7 +21,7 @@ import { needsInitialSetup } from './first-run';
 import { resolveFrontTarget, type FrontTarget } from './front-target';
 import { LocalStateGuard } from './local-state-guard';
 import { classifyNavigation } from './navigation-guard';
-import { resolveFrontDist } from './paths';
+import { resolveFrontDist, resolveResourcesDir } from './paths';
 import { isSettingsShortcut } from './shortcuts';
 import { SingleWindowController } from './single-window';
 import { resolveStaticFile } from './static-files';
@@ -152,7 +152,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
   const services = createServices({
     userDataDir: app.getPath('userData'),
     documentsDir: app.getPath('documents'),
-    projectRoot,
+    resourcesDir: resolveResourcesDir(projectRoot, app.isPackaged, process.resourcesPath),
     platform: process.platform,
     arch: process.arch,
     cipher: electronCipher,

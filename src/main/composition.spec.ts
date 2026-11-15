@@ -20,7 +20,7 @@ describe('createServices', () => {
     createServices({
       userDataDir: userData,
       documentsDir: documents,
-      projectRoot: path.resolve('/projeto/desktop'),
+      resourcesDir: path.resolve('/projeto/desktop/resources'),
       platform: 'win32',
       arch: 'x64',
       cipher: fakeCipher(),
@@ -52,7 +52,7 @@ describe('createServices', () => {
     const { settings } = create();
 
     expect(settings.get().local.whisper.directory).toBe(
-      path.join(path.resolve('/projeto/desktop'), 'resources', 'bin', 'win32-x64'),
+      path.join(path.resolve('/projeto/desktop/resources'), 'bin', 'win32-x64'),
     );
     expect(settings.get().local.whisper.executable).toBe('whisper-cli.exe');
   });
@@ -62,7 +62,7 @@ describe('createServices', () => {
     const services = createServices({
       userDataDir: userData,
       documentsDir: documents,
-      projectRoot: path.resolve('/projeto/desktop'),
+      resourcesDir: path.resolve('/projeto/desktop/resources'),
       platform: 'win32',
       arch: 'x64',
       cipher: fakeCipher(),
@@ -87,7 +87,7 @@ describe('createServices', () => {
     const services = createServices({
       userDataDir: userData,
       documentsDir: documents,
-      projectRoot: path.resolve('/projeto/desktop'),
+      resourcesDir: path.resolve('/projeto/desktop/resources'),
       platform: 'win32',
       arch: 'x64',
       cipher: fakeCipher(),

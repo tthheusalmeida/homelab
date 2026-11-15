@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import { resolveBinDir, resolveFrontDist } from './paths';
+import { resolveBinDir, resolveFrontDist, resolveResourcesDir } from './paths';
 
 const root = path.resolve('/projects/desktop');
 
@@ -16,8 +16,26 @@ describe('resolveFrontDist', () => {
 
 describe('resolveBinDir', () => {
   it('when called, should point to resources/bin/<platform>-<arch>', () => {
-    expect(resolveBinDir(root, 'win32', 'x64')).toBe(
+    expect(resolveBinDir(path.join(root, 'resources'), 'win32', 'x64')).toBe(
       path.join(root, 'resources', 'bin', 'win32-x64'),
     );
+  });
+});
+
+describe('resolveResourcesDir', () => {
+  it('when running in development, should use the resources folder of the project', () => {
+    expect(resolveResourcesDir(root, false, '/app/resources')).toBe(path.join(root, 'resources'));
+  });
+
+  it('when running packaged, should use the resources path next to the executable', () => {
+    expect(resolveResourcesDir(root, true, '/app/resources')).toBe('/app/resources');
+  });
+});
+
+describe('resolveBinDir packaged', () => {
+  it('when given the packaged resources path, should point to <resources>/bin/<platform>-<arch>', () => {
+    const resources = path.resolve('/app/resources');
+
+    expect(resolveBinDir(resources, 'win32', 'x64')).toBe(path.join(resources, 'bin', 'win32-x64'));
   });
 });
