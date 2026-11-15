@@ -26,6 +26,9 @@ export const IpcChannels = {
     thinking: 'ai:thinking',
     usage: 'ai:usage',
   },
+  chat: {
+    send: 'chat:send',
+  },
   providers: {
     external: {
       list: 'providers:external:list',

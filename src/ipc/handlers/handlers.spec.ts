@@ -23,6 +23,7 @@ describe('createHandlers', () => {
           healthAi: { check: jest.fn() },
           ai: { providersList: jest.fn(), models: jest.fn(), thinking: jest.fn() },
           aiUsage: { getUsage: jest.fn() },
+          chat: { chat: jest.fn() },
         },
       }),
     );

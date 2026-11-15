@@ -5,6 +5,7 @@ import type { IpcHandler } from '../ipc-handler';
 
 import { AiHandler, type AiCatalog, type AiUsageSource } from './ai.handler';
 import { AppHandler, type AppInfo } from './app.handler';
+import { ChatHandler, type ChatSource } from './chat.handler';
 import { ExternalProvidersHandler } from './external-providers.handler';
 import { HealthHandler, type HealthCheckSource } from './health.handler';
 import { LocalProvidersHandler } from './local-providers.handler';
@@ -16,6 +17,7 @@ export interface BackReaders {
   healthAi: HealthCheckSource;
   ai: AiCatalog;
   aiUsage: AiUsageSource;
+  chat: ChatSource;
 }
 
 export interface HandlerDeps {
@@ -36,5 +38,6 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
     new LocalProvidersHandler(deps.localProviders),
     new HealthHandler(deps.back.healthSystem, deps.back.healthAi),
     new AiHandler(deps.back.ai, deps.back.aiUsage),
+    new ChatHandler(deps.back.chat),
   ];
 }

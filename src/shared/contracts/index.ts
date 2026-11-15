@@ -9,6 +9,7 @@ import type {
   AiUsageReport,
   AiUsageRequestFilter,
 } from './ai';
+import type { ChatSendRequest, ChatSendResponse } from './chat';
 import type { HealthReport } from './health';
 import type {
   ExternalProviderInfo,
@@ -52,6 +53,8 @@ export interface IpcContracts {
   [IpcChannels.ai.models]: { request: AiModelsRequest; response: AiModelEntry[] };
   [IpcChannels.ai.thinking]: { request: AiThinkingRequest; response: AiThinkingEntry[] };
   [IpcChannels.ai.usage]: { request: AiUsageRequestFilter; response: AiUsageReport };
+
+  [IpcChannels.chat.send]: { request: ChatSendRequest; response: ChatSendResponse };
 
   [IpcChannels.providers.external.list]: { request: void; response: ExternalProviderInfo[] };
   [IpcChannels.providers.external.get]: {
