@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarTrigger } from "#ui/sidebar";
 
 import { AppSidebar } from "../../components/AppSidebar";
 import { ClockAndTime } from "#components/ClockAndTime";
+import { NoticeCenter } from "#components/NoticeCenter";
 import { ScrollArea } from "#ui/scroll-area";
 
 export function AppLayout() {
@@ -29,6 +30,8 @@ export function AppLayout() {
           </div>
         </ScrollArea>
       </main>
+
+      <NoticeCenter />
     </SidebarProvider>
   );
 }
