@@ -1,4 +1,4 @@
-import { Job } from './job.entity';
+import { INTERRUPTED_JOB_ERROR, Job } from './job.entity';
 import { JobStatus } from './job-status.enum';
 import { JobTypeConfig } from '../jobs.types';
 
@@ -143,5 +143,101 @@ describe('Job', () => {
         'steps',
       ].sort(),
     );
+  });
+
+  describe('persistence', () => {
+    it('when taking a snapshot, should carry every field including the document hints and ISO dates', () => {
+      const job = new Job('video-to-summary', { title: 'T', category: ['A', 'B'], tags: ['x'] });
+
+      job.start();
+      job.startStep(job.steps[0].name);
+
+      const snapshot = job.snapshot();
+
+      expect(snapshot).toEqual({
+        id: job.id,
+        name: 'video-to-summary',
+        label: job.label,
+        status: JobStatus.RUNNING,
+        createdAt: job.createdAt.toISOString(),
+        startedAt: job.startedAt?.toISOString(),
+        completedAt: undefined,
+        error: undefined,
+        steps: job.steps,
+        documentHints: { title: 'T', category: ['A', 'B'], tags: ['x'] },
+      });
+    });
+
+    it('when the snapshot goes through JSON and is restored, should be equal to the original job', () => {
+      const job = new Job('video-to-summary', { tags: ['x'] });
+
+      job.start();
+      job.complete();
+
+      const restored = Job.restore(JSON.parse(JSON.stringify(job.snapshot())));
+
+      expect(restored).toBeInstanceOf(Job);
+      expect(restored.id).toBe(job.id);
+      expect(restored.createdAt).toEqual(job.createdAt);
+      expect(restored.startedAt).toEqual(job.startedAt);
+      expect(restored.completedAt).toEqual(job.completedAt);
+      expect(restored.status).toBe(JobStatus.COMPLETED);
+      expect(restored.documentHints).toEqual({ tags: ['x'] });
+      expect(JSON.parse(JSON.stringify(restored))).toEqual(JSON.parse(JSON.stringify(job)));
+    });
+
+    it('when restoring a job whose type no longer exists, should still restore it instead of throwing', () => {
+      const snapshot = { ...new Job('video-to-summary').snapshot(), name: 'tipo-antigo' };
+
+      expect(Job.restore(snapshot).name).toBe('tipo-antigo');
+    });
+
+    it('when restoring, should not share the steps array with the snapshot', () => {
+      const snapshot = new Job('video-to-summary').snapshot();
+      const restored = Job.restore(snapshot);
+
+      restored.startStep(restored.steps[0].name);
+
+      expect(snapshot.steps[0].status).toBe(JobStatus.PENDING);
+    });
+
+    it('when a restored job is still alive, should keep working (start, run steps, complete)', async () => {
+      const restored = Job.restore(new Job('video-to-summary').snapshot());
+
+      restored.start();
+      await restored.runStep(restored.steps[0].name, () => Promise.resolve());
+      restored.complete();
+
+      expect(restored.status).toBe(JobStatus.COMPLETED);
+    });
+  });
+
+  describe('interrupt', () => {
+    it('when a running job is interrupted, should fail it with the default reason and fail the running step only', () => {
+      const job = new Job('video-to-summary');
+
+      job.start();
+      job.completeStep(job.steps[0].name);
+      job.startStep(job.steps[1].name);
+      job.interrupt();
+
+      expect(job.status).toBe(JobStatus.FAILED);
+      expect(job.error).toBe(INTERRUPTED_JOB_ERROR);
+      expect(job.steps.map((step) => step.status)).toEqual([
+        JobStatus.COMPLETED,
+        JobStatus.FAILED,
+        ...job.steps.slice(2).map(() => JobStatus.PENDING),
+      ]);
+    });
+
+    it('when a pending job is interrupted, should fail it and keep its steps pending', () => {
+      const job = new Job('video-to-summary');
+
+      job.interrupt('Motivo próprio');
+
+      expect(job.status).toBe(JobStatus.FAILED);
+      expect(job.error).toBe('Motivo próprio');
+      expect(job.steps.every((step) => step.status === JobStatus.PENDING)).toBe(true);
+    });
   });
 });

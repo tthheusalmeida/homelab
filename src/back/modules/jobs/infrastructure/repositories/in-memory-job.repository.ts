@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { Job } from '../../domain/job.entity';
-import { JobRepository } from './job.repository';
+import { JobRepository, type JobsStartupReport } from './job.repository';
 
 @Injectable()
 export class InMemoryJobRepository implements JobRepository {
@@ -17,5 +17,13 @@ export class InMemoryJobRepository implements JobRepository {
 
   findAll(): Job[] {
     return [...this.jobs.values()];
+  }
+
+  remove(ids: string[]): string[] {
+    return ids.filter((id) => this.jobs.delete(id));
+  }
+
+  startupReport(): JobsStartupReport {
+    return { interrupted: [], recoveredFromBackup: false, unreadable: false };
   }
 }

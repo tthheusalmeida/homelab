@@ -37,6 +37,19 @@ vi.mock("./ai/usage/components/ModelUsage", () => ({
 import { CreatePage } from "./jobs/create/CreatePage";
 import { TrackPage } from "./jobs/track/TrackPage";
 import { UsagePage } from "./ai/usage/UsagePage";
+import { SnackbarProvider } from "../components/Snackbar";
+import { createWrapper } from "../test/utils";
+
+const QueryWrapper = createWrapper();
+
+/** A tela de jobs exclui por mutação (TanStack Query) e avisa pelo snackbar. */
+function trackWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <QueryWrapper>
+      <SnackbarProvider>{children}</SnackbarProvider>
+    </QueryWrapper>
+  );
+}
 
 const usageData = {
   summary: {
@@ -116,14 +129,14 @@ describe("TrackPage", () => {
 
   it("when jobs are loading, should show the loading state", () => {
     jobs.isLoading = true;
-    render(<TrackPage />);
+    render(<TrackPage />, { wrapper: trackWrapper });
 
     expect(screen.getByText("Carregando")).toBeInTheDocument();
   });
 
   it("when loading jobs fails, should show the error message", () => {
     jobs.isError = true;
-    render(<TrackPage />);
+    render(<TrackPage />, { wrapper: trackWrapper });
 
     expect(screen.getByText(/falha ao carregar os jobs/)).toBeInTheDocument();
   });
@@ -140,7 +153,7 @@ describe("TrackPage", () => {
         steps: [],
       },
     ];
-    render(<TrackPage />);
+    render(<TrackPage />, { wrapper: trackWrapper });
 
     expect(screen.getByText("Resumo de vídeo")).toBeInTheDocument();
   });

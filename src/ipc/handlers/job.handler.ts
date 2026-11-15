@@ -3,6 +3,8 @@ import type {
   CreateVideoToSummaryRequest,
   CreateVideoToTranscriptRequest,
   JobCreated,
+  JobDeleteRequest,
+  JobDeleteResult,
   JobTypeView,
   JobView,
 } from '../../shared/contracts/jobs';
@@ -21,6 +23,12 @@ export interface JobLauncherPort {
   startVideoToSummary(request: CreateVideoToSummaryRequest): JobCreated;
 }
 
+/** Exclusão de jobs do histórico (jobs na fila ou rodando nunca são excluídos). */
+export interface JobDeleterPort {
+  deleteMany(ids: JobDeleteRequest['ids']): JobDeleteResult;
+  deleteAll(): JobDeleteResult;
+}
+
 /**
  * Canais `jobs:*`. Dica inválida (título, categoria, tags) chega como 400 do Nest (`VALIDATION`)
  * antes de enfileirar e job inexistente como 404 (`NOT_FOUND`), ambos pelo `IpcErrorMapper`.
@@ -31,6 +39,7 @@ export class JobHandler extends IpcHandler {
   constructor(
     private readonly catalog: JobCatalogPort,
     private readonly launcher: JobLauncherPort,
+    private readonly deleter: JobDeleterPort,
   ) {
     super();
   }
@@ -46,6 +55,8 @@ export class JobHandler extends IpcHandler {
       this.route(IpcChannels.jobs.createVideoToSummary, (request) =>
         this.launcher.startVideoToSummary(request),
       ),
+      this.route(IpcChannels.jobs.delete, ({ ids }) => this.deleter.deleteMany(ids)),
+      this.route(IpcChannels.jobs.deleteAll, () => this.deleter.deleteAll()),
     ];
   }
 }

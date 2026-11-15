@@ -99,4 +99,85 @@ describe('JobRunner', () => {
     expect(failing.status).toBe(JobStatus.FAILED);
     expect(next.status).toBe(JobStatus.COMPLETED);
   });
+
+  describe('avisos ao usuário', () => {
+    const withAlerts = () => {
+      const alerts = { persistFailed: jest.fn(), jobFinished: jest.fn() };
+
+      return { alerts, runner: new JobRunner(repository, alerts) };
+    };
+
+    it('when the job completes, should tell the alerts it finished with success', async () => {
+      const { alerts, runner: alerted } = withAlerts();
+      const job = new Job('video-to-transcript');
+
+      alerted.run(job, { process: jest.fn().mockResolvedValue(undefined) }, 'x');
+      await flush();
+
+      expect(alerts.jobFinished).toHaveBeenCalledWith({
+        id: job.id,
+        label: job.label,
+        status: 'completed',
+        error: undefined,
+      });
+    });
+
+    it('when the job fails, should tell the alerts it failed with the error message', async () => {
+      const { alerts, runner: alerted } = withAlerts();
+      const job = new Job('video-to-summary');
+
+      alerted.run(
+        job,
+        { process: jest.fn().mockRejectedValue(new Error('ffmpeg não achado')) },
+        'x',
+      );
+      await flush();
+
+      expect(alerts.jobFinished).toHaveBeenCalledWith({
+        id: job.id,
+        label: job.label,
+        status: 'failed',
+        error: 'ffmpeg não achado',
+      });
+    });
+
+    it('when the job is only starting, should not tell the alerts yet', async () => {
+      const { alerts, runner: alerted } = withAlerts();
+      const job = new Job('video-to-transcript');
+
+      alerted.run(job, { process: jest.fn(() => new Promise(() => undefined)) }, 'x');
+      await flush();
+
+      expect(alerts.jobFinished).not.toHaveBeenCalled();
+    });
+
+    it('when the alerts themselves throw, should not break the queue and the next job should still run', async () => {
+      const alerts = {
+        persistFailed: jest.fn(),
+        jobFinished: jest.fn(() => {
+          throw new Error('sem janela');
+        }),
+      };
+      const alerted = new JobRunner(repository, alerts);
+      const first = new Job('video-to-transcript');
+      const second = new Job('video-to-transcript');
+
+      alerted.run(first, { process: jest.fn().mockResolvedValue(undefined) }, 'x');
+      alerted.run(second, { process: jest.fn().mockResolvedValue(undefined) }, 'x');
+      await flush();
+      await flush();
+
+      expect(first.status).toBe(JobStatus.COMPLETED);
+      expect(second.status).toBe(JobStatus.COMPLETED);
+    });
+
+    it('when there are no alerts at all, should run normally', async () => {
+      const job = new Job('video-to-transcript');
+
+      runner.run(job, { process: jest.fn().mockResolvedValue(undefined) }, 'x');
+      await flush();
+
+      expect(job.status).toBe(JobStatus.COMPLETED);
+    });
+  });
 });

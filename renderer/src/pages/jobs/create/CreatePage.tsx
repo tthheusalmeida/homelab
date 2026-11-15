@@ -67,7 +67,7 @@ export function CreatePage() {
           >
             <span>
               Tarefa criada: <strong>{createdLabel}</strong>. Acompanhe o andamento
-              na tela Acompanhar.
+              na tela Em andamento.
             </span>
 
             <div className="flex gap-2">

@@ -1,8 +1,11 @@
 // application/job-runner.service.ts
 
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
+
+import { BackAlerts } from '../../../config/back-alerts';
 
 import { Job } from '../domain/job.entity';
+import { JobStatus } from '../domain/job-status.enum';
 import { JobProcessor } from '../domain/job-processor.interface';
 
 import { JOB_REPOSITORY } from '../infrastructure/repositories/job.repository';
@@ -21,6 +24,7 @@ export class JobRunner {
   constructor(
     @Inject(JOB_REPOSITORY)
     private readonly repository: JobRepository,
+    @Optional() private readonly alerts?: BackAlerts,
   ) {}
 
   run<TInput, TResult>(job: Job, processor: JobProcessor<TInput, TResult>, input: TInput): void {
@@ -62,10 +66,26 @@ export class JobRunner {
 
       job.complete();
       this.repository.save(job);
+      this.notify(job);
     } catch (error) {
       job.fail(error instanceof Error ? error.message : 'Erro desconhecido');
 
       this.repository.save(job);
+      this.notify(job);
+    }
+  }
+
+  /** Avisa o usuário que o job terminou; um problema ao avisar nunca atrapalha a fila. */
+  private notify(job: Job): void {
+    try {
+      this.alerts?.jobFinished({
+        id: job.id,
+        label: job.label ?? job.name ?? 'Processo',
+        status: job.status === JobStatus.COMPLETED ? 'completed' : 'failed',
+        error: job.error,
+      });
+    } catch {
+      // aviso é um extra: não pode derrubar o processamento
     }
   }
 }

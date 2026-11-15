@@ -12,14 +12,28 @@ import {
 import { Badge } from "#ui/badge";
 import { Card, CardContent, CardHeader } from "#ui/card";
 
+import { isActiveJob } from "../active";
+import { TrackStrings } from "../strings";
+
 import { JobFlow } from "./JobFlow";
 import { JobStatusBadge } from "./JobStatusBadge";
 
 interface JobListItemProps {
   job: Job;
+  /** Mostra a caixa de seleção (modo de seleção para excluir). */
+  selectable?: boolean;
+  selected?: boolean;
+  onSelectedChange?: (checked: boolean) => void;
 }
 
-export function JobListItem({ job }: JobListItemProps) {
+export function JobListItem({
+  job,
+  selectable = false,
+  selected = false,
+  onSelectedChange,
+}: JobListItemProps) {
+  const active = isActiveJob(job);
+
   const duration =
     job.startedAt && job.completedAt
       ? new Date(job.completedAt).getTime() - new Date(job.startedAt).getTime()
@@ -30,7 +44,19 @@ export function JobListItem({ job }: JobListItemProps) {
       <Card className="transition-[box-shadow,border-color,background-color] duration-200 hover:border-primary/50 hover:ring-3 hover:ring-primary/15">
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
+            {selectable && (
+              <input
+                type="checkbox"
+                className="mt-0.5 size-4 shrink-0 cursor-pointer accent-primary disabled:cursor-not-allowed"
+                aria-label={TrackStrings.selectJob(job.label, job.id)}
+                title={active ? TrackStrings.activeCannotBeDeleted : undefined}
+                checked={selected}
+                disabled={active}
+                onChange={(event) => onSelectedChange?.(event.target.checked)}
+              />
+            )}
+
+            <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-2">
                 <p className="truncate text-sm font-semibold">{job.label}</p>
 

@@ -3,6 +3,23 @@ import { JobStatus } from './job-status.enum';
 import { JobStep, JobTypeConfig } from '../jobs.types';
 import type { DocumentHints } from './document-hints';
 
+/** Texto gravado no job que estava em andamento quando o app foi fechado. */
+export const INTERRUPTED_JOB_ERROR = 'Interrompido ao fechar o app.';
+
+/** Job como vai para o disco: datas em texto ISO e as dicas do documento (que o `toJSON` não tem). */
+export interface JobSnapshot {
+  id: string;
+  name: string;
+  label: string;
+  status: JobStatus;
+  createdAt: string;
+  startedAt?: string;
+  completedAt?: string;
+  error?: string;
+  steps: JobStep[];
+  documentHints: DocumentHints;
+}
+
 export class Job {
   public readonly id: string;
   public readonly createdAt: Date;
@@ -37,6 +54,30 @@ export class Job {
       ...step,
       status: JobStatus.PENDING,
     }));
+  }
+
+  /**
+   * Recria um job gravado em disco. Não passa pelo construtor de propósito: o tipo do job pode já não
+   * existir na configuração atual, e um histórico antigo precisa continuar legível.
+   */
+  static restore(snapshot: JobSnapshot): Job {
+    const job = Object.create(Job.prototype) as Job;
+    const toDate = (value?: string): Date | undefined => (value ? new Date(value) : undefined);
+
+    Object.assign(job, {
+      id: snapshot.id,
+      createdAt: new Date(snapshot.createdAt),
+      _label: snapshot.label,
+      _name: snapshot.name,
+      _status: snapshot.status,
+      _startedAt: toDate(snapshot.startedAt),
+      _completedAt: toDate(snapshot.completedAt),
+      _error: snapshot.error,
+      _steps: snapshot.steps.map((step) => ({ ...step })),
+      _documentHints: structuredClone(snapshot.documentHints ?? {}),
+    });
+
+    return job;
   }
 
   /** Título, categoria e tags opcionais para o documento que o job gera. */
@@ -95,6 +136,18 @@ export class Job {
     this._error = error;
   }
 
+  /** Job que não terminou antes de o app fechar: falha com o motivo e a etapa em andamento também. */
+  interrupt(reason: string = INTERRUPTED_JOB_ERROR): void {
+    for (const step of this._steps) {
+      if (step.status === JobStatus.RUNNING) {
+        step.status = JobStatus.FAILED;
+      }
+    }
+
+    this._status = JobStatus.FAILED;
+    this._error = reason;
+  }
+
   startStep(name: string): void {
     const step = this.findStep(name);
 
@@ -137,6 +190,21 @@ export class Job {
     }
 
     return step;
+  }
+
+  snapshot(): JobSnapshot {
+    return {
+      id: this.id,
+      name: this._name,
+      label: this._label,
+      status: this._status,
+      createdAt: this.createdAt.toISOString(),
+      startedAt: this._startedAt?.toISOString(),
+      completedAt: this._completedAt?.toISOString(),
+      error: this._error,
+      steps: this._steps.map((step) => ({ ...step })),
+      documentHints: structuredClone(this._documentHints),
+    };
   }
 
   toJSON() {

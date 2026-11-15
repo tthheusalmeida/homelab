@@ -6,9 +6,18 @@ import { JobListItem } from "./JobListItem";
 
 interface JobListProps {
   jobs: Job[];
+  /** Modo de seleção: mostra a caixa de cada job. */
+  selectable?: boolean;
+  selectedIds?: ReadonlySet<string>;
+  onSelectedChange?: (id: string, checked: boolean) => void;
 }
 
-export function JobList({ jobs }: JobListProps) {
+export function JobList({
+  jobs,
+  selectable = false,
+  selectedIds,
+  onSelectedChange,
+}: JobListProps) {
   const sortedJobs = [...jobs].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
@@ -21,7 +30,12 @@ export function JobList({ jobs }: JobListProps) {
           className="animate-enter"
           style={{ "--i": index } as CSSProperties}
         >
-          <JobListItem job={job} />
+          <JobListItem
+            job={job}
+            selectable={selectable}
+            selected={selectedIds?.has(job.id) ?? false}
+            onSelectedChange={(checked) => onSelectedChange?.(job.id, checked)}
+          />
         </div>
       ))}
     </div>

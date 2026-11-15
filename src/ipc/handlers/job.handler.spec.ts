@@ -2,7 +2,12 @@ import { IpcChannels } from '../../shared/channels';
 import { IpcRegistrar } from '../ipc-registrar';
 import { FakeIpcMain } from '../testing/fake-ipc-main';
 
-import { JobHandler, type JobCatalogPort, type JobLauncherPort } from './job.handler';
+import {
+  JobHandler,
+  type JobCatalogPort,
+  type JobDeleterPort,
+  type JobLauncherPort,
+} from './job.handler';
 
 /** Exceções do Nest (duck typing: o mapper só olha `getStatus`). */
 class HttpLikeError extends Error {
@@ -20,8 +25,13 @@ class HttpLikeError extends Error {
 
 type CatalogFakes = Record<keyof JobCatalogPort, jest.Mock>;
 type LauncherFakes = Record<keyof JobLauncherPort, jest.Mock>;
+type DeleterFakes = Record<keyof JobDeleterPort, jest.Mock>;
 
-function setup(catalog: Partial<CatalogFakes> = {}, launcher: Partial<LauncherFakes> = {}) {
+function setup(
+  catalog: Partial<CatalogFakes> = {},
+  launcher: Partial<LauncherFakes> = {},
+  deleter: Partial<DeleterFakes> = {},
+) {
   const catalogFakes: CatalogFakes = {
     list: jest.fn().mockReturnValue([]),
     get: jest.fn().mockReturnValue({ id: 'j1' }),
@@ -33,10 +43,15 @@ function setup(catalog: Partial<CatalogFakes> = {}, launcher: Partial<LauncherFa
     startVideoToSummary: jest.fn().mockReturnValue({ id: 'j2', status: 'pending' }),
     ...launcher,
   };
+  const deleterFakes: DeleterFakes = {
+    deleteMany: jest.fn().mockReturnValue({ deleted: [], skipped: [] }),
+    deleteAll: jest.fn().mockReturnValue({ deleted: [], skipped: [] }),
+    ...deleter,
+  };
   const ipc = new FakeIpcMain();
-  new IpcRegistrar(ipc).register([new JobHandler(catalogFakes, launcherFakes)]);
+  new IpcRegistrar(ipc).register([new JobHandler(catalogFakes, launcherFakes, deleterFakes)]);
 
-  return { ipc, catalog: catalogFakes, launcher: launcherFakes };
+  return { ipc, catalog: catalogFakes, launcher: launcherFakes, deleter: deleterFakes };
 }
 
 const invalid = (message: string) => new HttpLikeError(message, 400);
@@ -208,5 +223,46 @@ describe('JobHandler: criação', () => {
         modelId: 'm',
       }),
     ).resolves.toEqual({ ok: false, error: { code: 'INTERNAL', message: 'fila indisponível' } });
+  });
+});
+
+describe('JobHandler: exclusão', () => {
+  it('when jobs:delete is called, should pass the ids and answer what was deleted and what was skipped', async () => {
+    const result = { deleted: ['a'], skipped: [{ id: 'b', reason: 'ACTIVE' }] };
+    const { ipc, deleter } = setup({}, {}, { deleteMany: jest.fn().mockReturnValue(result) });
+
+    await expect(ipc.invoke(IpcChannels.jobs.delete, { ids: ['a', 'b'] })).resolves.toEqual({
+      ok: true,
+      data: result,
+    });
+    expect(deleter.deleteMany).toHaveBeenCalledWith(['a', 'b']);
+  });
+
+  it('when jobs:delete-all is called, should ask the deleter to delete everything that can be deleted', async () => {
+    const result = { deleted: ['a', 'b'], skipped: [{ id: 'c', reason: 'ACTIVE' }] };
+    const { ipc, deleter } = setup({}, {}, { deleteAll: jest.fn().mockReturnValue(result) });
+
+    await expect(ipc.invoke(IpcChannels.jobs.deleteAll)).resolves.toEqual({
+      ok: true,
+      data: result,
+    });
+    expect(deleter.deleteAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('when deleting fails unexpectedly, should answer INTERNAL instead of rejecting', async () => {
+    const { ipc } = setup(
+      {},
+      {},
+      {
+        deleteAll: jest.fn(() => {
+          throw new Error('arquivo em uso');
+        }),
+      },
+    );
+
+    await expect(ipc.invoke(IpcChannels.jobs.deleteAll)).resolves.toEqual({
+      ok: false,
+      error: { code: 'INTERNAL', message: 'arquivo em uso' },
+    });
   });
 });
