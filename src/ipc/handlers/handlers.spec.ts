@@ -39,6 +39,7 @@ describe('createHandlers', () => {
             discard: jest.fn(),
           },
           libraryClassifier: { suggest: jest.fn() },
+          books: { list: jest.fn(), get: jest.fn(), read: jest.fn(), search: jest.fn() },
         },
       }),
     );

@@ -9,6 +9,15 @@ import type {
   AiUsageReport,
   AiUsageRequestFilter,
 } from './ai';
+import type {
+  BookDetail,
+  BookListRequest,
+  BookReading,
+  BookRequest,
+  BookSearchHit,
+  BookSearchRequest,
+  BookSummary,
+} from './books';
 import type { ChatSendRequest, ChatSendResponse } from './chat';
 import type { HealthReport } from './health';
 import type {
@@ -101,6 +110,10 @@ export interface IpcContracts {
   };
   [IpcChannels.library.documents.delete]: { request: LibraryDocumentRequest; response: void };
   [IpcChannels.library.reindex]: { request: void; response: LibraryRebuildResult };
+  [IpcChannels.library.books.list]: { request: BookListRequest; response: BookSummary[] };
+  [IpcChannels.library.books.get]: { request: BookRequest; response: BookDetail };
+  [IpcChannels.library.books.read]: { request: BookRequest; response: BookReading };
+  [IpcChannels.library.books.search]: { request: BookSearchRequest; response: BookSearchHit[] };
   [IpcChannels.library.inbox]: { request: void; response: LibraryDocumentSummary[] };
   [IpcChannels.library.categories]: { request: void; response: LibraryCategoryNode[] };
   [IpcChannels.library.tags]: { request: void; response: LibraryTagCount[] };

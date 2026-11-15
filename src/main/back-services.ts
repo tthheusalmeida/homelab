@@ -39,6 +39,10 @@ export const BackServiceSources = {
     service: ['modules/library/application/library.service', 'LibraryService'],
     module: ['modules/library/library.module', 'LibraryModule'],
   },
+  books: {
+    service: ['modules/library/application/book.service', 'BookService'],
+    module: ['modules/library/library.module', 'LibraryModule'],
+  },
   libraryClassifier: {
     service: ['modules/library/application/library-classifier', 'LibraryClassifier'],
     module: ['modules/library/library.module', 'LibraryModule'],
@@ -67,6 +71,7 @@ export class BackServices {
       chat: this.service(BackServiceSources.chat),
       library: this.service(BackServiceSources.library),
       libraryClassifier: this.service(BackServiceSources.libraryClassifier),
+      books: this.service(BackServiceSources.books),
     };
   }
 

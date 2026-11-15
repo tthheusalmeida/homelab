@@ -45,6 +45,12 @@ export const IpcChannels = {
     tags: 'library:tags',
     index: 'library:index',
     reindex: 'library:reindex',
+    books: {
+      list: 'library:books:list',
+      get: 'library:books:get',
+      read: 'library:books:read',
+      search: 'library:books:search',
+    },
   },
   providers: {
     external: {
