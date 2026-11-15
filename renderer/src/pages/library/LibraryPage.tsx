@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 
 import { Link, useLocation } from "react-router";
 import { Inbox, SearchX, Library as LibraryIcon } from "lucide-react";
@@ -245,12 +245,14 @@ export function LibraryPage() {
                       : "space-y-3"
                 }
               >
-                {documents.data.map((document) => (
-                  <DocumentCard
+                {documents.data.map((document, index) => (
+                  <div
                     key={document.id}
-                    document={document}
-                    variant={view}
-                  />
+                    className="animate-enter [&>*]:h-full"
+                    style={{ "--i": index } as CSSProperties}
+                  >
+                    <DocumentCard document={document} variant={view} />
+                  </div>
                 ))}
               </div>
             </>

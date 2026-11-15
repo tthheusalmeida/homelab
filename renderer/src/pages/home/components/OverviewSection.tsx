@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import type { useSystemHealth } from "../hooks/useSystemHealth";
 
 import { OverviewCard, type OverviewCardProps } from "./OverviewCard";
@@ -29,8 +31,14 @@ export function OverviewSection({ health }: OverviewSectionProps) {
 
   return (
     <section className="grid gap-2 sm:grid-cols-3">
-      {cards.map((card) => (
-        <OverviewCard key={card.label} {...card} />
+      {cards.map((card, index) => (
+        <div
+          key={card.label}
+          className="animate-enter [&>*]:h-full"
+          style={{ "--i": index } as CSSProperties}
+        >
+          <OverviewCard {...card} />
+        </div>
       ))}
     </section>
   );

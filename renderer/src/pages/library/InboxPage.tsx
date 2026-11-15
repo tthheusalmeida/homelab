@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 
 import { Link } from "react-router";
 import { Inbox, Plus, RefreshCw, Trash2 } from "lucide-react";
@@ -156,9 +156,13 @@ export function InboxPage() {
         )
       ) : (
         <div className="space-y-3">
-          {current.data.map((document) => (
-            <DocumentCard
+          {current.data.map((document, index) => (
+            <div
               key={document.id}
+              className="animate-enter"
+              style={{ "--i": index } as CSSProperties}
+            >
+            <DocumentCard
               document={document}
               actions={
                 <>
@@ -179,6 +183,7 @@ export function InboxPage() {
                 </>
               }
             />
+            </div>
           ))}
         </div>
       )}

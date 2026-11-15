@@ -28,13 +28,21 @@ export function ChatMessageList({
     <ScrollArea className="min-h-0 flex-1">
       <div className="mx-auto flex w-full flex-col gap-4 px-4 py-4">
         {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
+          <div key={message.id} className="animate-enter">
+            <ChatMessage message={message} />
+          </div>
         ))}
 
-        {status === "sending" && <LoadingState message="Pensando" />}
+        {status === "sending" && (
+          <div className="animate-enter-fade">
+            <LoadingState message="Pensando" />
+          </div>
+        )}
 
         {status === "cancelled" && (
-          <LoadingState message="Geração cancelada" loading={false} />
+          <div className="animate-enter-fade">
+            <LoadingState message="Geração cancelada" loading={false} />
+          </div>
         )}
 
         <div ref={bottomRef} />

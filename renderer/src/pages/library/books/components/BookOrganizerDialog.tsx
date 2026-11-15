@@ -426,7 +426,7 @@ function Organizer({
       </div>
 
       {save.isError && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="animate-enter-fade text-sm text-destructive">
           Não foi possível salvar o livro. Tente novamente.
         </p>
       )}

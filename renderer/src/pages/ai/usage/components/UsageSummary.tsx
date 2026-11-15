@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { Activity, Clock3, Coins, Database } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../ui/card";
 
@@ -34,11 +35,15 @@ export function UsageSummary({ data }: UsageSummaryProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {items.map((item) => {
+      {items.map((item, index) => {
         const Icon = item.icon;
 
         return (
-          <Card key={item.title}>
+          <Card
+            key={item.title}
+            className="animate-enter"
+            style={{ "--i": index } as CSSProperties}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {item.title}

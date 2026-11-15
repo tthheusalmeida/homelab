@@ -63,7 +63,7 @@ export function CreatePage() {
         {createdLabel && (
           <div
             role="status"
-            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card px-4 py-3 text-sm"
+            className="flex animate-enter flex-wrap items-center justify-between gap-2 rounded-lg border bg-card px-4 py-3 text-sm"
           >
             <span>
               Job criado: <strong>{createdLabel}</strong>. Acompanhe o andamento

@@ -41,7 +41,7 @@ export function BookProgress({
       >
         <div
           className={cn(
-            "h-full rounded-full transition-all",
+            "h-full rounded-full transition-[width,background-color] duration-700 ease-out",
             completed ? "bg-amber-400" : "bg-primary",
           )}
           style={{ width: `${percent}%` }}

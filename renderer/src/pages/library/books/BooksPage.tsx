@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 
 import { Link, useNavigate } from "react-router";
 import { BookOpen, Play, Plus } from "lucide-react";
@@ -74,8 +74,12 @@ export function BooksPage() {
         />
       ) : (
         <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {books.data.map((book) => (
-            <div key={book.id} className="group relative space-y-4 text-center">
+          {books.data.map((book, index) => (
+            <div
+              key={book.id}
+              className="group relative animate-enter space-y-4 text-center"
+              style={{ "--i": index } as CSSProperties}
+            >
               <BookCover
                 title={book.title}
                 kind={book.kind}

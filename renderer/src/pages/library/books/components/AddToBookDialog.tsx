@@ -135,7 +135,7 @@ function Picker({
       </form>
 
       {failed && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="animate-enter-fade text-sm text-destructive">
           Não foi possível adicionar ao livro. Tente novamente.
         </p>
       )}

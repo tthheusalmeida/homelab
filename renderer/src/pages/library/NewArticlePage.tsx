@@ -124,7 +124,7 @@ export function NewArticlePage() {
       </section>
 
       {createArticle.isError && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="animate-enter-fade text-sm text-destructive">
           Não foi possível salvar a página. Verifique a categoria e tente
           novamente.
         </p>

@@ -25,6 +25,7 @@ export function ServiceGrid({ queries }: ServiceGridProps) {
         return (
           <ServiceCard
             key={service.name}
+            index={index}
             service={service}
             health={query.data}
             isLoading={query.isLoading}

@@ -200,7 +200,7 @@ export function MarkdownEditor({
           </Button>
 
           {imageError && (
-            <p role="alert" className="text-xs text-destructive sm:col-span-3">
+            <p role="alert" className="animate-enter-fade text-xs text-destructive sm:col-span-3">
               Informe uma URL http(s) válida.
             </p>
           )}

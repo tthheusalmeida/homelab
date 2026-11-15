@@ -15,7 +15,7 @@ export function ErrorState({
   action,
 }: ErrorStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 text-center">
+    <div className="flex animate-enter flex-col items-center justify-center gap-2 text-center">
       <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-red-500">
         <CircleAlert className="size-6 text-white" />
       </div>

@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import type { Job } from "../../types/job.types";
 
 import { JobListItem } from "./JobListItem";
@@ -13,8 +15,14 @@ export function JobList({ jobs }: JobListProps) {
 
   return (
     <div className="space-y-4">
-      {sortedJobs.map((job) => (
-        <JobListItem key={job.id} job={job} />
+      {sortedJobs.map((job, index) => (
+        <div
+          key={job.id}
+          className="animate-enter"
+          style={{ "--i": index } as CSSProperties}
+        >
+          <JobListItem job={job} />
+        </div>
       ))}
     </div>
   );

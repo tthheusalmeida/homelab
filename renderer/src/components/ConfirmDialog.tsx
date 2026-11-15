@@ -44,7 +44,7 @@ export function ConfirmDialog({
         </DialogHeader>
 
         {errorMessage && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="animate-enter-fade text-sm text-destructive">
             {errorMessage}
           </p>
         )}

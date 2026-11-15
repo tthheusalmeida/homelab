@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import type { HealthService, Service } from "../types/services.types";
 
 import ServiceCardStatus from "./ServiceCardStatus";
@@ -5,13 +7,23 @@ import { formatServiceName } from "#lib/format";
 
 interface ServiceCardProps {
   service: Service;
+  /** Posição na grade: escalona a entrada dos cards. */
+  index?: number;
   health?: HealthService;
   isLoading: boolean;
 }
 
-export function ServiceCard({ service, health, isLoading }: ServiceCardProps) {
+export function ServiceCard({
+  service,
+  health,
+  isLoading,
+  index = 0,
+}: ServiceCardProps) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div
+      className="animate-enter rounded-lg border border-border bg-card p-4 transition-shadow duration-300 hover:shadow-md"
+      style={{ "--i": index } as CSSProperties}
+    >
       <div className="flex items-start justify-between">
         <div className="min-w-0 select-none">
           <div className="flex items-center gap-2">

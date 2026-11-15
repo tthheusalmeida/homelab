@@ -96,7 +96,7 @@ export function SuggestionPanel({
       )}
 
       {suggest.isError && (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="animate-enter-fade text-xs text-destructive">
           Não foi possível obter a sugestão. Tente novamente.
         </p>
       )}
