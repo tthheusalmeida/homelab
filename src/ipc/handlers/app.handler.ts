@@ -4,7 +4,7 @@ import { IpcHandler, type IpcRoute } from '../ipc-handler';
 export interface AppInfo {
   version(): string;
   /** Reinicia o app (usado para aplicar mudanças de configuração). */
-  relaunch(): void;
+  relaunch(): void | Promise<void>;
   /** Abre (ou foca) a janela de Configurações. */
   openSettings(): void;
 }

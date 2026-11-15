@@ -19,6 +19,7 @@ import { APP_ORIGIN, APP_SCHEME, INDEX_FILE, MainEnv, Messages } from './constan
 import { electronCipher } from './electron-cipher';
 import { needsInitialSetup } from './first-run';
 import { resolveFrontTarget, type FrontTarget } from './front-target';
+import { LocalStateGuard } from './local-state-guard';
 import { classifyNavigation } from './navigation-guard';
 import { resolveFrontDist } from './paths';
 import { isSettingsShortcut } from './shortcuts';
@@ -147,6 +148,7 @@ function createSettingsWindow(target: FrontTarget): BrowserWindow {
 }
 
 async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> {
+  const localStateGuard = new LocalStateGuard({ userDataDir: app.getPath('userData') });
   const services = createServices({
     userDataDir: app.getPath('userData'),
     documentsDir: app.getPath('documents'),
@@ -180,7 +182,10 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       appInfo: {
         version: () => app.getVersion(),
         // No modo dev o Vite morre junto com o app, então só fecha (rode `npm run dev` de novo).
-        relaunch: () => {
+        relaunch: async () => {
+          // Sem a chave no `Local State`, o segredo recém-salvo ficaria ilegível ao reabrir.
+          await localStateGuard.waitUntilPersisted();
+
           if (target.kind === 'build') {
             app.relaunch();
           }
