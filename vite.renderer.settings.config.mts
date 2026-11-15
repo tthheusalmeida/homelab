@@ -13,6 +13,8 @@ export const SETTINGS_DEV_PORT = 5174;
 
 export default {
   root: path.join(desktopRoot, 'renderer', 'settings'),
+  // Cache de dependências próprio (ver `vite.renderer.main.config.mts`).
+  cacheDir: path.join(desktopRoot, 'node_modules', '.vite-settings'),
   // Caminhos relativos: a janela abre em app://front/settings/index.html
   base: './',
   publicDir: false,
