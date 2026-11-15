@@ -3,7 +3,13 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { _electron as electron, expect, test, type ElectronApplication } from '@playwright/test';
+import {
+  _electron as electron,
+  expect,
+  test,
+  type ElectronApplication,
+  type Page,
+} from '@playwright/test';
 
 const root = path.resolve(__dirname, '..');
 
@@ -23,6 +29,16 @@ function makeUserData(withSettings: boolean): string {
   }
 
   return dir;
+}
+
+/** Janela principal: a primeira janela pode ser a tela de abertura (splash), que some sozinha. */
+async function mainWindow(app: ElectronApplication): Promise<Page> {
+  await app.firstWindow();
+  const isMain = (window: Page) => !window.url().includes('splash.html') && window.url() !== '';
+
+  await expect.poll(() => app.windows().filter(isMain).length, { timeout: 20_000 }).toBeGreaterThan(0);
+
+  return app.windows().find(isMain)!;
 }
 
 function launch(userData: string): Promise<ElectronApplication> {
@@ -60,26 +76,26 @@ test.describe('app com configuração existente', () => {
   });
 
   test('when the app opens, should show the home with the sidebar and check the services', async () => {
-    const page = await app.firstWindow();
+    const page = await mainWindow(app);
     page.on('request', (request) => {
       if (/^https?:/.test(request.url())) httpRequests.push(request.url());
     });
     await page.reload();
 
     await expect(page.getByText('Central de controle do HomeLab.')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Chat', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Conversa', exact: true })).toBeVisible();
     await expect(page.getByText('Serviços do sistema')).toBeVisible();
   });
 
   test('when navigating through the main screens, should render each one', async () => {
-    const page = await app.firstWindow();
+    const page = await mainWindow(app);
     const screens: [string, string | RegExp][] = [
       ['Páginas', 'Seus conhecimentos organizados por tema.'],
       ['Livros', /Livros/],
-      ['Chat', 'Como posso te ajudar hoje?'],
-      ['Uso', 'Uso de IA'],
-      ['Criar', /Criar/],
-      ['Inspeção', /Inspeção|Jobs/],
+      ['Conversa', 'Como posso te ajudar hoje?'],
+      ['Consumo', 'Consumo de IA'],
+      ['Nova tarefa', 'Selecione o tipo de tarefa'],
+      ['Acompanhar', 'Tarefas'],
     ];
 
     for (const [link, expected] of screens) {
@@ -89,7 +105,7 @@ test.describe('app com configuração existente', () => {
   });
 
   test('when creating an article, should save it and open it in the library', async () => {
-    const page = await app.firstWindow();
+    const page = await mainWindow(app);
 
     await page.getByRole('button', { name: 'Nova página', exact: true }).click();
     await page.getByLabel('Título').fill('Ligações Peptídicas');
@@ -113,12 +129,16 @@ test('when a new user opens the app, should open the settings window without a g
   const app = await launch(makeUserData(false));
 
   try {
+    // A janelinha de abertura (splash) some sozinha; ficam a principal e as Configurações.
+    const urls = () => app.windows().map((window) => window.url());
+
+    await expect
+      .poll(() => urls().filter((url) => !url.includes('splash.html')).length, { timeout: 20_000 })
+      .toBe(2);
     await expect.poll(() => app.windows().length, { timeout: 20_000 }).toBe(2);
 
-    const titles = await Promise.all(app.windows().map((window) => window.title()));
-
-    expect(titles).toContain('Configurações');
-    expect(titles).toContain('HomeLab');
+    expect(urls().some((url) => url.includes('/settings/'))).toBe(true);
+    expect(urls().some((url) => !url.includes('/settings/'))).toBe(true);
   } finally {
     await app.close();
   }
@@ -160,7 +180,7 @@ test('when saving the gemini key and restarting right away, should keep the key 
   test.setTimeout(90_000);
   const userData = makeUserData(true);
   const first = await launch(userData);
-  const page = await first.firstWindow();
+  const page = await mainWindow(first);
 
   const saved = await page.evaluate(() =>
     window.api.invoke('providers:external:save', { id: 'gemini', apiKey: 'chave-falsa-e2e-123' }),
@@ -179,7 +199,7 @@ test('when saving the gemini key and restarting right away, should keep the key 
   const second = await launch(userData);
 
   try {
-    const result = (await (await second.firstWindow()).evaluate(() =>
+    const result = (await (await mainWindow(second)).evaluate(() =>
       window.api.invoke('providers:external:list'),
     )) as { ok: true; data: Array<{ id: string; configured: boolean }> };
 

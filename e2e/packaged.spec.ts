@@ -19,7 +19,7 @@ test('when running the packaged app, should open the home and find the bundled w
     // Usuário novo: abre a Home e a janela de Configurações.
     await expect.poll(() => app.windows().length, { timeout: 30_000 }).toBe(2);
     const home = app.windows().find((window) => window.url().startsWith('app://front/index'));
-    const main = home ?? app.windows()[0];
+    const main = home ?? app.windows().find((window) => !window.url().includes('splash.html')) ?? app.windows()[0];
     const locals = (await main.evaluate(() => window.api.invoke('providers:local:list'))) as {
       ok: true;
       data: Array<{ id: string; config: Record<string, string> }>;
