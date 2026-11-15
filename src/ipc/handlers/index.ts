@@ -5,7 +5,7 @@ import type { IpcHandler } from '../ipc-handler';
 
 import { AiHandler, type AiCatalog, type AiUsageSource } from './ai.handler';
 import { AppHandler, type AppInfo } from './app.handler';
-import { BookHandler, type BookReader } from './book.handler';
+import { BookHandler, type BookReader, type BookWriter } from './book.handler';
 import { ChatHandler, type ChatSource } from './chat.handler';
 import { ExternalProvidersHandler } from './external-providers.handler';
 import { HealthHandler, type HealthCheckSource } from './health.handler';
@@ -27,7 +27,7 @@ export interface BackReaders {
   chat: ChatSource;
   library: LibraryReader & LibraryWriter;
   libraryClassifier: LibraryClassifierPort;
-  books: BookReader;
+  books: BookReader & BookWriter;
 }
 
 export interface HandlerDeps {

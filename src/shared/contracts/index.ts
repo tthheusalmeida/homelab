@@ -10,13 +10,19 @@ import type {
   AiUsageRequestFilter,
 } from './ai';
 import type {
+  BookAddChapterRequest,
+  BookCreateRequest,
   BookDetail,
   BookListRequest,
+  BookMarkChapterReadRequest,
   BookReading,
   BookRequest,
   BookSearchHit,
   BookSearchRequest,
+  BookSetPositionRequest,
+  BookSetStructureRequest,
   BookSummary,
+  BookUpdateRequest,
 } from './books';
 import type { ChatSendRequest, ChatSendResponse } from './chat';
 import type { HealthReport } from './health';
@@ -114,6 +120,26 @@ export interface IpcContracts {
   [IpcChannels.library.books.get]: { request: BookRequest; response: BookDetail };
   [IpcChannels.library.books.read]: { request: BookRequest; response: BookReading };
   [IpcChannels.library.books.search]: { request: BookSearchRequest; response: BookSearchHit[] };
+  [IpcChannels.library.books.create]: { request: BookCreateRequest; response: BookDetail };
+  [IpcChannels.library.books.update]: { request: BookUpdateRequest; response: BookDetail };
+  [IpcChannels.library.books.delete]: { request: BookRequest; response: void };
+  [IpcChannels.library.books.setStructure]: {
+    request: BookSetStructureRequest;
+    response: BookDetail;
+  };
+  [IpcChannels.library.books.addChapter]: {
+    request: BookAddChapterRequest;
+    response: BookDetail;
+  };
+  [IpcChannels.library.books.markChapterRead]: {
+    request: BookMarkChapterReadRequest;
+    response: BookDetail;
+  };
+  [IpcChannels.library.books.resetProgress]: { request: BookRequest; response: BookDetail };
+  [IpcChannels.library.books.setPosition]: {
+    request: BookSetPositionRequest;
+    response: BookDetail;
+  };
   [IpcChannels.library.inbox]: { request: void; response: LibraryDocumentSummary[] };
   [IpcChannels.library.categories]: { request: void; response: LibraryCategoryNode[] };
   [IpcChannels.library.tags]: { request: void; response: LibraryTagCount[] };
