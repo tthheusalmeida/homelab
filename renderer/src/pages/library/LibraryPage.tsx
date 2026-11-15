@@ -57,7 +57,7 @@ export function LibraryPage() {
   const [sort, setSort] = useState<SortOption>("title");
   const [view, setView] = useStoredState<ViewMode>(
     "library:view",
-    "list",
+    "grid",
     viewModes,
   );
 
@@ -239,7 +239,7 @@ export function LibraryPage() {
               <div
                 className={
                   view === "grid"
-                    ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                    ? "grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-3 xl:grid-cols-4"
                     : view === "list"
                       ? "space-y-1.5"
                       : "space-y-3"

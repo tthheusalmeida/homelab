@@ -27,7 +27,7 @@ export function JobListItem({ job }: JobListItemProps) {
 
   return (
     <Collapsible className="group">
-      <Card className="transition-[box-shadow,border-color,background-color] duration-200 hover:border-foreground/20 hover:shadow-md">
+      <Card className="transition-[box-shadow,border-color,background-color] duration-200 hover:border-primary/50 hover:ring-3 hover:ring-primary/15">
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">

@@ -35,13 +35,13 @@ export function ChatMessageList({
 
         {status === "sending" && (
           <div className="animate-enter-fade">
-            <LoadingState message="Pensando" />
+            <LoadingState message="Pensando" inline />
           </div>
         )}
 
         {status === "cancelled" && (
           <div className="animate-enter-fade">
-            <LoadingState message="Geração cancelada" loading={false} />
+            <LoadingState message="Geração cancelada" loading={false} inline />
           </div>
         )}
 

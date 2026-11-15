@@ -127,9 +127,9 @@ export function DocumentPage() {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_26rem]">
         <div ref={setContainer} className="min-w-0 space-y-6">
-          <PaperPage>
-            <header className="space-y-4 border-b pb-8 text-center">
-              <h1 className="text-3xl font-semibold tracking-tight">
+          <PaperPage variant="sheet">
+            <header className="space-y-4 border-b border-stone-300 pb-8 text-center">
+              <h1 className="font-serif text-3xl font-semibold tracking-tight text-stone-900">
                 {meta.title}
               </h1>
 
@@ -139,7 +139,12 @@ export function DocumentPage() {
             </header>
 
             <div className="pt-8">
-              <MarkdownMessage content={content} headingIds />
+              <MarkdownMessage
+                content={content}
+                headingIds
+                tone="paper"
+                className="prose-headings:font-serif prose-p:leading-8"
+              />
             </div>
           </PaperPage>
 

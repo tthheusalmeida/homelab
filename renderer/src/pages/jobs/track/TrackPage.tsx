@@ -33,7 +33,7 @@ export function TrackPage() {
   return (
     <div className="animate-enter-fade space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Jobs</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Tarefas</h1>
 
         <p className="text-sm text-muted-foreground">
           Acompanhe o processamento dos jobs e seus respectivos resultados.

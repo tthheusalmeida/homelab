@@ -1,3 +1,5 @@
+import { HoneycombBackdrop } from "#components/Hex";
+
 import { OverviewSection } from "./components/OverviewSection";
 import { ServicesSection } from "./components/ServicesSection";
 import { SystemStatus } from "./components/SystemStatus";
@@ -8,13 +10,15 @@ export function HomePage() {
   const health = useSystemHealth();
 
   return (
-    <div className="min-h-[80dvh] bg-background text-foreground">
-      <div className="mx-auto  space-y-8">
+    <div className="relative min-h-[80dvh] overflow-hidden bg-background text-foreground">
+      <HoneycombBackdrop />
+
+      <div className="relative mx-auto space-y-8">
         {/* Terminal */}
         <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
           <span>root@homelab:~$</span>
           <span>./home</span>
-          <span className="inline-block h-3.5 w-1 animate-pulse bg-muted-foreground" />
+          <span className="inline-block h-3.5 w-1.5 animate-pulse bg-brand" />
         </div>
 
         {/* Hero */}

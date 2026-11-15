@@ -21,7 +21,7 @@ export function ServiceCard({
 }: ServiceCardProps) {
   return (
     <div
-      className="animate-enter rounded-lg border border-border bg-card p-4 transition-shadow duration-300 hover:shadow-md"
+      className="animate-enter rounded-lg border border-border bg-card p-4 transition-[box-shadow,border-color] duration-200 hover:border-primary/50 hover:ring-3 hover:ring-primary/15"
       style={{ "--i": index } as CSSProperties}
     >
       <div className="flex items-start justify-between">

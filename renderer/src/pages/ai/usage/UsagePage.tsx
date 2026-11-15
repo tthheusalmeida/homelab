@@ -13,6 +13,8 @@ import { ModelUsage } from "./components/ModelUsage";
 import { RecentRequests } from "./components/RecentRequests";
 import { LoadingState } from "../../../components/LoadingState";
 import { ErrorState } from "../../../components/ErrorState";
+import { ExternalLink } from "#components/ExternalLink";
+import { PROVIDER_CONSOLES } from "#lib/provider-consoles";
 
 export function UsagePage() {
   const [provider, setProvider] = useState<AIProviderName>();
@@ -47,7 +49,7 @@ export function UsagePage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Uso de IA</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Consumo de IA</h1>
 
           <p className="text-sm text-muted-foreground">
             Monitora o consumo de AI, custo e performance.
@@ -80,6 +82,32 @@ export function UsagePage() {
           </Button>
         </div>
       </div>
+
+      {/* De onde vêm os números e onde ver o gasto real da conta */}
+      <Card className="animate-enter">
+        <CardContent className="space-y-2 text-sm">
+          <p>
+            <span className="font-medium">Consumo registrado pelo HomeLab</span>, neste computador:
+            tokens e custo estimado de cada resposta, guardados em disco (não se perdem ao fechar o
+            app).
+          </p>
+
+          <p className="text-muted-foreground">
+            Isto não é a fatura. O Gemini não informa gasto nem cota restante pela chave de API;
+            para o valor real da conta, consulte o painel do provedor:
+          </p>
+
+          <div className="flex flex-wrap gap-x-5 gap-y-1">
+            <ExternalLink href={PROVIDER_CONSOLES.gemini.usageUrl}>
+              Consumo no Google AI Studio
+            </ExternalLink>
+
+            <ExternalLink href={PROVIDER_CONSOLES.gemini.billingUrl}>
+              Faturamento no Google Cloud
+            </ExternalLink>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Summary */}
       <UsageSummary data={data.summary} />

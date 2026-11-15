@@ -12,7 +12,7 @@ interface JobTypeCardProps {
 
 export function JobTypeCard({ jobType, onSelect }: JobTypeCardProps) {
   return (
-    <Card className="transition-[box-shadow,border-color] duration-200 hover:border-foreground/20 hover:shadow-md">
+    <Card className="transition-[box-shadow,border-color] duration-200 hover:border-primary/50 hover:ring-3 hover:ring-primary/15">
       <CardContent className="flex items-center justify-between gap-2">
         <div className="space-y-1">
           <h2 className="font-medium">{jobType.label}</h2>

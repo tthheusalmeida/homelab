@@ -15,6 +15,8 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { FileText, Rows3 } from "lucide-react";
+
 import { Button } from "#ui/button";
 import { Card, CardContent } from "#ui/card";
 import {
@@ -31,9 +33,11 @@ import { ConfirmDialog } from "#components/ConfirmDialog";
 import { EmptyState } from "#components/EmptyState";
 import { ErrorState } from "#components/ErrorState";
 import { LoadingState } from "#components/LoadingState";
+import { OptionToggle, type ToggleOption } from "#components/OptionToggle";
 import { ReadingMode } from "#components/ReadingMode";
 import { useActiveSection } from "#hooks/use-active-section";
 import { useDebouncedValue } from "#hooks/use-debounced-value";
+import { useStoredState } from "#hooks/use-stored-state";
 import { useTextHighlight } from "#hooks/use-text-highlight";
 
 import { BookCompletedDialog } from "./components/BookCompletedDialog";
@@ -70,12 +74,22 @@ type Modal = "organize" | "edit" | "delete" | "details" | "reset" | null;
 /** Tempo parado num ponto antes de guardá-lo como "onde parei". */
 const SAVE_POSITION_DELAY_MS = 1500;
 
+const layoutOptions: readonly ToggleOption<"frames" | "pages">[] = [
+  { id: "frames", label: "Quadros", icon: Rows3 },
+  { id: "pages", label: "Páginas", icon: FileText },
+];
+
 export function BookPage() {
   const { bookId } = useParams();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
 
   const reading = useBookReading(bookId);
+  // Como os capítulos aparecem: quadros ou folhas de papel (lembrado neste computador).
+  const [layout, setLayout] = useStoredState("homelab.book-layout", "frames", [
+    "frames",
+    "pages",
+  ] as const);
   const detail = useBook(bookId);
   const remove = useDeleteBook();
   const setRead = useSetChapterRead();
@@ -475,7 +489,19 @@ export function BookPage() {
             ref={setContainer}
             className="mx-auto w-full min-w-0 max-w-3xl px-4 sm:px-8"
           >
+            <div className="mb-6 flex items-center justify-end gap-2 text-xs text-muted-foreground">
+              <span>Visualização</span>
+
+              <OptionToggle
+                label="Visualização do livro"
+                options={layoutOptions}
+                value={layout}
+                onChange={setLayout}
+              />
+            </div>
+
             <BookContent
+              layout={layout}
               modules={modules}
               readIds={readIds}
               onToggleRead={handleToggleRead}

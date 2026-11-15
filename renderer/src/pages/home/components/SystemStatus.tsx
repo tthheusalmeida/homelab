@@ -1,4 +1,4 @@
-import { cn } from "#lib/utils";
+import { HexDot } from "#components/Hex";
 
 interface SystemStatusProps {
   isLoading: boolean;
@@ -33,15 +33,7 @@ export function SystemStatus({
 
   return (
     <span className="mt-1 flex items-center gap-1 text-foreground">
-      <span
-        className={cn(
-          [
-            "size-2 rounded-full",
-            isLoading && "animate-pulse",
-            status.color,
-          ].filter(Boolean),
-        )}
-      />
+      <HexDot pulse={isLoading} className={status.color} />
 
       <span>{status.label}</span>
     </span>

@@ -368,14 +368,15 @@ describe("DocumentPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("when loaded, should put title and text on a paper page with margins", () => {
+  it("when loaded, should put title and text on a sheet of paper with margins", () => {
     const { container } = renderPage();
 
     const page = container.querySelector(
       "[data-slot=paper-page]",
     ) as HTMLElement;
 
-    expect(page).toHaveClass("max-w-3xl", "bg-card");
+    expect(page).toHaveAttribute("data-variant", "sheet");
+    expect(page).toHaveClass("max-w-[48rem]", "font-serif");
     expect(
       within(page).getByRole("heading", {
         name: "Práticas da Primeira Maneira",

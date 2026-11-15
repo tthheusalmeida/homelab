@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 
 import { Card, CardContent, CardHeader } from "#ui/card";
-import { cn } from "#lib/utils";
+import { PaperPage } from "#components/PaperPage";
 import { formatDate } from "#lib/format";
 
 import type { DocumentSummary } from "../types/library.types";
@@ -18,9 +18,18 @@ interface DocumentCardProps {
   actions?: ReactNode;
   /**
    * `list`: uma linha por documento (sem prévia); `card`: cartão com prévia
-   * (padrão); `grid`: o mesmo cartão, para usar em colunas.
+   * (padrão); `grid`: miniatura de página (folha de papel com título e prévia).
    */
   variant?: "list" | "card" | "grid";
+}
+
+/** A prévia vem do começo do texto, que costuma repetir o título; na miniatura isso só atrapalha. */
+export function previewWithoutTitle(preview: string, title: string): string {
+  const text = preview.trim();
+
+  return text.toLowerCase().startsWith(title.trim().toLowerCase())
+    ? text.slice(title.trim().length).trim()
+    : text;
 }
 
 function DocumentDate({ document }: { document: DocumentSummary }) {
@@ -46,9 +55,55 @@ export function DocumentCard({
     </Link>
   );
 
+  if (variant === "grid") {
+    // Miniatura de página: como o livro aparece com capa em Livros, a página aparece como folha.
+    return (
+      // Mesmo tamanho da capa de livro da estante (BooksPage): 176 px de largura, proporção 3:4.
+      <div className="group relative mx-auto w-full max-w-44">
+        <PaperPage
+          variant="sheet"
+          size="thumb"
+          className="transition-transform duration-200 group-hover:-translate-y-1.5"
+        >
+          <div className="flex h-full flex-col gap-2">
+            <p className="truncate text-[9px] tracking-[0.18em] text-stone-500 uppercase">
+              {document.category.join(" › ") || "Sem categoria"}
+            </p>
+
+            <Link
+              to={`/library/${document.id}`}
+              className="line-clamp-3 font-serif text-[15px] leading-snug font-semibold text-stone-900 after:absolute after:inset-0 hover:underline"
+            >
+              {document.title}
+            </Link>
+
+            <span aria-hidden className="block h-px w-8 bg-stone-300" />
+
+            {previewWithoutTitle(document.preview ?? "", document.title) && (
+              <p className="line-clamp-5 font-serif text-[11px] leading-relaxed text-stone-600">
+                {previewWithoutTitle(document.preview ?? "", document.title)}
+              </p>
+            )}
+
+            <div className="mt-auto flex flex-wrap items-end justify-between gap-x-3 text-[10px] text-stone-500">
+              <span className="truncate">
+                {document.tags.slice(0, 2).map((tag) => `#${tag}`).join(" ")}
+              </span>
+
+              <span className="shrink-0">
+                {document.matchedIn === "content" && "No conteúdo · "}
+                {formatDate(document.createdAt)}
+              </span>
+            </div>
+          </div>
+        </PaperPage>
+      </div>
+    );
+  }
+
   if (variant === "list") {
     return (
-      <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2 transition-[box-shadow,border-color,background-color] duration-200 hover:border-foreground/20 hover:shadow-md">
+      <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2 transition-[box-shadow,border-color,background-color] duration-200 hover:border-primary/50 hover:ring-3 hover:ring-primary/15">
         <div className="min-w-0 flex-1 space-y-0.5">
           <div className="flex items-center gap-2">
             {title}
@@ -71,7 +126,7 @@ export function DocumentCard({
   }
 
   return (
-    <Card className={cn("transition-[box-shadow,border-color,background-color] duration-200 hover:border-foreground/20 hover:shadow-md", variant === "grid" && "h-full")}>
+    <Card className="transition-[box-shadow,border-color,background-color] duration-200 hover:border-primary/50 hover:ring-3 hover:ring-primary/15">
       <CardHeader className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-2">
           {title}

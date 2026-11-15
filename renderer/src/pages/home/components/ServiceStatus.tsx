@@ -1,3 +1,4 @@
+import { HexDot } from "#components/Hex";
 import { cn } from "#lib/utils";
 
 interface ServiceStatusProps {
@@ -7,15 +8,15 @@ interface ServiceStatusProps {
 
 export function ServiceStatus({ isLoading, isError }: ServiceStatusProps) {
   return (
-    <span
-      className={cn([
-        "size-2 rounded-full",
+    <HexDot
+      pulse={isLoading}
+      className={cn(
         isLoading
-          ? "animate-pulse bg-muted-foreground"
+          ? "bg-muted-foreground"
           : isError
             ? "bg-red-500"
             : "bg-emerald-500",
-      ])}
+      )}
     />
   );
 }

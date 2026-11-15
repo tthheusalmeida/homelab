@@ -283,10 +283,10 @@ describe("LibraryPage", () => {
     });
   });
 
-  it("when opened, should list the documents in the compact list view", () => {
+  it("when opened, should show the documents as page thumbnails (grid view)", () => {
     renderPage();
 
-    expect(screen.getByRole("button", { name: "Lista" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Grade" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -296,11 +296,11 @@ describe("LibraryPage", () => {
     const user = userEvent.setup();
     const { unmount } = renderPage();
 
-    await user.click(screen.getByRole("button", { name: "Grade" }));
+    await user.click(screen.getByRole("button", { name: "Lista" }));
     unmount();
     renderPage();
 
-    expect(screen.getByRole("button", { name: "Grade" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Lista" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );

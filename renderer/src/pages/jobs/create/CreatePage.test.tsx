@@ -111,7 +111,7 @@ describe("CreatePage — creating a job", () => {
 
     const notice = await screen.findByRole("status");
 
-    expect(notice).toHaveTextContent("Job criado: Transcrição de vídeo");
+    expect(notice).toHaveTextContent("Tarefa criada: Transcrição de vídeo");
     await user.click(screen.getByRole("link", { name: "Acompanhar" }));
     expect(screen.getByText("tela acompanhar")).toBeInTheDocument();
   });

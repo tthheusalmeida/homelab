@@ -58,7 +58,7 @@ export function InboxPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Entrada</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Caixa de entrada</h1>
 
           <p className="text-sm text-muted-foreground">
             Resumos e transcrições gerados. Decida o que entra na biblioteca e o
@@ -137,7 +137,7 @@ export function InboxPage() {
           <EmptyState
             icon={Inbox}
             title="Nada aguardando decisão"
-            description="Os resumos e transcrições dos jobs concluídos aparecem aqui."
+            description="Os resumos e transcrições das tarefas concluídas aparecem aqui."
             action={
               <Link
                 to="/jobs/create"

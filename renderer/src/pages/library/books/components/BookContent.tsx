@@ -15,6 +15,8 @@ interface BookContentProps {
   modules: BookReading["modules"];
   /** Modo leitura: texto maior e sem o link para abrir a página. */
   reading?: boolean;
+  /** `frames` (padrão): quadros com cabeçalho e rodapé. `pages`: cada capítulo numa folha de papel. */
+  layout?: "frames" | "pages";
   /** Capítulos já lidos (id do documento). */
   readIds?: string[];
   /** Sem esta função o botão de marcar como lido não aparece. */
@@ -47,6 +49,7 @@ function ModuleDivider({ title }: { title: string }) {
 export function BookContent({
   modules,
   reading = false,
+  layout = "frames",
   readIds = [],
   onToggleRead,
   onGoToChapter,
@@ -134,6 +137,82 @@ export function BookContent({
                     />
                   </ReadingSection>
                 </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (layout === "pages") {
+    return (
+      <div className="space-y-14 py-2">
+        {modules.map((module) => (
+          <div key={module.id} className="space-y-14">
+            {module.title && <ModuleDivider title={module.title} />}
+
+            {module.chapters.map((chapter) => {
+              number += 1;
+              const position = number;
+              const next = order[position];
+              const read = readIds.includes(chapter.documentId);
+
+              return (
+                <section
+                  key={chapter.documentId}
+                  id={chapterElementId(chapter.documentId)}
+                  aria-label={chapter.title}
+                  className="scroll-mt-20 space-y-5"
+                >
+                  <PaperPage variant="sheet" pageNumber={`Capítulo ${position}`}>
+                    <header className="mb-10 space-y-3 text-center">
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500">
+                        Capítulo {position}
+                      </p>
+
+                      <h2 className="font-serif text-3xl font-semibold tracking-tight text-stone-900">
+                        {chapter.title}
+                      </h2>
+
+                      <span aria-hidden className="mx-auto block h-px w-16 bg-stone-300" />
+                    </header>
+
+                    <MarkdownMessage
+                      content={chapter.content}
+                      headingIds
+                      idPrefix={chapter.documentId}
+                      size="base"
+                      tone="paper"
+                      className="prose-headings:font-serif prose-p:text-justify prose-p:leading-8"
+                    />
+                  </PaperPage>
+
+                  <div className="mx-auto flex max-w-[48rem] flex-wrap items-center justify-between gap-2">
+                    {onToggleRead ? (
+                      <Button
+                        variant={read ? "default" : "outline"}
+                        size="xs"
+                        aria-pressed={read}
+                        onClick={() => onToggleRead(chapter.documentId, !read)}
+                      >
+                        <Check /> {read ? "Lido" : "Marcar como lido"}
+                      </Button>
+                    ) : (
+                      <span />
+                    )}
+
+                    {next && (
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => onGoToChapter(next.documentId)}
+                      >
+                        Próximo: {next.title} <ArrowRight />
+                      </Button>
+                    )}
+                  </div>
+                </section>
               );
             })}
           </div>

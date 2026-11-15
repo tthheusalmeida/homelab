@@ -53,10 +53,10 @@ export function CreatePage() {
     <>
       <div className="animate-enter-fade space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Criar</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Nova tarefa</h1>
 
           <p className="text-sm text-muted-foreground">
-            Selecione o tipo de job que deseja executar.
+            Selecione o tipo de tarefa que deseja executar.
           </p>
         </div>
 
@@ -66,7 +66,7 @@ export function CreatePage() {
             className="flex animate-enter flex-wrap items-center justify-between gap-2 rounded-lg border bg-card px-4 py-3 text-sm"
           >
             <span>
-              Job criado: <strong>{createdLabel}</strong>. Acompanhe o andamento
+              Tarefa criada: <strong>{createdLabel}</strong>. Acompanhe o andamento
               na tela Acompanhar.
             </span>
 
