@@ -297,17 +297,17 @@
  * tudo quase instantâneo (bloco `prefers-reduced-motion` no fim).
  * ------------------------------------------------------------------ */
 @theme {
-  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-soft: cubic-bezier(0.33, 1, 0.68, 1);
   --ease-in-soft: cubic-bezier(0.4, 0, 1, 1);
   --duration-quick: 150ms;
-  --duration-enter: 320ms;
-  --duration-exit: 200ms;
+  --duration-enter: 450ms;
+  --duration-exit: 240ms;
 }
 
-@keyframes enter {
+@keyframes hl-enter {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
@@ -315,7 +315,7 @@
   }
 }
 
-@keyframes enter-fade {
+@keyframes hl-enter-fade {
   from {
     opacity: 0;
   }
@@ -324,7 +324,7 @@
   }
 }
 
-@keyframes enter-scale {
+@keyframes hl-enter-scale {
   from {
     opacity: 0;
     transform: scale(0.96);
@@ -335,7 +335,7 @@
   }
 }
 
-@keyframes enter-left {
+@keyframes hl-enter-left {
   from {
     opacity: 0;
     transform: translateX(-10px);
@@ -346,18 +346,18 @@
   }
 }
 
-@keyframes exit-down {
+@keyframes hl-exit-down {
   from {
     opacity: 1;
     transform: none;
   }
   to {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(14px);
   }
 }
 
-@keyframes collapsible-down {
+@keyframes hl-collapse-down {
   from {
     height: 0;
     opacity: 0;
@@ -368,7 +368,7 @@
   }
 }
 
-@keyframes collapsible-up {
+@keyframes hl-collapse-up {
   from {
     height: var(--collapsible-panel-height);
     opacity: 1;
@@ -384,36 +384,36 @@
  * com teto de 450 ms para listas longas não demorarem a aparecer.
  */
 @utility animate-enter {
-  animation: enter var(--duration-enter) var(--ease-out-soft) both;
-  animation-delay: min(calc(var(--i, 0) * 45ms), 450ms);
+  animation: hl-enter var(--duration-enter) var(--ease-out-soft) both;
+  animation-delay: min(calc(var(--i, 0) * 70ms), 700ms);
 }
 
 @utility animate-enter-fade {
-  animation: enter-fade var(--duration-enter) var(--ease-out-soft) both;
-  animation-delay: min(calc(var(--i, 0) * 45ms), 450ms);
+  animation: hl-enter-fade var(--duration-enter) var(--ease-out-soft) both;
+  animation-delay: min(calc(var(--i, 0) * 70ms), 700ms);
 }
 
 @utility animate-enter-scale {
-  animation: enter-scale var(--duration-enter) var(--ease-out-soft) both;
-  animation-delay: min(calc(var(--i, 0) * 45ms), 450ms);
+  animation: hl-enter-scale var(--duration-enter) var(--ease-out-soft) both;
+  animation-delay: min(calc(var(--i, 0) * 70ms), 700ms);
 }
 
 @utility animate-enter-left {
-  animation: enter-left var(--duration-enter) var(--ease-out-soft) both;
-  animation-delay: min(calc(var(--i, 0) * 45ms), 450ms);
+  animation: hl-enter-left var(--duration-enter) var(--ease-out-soft) both;
+  animation-delay: min(calc(var(--i, 0) * 70ms), 700ms);
 }
 
 @utility animate-exit-down {
-  animation: exit-down var(--duration-exit) var(--ease-in-soft) both;
+  animation: hl-exit-down var(--duration-exit) var(--ease-in-soft) both;
 }
 
-@utility animate-collapsible-down {
-  animation: collapsible-down var(--duration-enter) var(--ease-out-soft) both;
+@utility animate-collapse-down {
+  animation: hl-collapse-down var(--duration-enter) var(--ease-out-soft) both;
   overflow: hidden;
 }
 
-@utility animate-collapsible-up {
-  animation: collapsible-up var(--duration-exit) var(--ease-in-soft) both;
+@utility animate-collapse-up {
+  animation: hl-collapse-up var(--duration-exit) var(--ease-in-soft) both;
   overflow: hidden;
 }
 

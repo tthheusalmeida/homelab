@@ -20,7 +20,7 @@ function CollapsibleContent({
     <CollapsiblePrimitive.Panel
       data-slot="collapsible-content"
       className={cn(
-        "h-(--collapsible-panel-height) data-open:animate-collapsible-down data-closed:animate-collapsible-up",
+        "h-(--collapsible-panel-height) data-open:animate-collapse-down data-closed:animate-collapse-up",
         className
       )}
       {...props}

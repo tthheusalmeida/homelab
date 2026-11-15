@@ -12,7 +12,7 @@ import { CircleCheck, X } from 'lucide-react';
 
 export const SNACKBAR_DURATION_MS = 3000;
 /** Tempo da animação de saída: a mensagem só sai do DOM depois dela. */
-export const SNACKBAR_EXIT_MS = 200;
+export const SNACKBAR_EXIT_MS = 240;
 
 interface SnackbarApi {
   /** Mostra uma mensagem no canto inferior direito; uma nova mensagem substitui a anterior. */
