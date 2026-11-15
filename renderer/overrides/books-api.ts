@@ -1,5 +1,3 @@
-import { api } from '#lib/api';
-
 import type {
   BookDetail,
   BookPosition,
@@ -15,13 +13,9 @@ import { IpcChannels } from '../../src/shared/channels';
 import { ipc } from '../ipc';
 
 /**
- * Cópia de `front/src/pages/library/books/api.ts` da fase 07a: as **leituras** vão por IPC e a
- * escrita (criar, editar, apagar, estrutura, capítulos, progresso e posição) segue por HTTP até a
- * 07b. As duas partes usam o mesmo `BookService` do back, então não há conflito.
+ * Cópia de `front/src/pages/library/books/api.ts` com o corpo por IPC (fases 07a e 07b): leitura e
+ * escrita dos livros. Mesmas assinaturas; o `:id` da rota virou campo do payload.
  */
-
-const base = '/library/books';
-const path = (id: string) => `${base}/${encodeURIComponent(id)}`;
 
 export function getBooks(documentId?: string): Promise<BookSummary[]> {
   return ipc.invoke(IpcChannels.library.books.list, documentId ? { documentId } : {});
@@ -39,55 +33,42 @@ export function searchBook(id: string, q: string): Promise<BookSearchHit[]> {
   return ipc.invoke(IpcChannels.library.books.search, { id, q });
 }
 
-// --- Escrita: continua por HTTP até a fase 07b ---
-
-export function createBook(input: CreateBookInput) {
-  return api<BookDetail>(base, {
-    method: 'POST',
-    body: JSON.stringify(input),
-  });
+export function createBook(input: CreateBookInput): Promise<BookDetail> {
+  return ipc.invoke(IpcChannels.library.books.create, input);
 }
 
-export function updateBook(id: string, input: UpdateBookInput) {
-  return api<BookDetail>(path(id), {
-    method: 'PATCH',
-    body: JSON.stringify(input),
-  });
+export function updateBook(id: string, input: UpdateBookInput): Promise<BookDetail> {
+  return ipc.invoke(IpcChannels.library.books.update, { id, ...input });
 }
 
-export function deleteBook(id: string) {
-  return api<void>(path(id), { method: 'DELETE' });
+export function deleteBook(id: string): Promise<void> {
+  return ipc.invoke(IpcChannels.library.books.delete, { id });
 }
 
-export function setBookStructure(id: string, modules: ModuleDraft[]) {
-  return api<BookDetail>(`${path(id)}/structure`, {
-    method: 'PUT',
-    body: JSON.stringify({ modules }),
-  });
+export function setBookStructure(id: string, modules: ModuleDraft[]): Promise<BookDetail> {
+  return ipc.invoke(IpcChannels.library.books.setStructure, { id, modules });
 }
 
-export function addBookChapter(id: string, documentId: string, moduleId?: string) {
-  return api<BookDetail>(`${path(id)}/chapters`, {
-    method: 'POST',
-    body: JSON.stringify(moduleId ? { documentId, moduleId } : { documentId }),
-  });
+export function addBookChapter(
+  id: string,
+  documentId: string,
+  moduleId?: string,
+): Promise<BookDetail> {
+  return ipc.invoke(
+    IpcChannels.library.books.addChapter,
+    moduleId ? { id, documentId, moduleId } : { id, documentId },
+  );
 }
 
-export function setChapterRead(id: string, documentId: string, read: boolean) {
-  return api<BookDetail>(`${path(id)}/chapters/${encodeURIComponent(documentId)}/read`, {
-    method: 'PUT',
-    body: JSON.stringify({ read }),
-  });
+export function setChapterRead(id: string, documentId: string, read: boolean): Promise<BookDetail> {
+  return ipc.invoke(IpcChannels.library.books.markChapterRead, { id, documentId, read });
 }
 
 /** Zera o progresso do livro (capítulos lidos, posição e conclusão). */
-export function resetBookProgress(id: string) {
-  return api<BookDetail>(`${path(id)}/progress`, { method: 'DELETE' });
+export function resetBookProgress(id: string): Promise<BookDetail> {
+  return ipc.invoke(IpcChannels.library.books.resetProgress, { id });
 }
 
-export function saveBookPosition(id: string, position: BookPosition) {
-  return api<BookDetail>(`${path(id)}/position`, {
-    method: 'PUT',
-    body: JSON.stringify(position),
-  });
+export function saveBookPosition(id: string, position: BookPosition): Promise<BookDetail> {
+  return ipc.invoke(IpcChannels.library.books.setPosition, { id, ...position });
 }
