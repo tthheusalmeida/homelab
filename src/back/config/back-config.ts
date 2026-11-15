@@ -18,6 +18,9 @@ export abstract class BackConfig {
 
   abstract readonly ollamaUrl: string;
 
+  /** Arquivo onde o consumo de IA fica guardado entre execuções; `null` guarda só em memória (testes). */
+  abstract readonly usageFile: string | null;
+
   /** Chave do Gemini; `null` quando não configurada (o provider responde `NOT_CONFIGURED`). */
   abstract readonly geminiApiKey: string | null;
 }

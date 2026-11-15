@@ -1,5 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
+import { Injectable, Optional } from '@nestjs/common';
+
+import { BackConfig } from '../../../config/back-config';
 import type { AIProviderName } from '../ai.model';
 
 import type {
@@ -11,11 +15,26 @@ import type {
   AIUsageTimeline,
 } from './ai-usage.model';
 
+/** Registros guardados (os mais recentes); o resto é descartado. */
+export const MAX_USAGE_RECORDS = 5000;
+
+/**
+ * Consumo de IA do app. Fica em memória e, quando o `BackConfig` informa `usageFile`, também em
+ * disco: sobrevive a reinícios. É o consumo **registrado pelo HomeLab neste computador** (tokens
+ * devolvidos pelas respostas), não o gasto real da conta no provedor.
+ */
 @Injectable()
 export class AiUsageService {
-  private readonly records: AIUsageRecord[] = [];
+  private readonly records: AIUsageRecord[];
 
-  private readonly maxRecords = 1000;
+  private readonly maxRecords = MAX_USAGE_RECORDS;
+
+  private readonly file: string | null;
+
+  constructor(@Optional() config?: BackConfig) {
+    this.file = config?.usageFile ?? null;
+    this.records = this.load();
+  }
 
   record(data: Omit<AIUsageRecord, 'id' | 'createdAt'>): AIUsageRecord {
     const record: AIUsageRecord = {
@@ -30,7 +49,38 @@ export class AiUsageService {
       this.records.pop();
     }
 
+    this.save();
+
     return record;
+  }
+
+  private load(): AIUsageRecord[] {
+    if (!this.file) {
+      return [];
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(fs.readFileSync(this.file, 'utf8'));
+      const list = (parsed as { records?: unknown })?.records;
+
+      return Array.isArray(list) ? (list as AIUsageRecord[]).slice(0, this.maxRecords) : [];
+    } catch {
+      // sem arquivo ou ilegível: começa do zero (o próximo registro grava um arquivo novo)
+      return [];
+    }
+  }
+
+  private save(): void {
+    if (!this.file) {
+      return;
+    }
+
+    try {
+      fs.mkdirSync(path.dirname(this.file), { recursive: true });
+      fs.writeFileSync(this.file, JSON.stringify({ version: 1, records: this.records }));
+    } catch {
+      // não conseguiu gravar: o consumo segue valendo em memória
+    }
   }
 
   getUsage(provider?: AIProviderName): AIUsageResponse {

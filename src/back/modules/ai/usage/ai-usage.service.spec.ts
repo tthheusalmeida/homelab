@@ -1,4 +1,10 @@
-import { AiUsageService } from './ai-usage.service';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+
+import type { BackConfig } from '../../../config/back-config';
+
+import { AiUsageService, MAX_USAGE_RECORDS } from './ai-usage.service';
 import type { AIUsageRecord } from './ai-usage.model';
 
 type Input = Omit<AIUsageRecord, 'id' | 'createdAt'>;
@@ -44,14 +50,14 @@ describe('AiUsageService', () => {
       expect(recentRequests.map((r) => r.model)).toEqual(['b', 'a']);
     });
 
-    it('when more than 1000 usages are recorded, should discard the oldest', () => {
-      for (let i = 0; i < 1001; i++) {
+    it('when more than the limit of usages are recorded, should discard the oldest', () => {
+      for (let i = 0; i < MAX_USAGE_RECORDS + 1; i++) {
         service.record({ ...base, model: `m${i}` });
       }
 
       const { summary } = service.getUsage();
 
-      expect(summary.totalRequests).toBe(1000);
+      expect(summary.totalRequests).toBe(MAX_USAGE_RECORDS);
     });
   });
 
@@ -149,5 +155,82 @@ describe('AiUsageService', () => {
 
       expect(service.getUsage().recentRequests).toHaveLength(100);
     });
+  });
+});
+
+describe('AiUsageService persistence', () => {
+  let dir: string;
+  let file: string;
+  const config = () => ({ usageFile: file }) as BackConfig;
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'homelab-usage-'));
+    file = path.join(dir, 'sub', 'ai-usage.json');
+  });
+
+  afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  it('when a usage is recorded, should write it to the file (creating the folder)', () => {
+    new AiUsageService(config()).record(base);
+
+    const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
+
+    expect(saved.records).toHaveLength(1);
+    expect(saved.records[0]).toMatchObject(base);
+  });
+
+  it('when the app restarts, should load the usage recorded before', () => {
+    const first = new AiUsageService(config());
+    first.record({ ...base, model: 'a', estimatedCost: 1 });
+    first.record({ ...base, model: 'b', estimatedCost: 2 });
+
+    const second = new AiUsageService(config());
+    const { summary, recentRequests } = second.getUsage();
+
+    expect(summary.totalRequests).toBe(2);
+    expect(summary.estimatedCost).toBe(3);
+    expect(recentRequests.map((r) => r.model)).toEqual(['b', 'a']);
+  });
+
+  it('when the app restarts and records more, should keep the old ones and add the new', () => {
+    new AiUsageService(config()).record({ ...base, model: 'old' });
+
+    const second = new AiUsageService(config());
+    second.record({ ...base, model: 'new' });
+
+    expect(new AiUsageService(config()).getUsage().summary.totalRequests).toBe(2);
+  });
+
+  it('when the file is corrupt, should start empty without failing', () => {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, '{nao e json');
+
+    expect(new AiUsageService(config()).getUsage().summary.totalRequests).toBe(0);
+  });
+
+  it('when the file has no records list, should start empty', () => {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify({ version: 1 }));
+
+    expect(new AiUsageService(config()).getUsage().summary.totalRequests).toBe(0);
+  });
+
+  it('when the file cannot be written, should keep counting in memory', () => {
+    const blocked = path.join(dir, 'arquivo');
+    fs.writeFileSync(blocked, 'x');
+    const service = new AiUsageService({
+      usageFile: path.join(blocked, 'ai-usage.json'),
+    } as BackConfig);
+
+    expect(() => service.record(base)).not.toThrow();
+    expect(service.getUsage().summary.totalRequests).toBe(1);
+  });
+
+  it('when there is no usage file configured, should not write anything', () => {
+    const service = new AiUsageService({ usageFile: null } as BackConfig);
+    service.record(base);
+
+    expect(fs.existsSync(file)).toBe(false);
+    expect(service.getUsage().summary.totalRequests).toBe(1);
   });
 });

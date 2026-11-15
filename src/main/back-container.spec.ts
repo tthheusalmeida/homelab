@@ -31,6 +31,7 @@ describe('BackContainer', () => {
     audioTempDir: path.join(root, 'ta'),
     ollamaUrl: 'http://127.0.0.1:1',
     geminiApiKey: null,
+    usageFile: null,
   });
 
   beforeAll(async () => {

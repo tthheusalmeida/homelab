@@ -46,4 +46,11 @@ describe('SettingsBackConfig', () => {
     expect(new SettingsBackConfig(store, 'AIza-chave').geminiApiKey).toBe('AIza-chave');
     expect(new SettingsBackConfig(store, null).geminiApiKey).toBeNull();
   });
+
+  it('when given a usage file, should expose it; otherwise null', () => {
+    expect(new SettingsBackConfig(store, null, '/dados/ai-usage.json').usageFile).toBe(
+      '/dados/ai-usage.json',
+    );
+    expect(new SettingsBackConfig(store, null).usageFile).toBeNull();
+  });
 });

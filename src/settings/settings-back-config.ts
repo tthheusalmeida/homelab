@@ -11,6 +11,7 @@ export class SettingsBackConfig extends BackConfig {
   constructor(
     private readonly settings: SettingsStore,
     readonly geminiApiKey: string | null,
+    readonly usageFile: string | null = null,
   ) {
     super();
   }
