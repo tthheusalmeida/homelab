@@ -61,14 +61,18 @@ Erros: Gemini sem chave → `NOT_CONFIGURED` (mensagem manda abrir Configuraçõ
 Erros: falha do provider (Gemini ou Ollama) → `PROVIDER_FAILED` com a mensagem de hoje (ex.: "A requisição para o chat do Ollama falhou."); Gemini sem chave → `NOT_CONFIGURED`. A conversão para `PROVIDER_FAILED` fica no `ChatHandler` (o mapper genérico não sabe a origem do erro). O IPC não é cancelável: o cancelamento do Chat é só no renderer (rejeita com `AbortError` e descarta a resposta); a requisição já enviada termina no main e conta no Uso.
 
 ## library (fases 6a e 6b)
-| Canal | Substitui | Fase |
-|---|---|---|
-| `library:documents:list` | `GET library/documents` (filtros e busca na query) | 6a |
-| `library:documents:get` | `GET library/documents/:id` | 6a |
-| `library:inbox` | `GET library/inbox` | 6a |
-| `library:categories` | `GET library/categories` | 6a |
-| `library:tags` | `GET library/tags` | 6a |
-| `library:index` | `GET library/index` | 6a |
+| Canal | Substitui | Payload | Retorno | Fase |
+|---|---|---|---|---|
+| `library:documents:list` | `GET library/documents` | `{ q?, category?, type?, source?, tags?, status?, sort? }` | lista de resumos (`DocumentSummary`) | 6a (feito) |
+| `library:documents:get` | `GET library/documents/:id` | `{ id }` | `{ meta, content }` | 6a (feito) |
+| `library:inbox` | `GET library/inbox` | — | resumos `pending`, mais recentes primeiro | 6a (feito) |
+| `library:categories` | `GET library/categories` | — | árvore `{ name, path, count, children }` (só publicados) | 6a (feito) |
+| `library:tags` | `GET library/tags` | — | `[{ tag, count }]` | 6a (feito) |
+| `library:index` | `GET library/index` | — | `{ total, errors: [{ file, message }] }` | 6a (feito) |
+
+Filtros de `library:documents:list` (iguais aos parâmetros de query de hoje, mas `category` e `tags` já são listas): `q` busca em título, nome do arquivo, tags, categorias e conteúdo; `category` é o caminho por nível (documentos dentro dele); `tags` exige todas; `type` (`summary`, `transcription`, `article`), `source` (`video`, `manual`), `status` (padrão `published`; também `archived`, `pending`) e `sort` (`title` padrão, ou `recent`). Valor fora dessas listas → `VALIDATION`; documento inexistente → `NOT_FOUND`. Não há paginação (o back devolve a lista inteira).
+
+A pasta da biblioteca não gera `NOT_CONFIGURED`: ela é obrigatória nas Configurações (com padrão em Documentos/HomeLab) e o back trata pasta inexistente como vazia.
 | `library:reindex` | `POST library/reindex` | 6b |
 | `library:documents:create-article` | `POST library/documents/article` | 6b |
 | `library:documents:publish` | `POST library/documents/:id/publish` | 6b |

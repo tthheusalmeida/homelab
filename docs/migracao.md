@@ -30,7 +30,7 @@
 | 03b | Janela de Configurações e item no rodapé da barra lateral | concluída |
 | 04 | Health e AI (leitura) | concluída |
 | 05 | Chat | concluída |
-| 06a | Biblioteca, leitura | pendente |
+| 06a | Biblioteca, leitura | concluída |
 | 06b | Biblioteca, escrita | pendente |
 | 07a | Livros, leitura | pendente |
 | 07b | Livros, escrita | pendente |
