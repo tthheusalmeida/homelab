@@ -16,6 +16,16 @@ export const IpcChannels = {
     update: 'settings:update',
     pickFolder: 'settings:pick-folder',
   },
+  health: {
+    system: 'health:system',
+    ai: 'health:ai',
+  },
+  ai: {
+    providers: 'ai:providers',
+    models: 'ai:models',
+    thinking: 'ai:thinking',
+    usage: 'ai:usage',
+  },
   providers: {
     external: {
       list: 'providers:external:list',

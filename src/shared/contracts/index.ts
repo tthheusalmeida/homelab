@@ -1,6 +1,16 @@
 import type { IpcChannel, IpcChannels } from '../channels';
 
 import type {
+  AiModelEntry,
+  AiModelsRequest,
+  AiProviderEntry,
+  AiThinkingEntry,
+  AiThinkingRequest,
+  AiUsageReport,
+  AiUsageRequestFilter,
+} from './ai';
+import type { HealthReport } from './health';
+import type {
   ExternalProviderInfo,
   ExternalProviderSaveRequest,
   ExternalProviderSaveResult,
@@ -34,6 +44,14 @@ export interface IpcContracts {
     request: { defaultPath?: string };
     response: string | null;
   };
+
+  [IpcChannels.health.system]: { request: void; response: HealthReport };
+  [IpcChannels.health.ai]: { request: void; response: HealthReport };
+
+  [IpcChannels.ai.providers]: { request: void; response: AiProviderEntry[] };
+  [IpcChannels.ai.models]: { request: AiModelsRequest; response: AiModelEntry[] };
+  [IpcChannels.ai.thinking]: { request: AiThinkingRequest; response: AiThinkingEntry[] };
+  [IpcChannels.ai.usage]: { request: AiUsageRequestFilter; response: AiUsageReport };
 
   [IpcChannels.providers.external.list]: { request: void; response: ExternalProviderInfo[] };
   [IpcChannels.providers.external.get]: {
