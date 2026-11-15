@@ -12,6 +12,15 @@ import type {
 import type { ChatSendRequest, ChatSendResponse } from './chat';
 import type { HealthReport } from './health';
 import type {
+  LibraryCategoryNode,
+  LibraryDocumentDetail,
+  LibraryDocumentRequest,
+  LibraryDocumentSummary,
+  LibraryIndexStatus,
+  LibraryListFilters,
+  LibraryTagCount,
+} from './library';
+import type {
   ExternalProviderInfo,
   ExternalProviderSaveRequest,
   ExternalProviderSaveResult,
@@ -55,6 +64,19 @@ export interface IpcContracts {
   [IpcChannels.ai.usage]: { request: AiUsageRequestFilter; response: AiUsageReport };
 
   [IpcChannels.chat.send]: { request: ChatSendRequest; response: ChatSendResponse };
+
+  [IpcChannels.library.documents.list]: {
+    request: LibraryListFilters;
+    response: LibraryDocumentSummary[];
+  };
+  [IpcChannels.library.documents.get]: {
+    request: LibraryDocumentRequest;
+    response: LibraryDocumentDetail;
+  };
+  [IpcChannels.library.inbox]: { request: void; response: LibraryDocumentSummary[] };
+  [IpcChannels.library.categories]: { request: void; response: LibraryCategoryNode[] };
+  [IpcChannels.library.tags]: { request: void; response: LibraryTagCount[] };
+  [IpcChannels.library.index]: { request: void; response: LibraryIndexStatus };
 
   [IpcChannels.providers.external.list]: { request: void; response: ExternalProviderInfo[] };
   [IpcChannels.providers.external.get]: {

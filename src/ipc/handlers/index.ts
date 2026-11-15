@@ -8,6 +8,7 @@ import { AppHandler, type AppInfo } from './app.handler';
 import { ChatHandler, type ChatSource } from './chat.handler';
 import { ExternalProvidersHandler } from './external-providers.handler';
 import { HealthHandler, type HealthCheckSource } from './health.handler';
+import { LibraryHandler, type LibraryReader } from './library.handler';
 import { LocalProvidersHandler } from './local-providers.handler';
 import { SettingsHandler, type FolderPicker } from './settings.handler';
 
@@ -18,6 +19,7 @@ export interface BackReaders {
   ai: AiCatalog;
   aiUsage: AiUsageSource;
   chat: ChatSource;
+  library: LibraryReader;
 }
 
 export interface HandlerDeps {
@@ -39,5 +41,6 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
     new HealthHandler(deps.back.healthSystem, deps.back.healthAi),
     new AiHandler(deps.back.ai, deps.back.aiUsage),
     new ChatHandler(deps.back.chat),
+    new LibraryHandler(deps.back.library),
   ];
 }

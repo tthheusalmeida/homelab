@@ -24,6 +24,14 @@ describe('createHandlers', () => {
           ai: { providersList: jest.fn(), models: jest.fn(), thinking: jest.fn() },
           aiUsage: { getUsage: jest.fn() },
           chat: { chat: jest.fn() },
+          library: {
+            list: jest.fn(),
+            inbox: jest.fn(),
+            get: jest.fn(),
+            categories: jest.fn(),
+            tags: jest.fn(),
+            indexStatus: jest.fn(),
+          },
         },
       }),
     );

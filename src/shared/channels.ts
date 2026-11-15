@@ -29,6 +29,16 @@ export const IpcChannels = {
   chat: {
     send: 'chat:send',
   },
+  library: {
+    documents: {
+      list: 'library:documents:list',
+      get: 'library:documents:get',
+    },
+    inbox: 'library:inbox',
+    categories: 'library:categories',
+    tags: 'library:tags',
+    index: 'library:index',
+  },
   providers: {
     external: {
       list: 'providers:external:list',
