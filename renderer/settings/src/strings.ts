@@ -67,7 +67,7 @@ export const PATH_FIELDS = [
 export const LOCAL_FIELD_LABELS: Record<string, string> = {
   directory: 'Pasta',
   executable: 'Executável',
-  model: 'Arquivo de modelo',
+  model: 'Arquivo de modelo (nome ou caminho completo)',
   url: 'Endereço (URL)',
 };
 

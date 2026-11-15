@@ -180,6 +180,11 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     exists: fs.existsSync,
     fetchFn: (url, init) => fetch(url, init),
     ffmpegVersion: async () => (await run('ffmpeg', ['-version'], { timeout: 5000 })).stdout,
+    whisperIo: {
+      run: (file, args) => run(file, args),
+      readText: (file) => fs.promises.readFile(file, 'utf8'),
+      remove: (file) => fs.promises.unlink(file),
+    },
     checkGeminiKey: async (apiKey) => {
       const { GoogleGenAI } = runtime.pkg<{
         GoogleGenAI: new (options: { apiKey: string }) => { models: { list(): Promise<unknown> } };
@@ -206,6 +211,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
   await host.start({
     appConfig: new DesktopAppConfig(services.settings.get(), target.origin),
     geminiApiKey: await services.secrets.get('gemini.apiKey'),
+    whisper: services.whisper,
     corsOrigin: target.origin,
     port: apiPort(),
   });

@@ -48,7 +48,9 @@ describe('LocalProvidersSection', () => {
 
     expect(screen.getByLabelText('Pasta')).toHaveValue('D:/whisper');
     expect(screen.getByLabelText('Executável')).toHaveValue('whisper-cli.exe');
-    expect(screen.getByLabelText('Arquivo de modelo')).toHaveValue('modelo.bin');
+    expect(screen.getByLabelText('Arquivo de modelo (nome ou caminho completo)')).toHaveValue(
+      'modelo.bin',
+    );
     expect(screen.queryByLabelText('Endereço (URL)')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Whisper/ })).toHaveAttribute(
       'aria-expanded',

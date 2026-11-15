@@ -9,6 +9,8 @@ export const SettingsMessages = {
   urlInvalid: 'A URL do Ollama deve ser um endereço http ou https válido.',
   fileNameRequired: (label: string) => `Informe ${label}.`,
   fileNameHasPath: (label: string) => `${label} deve ser só o nome do arquivo, sem pastas.`,
+  modelInvalid:
+    'O modelo do Whisper deve ser o nome do arquivo (na pasta do Whisper) ou o caminho completo.',
 } as const;
 
 const PATH_LABELS = {
@@ -42,6 +44,21 @@ function requireFileName(value: string, label: string): void {
   }
 }
 
+/** Modelo: só o nome do arquivo (junto à pasta do Whisper) ou um caminho completo. */
+function requireModel(value: string, label: string): void {
+  if (!value.trim()) {
+    fail(SettingsMessages.fileNameRequired(label));
+  }
+
+  if (path.isAbsolute(value)) {
+    return;
+  }
+
+  if (path.basename(value) !== value || value.includes('/') || value.includes('\\')) {
+    fail(SettingsMessages.modelInvalid);
+  }
+}
+
 function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
@@ -56,7 +73,7 @@ export function validateSettings(settings: SettingsData): void {
 
   requireAbsolutePath(whisper.directory, 'a pasta do Whisper');
   requireFileName(whisper.executable, 'o executável do Whisper');
-  requireFileName(whisper.model, 'o arquivo de modelo do Whisper');
+  requireModel(whisper.model, 'o arquivo de modelo do Whisper');
 
   try {
     const url = new URL(ollama.url);

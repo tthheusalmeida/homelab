@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 
 import type { LocalProviderDefinition } from './local-providers.service';
+import { whisperModelPath } from './whisper-binary-resolver';
 
 export const LocalTestMessages = {
   whisperOk: 'Whisper e modelo encontrados.',
@@ -30,7 +31,7 @@ export function createWhisperDefinition(
     }),
     test: (config) => {
       const executable = path.join(config.directory, config.executable);
-      const model = path.join(config.directory, config.model);
+      const model = whisperModelPath(config.directory, config.model);
 
       if (!exists(executable)) {
         return Promise.resolve({

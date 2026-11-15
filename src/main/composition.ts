@@ -8,6 +8,8 @@ import {
   createWhisperDefinition,
 } from '../providers/local-definitions';
 import { LocalProvidersService } from '../providers/local-providers.service';
+import { DesktopWhisperService, type WhisperRunner } from '../providers/desktop-whisper.service';
+import { WhisperBinaryResolver } from '../providers/whisper-binary-resolver';
 import { JsonFile } from '../settings/json-file';
 import { SecretStore, type SecretCipher } from '../settings/secret-store';
 import { createDefaultSettings } from '../settings/settings-defaults';
@@ -28,6 +30,12 @@ export interface CompositionOptions {
   fetchFn: Parameters<typeof createOllamaDefinition>[0];
   ffmpegVersion: () => Promise<string>;
   checkGeminiKey: GeminiKeyChecker;
+  /** Entrada e saída do Whisper: executar o programa e ler/apagar o `.txt` gerado. */
+  whisperIo: {
+    run: WhisperRunner;
+    readText: (file: string) => Promise<string>;
+    remove: (file: string) => Promise<void>;
+  };
 }
 
 /** Monta stores e serviços de configuração a partir de dependências injetadas. */
@@ -47,9 +55,25 @@ export function createServices(options: CompositionOptions) {
     options.cipher,
   );
 
+  const whisper = new DesktopWhisperService({
+    config: () => settings.get().local.whisper,
+    resolver: new WhisperBinaryResolver({
+      platform: options.platform,
+      arch: options.arch,
+      exists: options.exists,
+    }),
+    run: options.whisperIo.run,
+    files: {
+      exists: options.exists,
+      readText: options.whisperIo.readText,
+      remove: options.whisperIo.remove,
+    },
+  });
+
   return {
     settings,
     secrets,
+    whisper,
     settingsService: new SettingsService(settings),
     externalProviders: new ExternalProvidersService(
       [createGeminiDefinition(options.checkGeminiKey)],

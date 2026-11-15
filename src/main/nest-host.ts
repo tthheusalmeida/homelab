@@ -2,6 +2,7 @@ import { API_PREFIX, Messages } from './constants';
 import { createGeminiProvider } from './gemini-provider-factory';
 import { replaceModuleProvider, type MetadataAccess } from './module-patch';
 import type { BackRuntime } from './back-runtime';
+import { patchWhisperProvider } from './whisper-provider';
 
 /** Módulos do back que compõem a API (mesma lista do `AppModule` do back, sem `ConfigModule`). */
 export const BACK_MODULES = [
@@ -43,6 +44,8 @@ export interface NestHostOptions {
   /** Implementa o `AppConfig` do back (lê do Settings). */
   appConfig: unknown;
   geminiApiKey: string | null;
+  /** Substitui o `WhisperService` do back (objeto com `transcribe(audioPath)`). */
+  whisper: unknown;
   corsOrigin: string;
   port: string;
 }
@@ -64,6 +67,11 @@ export class NestHost {
     const common = this.runtime.pkg<NestCommon>('@nestjs/common');
 
     this.patchGeminiProvider(options.geminiApiKey);
+    patchWhisperProvider({
+      runtime: this.runtime,
+      metadata: this.metadata(),
+      whisper: options.whisper,
+    });
 
     const app = await NestFactory.create(this.buildRootModule(common, options.appConfig));
 

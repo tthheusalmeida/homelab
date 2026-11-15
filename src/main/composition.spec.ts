@@ -6,6 +6,12 @@ import { makeTempDir, removeDir } from '../settings/settings.testing';
 
 import { createServices } from './composition';
 
+const whisperIo = () => ({
+  run: jest.fn().mockResolvedValue(undefined),
+  readText: jest.fn().mockResolvedValue(' texto '),
+  remove: jest.fn().mockResolvedValue(undefined),
+});
+
 describe('createServices', () => {
   let userData: string;
   let documents: string;
@@ -22,6 +28,7 @@ describe('createServices', () => {
       fetchFn: () => Promise.resolve({ ok: true, status: 200 }),
       ffmpegVersion: () => Promise.resolve('ffmpeg version 7'),
       checkGeminiKey: () => Promise.resolve(),
+      whisperIo: whisperIo(),
     });
 
   beforeEach(() => {
@@ -48,6 +55,57 @@ describe('createServices', () => {
       path.join(path.resolve('/projeto/desktop'), 'resources', 'bin', 'win32-x64'),
     );
     expect(settings.get().local.whisper.executable).toBe('whisper-cli.exe');
+  });
+
+  it('when transcribing through the services, should use the whisper folder, executable and model from the settings', async () => {
+    const io = whisperIo();
+    const services = createServices({
+      userDataDir: userData,
+      documentsDir: documents,
+      projectRoot: path.resolve('/projeto/desktop'),
+      platform: 'win32',
+      arch: 'x64',
+      cipher: fakeCipher(),
+      exists: () => true,
+      fetchFn: () => Promise.resolve({ ok: true, status: 200 }),
+      ffmpegVersion: () => Promise.resolve('ffmpeg version 7'),
+      checkGeminiKey: () => Promise.resolve(),
+      whisperIo: io,
+    });
+    const whisper = services.settings.get().local.whisper;
+
+    await expect(services.whisper.transcribe(path.resolve('/a.wav'))).resolves.toBe('texto');
+
+    expect(io.run).toHaveBeenCalledWith(
+      path.join(whisper.directory, whisper.executable),
+      expect.arrayContaining(['-m', path.join(whisper.directory, whisper.model)]),
+    );
+  });
+
+  it('when the whisper folder is changed in the settings, should transcribe with the new one without recreating the service', async () => {
+    const io = whisperIo();
+    const services = createServices({
+      userDataDir: userData,
+      documentsDir: documents,
+      projectRoot: path.resolve('/projeto/desktop'),
+      platform: 'win32',
+      arch: 'x64',
+      cipher: fakeCipher(),
+      exists: () => true,
+      fetchFn: () => Promise.resolve({ ok: true, status: 200 }),
+      ffmpegVersion: () => Promise.resolve('ffmpeg version 7'),
+      checkGeminiKey: () => Promise.resolve(),
+      whisperIo: io,
+    });
+    const model = path.resolve('/modelos/grande.bin');
+
+    services.localProviders.save('whisper', { directory: path.resolve('/outro'), model });
+    await services.whisper.transcribe(path.resolve('/a.wav'));
+
+    expect(io.run).toHaveBeenCalledWith(
+      path.join(path.resolve('/outro'), 'whisper-cli.exe'),
+      expect.arrayContaining(['-m', model]),
+    );
   });
 
   it('when saving through the services, should write settings.json and secrets.json in userData', async () => {

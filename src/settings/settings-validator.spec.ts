@@ -36,9 +36,30 @@ describe('validateSettings', () => {
     expectValidation((s) => (s.local.whisper.directory = 'whisper'), /pasta do Whisper/);
   });
 
-  it('when the whisper model includes a folder, should reject asking for only the file name', () => {
+  it('when the whisper model is a relative path with a folder, should reject asking for the file name or the full path', () => {
     expectValidation(
       (s) => (s.local.whisper.model = path.join('sub', 'modelo.bin')),
+      /nome do arquivo.*caminho completo/,
+    );
+  });
+
+  it('when the whisper model is a full path outside the whisper folder, should accept', () => {
+    const settings = testDefaults();
+    settings.local.whisper.model = path.resolve('/modelos/ggml-large-v3-turbo.bin');
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
+  it('when the whisper model is blank, should reject asking to inform it', () => {
+    expectValidation(
+      (s) => (s.local.whisper.model = '  '),
+      /Informe o arquivo de modelo do Whisper/,
+    );
+  });
+
+  it('when the whisper executable includes a folder, should still reject asking for only the file name', () => {
+    expectValidation(
+      (s) => (s.local.whisper.executable = path.join('sub', 'whisper-cli.exe')),
       /só o nome do arquivo/,
     );
   });

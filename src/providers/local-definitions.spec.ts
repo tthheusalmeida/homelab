@@ -37,6 +37,30 @@ describe('whisper definition', () => {
     expect(result.message).toContain('m.bin');
   });
 
+  it('when the model is a full path outside the whisper folder, should test that path', async () => {
+    const model = path.resolve('/modelos/grande.bin');
+    const checked: string[] = [];
+    const definition = createWhisperDefinition((file) => {
+      checked.push(file);
+
+      return true;
+    });
+
+    await expect(definition.test({ ...whisperConfig, model })).resolves.toMatchObject({ ok: true });
+    expect(checked).toContain(model);
+    expect(checked).not.toContain(path.join(whisperConfig.directory, model));
+  });
+
+  it('when the model is a full path that does not exist, should answer not ok naming it', async () => {
+    const model = path.resolve('/modelos/grande.bin');
+    const definition = createWhisperDefinition((file) => file !== model);
+
+    const result = await definition.test({ ...whisperConfig, model });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain(model);
+  });
+
   it('when converting a config to a patch, should include only the informed fields', () => {
     const definition = createWhisperDefinition(() => true);
 
