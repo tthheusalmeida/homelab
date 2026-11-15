@@ -40,10 +40,42 @@ describe('IpcErrorMapper', () => {
   });
 
   it('when the error is another HTTP status, should map to INTERNAL', () => {
-    expect(mapper.map(new HttpLikeError('Falhou', 502))).toEqual({
+    expect(mapper.map(new HttpLikeError('Falhou', 500))).toEqual({
       code: 'INTERNAL',
       message: 'Falhou',
     });
+  });
+
+  it('when the error is an HTTP 502, should map to PROVIDER_FAILED keeping the message', () => {
+    expect(
+      mapper.map(
+        new HttpLikeError('Não foi possível obter a sugestão da IA. Tente novamente.', 502),
+      ),
+    ).toEqual({
+      code: 'PROVIDER_FAILED',
+      message: 'Não foi possível obter a sugestão da IA. Tente novamente.',
+    });
+  });
+
+  it('when a 502 wraps a NOT_CONFIGURED IpcError as its cause, should answer NOT_CONFIGURED with that message', () => {
+    const cause = new IpcError(IpcErrorCode.NOT_CONFIGURED, 'Chave do Gemini não configurada.');
+    const wrapper = Object.assign(
+      new Error('Não foi possível obter a sugestão da IA.', { cause }),
+      {
+        getStatus: () => 502,
+      },
+    );
+
+    expect(mapper.map(wrapper)).toEqual({
+      code: 'NOT_CONFIGURED',
+      message: 'Chave do Gemini não configurada.',
+    });
+  });
+
+  it('when the cause is some other error, should ignore it and map the outer error', () => {
+    const wrapper = new Error('Falha externa', { cause: new Error('detalhe') });
+
+    expect(mapper.map(wrapper)).toEqual({ code: 'INTERNAL', message: 'Falha externa' });
   });
 
   it('when the error is a plain Error, should map to INTERNAL keeping the message', () => {
