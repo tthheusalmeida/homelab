@@ -15,6 +15,8 @@ Origem: os 37 endpoints HTTP atuais (`/api/v1`) + os canais novos de app, settin
 |---|---|---|
 | `settings:get` | — | `{ libraryDir, inboxDir, videoTempDir, audioTempDir }` |
 | `settings:update` | parte das pastas (`Partial`) | `{ value: pastas, restartRequired }`; pasta inválida → `VALIDATION` |
+| `appearance:get` | — | `{ theme: system|light|dark, accent: cyan|blue|indigo|violet|emerald|rose|orange }` |
+| `appearance:update` | parte da aparência (`Partial`) | a aparência completa; tema ou cor desconhecidos → `VALIDATION`; não pede reinício |
 | `settings:pick-folder` | `{ defaultPath? }` | pasta escolhida no seletor do sistema, ou `null` se cancelar |
 
 ## providers externos (fase 03a, novos)

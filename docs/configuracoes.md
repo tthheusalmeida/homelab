@@ -8,7 +8,7 @@
 
 ## Janela de Configurações
 - Abre pelo item **Configurações** no rodapé da barra lateral, por `Ctrl+,`/`Cmd+,` e sozinha na primeira execução sem chave do Gemini.
-- Seções: **Pastas** (com seletor de pasta do sistema), **IAs externas** (chave mascarada, Testar/Salvar) e **Serviços locais** (Whisper, Ollama e ffmpeg, só teste).
+- Seções: **Pastas** (com seletor de pasta do sistema), **Aparência** (tema e cor de destaque; vale na hora, sem reiniciar; ver `identidade.md`), **IAs externas** (passo a passo para criar a chave enquanto não configurada, chave mascarada, Testar/Salvar, link para o consumo real no painel do provedor) e **Serviços locais** (Whisper, Ollama e ffmpeg, só teste).
 - Cada provider é um item **recolhível**: fechado mostra nome, selo de status e uma descrição; clicar abre os campos.
 - "Salvo" aparece como **snackbar** no canto inferior direito (some em 3 s). Mostra "Reiniciar agora" quando uma gravação exige reinício. Código em `renderer/settings`.
 
@@ -26,6 +26,7 @@
 | Temporários | `Documentos/HomeLab/temp/video` e `.../temp/audio` |
 | Whisper | `resources/bin/<platform>-<arch>`, executável `whisper-cli(.exe)`, modelo `ggml-large-v3-turbo.bin` |
 | Ollama | `http://localhost:11434` |
+| Aparência | tema `system` (acompanha o Windows) e cor de destaque `cyan` (a do ícone) |
 
 ## Validação (ao salvar)
 - Pastas e pasta do Whisper: não vazias e **caminho absoluto**.

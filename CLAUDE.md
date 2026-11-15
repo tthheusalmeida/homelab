@@ -20,6 +20,7 @@ Estado: **migração em andamento, por fases**. Ver `docs/migracao.md`.
 | `docs/ipc-canais.md` | Inventário dos 37 endpoints HTTP → canais IPC (nomes e payloads) |
 | `docs/configuracoes.md` | Settings (substitui `.env`), providers externos e locais, segredos, binários por plataforma |
 | `docs/testing.md` | Convenções de teste, mocks, checklist manual e smoke E2E |
+| `docs/identidade.md` | Identidade Colmeia: tema claro/escuro/sistema, cor de destaque configurável, componentes hexagonais |
 | `docs/movimento.md` | Transições e animações: réguas de tempo, utilities `animate-*`, onde aplicar |
 | `docs/empacotamento.md` | Instalador Windows (`electron-builder`), binários, caminhos empacotados, ícone |
 | `docs/regras-de-negocio.md` | Onde ficam as regras que **não mudam** (`docs/regras/back`, `docs/regras/front`) |
@@ -63,7 +64,9 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/r
 - **Não há HTTP**: o front fala com o main só por `window.api` (IPC) e o back é só contêiner de DI. Ninguém abre porta; a CSP não libera `localhost`.
 - Código em `src/back` mantém a estrutura de módulos do back original (Nest com decorators) e imports relativos; o `BackConfig` é a única entrada de configuração dele (nada de `process.env`).
 - Imports relativos dentro de `desktop/src` (compilação com `tsc` puro, sem reescrita de alias).
+- **Fonte única de UI (OBRIGATÓRIO):** `renderer/src/ui` (primitivos) e `renderer/src/components` (baseComponentes) são a **única fonte** de componentes, nas duas janelas (app e Configurações). **Antes de criar qualquer coisa, procure o que já existe** (`ui/`, `components/`, `docs/identidade.md`, `docs/movimento.md`) e reutilize; se faltar uma variante, estenda o componente existente; se for novo e reaproveitável, crie em `components/` (ou `ui/`) e passe a usar nos lugares. Nada de HTML/Tailwind específico reimplementando o que um componente já faz, e as Configurações recebem as mesmas transições e o mesmo visual do app.
 - **UI do desktop (`renderer/`)**: reaproveite os componentes por alias (`#ui/*`, `#components/*`, `#lib/*`, `#hooks/*`, `#shared/*`, `#test/*`); não duplique HTML/Tailwind solto. Componentes por rota ficam em `pages/<rota>/components`; a base própria em `components`, construída sobre `ui`.
+- **Cores e marca:** nada de cor de destaque fixa (`cyan-*`, `blue-*`) em componente: ação = `primary`, marca = `brand` (ver `docs/identidade.md`); carregando = `LoadingState`/`HexLoader`, status = `HexDot`. Tema e cor são configuráveis em Configurações > Aparência.
 - **Movimento:** o que entra ou sai da tela anima (`animate-enter`, `animate-exit-down`, collapsible); use as utilities e réguas de `docs/movimento.md`, sem keyframes soltos. `prefers-reduced-motion` já é tratado globalmente.
 - Os `api.ts` do renderer falam só por `ipc.invoke(IpcChannels.x)`; nada de `fetch`, URL ou `import.meta.env`.
 - Arquivos de `renderer/src` vieram do front com CRLF e sem config do prettier; **não** rodar `prettier --write` em pastas, só em arquivos novos.
