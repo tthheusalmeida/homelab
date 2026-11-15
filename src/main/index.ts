@@ -4,35 +4,23 @@ import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
+import { GoogleGenAI } from '@google/genai';
 import { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell } from 'electron';
 
 import { createHandlers } from '../ipc/handlers';
 import { IpcRegistrar } from '../ipc/ipc-registrar';
-import { DesktopAppConfig } from '../settings/backend-config';
-import { importLegacyEnv } from '../settings/legacy-env-import';
+import { SettingsBackConfig } from '../settings/settings-back-config';
 
-import { BackRuntime } from './back-runtime';
+import { BackContainer } from './back-container';
 import { BackServices } from './back-services';
-import { waitForBackend } from './backend-ready';
 import { createServices } from './composition';
 import { applyCspHeader, buildContentSecurityPolicy, CSP_HEADER } from './content-security-policy';
-import {
-  API_PREFIX,
-  APP_ORIGIN,
-  APP_SCHEME,
-  BACKEND_WAIT,
-  DEFAULT_API_PORT,
-  HEALTH_PATH,
-  INDEX_FILE,
-  MainEnv,
-  Messages,
-} from './constants';
+import { APP_ORIGIN, APP_SCHEME, INDEX_FILE, MainEnv, Messages } from './constants';
 import { electronCipher } from './electron-cipher';
 import { needsInitialSetup } from './first-run';
 import { resolveFrontTarget, type FrontTarget } from './front-target';
 import { classifyNavigation } from './navigation-guard';
-import { NestHost } from './nest-host';
-import { resolveBackDir, resolveFrontDist, resolveLegacyEnvFile } from './paths';
+import { resolveFrontDist } from './paths';
 import { isSettingsShortcut } from './shortcuts';
 import { SingleWindowController } from './single-window';
 import { resolveStaticFile } from './static-files';
@@ -98,14 +86,6 @@ function applyDevPolicy(target: FrontTarget, policy: string): void {
   );
 }
 
-function apiPort(): string {
-  return process.env[MainEnv.PORT] ?? DEFAULT_API_PORT;
-}
-
-function healthUrl(): string {
-  return `http://127.0.0.1:${apiPort()}/${API_PREFIX}/${HEALTH_PATH}`;
-}
-
 /** Navegação só dentro das origens do app; links externos abrem no navegador do sistema. */
 function guardWindow(window: BrowserWindow, allowedOrigins: string[]): void {
   window.webContents.on('will-navigate', (event, url) => {
@@ -167,9 +147,6 @@ function createSettingsWindow(target: FrontTarget): BrowserWindow {
 }
 
 async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> {
-  const backDir = resolveBackDir(projectRoot, process.env);
-  const runtime = new BackRuntime(backDir);
-
   const services = createServices({
     userDataDir: app.getPath('userData'),
     documentsDir: app.getPath('documents'),
@@ -186,39 +163,17 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       remove: (file) => fs.promises.unlink(file),
     },
     checkGeminiKey: async (apiKey) => {
-      const { GoogleGenAI } = runtime.pkg<{
-        GoogleGenAI: new (options: { apiKey: string }) => { models: { list(): Promise<unknown> } };
-      }>('@google/genai');
-
       await new GoogleGenAI({ apiKey }).models.list();
     },
   });
 
   const firstRun = services.settings.isFirstRun();
 
-  if (!app.isPackaged) {
-    await importLegacyEnv({
-      settings: services.settings,
-      secrets: services.secrets,
-      envFile: resolveLegacyEnvFile(backDir),
-      exists: fs.existsSync,
-      readFile: (file) => fs.readFileSync(file, 'utf8'),
-    });
-  }
-
-  const host = new NestHost(runtime);
-
-  await host.start({
-    appConfig: new DesktopAppConfig(services.settings.get(), target.origin),
-    geminiApiKey: await services.secrets.get('gemini.apiKey'),
+  // O back roda dentro do main, como contêiner de injeção de dependência: sem HTTP e sem porta.
+  const container = await BackContainer.start({
+    config: new SettingsBackConfig(services.settings, await services.secrets.get('gemini.apiKey')),
     whisper: services.whisper,
-    corsOrigin: target.origin,
-    port: apiPort(),
   });
-
-  if (!(await waitForBackend({ url: healthUrl(), ...BACKEND_WAIT }))) {
-    throw new Error(Messages.backendNotReady);
-  }
 
   new IpcRegistrar(ipcMain).register(
     createHandlers({
@@ -254,9 +209,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       settings: services.settingsService,
       externalProviders: services.externalProviders,
       localProviders: services.localProviders,
-      back: new BackServices(runtime, (token, moduleClass) =>
-        host.get(token, moduleClass),
-      ).readers(),
+      back: new BackServices(<T>(token: unknown) => container.get<T>(token)).readers(),
     }),
   );
 
@@ -290,7 +243,6 @@ async function bootstrap(): Promise<void> {
 
     const policy = buildContentSecurityPolicy({
       mode: target.kind,
-      apiPort: apiPort(),
       devOrigins: target.kind === 'dev' ? [target.origin, target.settingsOrigin] : [],
     });
 

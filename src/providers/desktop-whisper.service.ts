@@ -1,3 +1,5 @@
+import type { WhisperService } from '../back/modules/ai/whisper/whisper.service';
+
 import type { WhisperBinaryResolver, WhisperLocation } from './whisper-binary-resolver';
 
 export const WhisperServiceMessages = {
@@ -28,7 +30,7 @@ export interface DesktopWhisperDeps {
  * `.txt` e mesma mensagem de falha; muda só a origem dos caminhos e o código de erro de
  * configuração (`NOT_CONFIGURED`/`UNSUPPORTED_PLATFORM`), que sobe como mensagem clara no job.
  */
-export class DesktopWhisperService {
+export class DesktopWhisperService implements WhisperService {
   constructor(private readonly deps: DesktopWhisperDeps) {}
 
   async transcribe(audioPath: string): Promise<string> {

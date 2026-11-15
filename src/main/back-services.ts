@@ -1,104 +1,41 @@
+import { AIService } from '../back/modules/ai/ai.service';
+import { AiUsageService } from '../back/modules/ai/usage/ai-usage.service';
+import { ChatService } from '../back/modules/chat/chat.service';
+import { HealthAIService } from '../back/modules/health/ai/health-ai.service';
+import { HealthSystemService } from '../back/modules/health/system/health-system.service';
+import { JobRunner } from '../back/modules/jobs/application/job-runner.service';
+import { JobService } from '../back/modules/jobs/application/job.service';
+import { parseDocumentHints } from '../back/modules/jobs/domain/document-hints';
+import { JobTypeConfig } from '../back/modules/jobs/jobs.types';
+import { VideoToSummaryJobProcessor } from '../back/modules/jobs/processors/video-to-resume/processor';
+import { VideoToTranscriptJobProcessor } from '../back/modules/jobs/processors/video-to-transcript/processor';
+import { BookService } from '../back/modules/library/application/book.service';
+import { LibraryClassifier } from '../back/modules/library/application/library-classifier';
+import { LibraryService } from '../back/modules/library/application/library.service';
 import type { BackReaders } from '../ipc/handlers';
 import { JobCatalog } from '../jobs/job-catalog';
 import { JobLauncher } from '../jobs/job-launcher';
 
-import type { BackRuntime } from './back-runtime';
-
-type ClassSource = readonly [file: string, name: string];
-
-interface ServiceSource {
-  service: ClassSource;
-  /** Módulo do back que declara essa instância (o `VideoModule` repete o `AIService` e o `AiUsageService`). */
-  module: ClassSource;
-}
-
-const AI_MODULE: ClassSource = ['modules/ai/ai.module', 'AIModule'];
+/** Obtém a instância de um service do contêiner do back. */
+export type ServiceResolver = <T>(token: unknown) => T;
 
 /**
- * Onde cada service do back mora em `back/dist` e **de qual módulo** vem a instância.
- * Resolver só pelo token pegaria a primeira cópia encontrada, que pode ser a do `VideoModule`
- * (com outro `usage` em memória), e o Uso por IPC divergiria do que o chat registra.
- */
-export const BackServiceSources = {
-  healthSystem: {
-    service: ['modules/health/system/health-system.service', 'HealthSystemService'],
-    module: ['modules/health/system/health-system.module', 'HealthSystemModule'],
-  },
-  healthAi: {
-    service: ['modules/health/ai/health-ai.service', 'HealthAIService'],
-    module: ['modules/health/ai/health-ai.module', 'HealthAIModule'],
-  },
-  ai: { service: ['modules/ai/ai.service', 'AIService'], module: AI_MODULE },
-  aiUsage: {
-    service: ['modules/ai/usage/ai-usage.service', 'AiUsageService'],
-    module: AI_MODULE,
-  },
-  chat: {
-    service: ['modules/chat/chat.service', 'ChatService'],
-    module: ['modules/chat/chat.module', 'ChatModule'],
-  },
-  library: {
-    service: ['modules/library/application/library.service', 'LibraryService'],
-    module: ['modules/library/library.module', 'LibraryModule'],
-  },
-  books: {
-    service: ['modules/library/application/book.service', 'BookService'],
-    module: ['modules/library/library.module', 'LibraryModule'],
-  },
-  libraryClassifier: {
-    service: ['modules/library/application/library-classifier', 'LibraryClassifier'],
-    module: ['modules/library/library.module', 'LibraryModule'],
-  },
-  jobService: {
-    service: ['modules/jobs/application/job.service', 'JobService'],
-    module: ['modules/jobs/jobs.module', 'JobsModule'],
-  },
-  jobRunner: {
-    service: ['modules/jobs/application/job-runner.service', 'JobRunner'],
-    module: ['modules/jobs/jobs.module', 'JobsModule'],
-  },
-  transcriptProcessor: {
-    service: [
-      'modules/jobs/processors/video-to-transcript/processor',
-      'VideoToTranscriptJobProcessor',
-    ],
-    module: ['modules/jobs/jobs.module', 'JobsModule'],
-  },
-  summaryProcessor: {
-    service: ['modules/jobs/processors/video-to-resume/processor', 'VideoToSummaryJobProcessor'],
-    module: ['modules/jobs/jobs.module', 'JobsModule'],
-  },
-} as const satisfies Record<string, ServiceSource>;
-
-/** Valores (não instâncias) do back usados na montagem dos jobs. */
-export const BackPlainSources = {
-  parseDocumentHints: ['modules/jobs/domain/document-hints', 'parseDocumentHints'],
-  jobTypeConfig: ['modules/jobs/jobs.types', 'JobTypeConfig'],
-} as const satisfies Record<string, ClassSource>;
-
-/** Devolve a instância de `token` declarada em `moduleClass`. */
-type Resolver = (token: unknown, moduleClass: unknown) => unknown;
-
-/**
- * Entrega os services do back (a mesma instância que o HTTP usa) aos handlers IPC.
- * As classes são carregadas pelo `BackRuntime` e a instância vem do contêiner do Nest.
+ * Entrega os services do back (as instâncias do contêiner Nest) aos handlers IPC, cada um pela
+ * porta mínima que o handler declara, e monta o catálogo e o lançador de jobs.
  */
 export class BackServices {
-  constructor(
-    private readonly runtime: Pick<BackRuntime, 'module'>,
-    private readonly resolve: Resolver,
-  ) {}
+  constructor(private readonly get: ServiceResolver) {}
 
   readers(): BackReaders {
     return {
-      healthSystem: this.service(BackServiceSources.healthSystem),
-      healthAi: this.service(BackServiceSources.healthAi),
-      ai: this.service(BackServiceSources.ai),
-      aiUsage: this.service(BackServiceSources.aiUsage),
-      chat: this.service(BackServiceSources.chat),
-      library: this.service(BackServiceSources.library),
-      libraryClassifier: this.service(BackServiceSources.libraryClassifier),
-      books: this.service(BackServiceSources.books),
+      healthSystem: this.get(HealthSystemService),
+      healthAi: this.get(HealthAIService),
+      ai: this.get(AIService),
+      aiUsage: this.get(AiUsageService),
+      chat: this.get(ChatService),
+      library: this.get(LibraryService),
+      libraryClassifier: this.get(LibraryClassifier),
+      books: this.get(BookService),
       jobs: this.jobs(),
     };
   }
@@ -106,25 +43,14 @@ export class BackServices {
   /** Catálogo e lançador de jobs, montados com as instâncias do `JobsModule`. */
   private jobs(): BackReaders['jobs'] {
     return {
-      catalog: new JobCatalog(
-        this.service(BackServiceSources.jobService),
-        () => this.load(BackPlainSources.jobTypeConfig) as Record<string, unknown>,
-      ),
+      catalog: new JobCatalog(this.get(JobService), () => JobTypeConfig),
       launcher: new JobLauncher({
-        jobs: this.service(BackServiceSources.jobService),
-        runner: this.service(BackServiceSources.jobRunner),
-        transcriptProcessor: this.service(BackServiceSources.transcriptProcessor),
-        summaryProcessor: this.service(BackServiceSources.summaryProcessor),
-        parseHints: this.load(BackPlainSources.parseDocumentHints) as (raw: unknown) => unknown,
+        jobs: this.get(JobService),
+        runner: this.get(JobRunner),
+        transcriptProcessor: this.get(VideoToTranscriptJobProcessor),
+        summaryProcessor: this.get(VideoToSummaryJobProcessor),
+        parseHints: (raw) => parseDocumentHints(raw as Parameters<typeof parseDocumentHints>[0]),
       }),
     };
-  }
-
-  private service<T>(source: ServiceSource): T {
-    return this.resolve(this.load(source.service), this.load(source.module)) as T;
-  }
-
-  private load([file, name]: ClassSource): unknown {
-    return this.runtime.module<Record<string, unknown>>(file)[name];
   }
 }

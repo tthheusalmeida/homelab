@@ -1,156 +1,126 @@
-import { BackPlainSources, BackServices, BackServiceSources } from './back-services';
+import { AIService } from '../back/modules/ai/ai.service';
+import { AiUsageService } from '../back/modules/ai/usage/ai-usage.service';
+import { ChatService } from '../back/modules/chat/chat.service';
+import { HealthAIService } from '../back/modules/health/ai/health-ai.service';
+import { HealthSystemService } from '../back/modules/health/system/health-system.service';
+import { JobRunner } from '../back/modules/jobs/application/job-runner.service';
+import { JobService } from '../back/modules/jobs/application/job.service';
+import { VideoToSummaryJobProcessor } from '../back/modules/jobs/processors/video-to-resume/processor';
+import { VideoToTranscriptJobProcessor } from '../back/modules/jobs/processors/video-to-transcript/processor';
+import { BookService } from '../back/modules/library/application/book.service';
+import { LibraryClassifier } from '../back/modules/library/application/library-classifier';
+import { LibraryService } from '../back/modules/library/application/library.service';
 
-/** Cada arquivo do back vira uma classe falsa própria, para saber o que foi pedido a quem. */
+import { BackServices, type ServiceResolver } from './back-services';
+
+/** Contêiner falso: uma instância por classe, e registro de quem foi pedido. */
 function setup() {
-  const classes = new Map<string, object>();
-  const parseDocumentHints = jest.fn((raw: unknown) => ({ parsed: raw }));
-  const jobTypeConfig = { 'video-to-transcript': { type: 'video-to-transcript', steps: [] } };
-  const module = jest.fn((file: string) => {
-    if (file === BackPlainSources.parseDocumentHints[0]) {
-      return { parseDocumentHints };
-    }
+  const instances = new Map<unknown, unknown>();
+  const asked: unknown[] = [];
+  const resolve = jest.fn((token: unknown) => {
+    asked.push(token);
 
-    if (file === BackPlainSources.jobTypeConfig[0]) {
-      return { JobTypeConfig: jobTypeConfig };
-    }
-
-    const entry = Object.values(BackServiceSources)
-      .flatMap((source) => [source.service, source.module])
-      .find(([source]) => source === file);
-    const name = entry?.[1] as string;
-    const key = `${file}#${name}`;
-
-    if (!classes.has(key)) {
-      classes.set(key, class {});
-    }
-
-    return { [name]: classes.get(key) };
-  });
-  const instances = new Map<string, unknown>();
-  const resolve = jest.fn((token: unknown, moduleClass: unknown) => {
-    const key = `${[...classes].find(([, c]) => c === token)?.[0]}@${[...classes].find(([, c]) => c === moduleClass)?.[0]}`;
-
-    return instances.get(key);
+    return instances.get(token);
   });
 
-  const keyFor = (source: { service: readonly string[]; module: readonly string[] }) =>
-    `${source.service[0]}#${source.service[1]}@${source.module[0]}#${source.module[1]}`;
-
-  return { module, resolve, instances, keyFor, parseDocumentHints, jobTypeConfig };
+  return { instances, asked, resolve, services: new BackServices(resolve as ServiceResolver) };
 }
 
-const build = (setupResult: ReturnType<typeof setup>) =>
-  new BackServices({ module: setupResult.module } as never, setupResult.resolve);
-
 describe('BackServices', () => {
-  it('when building the readers, should load each service, its module and the hints parser from back/dist', () => {
-    const s = setup();
-
-    build(s).readers();
-
-    const expected = [
-      ...Object.values(BackServiceSources).flatMap((source) => [
-        source.service[0],
-        source.module[0],
-      ]),
-      BackPlainSources.parseDocumentHints[0],
+  it('when building the readers, should give each handler port the matching service instance', () => {
+    const { instances, services } = setup();
+    const pairs: [string, unknown][] = [
+      ['healthSystem', HealthSystemService],
+      ['healthAi', HealthAIService],
+      ['ai', AIService],
+      ['aiUsage', AiUsageService],
+      ['chat', ChatService],
+      ['library', LibraryService],
+      ['libraryClassifier', LibraryClassifier],
+      ['books', BookService],
     ];
-    expect(new Set(s.module.mock.calls.map(([file]) => file))).toEqual(new Set(expected));
-  });
+    const made = new Map(pairs.map(([key, token]) => [token, { key }]));
+    made.forEach((value, token) => instances.set(token, value));
 
-  it('when building the readers, should resolve every service inside its own module', () => {
-    const s = setup();
+    const readers = services.readers() as unknown as Record<string, unknown>;
 
-    build(s).readers();
-
-    // `jobService` entra duas vezes: no catálogo e no lançador.
-    expect(s.resolve).toHaveBeenCalledTimes(Object.keys(BackServiceSources).length + 1);
-    for (const [token, moduleClass] of s.resolve.mock.calls) {
-      expect(typeof token).toBe('function');
-      expect(typeof moduleClass).toBe('function');
-      expect(token).not.toBe(moduleClass);
+    for (const [key, token] of pairs) {
+      expect(readers[key]).toBe(made.get(token));
     }
   });
 
-  it('when the container answers, should expose each instance in the matching reader', () => {
-    const s = setup();
-    const usage = { getUsage: jest.fn() };
-    const chat = { chat: jest.fn() };
-    s.instances.set(s.keyFor(BackServiceSources.aiUsage), usage);
-    s.instances.set(s.keyFor(BackServiceSources.chat), chat);
+  it('when the library, the AI catalog and the usage are asked, should come from the single container (no module lookup)', () => {
+    const { asked, services } = setup();
 
-    const readers = build(s).readers();
+    services.readers();
 
-    expect(readers.aiUsage).toBe(usage);
-    expect(readers.chat).toBe(chat);
-  });
-
-  it('when usage and the ai catalog are resolved, should use the AIModule (the one the chat uses)', () => {
-    expect(BackServiceSources.aiUsage.module).toEqual(['modules/ai/ai.module', 'AIModule']);
-    expect(BackServiceSources.ai.module).toEqual(['modules/ai/ai.module', 'AIModule']);
-  });
-
-  it('when the container fails to resolve a service, should propagate the error', () => {
-    const s = setup();
-    const resolve = jest.fn(() => {
-      throw new Error('não encontrado');
-    });
-
-    expect(() => new BackServices({ module: s.module } as never, resolve).readers()).toThrow(
-      'não encontrado',
-    );
-  });
-});
-
-describe('BackServices: jobs', () => {
-  it('when the jobs are built, should take the job service, the queue and both processors from the JobsModule', () => {
-    for (const key of [
-      'jobService',
-      'jobRunner',
-      'transcriptProcessor',
-      'summaryProcessor',
-    ] as const) {
-      expect(BackServiceSources[key].module).toEqual(['modules/jobs/jobs.module', 'JobsModule']);
-    }
+    expect(asked.filter((token) => token === AIService)).toHaveLength(1);
+    expect(asked.filter((token) => token === AiUsageService)).toHaveLength(1);
+    expect(asked.filter((token) => token === LibraryService)).toHaveLength(1);
   });
 
   it('when listing jobs, should read them from the JobService instance of the container', () => {
-    const s = setup();
+    const { instances, services } = setup();
     const job = { toJSON: () => ({ id: 'j1', status: 'pending' }) };
-    s.instances.set(s.keyFor(BackServiceSources.jobService), { findAll: () => [job] });
+    instances.set(JobService, { findAll: () => [job] });
 
-    expect(build(s).readers().jobs.catalog.list()).toEqual([{ id: 'j1', status: 'pending' }]);
+    expect(services.readers().jobs.catalog.list()).toEqual([{ id: 'j1', status: 'pending' }]);
   });
 
-  it('when listing the job types, should read the type configuration from the back only then', () => {
-    const s = setup();
-    const readers = build(s).readers();
+  it('when listing the job types, should answer the two types of the back configuration', () => {
+    const { services } = setup();
 
-    expect(s.module).not.toHaveBeenCalledWith(BackPlainSources.jobTypeConfig[0]);
-    expect(readers.jobs.catalog.listTypes()).toEqual(Object.values(s.jobTypeConfig));
-    expect(s.module).toHaveBeenCalledWith(BackPlainSources.jobTypeConfig[0]);
+    expect(
+      services
+        .readers()
+        .jobs.catalog.listTypes()
+        .map((type) => type.type),
+    ).toEqual(['video-to-transcript', 'video-to-summary']);
   });
 
-  it('when starting a job, should validate the hints with the back parser, create it and queue it with the right processor', () => {
-    const s = setup();
+  it('when starting a transcript job, should validate the hints with the back parser, create it and queue it with the transcript processor', () => {
+    const { instances, services } = setup();
     const job = { id: 'j1', status: 'pending' };
     const create = jest.fn().mockReturnValue(job);
     const run = jest.fn();
     const transcript = { name: 'transcript' };
-    const summary = { name: 'summary' };
-    s.instances.set(s.keyFor(BackServiceSources.jobService), { create, findAll: () => [] });
-    s.instances.set(s.keyFor(BackServiceSources.jobRunner), { run });
-    s.instances.set(s.keyFor(BackServiceSources.transcriptProcessor), transcript);
-    s.instances.set(s.keyFor(BackServiceSources.summaryProcessor), summary);
-    const { launcher } = build(s).readers().jobs;
+    instances.set(JobService, { create, findAll: () => [] });
+    instances.set(JobRunner, { run });
+    instances.set(VideoToTranscriptJobProcessor, transcript);
+    instances.set(VideoToSummaryJobProcessor, { name: 'summary' });
 
-    const created = launcher.startVideoToTranscript({ url: 'u', title: 'T' });
+    const created = services
+      .readers()
+      .jobs.launcher.startVideoToTranscript({ url: 'https://x/v.mp4', title: '  Aula   1  ' });
 
     expect(created).toEqual({ id: 'j1', status: 'pending' });
-    expect(s.parseDocumentHints).toHaveBeenCalledWith({ url: 'u', title: 'T' });
-    expect(create).toHaveBeenCalledWith('video-to-transcript', {
-      parsed: { url: 'u', title: 'T' },
+    expect(create).toHaveBeenCalledWith('video-to-transcript', { title: 'Aula 1' });
+    expect(run).toHaveBeenCalledWith(job, transcript, 'https://x/v.mp4');
+  });
+
+  it('when the hints are invalid, should reject with the back validation message and queue nothing', () => {
+    const { instances, services } = setup();
+    const create = jest.fn();
+    const run = jest.fn();
+    instances.set(JobService, { create, findAll: () => [] });
+    instances.set(JobRunner, { run });
+
+    expect(() =>
+      services
+        .readers()
+        .jobs.launcher.startVideoToTranscript({ url: 'u', tags: 5 as unknown as string[] }),
+    ).toThrow('O campo "tags" deve ser uma lista de textos.');
+    expect(create).not.toHaveBeenCalled();
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it('when the container fails to provide a service, should propagate the error', () => {
+    const resolve = jest.fn(() => {
+      throw new Error('provider não encontrado');
     });
-    expect(run).toHaveBeenCalledWith(job, transcript, 'u');
+
+    expect(() => new BackServices(resolve as ServiceResolver).readers()).toThrow(
+      'provider não encontrado',
+    );
   });
 });

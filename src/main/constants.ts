@@ -13,9 +13,6 @@ export const DEFAULT_SETTINGS_DEV_URL = 'http://localhost:5174';
 export const MainEnv = {
   FRONT_URL: 'HOMELAB_FRONT_URL',
   FRONT_DIST_DIR: 'HOMELAB_FRONT_DIST_DIR',
-  BACK_DIR: 'HOMELAB_BACK_DIR',
-  PORT: 'PORT',
-  CORS_ORIGIN: 'CORS_ORIGIN',
   USER_DATA_DIR: 'HOMELAB_USER_DATA_DIR',
   SETTINGS_URL: 'HOMELAB_SETTINGS_URL',
 } as const;
@@ -28,15 +25,6 @@ export const DataFiles = {
 
 /** Pasta-raiz padrão dos dados do HomeLab, dentro de Documentos. */
 export const DATA_ROOT_FOLDER = 'HomeLab';
-
-/** Convenções do back atual (a fase 01 ainda usa o HTTP do Nest). */
-export const DEFAULT_API_PORT = '3000';
-export const API_PREFIX = 'api/v1';
-export const HEALTH_PATH = 'health/system';
-export const BACK_ENTRY_RELATIVE_PATH = ['dist', 'main.js'] as const;
-
-/** Espera pelo back antes de abrir a janela. */
-export const BACKEND_WAIT = { retries: 60, delayMs: 500 } as const;
 
 /** Fundo escuro igual ao do tema, para a janela não piscar branca ao abrir. */
 export const WINDOW_BACKGROUND = '#0a0a0a';
@@ -57,9 +45,6 @@ export const WINDOW = {
 } as const;
 
 export const Messages = {
-  backendNotReady: 'O servidor local não respondeu a tempo.',
-  backendEntryMissing: 'Build do back não encontrado. Rode "npm run build:back".',
   frontDistMissing: 'Build do front não encontrado. Rode "npm run build:front".',
   startupErrorTitle: 'Erro ao iniciar o HomeLab',
-  hostNotStarted: 'O contêiner do back ainda não foi iniciado.',
 } as const;

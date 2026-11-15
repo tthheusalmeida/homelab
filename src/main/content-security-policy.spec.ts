@@ -7,10 +7,9 @@ const directive = (policy: string, name: string) =>
     ?.slice(name.length + 1)
     .split(' ');
 
-const build = buildContentSecurityPolicy({ mode: 'build', apiPort: '3000', devOrigins: [] });
+const build = buildContentSecurityPolicy({ mode: 'build', devOrigins: [] });
 const dev = buildContentSecurityPolicy({
   mode: 'dev',
-  apiPort: '3000',
   devOrigins: ['http://localhost:5173', 'http://localhost:5174'],
 });
 
@@ -28,17 +27,14 @@ describe('buildContentSecurityPolicy', () => {
     expect(directive(dev, 'script-src')).toEqual(["'self'", "'unsafe-inline'"]);
   });
 
-  it('when connecting, should allow the local API on localhost and 127.0.0.1 with the given port', () => {
-    expect(directive(build, 'connect-src')).toEqual(
-      expect.arrayContaining(["'self'", 'http://localhost:3000', 'http://127.0.0.1:3000']),
-    );
+  it('when connecting in build mode, should allow only the app itself (no local API port, no http)', () => {
+    expect(directive(build, 'connect-src')).toEqual(["'self'"]);
   });
 
-  it('when the API port changes, should follow it', () => {
-    const other = buildContentSecurityPolicy({ mode: 'build', apiPort: '4100', devOrigins: [] });
-
-    expect(directive(other, 'connect-src')).toContain('http://localhost:4100');
-    expect(directive(other, 'connect-src')).not.toContain('http://localhost:3000');
+  it('when connecting in any mode, should not allow any localhost API port', () => {
+    expect(build).not.toContain('localhost:3000');
+    expect(dev).not.toContain('localhost:3000');
+    expect(dev).not.toContain('127.0.0.1');
   });
 
   it('when in build mode, should not allow the dev servers or websockets', () => {

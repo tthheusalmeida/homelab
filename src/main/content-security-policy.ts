@@ -2,8 +2,6 @@ export type CspMode = 'dev' | 'build';
 
 export interface CspOptions {
   mode: CspMode;
-  /** Porta do HTTP do Nest (o front ainda o usa até a fase 09). */
-  apiPort: string;
   /** Origens dos servidores de desenvolvimento (Vite) e seus WebSockets de HMR. */
   devOrigins: string[];
 }
@@ -15,10 +13,10 @@ export const CSP_HEADER = 'Content-Security-Policy';
  * - build: scripts só do próprio app (`app://front`).
  * - dev: o Vite injeta um script inline (preâmbulo do React Refresh) e usa WebSocket (HMR).
  * - Imagens aceitam http(s) porque a biblioteca e as capas de livros usam URLs externas.
+ * - Não há HTTP para o back: tudo passa por IPC, então `connect-src` não libera nenhuma porta local.
  */
-export function buildContentSecurityPolicy({ mode, apiPort, devOrigins }: CspOptions): string {
+export function buildContentSecurityPolicy({ mode, devOrigins }: CspOptions): string {
   const dev = mode === 'dev';
-  const apiOrigins = [`http://localhost:${apiPort}`, `http://127.0.0.1:${apiPort}`];
   const devSockets = devOrigins.map((origin) => origin.replace(/^http/, 'ws'));
 
   const directives: Record<string, string[]> = {
@@ -27,7 +25,7 @@ export function buildContentSecurityPolicy({ mode, apiPort, devOrigins }: CspOpt
     'style-src': ["'self'", "'unsafe-inline'"],
     'img-src': ["'self'", 'data:', 'blob:', 'https:', 'http:'],
     'font-src': ["'self'", 'data:'],
-    'connect-src': ["'self'", ...apiOrigins, ...(dev ? [...devOrigins, ...devSockets] : [])],
+    'connect-src': ["'self'", ...(dev ? [...devOrigins, ...devSockets] : [])],
     'object-src': ["'none'"],
     'frame-src': ["'none'"],
     'base-uri': ["'self'"],
