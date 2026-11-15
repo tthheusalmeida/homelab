@@ -142,3 +142,49 @@ test('when the app runs on its own, should not listen on any tcp port', async ()
     execFileSync('taskkill', ['/PID', String(child.pid), '/T', '/F']);
   }
 });
+
+/**
+ * Encerra o Electron que o `app.relaunch()` abre. A pasta de dados vai por variável de ambiente
+ * (não aparece na linha de comando), então filtra pelo executável deste projeto. Roda sem outro
+ * Electron do projeto aberto (o Playwright já fechou o primeiro).
+ */
+function killRelaunchedInstances(): void {
+  const exe = path.join(root, 'node_modules', 'electron', 'dist', 'electron.exe').replace(/'/g, "''");
+  const script = `Get-CimInstance Win32_Process -Filter "Name='electron.exe'" | Where-Object { $_.ExecutablePath -eq '${exe}' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`;
+
+  execFileSync('powershell', ['-NoProfile', '-Command', script]);
+}
+
+test('when saving the gemini key and restarting right away, should keep the key readable', async () => {
+  test.skip(process.platform !== 'win32', 'limpeza de processos só no Windows');
+  test.setTimeout(90_000);
+  const userData = makeUserData(true);
+  const first = await launch(userData);
+  const page = await first.firstWindow();
+
+  const saved = await page.evaluate(() =>
+    window.api.invoke('providers:external:save', { id: 'gemini', apiKey: 'chave-falsa-e2e-123' }),
+  );
+  expect(saved).toMatchObject({ ok: true });
+
+  const closed = first.waitForEvent('close');
+  void page.evaluate(() => window.api.invoke('app:relaunch')).catch(() => undefined);
+  await closed;
+  killRelaunchedInstances();
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  const localState = fs.readFileSync(path.join(userData, 'Local State'), 'utf8');
+  expect(localState).toContain('"encrypted_key"');
+
+  const second = await launch(userData);
+
+  try {
+    const result = (await (await second.firstWindow()).evaluate(() =>
+      window.api.invoke('providers:external:list'),
+    )) as { ok: true; data: Array<{ id: string; configured: boolean }> };
+
+    expect(result.data.find((provider) => provider.id === 'gemini')?.configured).toBe(true);
+  } finally {
+    await second.close();
+  }
+});
