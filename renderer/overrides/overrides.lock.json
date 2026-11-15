@@ -22,5 +22,9 @@
   "src/pages/library/api/library.ts": {
     "override": "renderer/overrides/library-api.ts",
     "sha256": "c2ef7f46c8ca51547989affaacd9aef1a76d2735f95c6cde1b22ed3dcd24db86"
+  },
+  "src/pages/library/books/api.ts": {
+    "override": "renderer/overrides/books-api.ts",
+    "sha256": "b8cc39b162ab87aca67e6ec0b918ab73da0d72346d6242042a7242ca23a93d17"
   }
 }
