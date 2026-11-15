@@ -2,6 +2,8 @@
 
 Status: concluída
 
+> Correção feita na fase 05: `ai:usage` lia a instância errada do `AiUsageService` (a do `VideoModule`) e ficava em 0 mesmo com uso registrado. Ver `fase-05.md`.
+
 ## O que foi feito
 - Canais e contratos: `shared/channels.ts`, `shared/contracts/health.ts` e `ai.ts`.
 - Handlers `HealthHandler` e `AiHandler` (portas mínimas) e `BackServices` + `NestHost.get` para pegar os services do back no main.

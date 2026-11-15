@@ -53,10 +53,12 @@ Origem: os 37 endpoints HTTP atuais (`/api/v1`) + os canais novos de app, settin
 
 Erros: Gemini sem chave → `NOT_CONFIGURED` (mensagem manda abrir Configurações); provider desconhecido ou Ollama fora do ar em `ai:models` → `INTERNAL`, com a mesma mensagem em português do back (hoje é HTTP 500).
 
-## chat (fase 5)
-| Canal | Substitui | Payload |
-|---|---|---|
-| `chat:send` | `POST chat` | `{ message, modelId, providerId, thinking? }` |
+## chat (fase 5, implementado)
+| Canal | Substitui | Payload | Retorno |
+|---|---|---|---|
+| `chat:send` | `POST chat` | `{ message, modelId, providerId, thinking? }` | `{ message }` |
+
+Erros: falha do provider (Gemini ou Ollama) → `PROVIDER_FAILED` com a mensagem de hoje (ex.: "A requisição para o chat do Ollama falhou."); Gemini sem chave → `NOT_CONFIGURED`. A conversão para `PROVIDER_FAILED` fica no `ChatHandler` (o mapper genérico não sabe a origem do erro). O IPC não é cancelável: o cancelamento do Chat é só no renderer (rejeita com `AbortError` e descarta a resposta); a requisição já enviada termina no main e conta no Uso.
 
 ## library (fases 6a e 6b)
 | Canal | Substitui | Fase |
