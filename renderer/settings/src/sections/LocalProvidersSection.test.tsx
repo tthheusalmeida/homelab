@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { IpcChannels } from '../../../../src/shared/channels';
+import { IpcChannels } from '#shared/channels';
 import { failure, mockApi, ok, openCard, payloadsOf, renderWithProviders } from '../testing';
 
 import { LocalProvidersSection } from './LocalProvidersSection';

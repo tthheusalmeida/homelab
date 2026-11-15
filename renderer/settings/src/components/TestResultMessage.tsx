@@ -1,6 +1,6 @@
 import { CircleCheck, CircleX } from 'lucide-react';
 
-import type { ProviderTestResult } from '../../../../src/shared/contracts/providers';
+import type { ProviderTestResult } from '#shared/contracts/providers';
 
 /** Resultado de um teste de conexão: verde quando ok, vermelho quando falha. */
 export function TestResultMessage({ result }: { result: ProviderTestResult }) {

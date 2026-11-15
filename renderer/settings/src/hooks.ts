@@ -1,14 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { IpcChannels } from '../../../src/shared/channels';
+import { IpcChannels } from '#shared/channels';
 import type {
   ExternalProviderSaveRequest,
   ExternalProviderTestRequest,
   LocalProviderSaveRequest,
   LocalProviderTestRequest,
-} from '../../../src/shared/contracts/providers';
-import type { SettingsPaths } from '../../../src/shared/contracts/settings';
-import { ipc } from '../../ipc';
+} from '#shared/contracts/providers';
+import type { SettingsPaths } from '#shared/contracts/settings';
+import { ipc } from '#lib/ipc';
 
 export const QueryKeys = {
   paths: ['settings', 'paths'],

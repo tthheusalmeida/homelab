@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { renderWithQuery } from '@front/test/utils';
+import { renderWithQuery } from '#test/utils';
 
-import { IpcChannels } from '../../../src/shared/channels';
+import { IpcChannels } from '#shared/channels';
 
 import { SettingsApp } from './SettingsApp';
 import { mockApi, ok, payloadsOf } from './testing';

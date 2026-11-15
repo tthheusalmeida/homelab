@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter } from '#ui/card';
 import { ErrorState } from '#components/ErrorState';
 import { LoadingState } from '#components/LoadingState';
 
-import type { SettingsPaths } from '../../../../src/shared/contracts/settings';
+import type { SettingsPaths } from '#shared/contracts/settings';
 import { Field } from '../components/Field';
 import { useSnackbar } from '../components/Snackbar';
 import { usePaths, useSavePaths } from '../hooks';

@@ -5,7 +5,7 @@ import { Button } from '#ui/button';
 import { ErrorState } from '#components/ErrorState';
 import { LoadingState } from '#components/LoadingState';
 
-import type { LocalProviderInfo } from '../../../../src/shared/contracts/providers';
+import type { LocalProviderInfo } from '#shared/contracts/providers';
 import { Field } from '../components/Field';
 import { ProviderCard } from '../components/ProviderCard';
 import { useSnackbar } from '../components/Snackbar';
