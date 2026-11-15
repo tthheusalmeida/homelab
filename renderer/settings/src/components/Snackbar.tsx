@@ -11,6 +11,8 @@ import {
 import { CircleCheck, X } from 'lucide-react';
 
 export const SNACKBAR_DURATION_MS = 3000;
+/** Tempo da animação de saída: a mensagem só sai do DOM depois dela. */
+export const SNACKBAR_EXIT_MS = 200;
 
 interface SnackbarApi {
   /** Mostra uma mensagem no canto inferior direito; uma nova mensagem substitui a anterior. */
@@ -35,22 +37,29 @@ export function SnackbarProvider({
   raised?: boolean;
 }) {
   const [active, setActive] = useState<ActiveMessage | null>(null);
+  const [leaving, setLeaving] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const counter = useRef(0);
 
+  // Sai com uma animação curta e só então some do DOM.
   const dismiss = useCallback(() => {
     clearTimeout(timer.current);
-    setActive(null);
+    setLeaving(true);
+    timer.current = setTimeout(() => {
+      setActive(null);
+      setLeaving(false);
+    }, SNACKBAR_EXIT_MS);
   }, []);
 
   const show = useCallback(
     (text: string) => {
       clearTimeout(timer.current);
       counter.current += 1;
+      setLeaving(false);
       setActive({ id: counter.current, text });
-      timer.current = setTimeout(() => setActive(null), duration);
+      timer.current = setTimeout(dismiss, duration);
     },
-    [duration],
+    [dismiss, duration],
   );
 
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -66,7 +75,7 @@ export function SnackbarProvider({
           key={active.id}
           role="status"
           aria-live="polite"
-          className={`fixed right-4 z-50 flex ${raised ? 'bottom-20' : 'bottom-4'} items-center gap-3 rounded-lg border bg-card px-4 py-3 text-sm shadow-lg animate-in fade-in slide-in-from-bottom-2`}
+          className={`fixed right-4 z-50 flex ${raised ? 'bottom-20' : 'bottom-4'} items-center gap-3 rounded-lg border bg-card px-4 py-3 text-sm shadow-lg ${leaving ? 'animate-exit-down' : 'animate-enter'}`}
         >
           <CircleCheck className="size-4 shrink-0 text-emerald-500" />
           <span>{active.text}</span>

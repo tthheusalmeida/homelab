@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { SNACKBAR_DURATION_MS, SnackbarProvider, useSnackbar } from './Snackbar';
+import {
+  SNACKBAR_DURATION_MS,
+  SNACKBAR_EXIT_MS,
+  SnackbarProvider,
+  useSnackbar,
+} from './Snackbar';
 
 function Trigger({ message }: { message: string }) {
   const snackbar = useSnackbar();
@@ -67,20 +72,51 @@ describe('Snackbar', () => {
     expect(screen.getByRole('status')).toBeVisible();
 
     act(() => {
-      vi.advanceTimersByTime(SNACKBAR_DURATION_MS + 50);
+      vi.advanceTimersByTime(SNACKBAR_DURATION_MS + SNACKBAR_EXIT_MS + 50);
     });
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
-  it('when the close button is clicked, should disappear right away', async () => {
+  it('when the duration passes, should play the exit animation before leaving the page', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderSnackbar();
+
+    await user.click(screen.getByRole('button', { name: 'mostrar Salvo' }));
+    expect(screen.getByRole('status')).toHaveClass('animate-enter');
+
+    act(() => {
+      vi.advanceTimersByTime(SNACKBAR_DURATION_MS + 10);
+    });
+
+    expect(screen.getByRole('status')).toHaveClass('animate-exit-down');
+  });
+
+  it('when the close button is clicked, should animate out and then disappear', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderSnackbar();
 
     await user.click(screen.getByRole('button', { name: 'mostrar Salvo' }));
     await user.click(screen.getByRole('button', { name: 'Fechar' }));
+    expect(screen.getByRole('status')).toHaveClass('animate-exit-down');
+
+    act(() => {
+      vi.advanceTimersByTime(SNACKBAR_EXIT_MS + 10);
+    });
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('when a message is shown while another is leaving, should enter again', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderSnackbar(['Primeira', 'Segunda']);
+
+    await user.click(screen.getByRole('button', { name: 'mostrar Primeira' }));
+    await user.click(screen.getByRole('button', { name: 'Fechar' }));
+    await user.click(screen.getByRole('button', { name: 'mostrar Segunda' }));
+
+    expect(screen.getByRole('status')).toHaveClass('animate-enter');
+    expect(screen.getByRole('status')).toHaveTextContent('Segunda');
   });
 
   it('when another message is shown, should replace the previous one and restart the timer', async () => {

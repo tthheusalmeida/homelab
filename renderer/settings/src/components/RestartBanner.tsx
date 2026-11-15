@@ -9,7 +9,7 @@ export function RestartBanner({ onRestart }: { onRestart: () => void }) {
   return (
     <div
       role="alert"
-      className="flex items-center justify-between gap-4 border-t bg-card px-8 py-3 text-sm"
+      className="flex animate-enter items-center justify-between gap-4 border-t bg-card px-8 py-3 text-sm"
     >
       <p>{Strings.restart.message}</p>
 
