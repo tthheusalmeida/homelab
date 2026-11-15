@@ -15,6 +15,8 @@ export const IpcChannels = {
     get: 'settings:get',
     update: 'settings:update',
     pickFolder: 'settings:pick-folder',
+    inspectLibrary: 'settings:inspect-library',
+    moveLibrary: 'settings:move-library',
   },
   appearance: {
     get: 'appearance:get',
@@ -30,8 +32,24 @@ export const IpcChannels = {
     thinking: 'ai:thinking',
     usage: 'ai:usage',
   },
+  backup: {
+    preview: 'backup:preview',
+    create: 'backup:create',
+    cancel: 'backup:cancel',
+    inspect: 'backup:inspect',
+    restore: 'backup:restore',
+  },
+  notices: {
+    pending: 'notices:pending',
+  },
   chat: {
     send: 'chat:send',
+    cancel: 'chat:cancel',
+  },
+  chats: {
+    list: 'chats:list',
+    get: 'chats:get',
+    delete: 'chats:delete',
   },
   library: {
     documents: {
@@ -70,6 +88,8 @@ export const IpcChannels = {
     get: 'jobs:get',
     createVideoToTranscript: 'jobs:create-video-to-transcript',
     createVideoToSummary: 'jobs:create-video-to-summary',
+    delete: 'jobs:delete',
+    deleteAll: 'jobs:delete-all',
   },
   providers: {
     external: {

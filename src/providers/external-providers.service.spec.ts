@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import { JsonFile } from '../settings/json-file';
+import { JsonFile } from '../storage/json-file';
 import { fakeCipher } from '../settings/secret-cipher.testing';
 import { SecretStore } from '../settings/secret-store';
 import { makeTempDir, removeDir } from '../settings/settings.testing';

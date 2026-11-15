@@ -59,6 +59,15 @@ describe('BackServices', () => {
     expect(asked.filter((token) => token === LibraryService)).toHaveLength(1);
   });
 
+  it('when building the jobs readers, should hand the JobService instance itself as the deleter', () => {
+    const { instances, services } = setup();
+    const jobService = { deleteMany: jest.fn(), deleteAll: jest.fn() };
+
+    instances.set(JobService, jobService);
+
+    expect(services.readers().jobs.deleter).toBe(jobService);
+  });
+
   it('when listing jobs, should read them from the JobService instance of the container', () => {
     const { instances, services } = setup();
     const job = { toJSON: () => ({ id: 'j1', status: 'pending' }) };

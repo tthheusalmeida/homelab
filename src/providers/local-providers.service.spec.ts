@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import { IpcError } from '../shared/errors';
-import { JsonFile } from '../settings/json-file';
+import { JsonFile } from '../storage/json-file';
 import { SettingsStore } from '../settings/settings-store';
 import { makeTempDir, removeDir, testDefaults } from '../settings/settings.testing';
 
@@ -22,7 +22,11 @@ describe('LocalProvidersService', () => {
   const create = () =>
     new LocalProvidersService(
       [
-        createWhisperDefinition(exists),
+        createWhisperDefinition(exists, {
+          directory: path.resolve('/w'),
+          executable: 'whisper-cli.exe',
+          model: 'm.bin',
+        }),
         createOllamaDefinition(fetchFn),
         createFfmpegDefinition(version),
       ],
@@ -43,7 +47,7 @@ describe('LocalProvidersService', () => {
     const list = create().list();
 
     expect(list.map((p) => p.id)).toEqual(['whisper', 'ollama', 'ffmpeg']);
-    expect(list[0].config).toEqual(testDefaults().local.whisper);
+    expect(list[0]).toMatchObject({ editable: false, config: {} });
     expect(list[1].config).toEqual({ url: testDefaults().local.ollama.url });
     expect(list[2]).toMatchObject({ editable: false, config: {} });
   });
@@ -65,13 +69,10 @@ describe('LocalProvidersService', () => {
     expect(service.save('ollama', { url: 'http://x:1' }).restartRequired).toBe(false);
   });
 
-  it('when saving only some whisper fields, should keep the others', () => {
-    create().save('whisper', { model: 'ggml-base.bin' });
-
-    expect(store.get().local.whisper).toEqual({
-      ...testDefaults().local.whisper,
-      model: 'ggml-base.bin',
-    });
+  it('when saving whisper, should reject because it uses the fixed defaults', () => {
+    expect(() => create().save('whisper', { model: 'ggml-base.bin' })).toThrow(
+      /não é configurável/,
+    );
   });
 
   it('when saving an invalid config, should throw VALIDATION and keep the settings', () => {

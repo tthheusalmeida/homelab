@@ -13,23 +13,33 @@ import {
 
 const root = path.resolve(__dirname, '..');
 
-/** Tudo (pasta de dados, biblioteca, jobs) vive numa pasta temporária: não toca nos dados reais. */
+/**
+ * Tudo (userData, raiz de dados, biblioteca, jobs, chats) vive numa pasta temporária: não toca nos
+ * dados reais. A raiz de dados (Documentos/HomeLab) é trocada por `HOMELAB_DATA_ROOT_DIR`.
+ */
 function makeUserData(withSettings: boolean): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'homelab-e2e-'));
 
   if (withSettings) {
-    const paths = {
-      libraryDir: path.join(dir, 'library'),
-      jobsDir: path.join(dir, 'jobs'),
-    };
+    const libraryDir = path.join(dir, 'library');
+    const configDir = path.join(dataRoot(dir), 'config');
 
-    fs.mkdirSync(paths.libraryDir);
-    fs.mkdirSync(paths.jobsDir);
-    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ paths }));
+    fs.mkdirSync(libraryDir, { recursive: true });
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(path.join(configDir, 'settings.json'), JSON.stringify({ paths: { libraryDir } }));
   }
 
   return dir;
 }
+
+const dataRoot = (dir: string): string => path.join(dir, 'data-root');
+
+/** Variáveis que isolam o app do computador real (userData e raiz de dados). */
+const isolatedEnv = (dir: string): NodeJS.ProcessEnv => ({
+  ...process.env,
+  HOMELAB_USER_DATA_DIR: dir,
+  HOMELAB_DATA_ROOT_DIR: dataRoot(dir),
+});
 
 /** Janela principal: a primeira janela pode ser a tela de abertura (splash), que some sozinha. */
 async function mainWindow(app: ElectronApplication): Promise<Page> {
@@ -44,7 +54,7 @@ async function mainWindow(app: ElectronApplication): Promise<Page> {
 function launch(userData: string): Promise<ElectronApplication> {
   return electron.launch({
     args: [root],
-    env: { ...process.env, HOMELAB_USER_DATA_DIR: userData },
+    env: isolatedEnv(userData),
   });
 }
 
@@ -95,7 +105,7 @@ test.describe('app com configuração existente', () => {
       ['Conversa', 'Como posso te ajudar hoje?'],
       ['Consumo', 'Consumo de IA'],
       ['Nova tarefa', 'Selecione o tipo de tarefa'],
-      ['Acompanhar', 'Tarefas'],
+      ['Em andamento', 'Tarefas'],
     ];
 
     for (const [link, expected] of screens) {
@@ -150,7 +160,7 @@ test('when the app runs on its own, should not listen on any tcp port', async ()
   // Sem o Playwright: ele próprio abre uma porta de depuração no Electron que controla.
   const electronBinary = require('electron') as unknown as string;
   const child = spawn(electronBinary, [root], {
-    env: { ...process.env, HOMELAB_USER_DATA_DIR: makeUserData(true) },
+    env: isolatedEnv(makeUserData(true)),
     stdio: 'ignore',
   });
 

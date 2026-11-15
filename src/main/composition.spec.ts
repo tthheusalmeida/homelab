@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { FakeEventPublisher } from '../ipc/testing/fake-event-publisher';
 import { fakeCipher } from '../settings/secret-cipher.testing';
 import { makeTempDir, removeDir } from '../settings/settings.testing';
 
@@ -14,12 +15,15 @@ const whisperIo = () => ({
 
 describe('createServices', () => {
   let userData: string;
-  let documents: string;
+  let root: string;
 
-  const create = () =>
+  let events: FakeEventPublisher;
+
+  const create = (io = whisperIo()) =>
     createServices({
+      events,
       userDataDir: userData,
-      documentsDir: documents,
+      rootDir: root,
       resourcesDir: path.resolve('/projeto/desktop/resources'),
       platform: 'win32',
       arch: 'x64',
@@ -28,93 +32,55 @@ describe('createServices', () => {
       fetchFn: () => Promise.resolve({ ok: true, status: 200 }),
       ffmpegVersion: () => Promise.resolve('ffmpeg version 7'),
       checkGeminiKey: () => Promise.resolve(),
-      whisperIo: whisperIo(),
+      whisperIo: io,
     });
 
   beforeEach(() => {
     userData = makeTempDir();
-    documents = makeTempDir();
+    events = new FakeEventPublisher();
+    root = makeTempDir();
   });
 
   afterEach(() => {
     removeDir(userData);
-    removeDir(documents);
+    removeDir(root);
   });
 
-  it('when there is no saved configuration, should default the folders under Documentos/HomeLab', () => {
+  it('when there is no saved configuration, should default the library under <root>/library', () => {
     const { settings } = create();
 
-    expect(settings.get().paths.libraryDir).toBe(path.join(documents, 'HomeLab', 'library'));
-    expect(settings.get().paths.inboxDir).toBe(path.join(documents, 'HomeLab', 'inbox'));
+    expect(settings.get().paths.libraryDir).toBe(path.join(root, 'library'));
   });
 
-  it('when the platform is win32-x64, should default whisper to resources/bin/win32-x64', () => {
-    const { settings } = create();
+  it('when creating the services, should expose the fixed folders derived from the root', () => {
+    const { appPaths } = create();
 
-    expect(settings.get().local.whisper.directory).toBe(
-      path.join(path.resolve('/projeto/desktop/resources'), 'bin', 'win32-x64'),
-    );
-    expect(settings.get().local.whisper.executable).toBe('whisper-cli.exe');
+    expect(appPaths.inboxDir).toBe(path.join(root, 'inbox'));
+    expect(appPaths.videoTempDir).toBe(path.join(root, 'temp', 'video'));
+    expect(appPaths.usageFile).toBe(path.join(root, 'data', 'ai-usage.json'));
   });
 
-  it('when transcribing through the services, should use the whisper folder, executable and model from the settings', async () => {
+  it('when transcribing through the services, should use the default whisper (resources/bin/win32-x64, whisper-cli.exe and the default model)', async () => {
     const io = whisperIo();
-    const services = createServices({
-      userDataDir: userData,
-      documentsDir: documents,
-      resourcesDir: path.resolve('/projeto/desktop/resources'),
-      platform: 'win32',
-      arch: 'x64',
-      cipher: fakeCipher(),
-      exists: () => true,
-      fetchFn: () => Promise.resolve({ ok: true, status: 200 }),
-      ffmpegVersion: () => Promise.resolve('ffmpeg version 7'),
-      checkGeminiKey: () => Promise.resolve(),
-      whisperIo: io,
-    });
-    const whisper = services.settings.get().local.whisper;
+    const services = create(io);
+    const directory = path.join(path.resolve('/projeto/desktop/resources'), 'bin', 'win32-x64');
 
     await expect(services.whisper.transcribe(path.resolve('/a.wav'))).resolves.toBe('texto');
 
     expect(io.run).toHaveBeenCalledWith(
-      path.join(whisper.directory, whisper.executable),
-      expect.arrayContaining(['-m', path.join(whisper.directory, whisper.model)]),
+      path.join(directory, 'whisper-cli.exe'),
+      expect.arrayContaining(['-m', path.join(directory, 'ggml-large-v3-turbo.bin')]),
     );
   });
 
-  it('when the whisper folder is changed in the settings, should transcribe with the new one without recreating the service', async () => {
-    const io = whisperIo();
-    const services = createServices({
-      userDataDir: userData,
-      documentsDir: documents,
-      resourcesDir: path.resolve('/projeto/desktop/resources'),
-      platform: 'win32',
-      arch: 'x64',
-      cipher: fakeCipher(),
-      exists: () => true,
-      fetchFn: () => Promise.resolve({ ok: true, status: 200 }),
-      ffmpegVersion: () => Promise.resolve('ffmpeg version 7'),
-      checkGeminiKey: () => Promise.resolve(),
-      whisperIo: io,
-    });
-    const model = path.resolve('/modelos/grande.bin');
-
-    services.localProviders.save('whisper', { directory: path.resolve('/outro'), model });
-    await services.whisper.transcribe(path.resolve('/a.wav'));
-
-    expect(io.run).toHaveBeenCalledWith(
-      path.join(path.resolve('/outro'), 'whisper-cli.exe'),
-      expect.arrayContaining(['-m', model]),
-    );
-  });
-
-  it('when saving through the services, should write settings.json and secrets.json in userData', async () => {
+  it('when saving through the services, should write settings.json under <root>/config and secrets.json in userData', async () => {
     const services = create();
 
     services.settingsService.updatePaths({ libraryDir: path.resolve('/outra') });
     await services.externalProviders.save('gemini', 'AIza-chave-longa');
 
-    expect(fs.existsSync(path.join(userData, 'settings.json'))).toBe(true);
+    expect(fs.existsSync(path.join(root, 'config', 'settings.json'))).toBe(true);
+    expect(fs.existsSync(path.join(userData, 'settings.json'))).toBe(false);
     expect(fs.readFileSync(path.join(userData, 'secrets.json'), 'utf8')).not.toContain(
       'AIza-chave-longa',
     );
@@ -129,5 +95,31 @@ describe('createServices', () => {
       'ollama',
       'ffmpeg',
     ]);
+  });
+
+  it('when moving the library through the services, should copy, save the new folder and publish progress to the windows', async () => {
+    const services = create();
+    const current = services.settings.get().paths.libraryDir;
+    const nova = path.join(root, 'biblioteca-nova');
+
+    fs.mkdirSync(current, { recursive: true });
+    fs.writeFileSync(path.join(current, 'ola.md'), '# Olá');
+
+    const result = await services.libraryMover.apply({ to: nova, mode: 'move' });
+
+    expect(result.restartRequired).toBe(true);
+    expect(services.settings.get().paths.libraryDir).toBe(nova);
+    expect(fs.readFileSync(path.join(nova, 'ola.md'), 'utf8')).toBe('# Olá');
+    expect(events.payloadsOf('library-move:progress').map((progress) => progress.phase)).toEqual(
+      expect.arrayContaining(['preparing', 'running', 'done']),
+    );
+  });
+
+  it('when listing the local providers, should show whisper as test-only', () => {
+    const whisper = create()
+      .localProviders.list()
+      .find((provider) => provider.id === 'whisper');
+
+    expect(whisper).toMatchObject({ editable: false, config: {} });
   });
 });

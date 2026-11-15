@@ -18,13 +18,14 @@ function register(...handlers: Parameters<IpcRegistrar['register']>[0]) {
 }
 
 const picker = (result: string | null = null) => ({ pick: jest.fn().mockResolvedValue(result) });
+const mover = () => ({ inspect: jest.fn(), apply: jest.fn() });
 
 describe('SettingsHandler', () => {
   const paths = { libraryDir: '/l', inboxDir: '/i', videoTempDir: '/v', audioTempDir: '/a' };
 
   it('when settings:get is called, should answer the paths from the service', async () => {
     const service = { getPaths: jest.fn().mockReturnValue(paths) } as unknown as SettingsService;
-    const ipc = register(new SettingsHandler(service, picker()));
+    const ipc = register(new SettingsHandler(service, picker(), mover()));
 
     await expect(ipc.invoke(IpcChannels.settings.get)).resolves.toEqual({ ok: true, data: paths });
   });
@@ -33,7 +34,7 @@ describe('SettingsHandler', () => {
     const result = { value: paths, restartRequired: true };
     const updatePaths = jest.fn().mockReturnValue(result);
     const ipc = register(
-      new SettingsHandler({ updatePaths } as unknown as SettingsService, picker()),
+      new SettingsHandler({ updatePaths } as unknown as SettingsService, picker(), mover()),
     );
 
     await expect(ipc.invoke(IpcChannels.settings.update, { libraryDir: '/x' })).resolves.toEqual({
@@ -48,7 +49,7 @@ describe('SettingsHandler', () => {
       throw new IpcError(IpcErrorCode.VALIDATION, 'Informe a pasta da biblioteca.');
     });
     const ipc = register(
-      new SettingsHandler({ updatePaths } as unknown as SettingsService, picker()),
+      new SettingsHandler({ updatePaths } as unknown as SettingsService, picker(), mover()),
     );
 
     await expect(ipc.invoke(IpcChannels.settings.update, { libraryDir: '' })).resolves.toEqual({
@@ -58,12 +59,58 @@ describe('SettingsHandler', () => {
   });
 });
 
+describe('SettingsHandler library folder', () => {
+  const service = {} as unknown as SettingsService;
+
+  it('when settings:inspect-library is called, should pass the path and answer what the mover found', async () => {
+    const info = { path: 'D:/nova', exists: false, empty: true, fileCount: 0 };
+    const library = { inspect: jest.fn().mockResolvedValue(info), apply: jest.fn() };
+    const ipc = register(new SettingsHandler(service, picker(), library));
+
+    await expect(
+      ipc.invoke(IpcChannels.settings.inspectLibrary, { path: 'D:/nova' }),
+    ).resolves.toEqual({ ok: true, data: info });
+    expect(library.inspect).toHaveBeenCalledWith('D:/nova');
+  });
+
+  it('when settings:move-library is called, should pass the whole request and answer the result', async () => {
+    const result = {
+      libraryDir: 'D:/nova',
+      filesCopied: 3,
+      bytesCopied: 10,
+      originRemoved: false,
+      restartRequired: true,
+    };
+    const library = { inspect: jest.fn(), apply: jest.fn().mockResolvedValue(result) };
+    const ipc = register(new SettingsHandler(service, picker(), library));
+    const request = { to: 'D:/nova', mode: 'move', deleteOrigin: true };
+
+    await expect(ipc.invoke(IpcChannels.settings.moveLibrary, request)).resolves.toEqual({
+      ok: true,
+      data: result,
+    });
+    expect(library.apply).toHaveBeenCalledWith(request);
+  });
+
+  it('when the mover fails to copy, should answer the PERSIST_FAILED code and message', async () => {
+    const library = {
+      inspect: jest.fn(),
+      apply: jest.fn().mockRejectedValue(new IpcError(IpcErrorCode.PERSIST_FAILED, 'Disco cheio')),
+    };
+    const ipc = register(new SettingsHandler(service, picker(), library));
+
+    await expect(
+      ipc.invoke(IpcChannels.settings.moveLibrary, { to: 'D:/nova', mode: 'move' }),
+    ).resolves.toEqual({ ok: false, error: { code: 'PERSIST_FAILED', message: 'Disco cheio' } });
+  });
+});
+
 describe('SettingsHandler folder picker', () => {
   const service = {} as unknown as SettingsService;
 
   it('when settings:pick-folder is called, should answer the chosen folder and pass the default path', async () => {
     const folderPicker = picker('D:/escolhida');
-    const ipc = register(new SettingsHandler(service, folderPicker));
+    const ipc = register(new SettingsHandler(service, folderPicker, mover()));
 
     await expect(
       ipc.invoke(IpcChannels.settings.pickFolder, { defaultPath: 'D:/atual' }),
@@ -72,7 +119,7 @@ describe('SettingsHandler folder picker', () => {
   });
 
   it('when the user cancels the dialog, should answer null', async () => {
-    const ipc = register(new SettingsHandler(service, picker(null)));
+    const ipc = register(new SettingsHandler(service, picker(null), mover()));
 
     await expect(ipc.invoke(IpcChannels.settings.pickFolder, {})).resolves.toEqual({
       ok: true,
@@ -82,7 +129,7 @@ describe('SettingsHandler folder picker', () => {
 
   it('when called without a payload, should still open the dialog', async () => {
     const folderPicker = picker('D:/x');
-    const ipc = register(new SettingsHandler(service, folderPicker));
+    const ipc = register(new SettingsHandler(service, folderPicker, mover()));
 
     await ipc.invoke(IpcChannels.settings.pickFolder);
 
@@ -156,7 +203,7 @@ describe('LocalProvidersHandler', () => {
       const service = {
         getAppearance: jest.fn().mockReturnValue(appearance),
       } as unknown as SettingsService;
-      const ipc = register(new SettingsHandler(service, picker()));
+      const ipc = register(new SettingsHandler(service, picker(), mover()));
 
       await expect(ipc.invoke(IpcChannels.appearance.get)).resolves.toEqual({
         ok: true,
@@ -167,7 +214,7 @@ describe('LocalProvidersHandler', () => {
     it('when appearance:update is called, should pass the patch and answer the new appearance', async () => {
       const updateAppearance = jest.fn().mockReturnValue({ theme: 'light', accent: 'cyan' });
       const ipc = register(
-        new SettingsHandler({ updateAppearance } as unknown as SettingsService, picker()),
+        new SettingsHandler({ updateAppearance } as unknown as SettingsService, picker(), mover()),
       );
 
       await expect(ipc.invoke(IpcChannels.appearance.update, { theme: 'light' })).resolves.toEqual({
@@ -185,7 +232,7 @@ describe('LocalProvidersHandler', () => {
         );
       });
       const ipc = register(
-        new SettingsHandler({ updateAppearance } as unknown as SettingsService, picker()),
+        new SettingsHandler({ updateAppearance } as unknown as SettingsService, picker(), mover()),
       );
 
       await expect(

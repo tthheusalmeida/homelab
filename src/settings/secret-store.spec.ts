@@ -2,7 +2,7 @@ import * as path from 'node:path';
 
 import { IpcError } from '../shared/errors';
 
-import { JsonFile } from './json-file';
+import { JsonFile } from '../storage/json-file';
 import { fakeCipher } from './secret-cipher.testing';
 import { maskSecret, SecretStore, type SecretCipher } from './secret-store';
 import { makeTempDir, removeDir } from './settings.testing';

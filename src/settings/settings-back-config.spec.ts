@@ -2,14 +2,16 @@ import * as path from 'node:path';
 
 import { BackConfig } from '../back/config/back-config';
 
+import { createAppPaths } from './app-paths';
 import { SettingsBackConfig } from './settings-back-config';
 import { SettingsStore } from './settings-store';
-import { JsonFile } from './json-file';
+import { JsonFile } from '../storage/json-file';
 import { makeTempDir, removeDir, testDefaults } from './settings.testing';
 
 describe('SettingsBackConfig', () => {
   let dir: string;
   let store: SettingsStore;
+  const appPaths = createAppPaths(path.resolve('/dados/HomeLab'));
 
   beforeEach(() => {
     dir = makeTempDir();
@@ -19,22 +21,22 @@ describe('SettingsBackConfig', () => {
   afterEach(() => removeDir(dir));
 
   it('when created, should be a BackConfig so the back services can receive it', () => {
-    expect(new SettingsBackConfig(store, null)).toBeInstanceOf(BackConfig);
+    expect(new SettingsBackConfig(store, appPaths, null)).toBeInstanceOf(BackConfig);
   });
 
-  it('when reading the folders and the Ollama url, should answer the values from the settings', () => {
-    const config = new SettingsBackConfig(store, null);
+  it('when reading the folders and the Ollama url, should answer the library from the settings and the other folders from the fixed paths', () => {
+    const config = new SettingsBackConfig(store, appPaths, null);
     const settings = store.get();
 
     expect(config.libraryDir).toBe(settings.paths.libraryDir);
-    expect(config.inboxDir).toBe(settings.paths.inboxDir);
-    expect(config.videoTempDir).toBe(settings.paths.videoTempDir);
-    expect(config.audioTempDir).toBe(settings.paths.audioTempDir);
+    expect(config.inboxDir).toBe(appPaths.inboxDir);
+    expect(config.videoTempDir).toBe(appPaths.videoTempDir);
+    expect(config.audioTempDir).toBe(appPaths.audioTempDir);
     expect(config.ollamaUrl).toBe(settings.local.ollama.url);
   });
 
   it('when the settings change, should answer the new values on the next read', () => {
-    const config = new SettingsBackConfig(store, null);
+    const config = new SettingsBackConfig(store, appPaths, null);
     const outra = path.resolve('/outra/biblioteca');
 
     store.update({ paths: { libraryDir: outra } });
@@ -43,14 +45,11 @@ describe('SettingsBackConfig', () => {
   });
 
   it('when there is a Gemini key, should expose it; without one, should expose null', () => {
-    expect(new SettingsBackConfig(store, 'AIza-chave').geminiApiKey).toBe('AIza-chave');
-    expect(new SettingsBackConfig(store, null).geminiApiKey).toBeNull();
+    expect(new SettingsBackConfig(store, appPaths, 'AIza-chave').geminiApiKey).toBe('AIza-chave');
+    expect(new SettingsBackConfig(store, appPaths, null).geminiApiKey).toBeNull();
   });
 
-  it('when given a usage file, should expose it; otherwise null', () => {
-    expect(new SettingsBackConfig(store, null, '/dados/ai-usage.json').usageFile).toBe(
-      '/dados/ai-usage.json',
-    );
-    expect(new SettingsBackConfig(store, null).usageFile).toBeNull();
+  it('when asked for the usage file, should answer the one under data/ of the root', () => {
+    expect(new SettingsBackConfig(store, appPaths, null).usageFile).toBe(appPaths.usageFile);
   });
 });

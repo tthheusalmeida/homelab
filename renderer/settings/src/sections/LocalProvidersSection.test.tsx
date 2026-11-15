@@ -19,8 +19,8 @@ const providers = [
   {
     id: 'whisper',
     label: 'Whisper',
-    editable: true,
-    config: { directory: 'D:/whisper', executable: 'whisper-cli.exe', model: 'modelo.bin' },
+    editable: false,
+    config: {},
   },
   { id: 'ollama', label: 'Ollama', editable: true, config: { url: 'http://localhost:11434' } },
   { id: 'ffmpeg', label: 'ffmpeg', editable: false, config: {} },
@@ -52,17 +52,16 @@ describe('LocalProvidersSection', () => {
     mockApi(list);
 
     renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Whisper');
+    await openCard(user, 'Ollama');
 
-    expect(screen.getByLabelText('Pasta')).toHaveValue('D:/whisper');
-    expect(screen.getByLabelText('Executável')).toHaveValue('whisper-cli.exe');
-    expect(screen.getByLabelText('Arquivo de modelo (nome ou caminho completo)')).toHaveValue(
-      'modelo.bin',
-    );
-    expect(screen.queryByLabelText('Endereço (URL)')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Whisper/ })).toHaveAttribute(
+    expect(screen.getByLabelText('Endereço (URL)')).toHaveValue('http://localhost:11434');
+    expect(screen.getByRole('button', { name: /^Ollama/ })).toHaveAttribute(
       'aria-expanded',
       'true',
+    );
+    expect(screen.getByRole('button', { name: /^Whisper/ })).toHaveAttribute(
+      'aria-expanded',
+      'false',
     );
   });
 
@@ -103,19 +102,23 @@ describe('LocalProvidersSection', () => {
     renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
     await openCard(user, 'ffmpeg');
 
-    expect(await screen.findByText('Somente teste')).toBeVisible();
+    expect((await screen.findAllByText('Somente teste')).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Testar' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument();
   });
 
-  it('when only the whisper folder is pickable, should show a folder button just for it', async () => {
+  it('when the whisper is opened, should show it as test-only with no fields and no folder button', async () => {
     const user = userEvent.setup();
     mockApi(list);
 
     renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
     await openCard(user, 'Whisper');
 
-    expect(screen.getAllByRole('button', { name: /Escolher pasta/ })).toHaveLength(1);
+    expect(screen.getAllByText('Somente teste')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Testar' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Escolher pasta/ })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Pasta')).not.toBeInTheDocument();
   });
 
   it('when a field is edited and saved, should send the whole config, report a restart and show the snackbar', async () => {
@@ -146,7 +149,7 @@ describe('LocalProvidersSection', () => {
     mockApi(list);
 
     renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Whisper');
+    await openCard(user, 'Ollama');
 
     expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled();
   });

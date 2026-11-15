@@ -1,5 +1,7 @@
 import * as path from 'node:path';
 
+import type { EventPublisher } from '../ipc/event-publisher';
+
 import { ExternalProvidersService } from '../providers/external-providers.service';
 import { createGeminiDefinition, type GeminiKeyChecker } from '../providers/gemini.definition';
 import {
@@ -10,18 +12,23 @@ import {
 import { LocalProvidersService } from '../providers/local-providers.service';
 import { DesktopWhisperService, type WhisperRunner } from '../providers/desktop-whisper.service';
 import { WhisperBinaryResolver } from '../providers/whisper-binary-resolver';
-import { JsonFile } from '../settings/json-file';
+import { createAppPaths, createWhisperConfig } from '../settings/app-paths';
+import { JsonFile } from '../storage/json-file';
+import { LibraryMover } from '../settings/library-mover';
 import { SecretStore, type SecretCipher } from '../settings/secret-store';
 import { createDefaultSettings } from '../settings/settings-defaults';
 import { SettingsService } from '../settings/settings.service';
 import { SettingsStore } from '../settings/settings-store';
+import { throttleProgress } from '../storage/tree';
+import { IpcEvents } from '../shared/events';
 
-import { DATA_ROOT_FOLDER, DataFiles } from './constants';
+import { DataFiles } from './constants';
 import { resolveBinDir } from './paths';
 
 export interface CompositionOptions {
   userDataDir: string;
-  documentsDir: string;
+  /** Raiz dos dados (Documentos/HomeLab, ou a trocada por `HOMELAB_DATA_ROOT_DIR`). */
+  rootDir: string;
   /** Pasta `resources` (do projeto em dev, ao lado do executável no instalador). */
   resourcesDir: string;
   platform: NodeJS.Platform;
@@ -31,6 +38,8 @@ export interface CompositionOptions {
   fetchFn: Parameters<typeof createOllamaDefinition>[0];
   ffmpegVersion: () => Promise<string>;
   checkGeminiKey: GeminiKeyChecker;
+  /** Envia eventos (progresso, avisos) às janelas abertas. */
+  events: EventPublisher;
   /** Entrada e saída do Whisper: executar o programa e ler/apagar o `.txt` gerado. */
   whisperIo: {
     run: WhisperRunner;
@@ -41,15 +50,15 @@ export interface CompositionOptions {
 
 /** Monta stores e serviços de configuração a partir de dependências injetadas. */
 export function createServices(options: CompositionOptions) {
-  const defaults = createDefaultSettings({
-    rootDir: path.join(options.documentsDir, DATA_ROOT_FOLDER),
-    whisperDir: resolveBinDir(options.resourcesDir, options.platform, options.arch),
-    platform: options.platform,
-  });
+  const appPaths = createAppPaths(options.rootDir);
+  const whisperConfig = createWhisperConfig(
+    resolveBinDir(options.resourcesDir, options.platform, options.arch),
+    options.platform,
+  );
 
   const settings = new SettingsStore(
-    new JsonFile(path.join(options.userDataDir, DataFiles.settings)),
-    defaults,
+    new JsonFile(appPaths.settingsFile),
+    createDefaultSettings({ libraryDir: appPaths.defaultLibraryDir }),
   );
   const secrets = new SecretStore(
     new JsonFile(path.join(options.userDataDir, DataFiles.secrets)),
@@ -57,7 +66,7 @@ export function createServices(options: CompositionOptions) {
   );
 
   const whisper = new DesktopWhisperService({
-    config: () => settings.get().local.whisper,
+    config: () => whisperConfig,
     resolver: new WhisperBinaryResolver({
       platform: options.platform,
       arch: options.arch,
@@ -71,7 +80,19 @@ export function createServices(options: CompositionOptions) {
     },
   });
 
+  const libraryMover = new LibraryMover(
+    {
+      getLibraryDir: () => settings.get().paths.libraryDir,
+      setLibraryDir: (libraryDir) => {
+        settings.update({ paths: { libraryDir } });
+      },
+    },
+    throttleProgress((progress) => options.events.publish(IpcEvents.libraryMoveProgress, progress)),
+  );
+
   return {
+    appPaths,
+    libraryMover,
     settings,
     secrets,
     whisper,
@@ -82,7 +103,7 @@ export function createServices(options: CompositionOptions) {
     ),
     localProviders: new LocalProvidersService(
       [
-        createWhisperDefinition(options.exists),
+        createWhisperDefinition(options.exists, whisperConfig),
         createOllamaDefinition(options.fetchFn),
         createFfmpegDefinition(options.ffmpegVersion),
       ],

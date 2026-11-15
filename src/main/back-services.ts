@@ -12,6 +12,7 @@ import { VideoToTranscriptJobProcessor } from '../back/modules/jobs/processors/v
 import { BookService } from '../back/modules/library/application/book.service';
 import { LibraryClassifier } from '../back/modules/library/application/library-classifier';
 import { LibraryService } from '../back/modules/library/application/library.service';
+import type { BackupCollection } from '../backup/backup.service';
 import type { BackReaders } from '../ipc/handlers';
 import { JobCatalog } from '../jobs/job-catalog';
 import { JobLauncher } from '../jobs/job-launcher';
@@ -40,10 +41,42 @@ export class BackServices {
     };
   }
 
+  /** Jobs, chats e consumo de IA como coleções que o backup exporta e importa (usa os serviços vivos). */
+  backupCollections(): {
+    jobs: BackupCollection;
+    chats: BackupCollection;
+    usage: BackupCollection;
+  } {
+    const jobs = this.get<JobService>(JobService);
+    const chats = this.get<ChatService>(ChatService);
+    const usage = this.get<AiUsageService>(AiUsageService);
+
+    return {
+      jobs: {
+        export: () => jobs.exportSnapshots(),
+        import: (items, mode) => jobs.importSnapshots(items, mode),
+      },
+      chats: {
+        export: () => chats.exportChats(),
+        import: (items, mode) => chats.importChats(items, mode),
+      },
+      usage: {
+        export: () => usage.exportRecords(),
+        import: (items, mode) => usage.importRecords(items, mode),
+      },
+    };
+  }
+
+  /** Reconstrói o índice da biblioteca (depois de uma restauração de páginas e livros). */
+  reindexLibrary(): Promise<unknown> {
+    return this.get<LibraryService>(LibraryService).reindex();
+  }
+
   /** Catálogo e lançador de jobs, montados com as instâncias do `JobsModule`. */
   private jobs(): BackReaders['jobs'] {
     return {
       catalog: new JobCatalog(this.get(JobService), () => JobTypeConfig),
+      deleter: this.get(JobService),
       launcher: new JobLauncher({
         jobs: this.get(JobService),
         runner: this.get(JobRunner),

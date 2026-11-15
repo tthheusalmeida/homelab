@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import type { SettingsPatch } from '../shared/contracts/settings';
 import { IpcError } from '../shared/errors';
 
-import { JsonFile } from './json-file';
+import { JsonFile } from '../storage/json-file';
 import { SettingsStore } from './settings-store';
 import { makeTempDir, removeDir, testDefaults } from './settings.testing';
 
@@ -53,7 +53,6 @@ describe('SettingsStore', () => {
     store.update({ local: { ollama: { url: 'http://outro:1234' } } });
 
     expect(store.get().paths).toEqual(testDefaults().paths);
-    expect(store.get().local.whisper).toEqual(testDefaults().local.whisper);
     expect(store.get().local.ollama.url).toBe('http://outro:1234');
   });
 
@@ -73,8 +72,33 @@ describe('SettingsStore', () => {
     const settings = create().get();
 
     expect(settings.paths.libraryDir).toBe(path.resolve('/so-essa'));
-    expect(settings.paths.inboxDir).toBe(testDefaults().paths.inboxDir);
     expect(settings.local).toEqual(testDefaults().local);
+  });
+
+  it('when the file still has values from the old layout (other folders, whisper), should ignore them', () => {
+    fs.writeFileSync(
+      target,
+      JSON.stringify({
+        paths: {
+          libraryDir: path.resolve('/lib'),
+          inboxDir: path.resolve('/velha/inbox'),
+          videoTempDir: path.resolve('/velha/video'),
+        },
+        local: { whisper: { directory: path.resolve('/velho/whisper') } },
+      }),
+    );
+
+    const store = create();
+
+    expect(store.get().paths).toEqual({ libraryDir: path.resolve('/lib') });
+    expect(store.get().local).toEqual(testDefaults().local);
+
+    store.update({ appearance: { theme: 'dark' } });
+
+    expect(JSON.parse(fs.readFileSync(target, 'utf8'))).not.toHaveProperty('local.whisper');
+    expect(JSON.parse(fs.readFileSync(target, 'utf8')).paths).toEqual({
+      libraryDir: path.resolve('/lib'),
+    });
   });
 
   it('when the file is corrupted, should quarantine it and start with the defaults', () => {
@@ -111,5 +135,26 @@ describe('SettingsStore', () => {
     fs.writeFileSync(target, JSON.stringify({ paths: { libraryDir: path.resolve('/x') } }));
 
     expect(create().get().appearance).toEqual({ theme: 'system', accent: 'cyan' });
+  });
+
+  it('when the main file is corrupt but the backup is good, should load the backup and flag it as recovered', () => {
+    const first = create();
+
+    first.update({ appearance: { theme: 'dark' } });
+    first.update({ appearance: { theme: 'light' } });
+    fs.writeFileSync(target, '{ quebrado');
+
+    const reopened = create();
+
+    expect(reopened.get().appearance.theme).toBe('dark');
+    expect(reopened.recoveredFromBackup).toBe(true);
+  });
+
+  it('when the file is healthy, should not flag a recovery', () => {
+    const store = create();
+
+    store.update({ appearance: { theme: 'dark' } });
+
+    expect(create().recoveredFromBackup).toBe(false);
   });
 });

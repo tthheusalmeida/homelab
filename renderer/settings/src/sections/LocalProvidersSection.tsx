@@ -14,7 +14,6 @@ import { useLocalProviders, useSaveLocalProvider, useTestLocalProvider } from '.
 import {
   LOCAL_FIELD_LABELS,
   LOCAL_PROVIDER_HINTS,
-  PICKABLE_LOCAL_FIELDS,
   Strings,
 } from '../strings';
 
@@ -109,7 +108,6 @@ function LocalProviderCard({
           key={key}
           id={`local-${provider.id}-${key}`}
           label={LOCAL_FIELD_LABELS[key] ?? key}
-          pickable={PICKABLE_LOCAL_FIELDS.has(key)}
           value={config[key]}
           onChange={(value) => change(key, value)}
         />

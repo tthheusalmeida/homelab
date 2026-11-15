@@ -15,7 +15,7 @@ export interface IpcClient {
  * **lança `IpcError`** quando `ok` é falso, para que hooks e TanStack Query
  * tratem erro como tratam hoje.
  */
-export function createIpcClient(api: RendererApi): IpcClient {
+export function createIpcClient(api: Pick<RendererApi, 'invoke'>): IpcClient {
   return {
     async invoke(channel, ...payload) {
       const result = await api.invoke(channel, ...payload);

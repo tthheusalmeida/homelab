@@ -1,6 +1,6 @@
 import type { SettingsData, SettingsPatch } from '../shared/contracts/settings';
 
-import type { JsonFile } from './json-file';
+import type { JsonFile } from '../storage/json-file';
 import { validateSettings } from './settings-validator';
 
 export interface SettingsUpdateResult {
@@ -16,12 +16,18 @@ export interface SettingsUpdateResult {
  */
 export class SettingsStore {
   private current: SettingsData;
+  private recovered = false;
 
   constructor(
     private readonly file: JsonFile<SettingsPatch>,
     private readonly defaults: SettingsData,
   ) {
     this.current = this.load();
+  }
+
+  /** `true` se o arquivo principal estava ilegível e a cópia `.bak` foi usada (para avisar o usuário). */
+  get recoveredFromBackup(): boolean {
+    return this.recovered;
   }
 
   /** Se ainda não existe arquivo salvo (primeira execução). */
@@ -51,7 +57,11 @@ export class SettingsStore {
 
   private load(): SettingsData {
     try {
-      return this.merge(this.defaults, this.file.read() ?? {});
+      const saved = this.file.read();
+
+      this.recovered = this.file.recovered;
+
+      return this.merge(this.defaults, saved ?? {});
     } catch {
       this.file.quarantine();
 
@@ -61,11 +71,11 @@ export class SettingsStore {
 
   private merge(base: SettingsData, patch: SettingsPatch): SettingsData {
     return {
-      paths: { ...base.paths, ...patch.paths },
+      // Só as chaves conhecidas: valores antigos (pastas, Whisper) que sobraram no arquivo são ignorados.
+      paths: { libraryDir: patch.paths?.libraryDir ?? base.paths.libraryDir },
       appearance: { ...base.appearance, ...patch.appearance },
       local: {
-        whisper: { ...base.local.whisper, ...patch.local?.whisper },
-        ollama: { ...base.local.ollama, ...patch.local?.ollama },
+        ollama: { url: patch.local?.ollama?.url ?? base.local.ollama.url },
       },
     };
   }

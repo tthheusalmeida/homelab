@@ -15,6 +15,15 @@ describe('createHandlers', () => {
       createHandlers({
         appInfo: { version: () => '0.0.1', relaunch: jest.fn(), openSettings: jest.fn() },
         folderPicker: { pick: jest.fn() },
+        libraryMover: { inspect: jest.fn(), apply: jest.fn() },
+        notices: { drain: jest.fn() },
+        backup: {
+          preview: jest.fn(),
+          create: jest.fn(),
+          cancel: jest.fn(),
+          inspect: jest.fn(),
+          restore: jest.fn(),
+        },
         settings: {} as SettingsService,
         externalProviders: {} as ExternalProvidersService,
         localProviders: {} as LocalProvidersService,
@@ -23,7 +32,13 @@ describe('createHandlers', () => {
           healthAi: { check: jest.fn() },
           ai: { providersList: jest.fn(), models: jest.fn(), thinking: jest.fn() },
           aiUsage: { getUsage: jest.fn() },
-          chat: { chat: jest.fn() },
+          chat: {
+            send: jest.fn(),
+            cancel: jest.fn(),
+            list: jest.fn(),
+            get: jest.fn(),
+            delete: jest.fn(),
+          },
           library: {
             list: jest.fn(),
             inbox: jest.fn(),
@@ -42,6 +57,7 @@ describe('createHandlers', () => {
           jobs: {
             catalog: { list: jest.fn(), get: jest.fn(), listTypes: jest.fn() },
             launcher: { startVideoToTranscript: jest.fn(), startVideoToSummary: jest.fn() },
+            deleter: { deleteMany: jest.fn(), deleteAll: jest.fn() },
           },
           books: {
             list: jest.fn(),

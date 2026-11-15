@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react';
-import { Cloud, Cpu, Folder, Palette, type LucideIcon } from 'lucide-react';
+import { Archive, Cloud, Cpu, Folder, Palette, type LucideIcon } from 'lucide-react';
 
 import { Logo } from '#components/Hex';
 import { ScrollArea } from '#ui/scroll-area';
@@ -19,6 +19,7 @@ import { RestartBanner } from './components/RestartBanner';
 import { SnackbarProvider } from '#components/Snackbar';
 import { relaunchApp } from './hooks';
 import { AppearanceSection } from './sections/AppearanceSection';
+import { BackupSection } from './sections/BackupSection';
 import { ExternalProvidersSection } from './sections/ExternalProvidersSection';
 import { LocalProvidersSection } from './sections/LocalProvidersSection';
 import { PathsSection } from './sections/PathsSection';
@@ -29,6 +30,7 @@ const SECTION_ICONS: Record<SectionId, LucideIcon> = {
   appearance: Palette,
   external: Cloud,
   local: Cpu,
+  backup: Archive,
 };
 
 /**
@@ -107,6 +109,7 @@ export function SettingsApp() {
               {sectionId === 'appearance' && <AppearanceSection />}
               {sectionId === 'external' && <ExternalProvidersSection onSaved={handleSaved} />}
               {sectionId === 'local' && <LocalProvidersSection onSaved={handleSaved} />}
+              {sectionId === 'backup' && <BackupSection onSaved={handleSaved} />}
             </main>
           </ScrollArea>
 

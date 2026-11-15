@@ -21,6 +21,12 @@ export abstract class BackConfig {
   /** Arquivo onde o consumo de IA fica guardado entre execuções; `null` guarda só em memória (testes). */
   abstract readonly usageFile: string | null;
 
+  /** Arquivo do histórico de jobs; `null` guarda só em memória (testes). */
+  abstract readonly jobsFile: string | null;
+
+  /** Arquivo das conversas do chat; `null` guarda só em memória (testes). */
+  abstract readonly chatsFile: string | null;
+
   /** Chave do Gemini; `null` quando não configurada (o provider responde `NOT_CONFIGURED`). */
   abstract readonly geminiApiKey: string | null;
 }

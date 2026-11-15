@@ -32,6 +32,8 @@ describe('BackContainer', () => {
     ollamaUrl: 'http://127.0.0.1:1',
     geminiApiKey: null,
     usageFile: null,
+    jobsFile: null,
+    chatsFile: null,
   });
 
   beforeAll(async () => {
@@ -107,6 +109,31 @@ describe('BackContainer', () => {
     } finally {
       await another.stop();
       listen.mockRestore();
+    }
+  });
+
+  it('when a job finishes in the real container, should reach the alerts given at start (success and failure)', async () => {
+    const alerts = { persistFailed: jest.fn(), jobFinished: jest.fn() };
+    const withAlerts = await BackContainer.start({ config: config(), whisper, alerts });
+
+    try {
+      const jobs = withAlerts.get<JobService>(JobService);
+      const runner = withAlerts.get<JobRunner>(JobRunner);
+      const ok = jobs.create('video-to-transcript');
+      const bad = jobs.create('video-to-transcript');
+
+      runner.run(ok, { process: () => Promise.resolve() }, 'x');
+      runner.run(bad, { process: () => Promise.reject(new Error('sem rede')) }, 'x');
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(alerts.jobFinished).toHaveBeenCalledWith(
+        expect.objectContaining({ id: ok.id, status: 'completed' }),
+      );
+      expect(alerts.jobFinished).toHaveBeenCalledWith(
+        expect.objectContaining({ id: bad.id, status: 'failed', error: 'sem rede' }),
+      );
+    } finally {
+      await withAlerts.stop();
     }
   });
 });

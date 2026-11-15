@@ -17,8 +17,14 @@ import {
   shell,
 } from 'electron';
 
+import { JobService } from '../back/modules/jobs/application/job.service';
+import { ChatService } from '../back/modules/chat/chat.service';
+import { BackupService } from '../backup/backup.service';
+import { WindowEventPublisher } from '../ipc/event-publisher';
+import { DialogFilePicker } from '../ipc/file-picker';
 import { createHandlers } from '../ipc/handlers';
 import { IpcRegistrar } from '../ipc/ipc-registrar';
+import { createAppPaths } from '../settings/app-paths';
 import { SettingsBackConfig } from '../settings/settings-back-config';
 
 import { BackContainer } from './back-container';
@@ -34,11 +40,16 @@ import {
   windowBackground,
 } from './constants';
 import { electronCipher } from './electron-cipher';
+import { EventBackAlerts } from './event-back-alerts';
+import { NoticeStore } from './notice-store';
+import { buildStartupNotices } from './startup-notices';
+import { LegacyMigration, type MigrationPlan } from './legacy-migration';
+import { choiceFromButton, describeMigration, MigrationPromptText } from './migration-prompt';
 import { needsInitialSetup } from './first-run';
 import { resolveFrontTarget, type FrontTarget } from './front-target';
 import { LocalStateGuard } from './local-state-guard';
 import { classifyNavigation } from './navigation-guard';
-import { resolveFrontDist, resolveResourcesDir } from './paths';
+import { resolveDataRoot, resolveFrontDist, resolveResourcesDir } from './paths';
 import { isSettingsShortcut } from './shortcuts';
 import { SingleWindowController } from './single-window';
 import { resolveStaticFile } from './static-files';
@@ -193,11 +204,52 @@ function createSettingsWindow(target: FrontTarget): BrowserWindow {
   return window;
 }
 
-async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> {
-  const localStateGuard = new LocalStateGuard({ userDataDir: app.getPath('userData') });
-  const services = createServices({
+/** Pergunta, com um diálogo nativo, o que fazer com os dados da versão anterior. */
+async function confirmMigration(plan: MigrationPlan) {
+  const { message, detail, buttons } = describeMigration(plan);
+  const result = await dialog.showMessageBox({
+    type: 'question',
+    title: MigrationPromptText.title,
+    message,
+    detail,
+    buttons,
+    defaultId: 0,
+    cancelId: buttons.length - 1,
+    noLink: true,
+  });
+
+  return choiceFromButton(result.response);
+}
+
+/** Leva os dados do formato antigo para a raiz única, antes de qualquer serviço ler as configurações. */
+async function migrateLegacyData(): Promise<void> {
+  const outcome = await new LegacyMigration({
     userDataDir: app.getPath('userData'),
-    documentsDir: app.getPath('documents'),
+    appPaths: createAppPaths(resolveDataRoot(app.getPath('documents'), process.env)),
+    confirm: confirmMigration,
+  }).run();
+
+  if (outcome.status === 'failed') {
+    dialog.showErrorBox(MigrationPromptText.failedTitle, outcome.error);
+  } else if (outcome.status === 'done' && outcome.warnings.length > 0) {
+    await dialog.showMessageBox({
+      type: 'warning',
+      title: MigrationPromptText.title,
+      message: MigrationPromptText.warningTitle,
+      detail: outcome.warnings.join('\n'),
+    });
+  }
+}
+
+async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> {
+  await migrateLegacyData();
+
+  const localStateGuard = new LocalStateGuard({ userDataDir: app.getPath('userData') });
+  const events = new WindowEventPublisher(() => BrowserWindow.getAllWindows());
+  const services = createServices({
+    events,
+    userDataDir: app.getPath('userData'),
+    rootDir: resolveDataRoot(app.getPath('documents'), process.env),
     resourcesDir: resolveResourcesDir(projectRoot, app.isPackaged, process.resourcesPath),
     platform: process.platform,
     arch: process.arch,
@@ -221,10 +273,44 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
   const container = await BackContainer.start({
     config: new SettingsBackConfig(
       services.settings,
+      services.appPaths,
       await services.secrets.get('gemini.apiKey'),
-      path.join(app.getPath('userData'), 'ai-usage.json'),
     ),
     whisper: services.whisper,
+    alerts: new EventBackAlerts(events),
+  });
+
+  const notices = new NoticeStore();
+
+  buildStartupNotices({
+    jobs: container.get<JobService>(JobService).startupReport(),
+    chats: container.get<ChatService>(ChatService).startupReport(),
+    settingsRecoveredFromBackup: services.settings.recoveredFromBackup,
+  }).forEach((notice) => notices.add(notice));
+
+  const backServices = new BackServices(<T>(token: unknown) => container.get<T>(token));
+  const backup = new BackupService({
+    appVersion: app.getVersion(),
+    tempDir: path.join(services.appPaths.rootDir, 'temp'),
+    libraryDir: () => services.settings.get().paths.libraryDir,
+    inboxDir: () => services.appPaths.inboxDir,
+    collections: backServices.backupCollections(),
+    settings: services.settings,
+    reindexLibrary: () => backServices.reindexLibrary(),
+    events,
+    filePicker: new DialogFilePicker({
+      showSave: (options) => {
+        const parent = BrowserWindow.getFocusedWindow();
+
+        return parent ? dialog.showSaveDialog(parent, options) : dialog.showSaveDialog(options);
+      },
+      showOpen: (options) => {
+        const parent = BrowserWindow.getFocusedWindow();
+        const config = { ...options, properties: ['openFile' as const] };
+
+        return parent ? dialog.showOpenDialog(parent, config) : dialog.showOpenDialog(config);
+      },
+    }),
   });
 
   new IpcRegistrar(ipcMain).register(
@@ -261,10 +347,13 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
           return result.canceled ? null : (result.filePaths[0] ?? null);
         },
       },
+      libraryMover: services.libraryMover,
+      backup,
+      notices,
       settings: services.settingsService,
       externalProviders: services.externalProviders,
       localProviders: services.localProviders,
-      back: new BackServices(<T>(token: unknown) => container.get<T>(token)).readers(),
+      back: backServices.readers(),
     }),
   );
 

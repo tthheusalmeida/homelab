@@ -1,5 +1,6 @@
 import { Module, type DynamicModule } from '@nestjs/common';
 
+import { BackAlerts, NoopBackAlerts } from './config/back-alerts';
 import { BackConfig } from './config/back-config';
 import { AIModule } from './modules/ai/ai.module';
 import { WhisperService } from './modules/ai/whisper/whisper.service';
@@ -15,6 +16,8 @@ export interface BackModuleOptions {
   config: BackConfig;
   /** Quem transcreve o áudio (o `DesktopWhisperService`). */
   whisper: WhisperService;
+  /** Quem recebe os avisos do back (falha ao gravar em disco...). Sem ele, os avisos são ignorados. */
+  alerts?: BackAlerts;
 }
 
 /** Módulos do back, na ordem em que o app os usava. */
@@ -43,8 +46,9 @@ export class BackModule {
       providers: [
         { provide: BackConfig, useValue: options.config },
         { provide: WhisperService, useValue: options.whisper },
+        { provide: BackAlerts, useValue: options.alerts ?? new NoopBackAlerts() },
       ],
-      exports: [BackConfig, WhisperService],
+      exports: [BackConfig, WhisperService, BackAlerts],
     };
   }
 }

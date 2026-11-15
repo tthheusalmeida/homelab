@@ -1,5 +1,3 @@
-import * as path from 'node:path';
-
 import { IpcError } from '../shared/errors';
 
 import { validateSettings } from './settings-validator';
@@ -29,43 +27,7 @@ describe('validateSettings', () => {
   });
 
   it('when a folder is relative, should reject asking for a full path', () => {
-    expectValidation((s) => (s.paths.inboxDir = 'relativa/pasta'), /caminho completo/);
-  });
-
-  it('when the whisper folder is relative, should reject', () => {
-    expectValidation((s) => (s.local.whisper.directory = 'whisper'), /pasta do Whisper/);
-  });
-
-  it('when the whisper model is a relative path with a folder, should reject asking for the file name or the full path', () => {
-    expectValidation(
-      (s) => (s.local.whisper.model = path.join('sub', 'modelo.bin')),
-      /nome do arquivo.*caminho completo/,
-    );
-  });
-
-  it('when the whisper model is a full path outside the whisper folder, should accept', () => {
-    const settings = testDefaults();
-    settings.local.whisper.model = path.resolve('/modelos/ggml-large-v3-turbo.bin');
-
-    expect(() => validateSettings(settings)).not.toThrow();
-  });
-
-  it('when the whisper model is blank, should reject asking to inform it', () => {
-    expectValidation(
-      (s) => (s.local.whisper.model = '  '),
-      /Informe o arquivo de modelo do Whisper/,
-    );
-  });
-
-  it('when the whisper executable includes a folder, should still reject asking for only the file name', () => {
-    expectValidation(
-      (s) => (s.local.whisper.executable = path.join('sub', 'whisper-cli.exe')),
-      /só o nome do arquivo/,
-    );
-  });
-
-  it('when the whisper executable is blank, should reject', () => {
-    expectValidation((s) => (s.local.whisper.executable = ''), /executável do Whisper/);
+    expectValidation((s) => (s.paths.libraryDir = 'relativa/pasta'), /caminho completo/);
   });
 
   it('when the ollama url is not a valid http(s) address, should reject', () => {

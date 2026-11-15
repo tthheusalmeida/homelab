@@ -1,7 +1,7 @@
 /** Textos repetidos da janela de Configurações (interface em português). */
 export const Strings = {
   title: 'Configurações',
-  subtitle: 'Pastas e serviços usados pelo HomeLab',
+  subtitle: 'Biblioteca, aparência e serviços usados pelo HomeLab',
   loading: 'Carregando',
   loadError: 'Não foi possível carregar as configurações',
   save: 'Salvar',
@@ -17,13 +17,34 @@ export const Strings = {
     accentHint: 'Botões, links, item ativo do menu, foco, progresso e o carregamento.',
     restore: 'Restaurar padrão',
   },
+  library: {
+    inspecting: 'Verificando a pasta',
+    dialogTitle: 'Trocar a pasta da biblioteca',
+    moveOption: 'Mover a biblioteca atual para cá',
+    moveHint: 'Copia as páginas e os livros para a nova pasta e confere tudo antes de trocar.',
+    emptyOption: 'Começar com a biblioteca vazia',
+    emptyHint: 'A pasta nova fica vazia; a biblioteca atual continua onde está.',
+    deleteOrigin: 'Apagar a pasta antiga depois de mover',
+    useExisting: (count: number) =>
+      `Esta pasta já tem ${count} arquivo(s). O HomeLab passa a usá-la como está; a biblioteca atual continua onde está.`,
+    confirmMove: 'Mover e usar',
+    confirmUse: 'Usar esta pasta',
+    progressPreparing: 'Preparando a cópia',
+    progressRunning: (processed: number, total: number) =>
+      `Copiando ${processed} de ${total} arquivos`,
+    progressVerifying: 'Conferindo a cópia',
+    progressLabel: 'Progresso da cópia',
+    moved: 'Biblioteca trocada',
+    originKept: (reason: string) => `A pasta antiga não foi apagada: ${reason}`,
+    cancel: 'Cancelar',
+  },
   restart: {
     message: 'As alterações só valem depois de reiniciar o HomeLab.',
     action: 'Reiniciar agora',
   },
 } as const;
 
-export type SectionId = 'paths' | 'appearance' | 'external' | 'local';
+export type SectionId = 'paths' | 'appearance' | 'external' | 'local' | 'backup';
 
 export const SECTIONS: ReadonlyArray<{
   id: SectionId;
@@ -32,8 +53,9 @@ export const SECTIONS: ReadonlyArray<{
 }> = [
   {
     id: 'paths',
-    label: 'Pastas',
-    description: 'Onde ficam a biblioteca, a entrada e os arquivos temporários.',
+    label: 'Biblioteca',
+    description:
+      'Onde ficam as suas páginas e livros. Todo o resto (entrada, temporários e dados do app) tem lugar fixo.',
   },
   {
     id: 'appearance',
@@ -50,41 +72,25 @@ export const SECTIONS: ReadonlyArray<{
     label: 'Serviços locais',
     description: 'Programas que rodam no seu computador: Whisper, Ollama e ffmpeg.',
   },
+  {
+    id: 'backup',
+    label: 'Backup',
+    description: 'Salve ou restaure páginas, livros, chats e histórico em um único arquivo .zip.',
+  },
 ];
 
 export const PATH_FIELDS = [
   {
     key: 'libraryDir',
     label: 'Biblioteca',
-    hint: 'Documentos publicados e arquivados.',
-  },
-  {
-    key: 'inboxDir',
-    label: 'Entrada',
-    hint: 'Conteúdos gerados aguardando decisão.',
-  },
-  {
-    key: 'videoTempDir',
-    label: 'Vídeos temporários',
-    hint: 'Vídeos baixados durante os jobs.',
-  },
-  {
-    key: 'audioTempDir',
-    label: 'Áudios temporários',
-    hint: 'Áudios convertidos para a transcrição.',
+    hint: 'Páginas e livros. Ao trocar de pasta, você escolhe se os documentos atuais vão junto.',
   },
 ] as const;
 
 /** Rótulos dos campos de configuração dos providers locais. */
 export const LOCAL_FIELD_LABELS: Record<string, string> = {
-  directory: 'Pasta',
-  executable: 'Executável',
-  model: 'Arquivo de modelo (nome ou caminho completo)',
   url: 'Endereço (URL)',
 };
-
-/** Campos que aceitam o seletor de pasta do sistema. */
-export const PICKABLE_LOCAL_FIELDS: ReadonlySet<string> = new Set(['directory']);
 
 /** Passo a passo de cada serviço externo; aparece até a chave ser salva. Novo serviço = nova entrada aqui. */
 export const EXTERNAL_PROVIDER_GUIDES: Record<

@@ -7,7 +7,7 @@ import { createTestQueryClient } from '#test/utils';
 
 import { SnackbarProvider } from '#components/Snackbar';
 
-export { failure, mockApi, ok, payloadsOf } from '#test/api-mock';
+export { emitEvent, failure, mockApi, ok, payloadsOf } from '#test/api-mock';
 
 /** Renderiza com o que a janela de Configurações precisa: TanStack Query e o snackbar. */
 export function renderWithProviders(ui: ReactElement) {

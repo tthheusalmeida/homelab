@@ -6,9 +6,9 @@ export const WhisperMessages = {
   unsupported: (platform: string, arch: string) =>
     `O Whisper embutido ainda não está disponível para ${platform}-${arch} (hoje só win32-x64).`,
   executableMissing: (file: string) =>
-    `Whisper CLI não encontrado: ${file}. Veja resources/bin/README.md ou ajuste em Configurações > Serviços locais.`,
+    `Whisper CLI não encontrado: ${file}. Copie os arquivos do Whisper para essa pasta (veja resources/bin/README.md).`,
   modelMissing: (file: string) =>
-    `Modelo Whisper não encontrado: ${file}. Informe o arquivo do modelo em Configurações > Serviços locais.`,
+    `Modelo Whisper não encontrado: ${file}. Copie o arquivo do modelo (ggml-large-v3-turbo.bin) para essa pasta (veja resources/bin/README.md).`,
 } as const;
 
 /** Plataformas com binário do Whisper embutido (`resources/bin/<platform>-<arch>`). */

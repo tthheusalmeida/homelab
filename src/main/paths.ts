@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import { MainEnv } from './constants';
+import { DATA_ROOT_FOLDER, MainEnv } from './constants';
 
 type Env = Record<string, string | undefined>;
 
@@ -29,4 +29,9 @@ export function resolveBinDir(
   arch: string,
 ): string {
   return path.join(resourcesDir, 'bin', `${platform}-${arch}`);
+}
+
+/** Raiz dos dados do HomeLab: `HOMELAB_DATA_ROOT_DIR` ou `Documentos/HomeLab`. */
+export function resolveDataRoot(documentsDir: string, env: Env): string {
+  return env[MainEnv.DATA_ROOT_DIR] ?? path.join(documentsDir, DATA_ROOT_FOLDER);
 }

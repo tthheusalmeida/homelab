@@ -9,9 +9,10 @@ resources/bin/
   darwin-arm64/ (futuro)
 ```
 
-- Windows (x64): copie para `win32-x64/` o conteúdo da pasta atual do Whisper (`D:\homelab\ai\whisper`), **sem** o modelo `.bin`.
-- O modelo (`ggml-large-v3-turbo.bin`, ~1,5 GB) não fica aqui: em Configurações > Serviços locais informe o **nome do arquivo** (se ele estiver na pasta do Whisper) ou o **caminho completo** (em qualquer pasta).
-- Se o executável não existir na pasta configurada: plataformas sem subpasta (tudo que não é `win32-x64`) resultam em `UNSUPPORTED_PLATFORM`, e `win32-x64` sem os arquivos resulta em `NOT_CONFIGURED` ("Whisper CLI não encontrado"). A mensagem aparece no job que falhou.
+- O Whisper usa sempre os padrões do app (não há campos para isso nas Configurações): a pasta é `resources/bin/<plataforma>`, o executável é `whisper-cli.exe` (`whisper-cli` fora do Windows) e o modelo é `ggml-large-v3-turbo.bin`.
+- Windows (x64): copie para `win32-x64/` **todo** o conteúdo da pasta do Whisper (`whisper-cli.exe`, as DLLs **e o modelo `ggml-large-v3-turbo.bin`**, ~1,5 GB). O modelo fica junto dos binários, na mesma pasta.
+- Sem o executável ou sem o modelo nessa pasta, o job de vídeo falha com a mensagem "Whisper CLI não encontrado" ou "Modelo Whisper não encontrado", já com o caminho completo esperado. Em Configurações > Serviços locais o botão **Testar** do Whisper mostra o mesmo.
+- Plataformas sem subpasta (tudo que não é `win32-x64`) resultam em `UNSUPPORTED_PLATFORM`.
 - Quem escolhe o executável é o `WhisperBinaryResolver` (`src/providers/whisper-binary-resolver.ts`).
 
 Ver `docs/configuracoes.md`.

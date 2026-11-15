@@ -15,11 +15,12 @@ export const MainEnv = {
   FRONT_DIST_DIR: 'HOMELAB_FRONT_DIST_DIR',
   USER_DATA_DIR: 'HOMELAB_USER_DATA_DIR',
   SETTINGS_URL: 'HOMELAB_SETTINGS_URL',
+  /** Troca a raiz dos dados (só desenvolvimento e testes): evita escrever em Documentos/HomeLab. */
+  DATA_ROOT_DIR: 'HOMELAB_DATA_ROOT_DIR',
 } as const;
 
-/** Arquivos de dados do usuário (dentro de userData). */
+/** Arquivos que ficam em userData (segredos cifrados com a chave do usuário do sistema: não portáveis). */
 export const DataFiles = {
-  settings: 'settings.json',
   secrets: 'secrets.json',
 } as const;
 

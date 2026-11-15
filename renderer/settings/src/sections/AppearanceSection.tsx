@@ -34,7 +34,7 @@ export function AppearanceSection() {
 
   return (
     <Card className="animate-enter">
-      <CardContent className="flex flex-col gap-8 pt-6">
+      <CardContent className="flex flex-col gap-8">
         <div className="flex flex-col gap-2">
           <div>
             <p className="text-sm font-medium" id="theme-label">

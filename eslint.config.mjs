@@ -44,8 +44,8 @@ export default tseslint.config(
     },
   },
   {
-    // Mocks dos testes vindos do back usam `jest.fn()` e `mock.calls` (tipados como any).
-    files: ['src/back/**/*.spec.ts', 'src/back/testing/**/*.ts'],
+    // Mocks dos testes (jest.fn, mock.calls, spyOn) são tipados como any; valem para todos os specs. Os do back usam `jest.fn()` e `mock.calls` (tipados como any).
+    files: ['src/**/*.spec.ts', 'src/back/testing/**/*.ts'],
     rules: {
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',

@@ -24,12 +24,30 @@ import type {
   BookSummary,
   BookUpdateRequest,
 } from './books';
-import type { ChatSendRequest, ChatSendResponse } from './chat';
+import type {
+  BackupCreateRequest,
+  BackupCreateResult,
+  BackupInspection,
+  BackupPreview,
+  BackupRestoreRequest,
+  BackupRestoreResult,
+} from './backup';
+import type {
+  ChatCancelRequest,
+  ChatDetail,
+  ChatRequest,
+  ChatSendRequest,
+  ChatSendResponse,
+  ChatSummary,
+} from './chat';
+import type { AppNotice } from './events';
 import type { HealthReport } from './health';
 import type {
   CreateVideoToSummaryRequest,
   CreateVideoToTranscriptRequest,
   JobCreated,
+  JobDeleteRequest,
+  JobDeleteResult,
   JobRequest,
   JobTypeView,
   JobView,
@@ -61,7 +79,13 @@ import type {
   ProviderTestResult,
 } from './providers';
 import type { Appearance } from './appearance';
-import type { SaveResult, SettingsPaths } from './settings';
+import type {
+  LibraryFolderInfo,
+  MoveLibraryRequest,
+  MoveLibraryResult,
+  SaveResult,
+  SettingsPaths,
+} from './settings';
 
 /**
  * Contrato de cada canal: payload (`request`) e retorno (`response`).
@@ -88,6 +112,14 @@ export interface IpcContracts {
     response: string | null;
   };
 
+  /** Diz o que há numa pasta candidata a biblioteca (vazia, com arquivos...). */
+  [IpcChannels.settings.inspectLibrary]: {
+    request: { path: string };
+    response: LibraryFolderInfo;
+  };
+  /** Troca a pasta da biblioteca, movendo os arquivos (com progresso em `library-move:progress`) ou só usando a pasta. */
+  [IpcChannels.settings.moveLibrary]: { request: MoveLibraryRequest; response: MoveLibraryResult };
+
   [IpcChannels.health.system]: { request: void; response: HealthReport };
   [IpcChannels.health.ai]: { request: void; response: HealthReport };
 
@@ -96,7 +128,27 @@ export interface IpcContracts {
   [IpcChannels.ai.thinking]: { request: AiThinkingRequest; response: AiThinkingEntry[] };
   [IpcChannels.ai.usage]: { request: AiUsageRequestFilter; response: AiUsageReport };
 
+  /** Avisos criados enquanto o app abria (entregues uma vez só). Os seguintes chegam pelo evento `app:notice`. */
+  [IpcChannels.notices.pending]: { request: void; response: AppNotice[] };
+
+  /** Mostra o que dá para incluir no backup, com tamanhos, e o que não entra. */
+  [IpcChannels.backup.preview]: { request: void; response: BackupPreview };
+  /** Pergunta onde salvar e cria o zip, com progresso em `backup:progress`. */
+  [IpcChannels.backup.create]: { request: BackupCreateRequest; response: BackupCreateResult };
+  /** Cancela o backup ou a restauração em andamento (o zip parcial é apagado). */
+  [IpcChannels.backup.cancel]: { request: void; response: void };
+  /** Pergunta qual zip abrir e devolve o que há nele; `null` se o usuário cancelar. */
+  [IpcChannels.backup.inspect]: { request: void; response: BackupInspection | null };
+  /** Restaura os itens escolhidos do zip aberto por `backup:inspect`. */
+  [IpcChannels.backup.restore]: { request: BackupRestoreRequest; response: BackupRestoreResult };
+
+  /** Envia a mensagem com o histórico inteiro do chat; o chat nasce na primeira mensagem. */
   [IpcChannels.chat.send]: { request: ChatSendRequest; response: ChatSendResponse };
+  /** Descarta a resposta que ainda está sendo gerada para o chat (a chamada ao provedor não é interrompida). */
+  [IpcChannels.chat.cancel]: { request: ChatCancelRequest; response: void };
+  [IpcChannels.chats.list]: { request: void; response: ChatSummary[] };
+  [IpcChannels.chats.get]: { request: ChatRequest; response: ChatDetail };
+  [IpcChannels.chats.delete]: { request: ChatRequest; response: void };
 
   [IpcChannels.library.documents.list]: {
     request: LibraryListFilters;
@@ -163,6 +215,9 @@ export interface IpcContracts {
     request: CreateVideoToSummaryRequest;
     response: JobCreated;
   };
+  /** Exclui jobs do histórico (só os que não estão na fila nem rodando). */
+  [IpcChannels.jobs.delete]: { request: JobDeleteRequest; response: JobDeleteResult };
+  [IpcChannels.jobs.deleteAll]: { request: void; response: JobDeleteResult };
 
   [IpcChannels.library.inbox]: { request: void; response: LibraryDocumentSummary[] };
   [IpcChannels.library.categories]: { request: void; response: LibraryCategoryNode[] };

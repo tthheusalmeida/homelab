@@ -8,20 +8,11 @@ export const SettingsMessages = {
   pathRequired: (label: string) => `Informe ${label}.`,
   pathNotAbsolute: (label: string) => `${label} deve ser um caminho completo (absoluto).`,
   urlInvalid: 'A URL do Ollama deve ser um endereço http ou https válido.',
-  fileNameRequired: (label: string) => `Informe ${label}.`,
-  fileNameHasPath: (label: string) => `${label} deve ser só o nome do arquivo, sem pastas.`,
   themeInvalid: 'Escolha um tema válido: sistema, claro ou escuro.',
   accentInvalid: 'Escolha uma das cores de destaque disponíveis.',
-  modelInvalid:
-    'O modelo do Whisper deve ser o nome do arquivo (na pasta do Whisper) ou o caminho completo.',
 } as const;
 
-const PATH_LABELS = {
-  libraryDir: 'a pasta da biblioteca',
-  inboxDir: 'a pasta de entrada',
-  videoTempDir: 'a pasta temporária de vídeos',
-  audioTempDir: 'a pasta temporária de áudios',
-} as const;
+const LIBRARY_LABEL = 'a pasta da biblioteca';
 
 function fail(message: string): never {
   throw new IpcError(IpcErrorCode.VALIDATION, message);
@@ -37,40 +28,13 @@ function requireAbsolutePath(value: string, label: string): void {
   }
 }
 
-function requireFileName(value: string, label: string): void {
-  if (!value.trim()) {
-    fail(SettingsMessages.fileNameRequired(label));
-  }
-
-  if (path.basename(value) !== value || value.includes('/') || value.includes('\\')) {
-    fail(SettingsMessages.fileNameHasPath(capitalize(label)));
-  }
-}
-
-/** Modelo: só o nome do arquivo (junto à pasta do Whisper) ou um caminho completo. */
-function requireModel(value: string, label: string): void {
-  if (!value.trim()) {
-    fail(SettingsMessages.fileNameRequired(label));
-  }
-
-  if (path.isAbsolute(value)) {
-    return;
-  }
-
-  if (path.basename(value) !== value || value.includes('/') || value.includes('\\')) {
-    fail(SettingsMessages.modelInvalid);
-  }
-}
-
 function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /** Valida as configurações completas. Lança `IpcError(VALIDATION)` com mensagem em português. */
 export function validateSettings(settings: SettingsData): void {
-  for (const [key, label] of Object.entries(PATH_LABELS)) {
-    requireAbsolutePath(settings.paths[key as keyof typeof PATH_LABELS], label);
-  }
+  requireAbsolutePath(settings.paths.libraryDir, LIBRARY_LABEL);
 
   if (!THEME_MODES.includes(settings.appearance.theme)) {
     fail(SettingsMessages.themeInvalid);
@@ -80,11 +44,7 @@ export function validateSettings(settings: SettingsData): void {
     fail(SettingsMessages.accentInvalid);
   }
 
-  const { whisper, ollama } = settings.local;
-
-  requireAbsolutePath(whisper.directory, 'a pasta do Whisper');
-  requireFileName(whisper.executable, 'o executável do Whisper');
-  requireModel(whisper.model, 'o arquivo de modelo do Whisper');
+  const { ollama } = settings.local;
 
   try {
     const url = new URL(ollama.url);

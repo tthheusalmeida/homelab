@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import { JsonFile } from './json-file';
+import { JsonFile } from '../storage/json-file';
 import { SettingsService } from './settings.service';
 import { SettingsStore } from './settings-store';
 import { makeTempDir, removeDir, testDefaults } from './settings.testing';

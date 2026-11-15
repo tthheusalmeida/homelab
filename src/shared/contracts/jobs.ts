@@ -68,3 +68,15 @@ export interface JobCreated {
   id: string;
   status: JobStatusId;
 }
+
+export interface JobDeleteRequest {
+  ids: string[];
+}
+
+/** Por que um job não foi excluído: ainda está na fila ou rodando, ou não existe mais. */
+export type JobSkipReason = 'ACTIVE' | 'NOT_FOUND';
+
+export interface JobDeleteResult {
+  deleted: string[];
+  skipped: { id: string; reason: JobSkipReason }[];
+}

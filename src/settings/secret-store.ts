@@ -1,6 +1,6 @@
 import { IpcError, IpcErrorCode } from '../shared/errors';
 
-import type { JsonFile } from './json-file';
+import type { JsonFile } from '../storage/json-file';
 
 export const SecretMessages = {
   cipherUnavailable: 'A criptografia do sistema não está disponível; a chave não foi salva.',

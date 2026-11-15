@@ -14,8 +14,4 @@ export function removeDir(dir: string): void {
 }
 
 export const testDefaults = () =>
-  createDefaultSettings({
-    rootDir: path.resolve('/data'),
-    whisperDir: path.resolve('/bin/whisper'),
-    platform: 'win32',
-  });
+  createDefaultSettings({ libraryDir: path.resolve('/data/library') });

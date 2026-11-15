@@ -7,13 +7,18 @@ import type {
   LocalProviderSaveRequest,
   LocalProviderTestRequest,
 } from '#shared/contracts/providers';
-import type { SettingsPaths } from '#shared/contracts/settings';
+import type {
+  BackupCreateRequest,
+  BackupRestoreRequest,
+} from '#shared/contracts/backup';
+import type { MoveLibraryRequest } from '#shared/contracts/settings';
 import { ipc } from '#lib/ipc';
 
 export const QueryKeys = {
   paths: ['settings', 'paths'],
   external: ['providers', 'external'],
   local: ['providers', 'local'],
+  backupPreview: ['backup', 'preview'],
 } as const;
 
 export function usePaths() {
@@ -23,11 +28,21 @@ export function usePaths() {
   });
 }
 
-export function useSavePaths() {
+/** Diz o que há na pasta escolhida para a biblioteca (vazia, com arquivos...). */
+export function useInspectLibrary() {
+  return useMutation({
+    mutationFn: (request: { path: string }) =>
+      ipc.invoke(IpcChannels.settings.inspectLibrary, request),
+  });
+}
+
+/** Troca a pasta da biblioteca (mover a atual ou só usar a escolhida). */
+export function useMoveLibrary() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (patch: Partial<SettingsPaths>) => ipc.invoke(IpcChannels.settings.update, patch),
+    mutationFn: (request: MoveLibraryRequest) =>
+      ipc.invoke(IpcChannels.settings.moveLibrary, request),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: QueryKeys.paths }),
   });
 }
@@ -86,4 +101,34 @@ export function useTestLocalProvider() {
 
 export function relaunchApp() {
   return ipc.invoke(IpcChannels.app.relaunch);
+}
+
+/** O que dá para incluir no backup, com tamanhos; sempre recalculado ao abrir a seção. */
+export function useBackupPreview() {
+  return useQuery({
+    queryKey: QueryKeys.backupPreview,
+    queryFn: () => ipc.invoke(IpcChannels.backup.preview),
+    gcTime: 0,
+  });
+}
+
+export function useCreateBackup() {
+  return useMutation({
+    mutationFn: (request: BackupCreateRequest) => ipc.invoke(IpcChannels.backup.create, request),
+  });
+}
+
+export function useInspectBackup() {
+  return useMutation({ mutationFn: () => ipc.invoke(IpcChannels.backup.inspect) });
+}
+
+export function useRestoreBackup() {
+  return useMutation({
+    mutationFn: (request: BackupRestoreRequest) => ipc.invoke(IpcChannels.backup.restore, request),
+  });
+}
+
+/** Cancela o backup ou a restauração em andamento (o zip parcial é apagado). */
+export function cancelBackup() {
+  return ipc.invoke(IpcChannels.backup.cancel);
 }

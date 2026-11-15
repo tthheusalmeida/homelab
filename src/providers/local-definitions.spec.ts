@@ -14,24 +14,27 @@ const whisperConfig = {
 
 describe('whisper definition', () => {
   it('when both executable and model exist, should answer ok', async () => {
-    const definition = createWhisperDefinition(() => true);
+    const definition = createWhisperDefinition(() => true, whisperConfig);
 
-    await expect(definition.test(whisperConfig)).resolves.toMatchObject({ ok: true });
+    await expect(definition.test({})).resolves.toMatchObject({ ok: true });
   });
 
   it('when the executable is missing, should answer not ok naming the file', async () => {
-    const definition = createWhisperDefinition((file) => !file.endsWith('whisper-cli.exe'));
+    const definition = createWhisperDefinition(
+      (file) => !file.endsWith('whisper-cli.exe'),
+      whisperConfig,
+    );
 
-    const result = await definition.test(whisperConfig);
+    const result = await definition.test({});
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain(path.join(whisperConfig.directory, 'whisper-cli.exe'));
   });
 
   it('when only the model is missing, should answer not ok naming the model', async () => {
-    const definition = createWhisperDefinition((file) => !file.endsWith('m.bin'));
+    const definition = createWhisperDefinition((file) => !file.endsWith('m.bin'), whisperConfig);
 
-    const result = await definition.test(whisperConfig);
+    const result = await definition.test({});
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain('m.bin');
@@ -40,33 +43,39 @@ describe('whisper definition', () => {
   it('when the model is a full path outside the whisper folder, should test that path', async () => {
     const model = path.resolve('/modelos/grande.bin');
     const checked: string[] = [];
-    const definition = createWhisperDefinition((file) => {
-      checked.push(file);
+    const definition = createWhisperDefinition(
+      (file) => {
+        checked.push(file);
 
-      return true;
-    });
+        return true;
+      },
+      { ...whisperConfig, model },
+    );
 
-    await expect(definition.test({ ...whisperConfig, model })).resolves.toMatchObject({ ok: true });
+    await expect(definition.test({})).resolves.toMatchObject({ ok: true });
     expect(checked).toContain(model);
     expect(checked).not.toContain(path.join(whisperConfig.directory, model));
   });
 
   it('when the model is a full path that does not exist, should answer not ok naming it', async () => {
     const model = path.resolve('/modelos/grande.bin');
-    const definition = createWhisperDefinition((file) => file !== model);
+    const definition = createWhisperDefinition((file) => file !== model, {
+      ...whisperConfig,
+      model,
+    });
 
-    const result = await definition.test({ ...whisperConfig, model });
+    const result = await definition.test({});
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain(model);
   });
 
-  it('when converting a config to a patch, should include only the informed fields', () => {
-    const definition = createWhisperDefinition(() => true);
+  it('when reading its config, should expose nothing because the values are fixed', () => {
+    const definition = createWhisperDefinition(() => true, whisperConfig);
 
-    expect(definition.toPatch({ model: 'x.bin' })).toEqual({
-      local: { whisper: { model: 'x.bin' } },
-    });
+    expect(definition.editable).toBe(false);
+    expect(definition.read({} as never)).toEqual({});
+    expect(definition.toPatch({ model: 'x.bin' })).toEqual({});
   });
 });
 

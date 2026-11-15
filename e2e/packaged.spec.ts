@@ -12,7 +12,11 @@ test('when running the packaged app, should open the home and find the bundled w
   const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'homelab-e2e-pkg-'));
   const app = await electron.launch({
     executablePath: exe,
-    env: { ...process.env, HOMELAB_USER_DATA_DIR: userData },
+    env: {
+      ...process.env,
+      HOMELAB_USER_DATA_DIR: userData,
+      HOMELAB_DATA_ROOT_DIR: path.join(userData, 'data-root'),
+    },
   });
 
   try {
@@ -22,12 +26,13 @@ test('when running the packaged app, should open the home and find the bundled w
     const main = home ?? app.windows().find((window) => !window.url().includes('splash.html')) ?? app.windows()[0];
     const locals = (await main.evaluate(() => window.api.invoke('providers:local:list'))) as {
       ok: true;
-      data: Array<{ id: string; config: Record<string, string> }>;
+      data: Array<{ id: string; editable: boolean }>;
     };
     const whisper = locals.data.find((provider) => provider.id === 'whisper');
     const resources = path.join(path.dirname(exe), 'resources', 'bin', 'win32-x64');
 
-    expect(path.normalize(whisper?.config.directory ?? '')).toBe(resources);
+    // O Whisper usa os padrões do app (fixos, só dá para testar): o binário vem no instalador.
+    expect(whisper?.editable).toBe(false);
     expect(fs.existsSync(path.join(resources, 'whisper-cli.exe'))).toBe(true);
   } finally {
     await app.close();
