@@ -1,8 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-vi.mock('#lib/api', () => ({ api: vi.fn().mockResolvedValue({}) }));
-
-import { api } from '#lib/api';
+import { describe, expect, it } from 'vitest';
 
 import { IpcChannels } from '../../src/shared/channels';
 import { failure, mockApi, ok } from '../settings/src/testing';
@@ -23,6 +19,8 @@ import {
   toListFilters,
   updateDocument,
 } from './library-api';
+
+const detail = { meta: { id: 'abc' }, content: 'c' };
 
 describe('toListFilters', () => {
   it('when there are no filters, should answer an empty payload', () => {
@@ -63,11 +61,7 @@ describe('toListFilters', () => {
 });
 
 describe('library api: leitura por IPC (cópia do desktop)', () => {
-  beforeEach(() => {
-    vi.mocked(api).mockClear();
-  });
-
-  it('when listing documents, should send the filters to library:documents:list and not use HTTP', async () => {
+  it('when listing documents, should send the cleaned filters to library:documents:list', async () => {
     const docs = [{ id: '1' }];
     const invoke = mockApi({ [IpcChannels.library.documents.list]: () => ok(docs) });
 
@@ -77,7 +71,6 @@ describe('library api: leitura por IPC (cópia do desktop)', () => {
       q: 'oi',
       tags: ['t'],
     });
-    expect(api).not.toHaveBeenCalled();
   });
 
   it('when listing without filters, should still send an object payload', async () => {
@@ -89,9 +82,7 @@ describe('library api: leitura por IPC (cópia do desktop)', () => {
   });
 
   it('when getting a document, should send its id as it is (no URL encoding)', async () => {
-    const invoke = mockApi({
-      [IpcChannels.library.documents.get]: () => ok({ meta: {}, content: 'c' }),
-    });
+    const invoke = mockApi({ [IpcChannels.library.documents.get]: () => ok(detail) });
 
     await getDocument('a b/ç');
 
@@ -121,59 +112,108 @@ describe('library api: leitura por IPC (cópia do desktop)', () => {
     await expect(getIndexStatus()).resolves.toEqual({ total: 3, errors: [] });
 
     expect(invoke).toHaveBeenCalledTimes(4);
-    expect(api).not.toHaveBeenCalled();
   });
 });
 
-describe('library api: escrita segue por HTTP até a 06b (cópia do desktop)', () => {
-  beforeEach(() => {
-    vi.mocked(api).mockClear();
+describe('library api: escrita por IPC (cópia do desktop)', () => {
+  it('when reindexing, should call library:reindex without payload and return the result', async () => {
+    const invoke = mockApi({
+      [IpcChannels.library.reindex]: () => ok({ indexed: 5, errors: [] }),
+    });
+
+    await expect(reindex()).resolves.toEqual({ indexed: 5, errors: [] });
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.reindex);
   });
 
-  it('when reindexing, should POST /library/reindex', async () => {
-    await reindex();
+  it('when publishing, should send the id together with the input', async () => {
+    const invoke = mockApi({ [IpcChannels.library.documents.publish]: () => ok(detail) });
 
-    expect(api).toHaveBeenCalledWith('/library/reindex', { method: 'POST' });
-  });
-
-  it('when publishing, should POST the body to the document publish route', async () => {
-    await publishDocument('a b', { category: ['X'], tags: ['t'] });
-
-    expect(api).toHaveBeenCalledWith('/library/documents/a%20b/publish', {
-      method: 'POST',
-      body: JSON.stringify({ category: ['X'], tags: ['t'] }),
+    await expect(
+      publishDocument('a b', { category: ['X'], tags: ['t'], title: 'T' }),
+    ).resolves.toEqual(detail);
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.documents.publish, {
+      id: 'a b',
+      category: ['X'],
+      tags: ['t'],
+      title: 'T',
     });
   });
 
-  it('when archiving and discarding, should use POST archive and DELETE', async () => {
+  it('when archiving, should send the id to library:documents:archive', async () => {
+    const invoke = mockApi({ [IpcChannels.library.documents.archive]: () => ok(detail) });
+
     await archiveDocument('1');
-    await discardDocument('1');
 
-    expect(api).toHaveBeenCalledWith('/library/documents/1/archive', { method: 'POST' });
-    expect(api).toHaveBeenCalledWith('/library/documents/1', { method: 'DELETE' });
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.documents.archive, { id: '1' });
   });
 
-  it('when creating, suggesting and updating, should keep the HTTP routes and bodies', async () => {
-    await createArticle({ title: 'T', category: ['C'], content: 'x' });
-    await suggestClassification('1');
-    await suggestClassification('1', 'm');
-    await updateDocument('1', { title: 'N' });
+  it('when discarding, should send the id to library:documents:delete and resolve with nothing', async () => {
+    const invoke = mockApi({
+      [IpcChannels.library.documents.delete]: () => ok(undefined),
+    });
 
-    expect(api).toHaveBeenCalledWith('/library/documents/article', {
-      method: 'POST',
-      body: JSON.stringify({ title: 'T', category: ['C'], content: 'x' }),
+    await expect(discardDocument('1')).resolves.toBeUndefined();
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.documents.delete, { id: '1' });
+  });
+
+  it('when creating an article, should send the input as the payload', async () => {
+    const invoke = mockApi({ [IpcChannels.library.documents.createArticle]: () => ok(detail) });
+    const input = { title: 'T', category: ['C'], content: 'x' };
+
+    await expect(createArticle(input)).resolves.toEqual(detail);
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.documents.createArticle, input);
+  });
+
+  it('when suggesting without a model, should send only the id', async () => {
+    const suggestion = { title: 'T', category: ['A'], tags: [], model: 'm' };
+    const invoke = mockApi({ [IpcChannels.library.documents.suggest]: () => ok(suggestion) });
+
+    await expect(suggestClassification('1')).resolves.toEqual(suggestion);
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.documents.suggest, { id: '1' });
+  });
+
+  it('when suggesting with a model, should send id and modelId', async () => {
+    const invoke = mockApi({ [IpcChannels.library.documents.suggest]: () => ok({}) });
+
+    await suggestClassification('1', 'gemini-x');
+
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.documents.suggest, {
+      id: '1',
+      modelId: 'gemini-x',
     });
-    expect(api).toHaveBeenCalledWith('/library/documents/1/suggest', {
-      method: 'POST',
-      body: '{}',
+  });
+
+  it('when the AI fails to suggest, should reject with the message from the main', async () => {
+    mockApi({
+      [IpcChannels.library.documents.suggest]: () =>
+        failure('PROVIDER_FAILED', 'Não foi possível obter a sugestão da IA. Tente novamente.'),
     });
-    expect(api).toHaveBeenCalledWith('/library/documents/1/suggest', {
-      method: 'POST',
-      body: JSON.stringify({ modelId: 'm' }),
+
+    await expect(suggestClassification('1')).rejects.toThrow(
+      'Não foi possível obter a sugestão da IA. Tente novamente.',
+    );
+  });
+
+  it('when updating, should send the id together with the changed fields', async () => {
+    const invoke = mockApi({ [IpcChannels.library.documents.update]: () => ok(detail) });
+
+    await updateDocument('1', { title: 'N', content: '# x' });
+
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.documents.update, {
+      id: '1',
+      title: 'N',
+      content: '# x',
     });
-    expect(api).toHaveBeenCalledWith('/library/documents/1', {
-      method: 'PATCH',
-      body: JSON.stringify({ title: 'N' }),
+  });
+
+  it('when the service rejects the change, should reject with its VALIDATION message', async () => {
+    mockApi({
+      [IpcChannels.library.documents.update]: () =>
+        failure('VALIDATION', 'O conteúdo não pode ficar vazio.'),
     });
+
+    await expect(updateDocument('1', { content: ' ' })).rejects.toThrow(
+      'O conteúdo não pode ficar vazio.',
+    );
   });
 });

@@ -1,5 +1,3 @@
-import { api } from '#lib/api';
-
 import type {
   CategoryNode,
   ClassificationSuggestion,
@@ -18,9 +16,8 @@ import type { LibraryListFilters } from '../../src/shared/contracts/library';
 import { ipc } from '../ipc';
 
 /**
- * Cópia de `front/src/pages/library/api/library.ts` da fase 06a: as **leituras** vão por IPC e a
- * escrita (reindex, publicar, arquivar, descartar, criar, sugerir, editar) segue por HTTP até a
- * 06b. As duas partes usam o mesmo índice do back, então não há conflito.
+ * Cópia de `front/src/pages/library/api/library.ts` com o corpo por IPC (fases 06a e 06b): leitura
+ * e escrita da biblioteca. Mesmas assinaturas; o `:id` da rota virou campo do payload.
  */
 
 /** Mesmas regras de `buildDocumentsQuery`: texto aparado, vazio omitido, listas só se houver itens. */
@@ -63,50 +60,33 @@ export function getIndexStatus(): Promise<IndexStatus> {
   return ipc.invoke(IpcChannels.library.index);
 }
 
-// --- Escrita: continua por HTTP até a fase 06b ---
-
-export function reindex() {
-  return api<{ indexed: number; errors: IndexStatus['errors'] }>('/library/reindex', {
-    method: 'POST',
-  });
+export function reindex(): Promise<{ indexed: number; errors: IndexStatus['errors'] }> {
+  return ipc.invoke(IpcChannels.library.reindex);
 }
 
-export function publishDocument(id: string, input: PublishInput) {
-  return api<DocumentDetail>(`/library/documents/${encodeURIComponent(id)}/publish`, {
-    method: 'POST',
-    body: JSON.stringify(input),
-  });
+export function publishDocument(id: string, input: PublishInput): Promise<DocumentDetail> {
+  return ipc.invoke(IpcChannels.library.documents.publish, { id, ...input });
 }
 
-export function archiveDocument(id: string) {
-  return api<DocumentDetail>(`/library/documents/${encodeURIComponent(id)}/archive`, {
-    method: 'POST',
-  });
+export function archiveDocument(id: string): Promise<DocumentDetail> {
+  return ipc.invoke(IpcChannels.library.documents.archive, { id });
 }
 
-export function discardDocument(id: string) {
-  return api<void>(`/library/documents/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  });
+export function discardDocument(id: string): Promise<void> {
+  return ipc.invoke(IpcChannels.library.documents.delete, { id });
 }
 
-export function createArticle(input: CreateArticleInput) {
-  return api<DocumentDetail>('/library/documents/article', {
-    method: 'POST',
-    body: JSON.stringify(input),
-  });
+export function createArticle(input: CreateArticleInput): Promise<DocumentDetail> {
+  return ipc.invoke(IpcChannels.library.documents.createArticle, input);
 }
 
-export function suggestClassification(id: string, modelId?: string) {
-  return api<ClassificationSuggestion>(`/library/documents/${encodeURIComponent(id)}/suggest`, {
-    method: 'POST',
-    body: JSON.stringify(modelId ? { modelId } : {}),
-  });
+export function suggestClassification(
+  id: string,
+  modelId?: string,
+): Promise<ClassificationSuggestion> {
+  return ipc.invoke(IpcChannels.library.documents.suggest, modelId ? { id, modelId } : { id });
 }
 
-export function updateDocument(id: string, input: UpdateDocumentInput) {
-  return api<DocumentDetail>(`/library/documents/${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    body: JSON.stringify(input),
-  });
+export function updateDocument(id: string, input: UpdateDocumentInput): Promise<DocumentDetail> {
+  return ipc.invoke(IpcChannels.library.documents.update, { id, ...input });
 }
