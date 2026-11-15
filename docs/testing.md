@@ -4,7 +4,7 @@
 - **Unitários do main** (`src/**/*.spec.ts`): Jest + ts-jest, mesmo padrão do back. Cobrem handlers, registrar, mapper de erro, settings, resolvedor de binário e as funções puras do main.
 - **Unitários do front** (`*.test.ts(x)`, Vitest): cobrem os `api.ts` migrados (mockando `window.api`), `#lib/ipc` e a tela de Configurações. Convenções em `regras/front/testing.md`.
 - **Checklist manual** por fase (`docs/fases/fase-XX.md`): o que o usuário valida no ambiente real.
-- **Smoke E2E** (`npm run test:e2e`, pasta `e2e/`, Playwright para Electron; faz o build antes): abre o app com `userData` temporário e verifica a Home, a navegação pelas telas, a criação de um artigo, que nenhuma requisição `http(s)` é feita, que um usuário novo abre a janela de Configurações e que o app, lançado sem o Playwright, não escuta nenhuma porta TCP (Windows). Não toca nos dados reais.
+- **Smoke E2E** (`npm run test:e2e`, pasta `e2e/`, Playwright para Electron; faz o build antes): abre o app com `userData` temporário e verifica a Home, a navegação pelas telas, a criação de um artigo, que nenhuma requisição `http(s)` é feita, que um usuário novo abre a janela de Configurações e que o app, lançado sem o Playwright, não escuta nenhuma porta TCP e que salvar a chave do Gemini e reiniciar na hora não a perde (Windows). Não toca nos dados reais.
 
 ## Regra de entrega
 Toda feature (nova ou alterada) vem com testes unitários na mesma entrega. Cubra caminho feliz, erros e casos de borda e rode a suíte completa (main e front) antes de dar a fase como entregue.

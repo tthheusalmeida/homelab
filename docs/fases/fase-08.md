@@ -25,7 +25,7 @@ Status: concluída
 - **Não verificado ao vivo:** resumo com Ollama (está desligado nesta máquina), os níveis `detailed` e `study`, `UNSUPPORTED_PLATFORM` (só por teste unitário; só há Windows aqui), modelo configurado só pelo nome de arquivo (usei caminho completo; o nome é coberto por teste unitário) e os cliques nos formulários de criação.
 
 ## Risco observado (fase 03a, não é desta fase)
-O `safeStorage` guarda a chave de criptografia no `Local State` da pasta de dados, e o Electron só o grava ~10 s depois do primeiro uso. Num teste, matei o app 4 s depois de salvar a chave do Gemini: o segredo ficou ilegível no reinício e voltou como "não configurado". Numa instalação nova, salvar a chave e clicar logo em "Reiniciar agora" (que usa `app.exit(0)`) pode cair no mesmo caso. Não reproduzi esse fluxo exato; vale tratar na fase 10 (ex.: confirmar a gravação antes de reiniciar).
+O `safeStorage` guarda a chave de criptografia no `Local State` da pasta de dados, e o Electron só o grava ~10 s depois do primeiro uso. Num teste, matei o app 4 s depois de salvar a chave do Gemini: o segredo ficou ilegível no reinício e voltou como "não configurado". Numa instalação nova, salvar a chave e clicar logo em "Reiniciar agora" (que usa `app.exit(0)`) pode cair no mesmo caso. Não reproduzi esse fluxo exato; tratado na fase 09c (`LocalStateGuard`; ver `fase-09c.md`).
 
 ## Objetivo
 Pipelines de vídeo funcionando por IPC, com o Whisper embutido por plataforma (win32-x64).

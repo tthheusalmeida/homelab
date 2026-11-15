@@ -1,6 +1,6 @@
 # Fase 09c — Limpeza final, smoke E2E e docs
 
-Status: implementada parcialmente (falta o risco do `Local State`; aguardando ok)
+Status: concluída
 
 ## Objetivo
 Fechar a independência e provar o app de ponta a ponta.
@@ -22,4 +22,4 @@ Regressão completa seguindo os checklists das fases 04 a 08; aba Network sem `l
 ## Como ficou (até agora)
 - Regras de negócio copiadas para `docs/regras/back` e `docs/regras/front` (sem o `env.md`, substituído por `configuracoes.md`); `regras-de-negocio.md`, `lib.md`, `home.md` e a CSP em `arquitetura.md` ajustados. Nenhuma referência a `../front`, `../back`, `HOMELAB_FRONT_DIR`, `VITE_API_URL` ou `EnvKeys` sobrou em código, testes ou scripts.
 - Smoke E2E (`e2e/smoke.spec.ts`, 6 testes, `npm run test:e2e`) passando: Home, navegação, criar artigo, zero requisições http, usuário novo abre as Configurações, nenhuma porta TCP em escuta. A porta de depuração que o Playwright abre no Electron que ele controla é do próprio Playwright, por isso a checagem de portas usa um Electron lançado à parte.
-- **Pendente:** o risco do `Local State` do safeStorage (gravado ~10 s depois do primeiro uso) ainda não foi tratado.
+- **Risco do `Local State` do safeStorage (tratado):** medi no Electron real: depois de salvar a chave, o `Local State` só aparece no disco ~10 s depois (9,9 s). `LocalStateGuard` (`src/main/local-state-guard.ts`) faz o `app:relaunch` esperar (até 20 s) o arquivo ter a `encrypted_key` antes de sair. Um teste E2E salva a chave, reinicia na hora e confere que ela continua legível. **Franqueza:** num controle com a espera desligada o teste também passou, ou seja, o `app.exit(0)` já gravava o arquivo na saída; a espera é uma garantia que não depende disso. A janela de ~10 s continua valendo só para morte abrupta do processo (kill, queda de energia, crash): nesse caso o segredo recém-salvo se perde e o usuário precisa salvar a chave de novo.

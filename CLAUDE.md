@@ -35,7 +35,7 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/r
 - `npm run lint` / `npm run format`
 
 ## Mapa do código (alvo; criado ao longo das fases)
-- `src/main/` — `index.ts` (bootstrap), `content-security-policy.ts`, `first-run.ts`, `shortcuts.ts`, `single-window.ts`, `constants.ts`, `paths.ts`, `front-target.ts`, `window-options.ts`, `navigation-guard.ts`, `static-files.ts` (protocolo `app://`), `back-container.ts` (Nest como contêiner de DI), `back-services.ts` (instâncias do back para os handlers), `composition.ts`, `electron-cipher.ts`
+- `src/main/` — `index.ts` (bootstrap), `content-security-policy.ts`, `first-run.ts`, `local-state-guard.ts`, `shortcuts.ts`, `single-window.ts`, `constants.ts`, `paths.ts`, `front-target.ts`, `window-options.ts`, `navigation-guard.ts`, `static-files.ts` (protocolo `app://`), `back-container.ts` (Nest como contêiner de DI), `back-services.ts` (instâncias do back para os handlers), `composition.ts`, `electron-cipher.ts`
 - `src/back/` — o back dentro do desktop: `back.module.ts` (`BackModule.forRoot`), `config/back-config.ts` (`BackConfig`), `modules/{ai,chat,health,jobs,library,video}` (services, domínio, providers; testes ao lado), `utils/`, `testing/` (helper de biblioteca temporária)
 - `src/preload/` — `bridge.ts` (ponte com lista de canais permitidos) e `index.ts` (`contextBridge` expõe `window.api`); empacotado com esbuild
 - `renderer/` — UI do desktop, **fora do `src/`**: `src/` (o front: `app`, `pages/<rota>`, `components`, `ui`, `lib` com `ipc.ts`, `hooks`, `test` com `api-mock.ts`), `settings/` (janela de Configurações), `index.html`, `public`, `vite-aliases.mts`, `tsconfig.json`
