@@ -62,7 +62,7 @@ export function TagInput({
       {value.length > 0 && (
         <ul className="flex flex-wrap gap-1.5">
           {value.map((tag) => (
-            <li key={tag}>
+            <li key={tag} className="animate-enter-scale">
               <Badge variant="secondary" className="gap-1">
                 {tag}
 

@@ -48,7 +48,7 @@ export function DocumentCard({
 
   if (variant === "list") {
     return (
-      <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
+      <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2 transition-[box-shadow,border-color,background-color] duration-200 hover:border-foreground/20 hover:shadow-md">
         <div className="min-w-0 flex-1 space-y-0.5">
           <div className="flex items-center gap-2">
             {title}
@@ -71,7 +71,7 @@ export function DocumentCard({
   }
 
   return (
-    <Card className={cn(variant === "grid" && "h-full")}>
+    <Card className={cn("transition-[box-shadow,border-color,background-color] duration-200 hover:border-foreground/20 hover:shadow-md", variant === "grid" && "h-full")}>
       <CardHeader className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-2">
           {title}

@@ -85,7 +85,9 @@ export function CategoryTree({ nodes, selected, onSelect }: CategoryTreeProps) {
         </div>
 
         {hasChildren && isOpen && (
-          <ul>{node.children.map((child) => renderNode(child, depth + 1))}</ul>
+          <ul className="animate-enter-fade">
+            {node.children.map((child) => renderNode(child, depth + 1))}
+          </ul>
         )}
       </li>
     );

@@ -43,12 +43,14 @@ export function JobStatusBadge({ status }: JobStatusBadgeProps) {
   return (
     <Badge
       variant={status === JobStatusOptions.FAILED ? "destructive" : "secondary"}
-      className={cn(config.className, "min-w-24")}
+      className={cn(config.className, "min-w-24 transition-colors duration-300")}
     >
       <Icon
+        key={status}
         className={cn(
-          status === JobStatusOptions.RUNNING &&
-            "animate-spin animation-duration-[2s]",
+          status === JobStatusOptions.RUNNING
+            ? "animate-spin animation-duration-[2s]"
+            : "animate-enter-scale",
           "size-3 stroke-3",
         )}
       />

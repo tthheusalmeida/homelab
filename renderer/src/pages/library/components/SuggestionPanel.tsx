@@ -90,7 +90,7 @@ export function SuggestionPanel({
       </p>
 
       {usedModel && !suggest.isError && (
-        <p className="text-xs text-muted-foreground">
+        <p className="animate-enter-fade text-xs text-muted-foreground">
           Sugestão preenchida com {usedModel}.
         </p>
       )}

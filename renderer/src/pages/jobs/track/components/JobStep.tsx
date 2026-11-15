@@ -36,7 +36,7 @@ export function JobStep({ label, state, small }: JobStepProps) {
       <div
         className={cn(
           small ? "size-4" : "size-5",
-          "flex shrink-0 items-center justify-center rounded-full border",
+          "flex shrink-0 items-center justify-center rounded-full border transition-colors duration-300",
           state === JobStepStateOptions.ACTIVE && "border-primary text-primary",
           state === JobStepStateOptions.COMPLETED &&
             "bg-emerald-800 text-emerald-300",
@@ -46,16 +46,19 @@ export function JobStep({ label, state, small }: JobStepProps) {
         )}
       >
         <Icon
+          key={state}
           className={cn(
             small ? "size-2.5 stroke-2.5" : "size-3 stroke-3",
-            state === JobStepStateOptions.ACTIVE &&
-              "animate-spin animation-duration-[2s]",
+            state === JobStepStateOptions.ACTIVE
+              ? "animate-spin animation-duration-[2s]"
+              : "animate-enter-scale",
           )}
         />
       </div>
 
       <span
         className={cn(
+          "transition-colors duration-300",
           small ? "text-xs font-mono" : "text-sm",
           state === JobStepStateOptions.PENDING && "text-muted-foreground",
           state === JobStepStateOptions.ACTIVE && "font-medium",
