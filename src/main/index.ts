@@ -248,7 +248,9 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       settings: services.settingsService,
       externalProviders: services.externalProviders,
       localProviders: services.localProviders,
-      back: new BackServices(runtime, (token) => host.get(token)).readers(),
+      back: new BackServices(runtime, (token, moduleClass) =>
+        host.get(token, moduleClass),
+      ).readers(),
     }),
   );
 

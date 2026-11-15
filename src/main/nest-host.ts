@@ -27,7 +27,7 @@ interface NestApp {
   setGlobalPrefix(prefix: string): void;
   listen(port: string | number): Promise<unknown>;
   close(): Promise<void>;
-  get(token: unknown): unknown;
+  select(module: unknown): { get(token: unknown, options: { strict: boolean }): unknown };
 }
 
 interface NestCore {
@@ -75,13 +75,16 @@ export class NestHost {
     this.app = app;
   }
 
-  /** Instância de um provider do Nest (os handlers IPC recebem os services do back por aqui). */
-  get<T>(token: unknown): T {
+  /**
+   * Instância de um provider **declarada no módulo indicado** (os handlers IPC recebem os services
+   * do back por aqui). `strict` evita pegar a cópia de outro módulo que repete o mesmo provider.
+   */
+  get<T>(token: unknown, moduleClass: unknown): T {
     if (!this.app) {
       throw new Error(Messages.hostNotStarted);
     }
 
-    return this.app.get(token) as T;
+    return this.app.select(moduleClass).get(token, { strict: true }) as T;
   }
 
   async stop(): Promise<void> {
