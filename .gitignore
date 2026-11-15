@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+
+# Build output
+/dist/
+/out/
+/build/
+*.tsbuildinfo
+
+# Electron packaging (electron-builder / forge)
+/release/
+/dist-electron/
+
+# Binários nativos por plataforma (Whisper, DLLs, modelos): não versionar.
+# Estrutura e como obter: resources/bin/README.md
+/resources/bin/**
+!/resources/bin/README.md
+
+# Dados de execução em desenvolvimento (userData apontado para dentro do projeto)
+/.userdata/
+
+# Tests
+/coverage/
+/.nyc_output/
+/test-results/
+/playwright-report/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Environment (o app não usa .env; fica só por segurança)
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+/.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Claude Code (configuração local)
+.claude/settings.local.json
