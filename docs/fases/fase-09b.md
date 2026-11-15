@@ -1,6 +1,6 @@
 # Fase 09b — Front dentro do desktop
 
-Status: implementada, aguardando ok
+Status: concluída
 
 ## Objetivo
 O renderer do desktop passa a ser **o próprio front**, sem ler `../front`, sem overrides e sem `fetch`. (Decisão do usuário: manter a **mesma estrutura de pastas**, os componentes por rota e a base de componentes que nasce da pasta `ui`.)

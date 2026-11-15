@@ -3,7 +3,7 @@
 App desktop (Windows primeiro; depois Linux e macOS) do HomeLab: **Electron + React + IPC**. É a raiz do projeto Electron e substitui a comunicação HTTP entre `front` e `back` por **IPC**. Objetivo da migração: o que já funciona hoje continua funcionando, agora dentro do Electron e via IPC. **Sem melhorias de produto** nesta migração.
 
 - **Back (fase 09a, feita):** os services do Nest 11 vivem em `src/back` (copiados do antigo `back/`). Nest é só contêiner de injeção de dependência (`createApplicationContext`): sem HTTP, sem controllers, sem `.env`, sem porta. Os handlers IPC substituíram os controllers.
-- **Front (fase 09b, implementada):** o renderer é o próprio front em `renderer/src` (mesma estrutura de pastas: `pages/<rota>`, `components`, `ui`, `lib`, `hooks`, `app`), com IPC nos `api.ts`, sem overrides e sem `fetch`.
+- **Front (fase 09b, feita):** o renderer é o próprio front em `renderer/src` (mesma estrutura de pastas: `pages/<rota>`, `components`, `ui`, `lib`, `hooks`, `app`), com IPC nos `api.ts`, sem overrides e sem `fetch`.
 - `desktop/` (este repo): `main`, `preload`, `shared` (contratos IPC), `back`, handlers, settings e empacotamento.
 
 **Independência:** o desktop **não lê mais `../back` nem `../front`**; os dois são repositórios antigos, sem manutenção. **Não os edite nem commite neles.** Mudanças de código vão só em `desktop/`.
