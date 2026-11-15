@@ -11,7 +11,7 @@
     "allowImportingTsExtensions": true,
     "allowArbitraryExtensions": true,
     "esModuleInterop": true,
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "paths": {
       "#components/*": ["./renderer/src/components/*.tsx"],
       "#ui/*": ["./renderer/src/ui/*.tsx"],

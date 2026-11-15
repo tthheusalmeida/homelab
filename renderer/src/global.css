@@ -290,3 +290,171 @@
     break-inside: avoid;
   }
 }
+
+/* ------------------------------------------------------------------
+ * Movimento: entradas e saídas suaves em todo o app.
+ * Uma só régua de tempo e curva; quem prefere menos movimento recebe
+ * tudo quase instantâneo (bloco `prefers-reduced-motion` no fim).
+ * ------------------------------------------------------------------ */
+@theme {
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-soft: cubic-bezier(0.4, 0, 1, 1);
+  --duration-quick: 150ms;
+  --duration-enter: 320ms;
+  --duration-exit: 200ms;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes enter-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes enter-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes enter-left {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes exit-down {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes collapsible-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--collapsible-panel-height);
+    opacity: 1;
+  }
+}
+
+@keyframes collapsible-up {
+  from {
+    height: var(--collapsible-panel-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+/*
+ * Entrada de elementos. `--i` (índice na lista) escalona o atraso em 45 ms por item,
+ * com teto de 450 ms para listas longas não demorarem a aparecer.
+ */
+@utility animate-enter {
+  animation: enter var(--duration-enter) var(--ease-out-soft) both;
+  animation-delay: min(calc(var(--i, 0) * 45ms), 450ms);
+}
+
+@utility animate-enter-fade {
+  animation: enter-fade var(--duration-enter) var(--ease-out-soft) both;
+  animation-delay: min(calc(var(--i, 0) * 45ms), 450ms);
+}
+
+@utility animate-enter-scale {
+  animation: enter-scale var(--duration-enter) var(--ease-out-soft) both;
+  animation-delay: min(calc(var(--i, 0) * 45ms), 450ms);
+}
+
+@utility animate-enter-left {
+  animation: enter-left var(--duration-enter) var(--ease-out-soft) both;
+  animation-delay: min(calc(var(--i, 0) * 45ms), 450ms);
+}
+
+@utility animate-exit-down {
+  animation: exit-down var(--duration-exit) var(--ease-in-soft) both;
+}
+
+@utility animate-collapsible-down {
+  animation: collapsible-down var(--duration-enter) var(--ease-out-soft) both;
+  overflow: hidden;
+}
+
+@utility animate-collapsible-up {
+  animation: collapsible-up var(--duration-exit) var(--ease-in-soft) both;
+  overflow: hidden;
+}
+
+@layer base {
+  /* Mudanças de cor, borda e sombra sempre com transição curta, em todo controle. */
+  a,
+  button,
+  input,
+  textarea,
+  select,
+  summary,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"] {
+    transition-property: color, background-color, border-color, box-shadow,
+      opacity, transform, text-decoration-color;
+    transition-duration: var(--duration-quick);
+    transition-timing-function: var(--ease-out-soft);
+  }
+
+  /* Botões afundam um pouco ao clicar. */
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active {
+    transform: scale(0.97);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
