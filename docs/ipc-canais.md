@@ -90,19 +90,18 @@ A pasta da biblioteca não gera `NOT_CONFIGURED`: ela é obrigatória nas Config
 | `library:books:get` | `GET library/books/:id` | `{ id }` | livro com módulos e capítulos (`available` é `false` se o documento saiu da biblioteca) e `readDocumentIds` | 7a (feito) |
 | `library:books:read` | `GET library/books/:id/read` | `{ id }` | livro + conteúdo dos capítulos disponíveis (os indisponíveis ficam de fora) | 7a (feito) |
 | `library:books:search` | `GET library/books/:id/search` | `{ id, q }` | até 50 trechos (`documentId`, `chapterTitle`, `moduleId`, `moduleTitle`, `line`, `snippet`), no máximo 3 por capítulo | 7a (feito) |
+| `library:books:create` | `POST library/books` | `{ title, kind?, description?, subtitle?, coverColor?, coverImageUrl? }` | livro (`BookDetail`) | 7b (feito) |
+| `library:books:update` | `PATCH library/books/:id` | `{ id, title?, kind?, description?, subtitle?, coverColor?, coverImageUrl? }` (só o informado muda) | livro | 7b (feito) |
+| `library:books:delete` | `DELETE library/books/:id` | `{ id }` | nada (apaga o arquivo do livro; os documentos ficam) | 7b (feito) |
+| `library:books:set-structure` | `PUT library/books/:id/structure` | `{ id, modules: [{ id?, title?, documentIds }] }` | livro (módulos novos ganham id) | 7b (feito) |
+| `library:books:add-chapter` | `POST library/books/:id/chapters` | `{ id, documentId, moduleId? }` | livro (sem módulo, entra no último) | 7b (feito) |
+| `library:books:mark-chapter-read` | `PUT library/books/:id/chapters/:documentId/read` | `{ id, documentId, read }` | livro (todos lidos → `completedAt`) | 7b (feito) |
+| `library:books:reset-progress` | `DELETE library/books/:id/progress` | `{ id }` | livro sem lidos, posição nem conclusão | 7b (feito) |
+| `library:books:set-position` | `PUT library/books/:id/position` | `{ id, documentId, elementId }` | livro com `lastPosition` | 7b (feito) |
 
-A única "query" do `list` é o `documentId`; vazio ou ausente lista sem marcar `containsDocument`. A busca ignora acento e maiúscula, exige todas as palavras e, com termo vazio ou só de espaços, devolve lista vazia (não é erro). Livro inexistente em `get`, `read` e `search` → `NOT_FOUND` ("Livro não encontrado."). As colunas das linhas abaixo (07b) seguem só com "Substitui" e fase.
+Leitura: a única "query" do `list` é o `documentId` (vazio ou ausente lista sem marcar `containsDocument`). A busca ignora acento e maiúscula, exige todas as palavras e, com termo vazio ou só de espaços, devolve lista vazia (não é erro). Livro inexistente em qualquer canal → `NOT_FOUND` ("Livro não encontrado.").
 
-| Canal | Substitui | Fase |
-|---|---|---|
-| `library:books:create` | `POST library/books` | 7b |
-| `library:books:update` | `PATCH library/books/:id` | 7b |
-| `library:books:delete` | `DELETE library/books/:id` | 7b |
-| `library:books:set-structure` | `PUT library/books/:id/structure` | 7b |
-| `library:books:add-chapter` | `POST library/books/:id/chapters` | 7b |
-| `library:books:mark-chapter-read` | `PUT library/books/:id/chapters/:documentId/read` | 7b |
-| `library:books:reset-progress` | `DELETE library/books/:id/progress` | 7b |
-| `library:books:set-position` | `PUT library/books/:id/position` | 7b |
+Escrita: `modules` que não é lista → `VALIDATION` com "O campo "modules" deve ser uma lista." (validação no `BookHandler`, como o controller fazia). O resto das regras vem do `BookService`, com a mensagem de hoje e `VALIDATION`: título vazio, tipo ou cor de capa inválidos, imagem de capa que não é URL http(s), documento fora da biblioteca na estrutura ou como capítulo, capítulo repetido, módulo inexistente e capítulo que não está no livro (também em `mark-chapter-read` e `set-position`).
 
 ## jobs (fase 8)
 | Canal | Substitui |
