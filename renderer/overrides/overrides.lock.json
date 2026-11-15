@@ -14,5 +14,9 @@
   "src/pages/ai/usage/api/getAiUsage.ts": {
     "override": "renderer/overrides/ai-usage-api.ts",
     "sha256": "8e00f42a48fd9b5b343dc7473259071865875b75137e050e19d0d0b14c8e8f72"
+  },
+  "src/pages/ai/chat/hooks/useAiChat.ts": {
+    "override": "renderer/overrides/use-ai-chat.ts",
+    "sha256": "f68961359c6c142159a508f6dc990a924ed5f81984ac77a61db852554b991b01"
   }
 }
