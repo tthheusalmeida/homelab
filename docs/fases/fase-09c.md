@@ -1,6 +1,6 @@
 # Fase 09c — Limpeza final, smoke E2E e docs
 
-Status: pendente
+Status: implementada parcialmente (falta o risco do `Local State`; aguardando ok)
 
 ## Objetivo
 Fechar a independência e provar o app de ponta a ponta.
@@ -18,3 +18,8 @@ Suítes completas do main e do renderer; nenhum teste referencia HTTP, `VITE_API
 
 ## O que testar
 Regressão completa seguindo os checklists das fases 04 a 08; aba Network sem `localhost`; `netstat` sem portas; primeira execução de usuário novo.
+
+## Como ficou (até agora)
+- Regras de negócio copiadas para `docs/regras/back` e `docs/regras/front` (sem o `env.md`, substituído por `configuracoes.md`); `regras-de-negocio.md`, `lib.md`, `home.md` e a CSP em `arquitetura.md` ajustados. Nenhuma referência a `../front`, `../back`, `HOMELAB_FRONT_DIR`, `VITE_API_URL` ou `EnvKeys` sobrou em código, testes ou scripts.
+- Smoke E2E (`e2e/smoke.spec.ts`, 6 testes, `npm run test:e2e`) passando: Home, navegação, criar artigo, zero requisições http, usuário novo abre as Configurações, nenhuma porta TCP em escuta. A porta de depuração que o Playwright abre no Electron que ele controla é do próprio Playwright, por isso a checagem de portas usa um Electron lançado à parte.
+- **Pendente:** o risco do `Local State` do safeStorage (gravado ~10 s depois do primeiro uso) ainda não foi tratado.

@@ -37,7 +37,7 @@
 | 08 | Jobs e resolvedor do Whisper (win32) | concluída |
 | 09a | Back dentro do desktop: sem HTTP, sem `.env`, sem ler `../back` | concluída |
 | 09b | Front dentro do desktop: mesma estrutura de pastas, sem overrides nem `fetch` | concluída |
-| 09c | Limpeza final, smoke E2E, usuário novo e docs consolidados | pendente |
+| 09c | Limpeza final, smoke E2E, usuário novo e docs consolidados | parcial, aguardando ok |
 | 10 | Empacotamento Windows | pendente |
 
 Cada fase tem um arquivo em `docs/fases/` com escopo, testes e checklist. Status: `pendente`, `em andamento`, `aguardando validação` (entregue, esperando o "ok") ou `concluída`.

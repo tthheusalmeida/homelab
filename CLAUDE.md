@@ -31,6 +31,7 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/r
 - `npm run build` / `build:renderer` (`:main`, `:settings`) / `build:main`
 - `npm test` (Jest, `src/**/*.spec.ts`, inclui os testes de `src/back`) / `npm run test:watch` / `npm run test:cov`
 - `npm run test:renderer` (Vitest, `renderer/**/*.test.{ts,tsx}`) / `npm run typecheck:renderer`
+- `npm run test:e2e` — smoke E2E com Playwright (build + app real com `userData` temporário)
 - `npm run lint` / `npm run format`
 
 ## Mapa do código (alvo; criado ao longo das fases)
@@ -45,6 +46,7 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/r
 - `src/settings/` — `SettingsStore`, `SecretStore` (`safeStorage`), validador, defaults, `SettingsBackConfig` (a `BackConfig` do back sobre o store e os segredos)
 - `src/providers/` — serviços e definições dos providers externos (Gemini) e locais (Whisper, Ollama, ffmpeg)
 - `resources/bin/<platform>-<arch>/` — binários nativos (Whisper). Não versionados.
+- `e2e/` + `playwright.config.ts` — smoke E2E do Electron real
 - `docs/` — documentação
 
 ## Convenções
