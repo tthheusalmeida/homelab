@@ -26,5 +26,13 @@
   "src/pages/library/books/api.ts": {
     "override": "renderer/overrides/books-api.ts",
     "sha256": "b8cc39b162ab87aca67e6ec0b918ab73da0d72346d6242042a7242ca23a93d17"
+  },
+  "src/pages/jobs/create/api/create.ts": {
+    "override": "renderer/overrides/jobs-create-api.ts",
+    "sha256": "e9e4117daa738e1e7d733752d5f19861d66a99fe52ddca1fd61a90d8b6fe6cc6"
+  },
+  "src/pages/jobs/track/api/track.ts": {
+    "override": "renderer/overrides/jobs-track-api.ts",
+    "sha256": "afc68a655d1c03bc51ffa78a22fa6eea78895af27396018607d73d9de779a84e"
   }
 }
