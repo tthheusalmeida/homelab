@@ -22,6 +22,7 @@ desktop/
 - `BackRuntime` carrega pacotes (`@nestjs/core`, `@google/genai`) e módulos compilados (`back/dist/...`) **a partir do back**, para o Nest ser uma só instância.
 - `NestHost` monta o módulo raiz com os módulos do back (a lista do `AppModule` sem o `ConfigModule`), um módulo global que provê o `AppConfig` do back com o `DesktopAppConfig` (Settings) e sobe o HTTP enquanto o front ainda o usa.
 - Ponto de extensão: `replaceModuleProvider` troca um provider declarado por um módulo do back antes do Nest subir. Hoje serve ao `GeminiProvider` (declarado em `AIModule` e `VideoModule`).
+- `NestHost.get(token)` devolve a instância de um provider do Nest. `BackServices` (`main/back-services.ts`) carrega a classe de cada service do back pelo `BackRuntime` e pega a instância no contêiner; os handlers recebem só **portas mínimas** (ex.: `HealthCheckSource`, `AiCatalog`, `AiUsageSource`), nunca o service inteiro. Assim o IPC usa a mesma instância que o HTTP (o `usage` em memória, por exemplo, é um só).
 - `main/composition.ts` monta stores e serviços de configuração com dependências injetadas; `main/index.ts` só faz a cola com o Electron.
 - Os services do back leem a configuração **uma vez**, na criação; por isso mudar configuração exige reiniciar o app (`app:relaunch`).
 
@@ -30,7 +31,7 @@ desktop/
 - **Dois builds, uma saída (`dist-renderer`):** o app principal (raiz em `front/`, com módulos trocados) e a janela de Configurações (raiz em `renderer/settings`, em `dist-renderer/settings/`). Em dev, dois servidores (5173 e 5174).
 - **`renderer/vite/front-bridge.mts`:** aliases (`#ui`, `#components`, `#lib`, `#hooks`, `@front`), `resolveFromFront` (pacotes dos arquivos do desktop saem do front) e `overrides` (troca um arquivo do front por uma cópia do desktop).
 - **Overrides:** `renderer/overrides/overrides.lock.json` registra cada arquivo trocado (`front → cópia`) e o hash do original. O teste `overrides-lock.spec.ts` e `npm run overrides:check` falham se o front mudar, apontando o arquivo a reconciliar; depois, `npm run overrides:update`.
-- **Hoje trocado:** `src/components/AppSidebar.tsx` (item "Configurações" no rodapé). As fases 04 a 08 acrescentam os `api.ts` migrados.
+- **Hoje trocado:** `src/components/AppSidebar.tsx` (item "Configurações" no rodapé) e, da fase 04, três `api` por IPC: `home/api/services.ts` (`home-services-api.ts`), `ai/chat/api/chat.ts` (`ai-chat-api.ts`) e `ai/usage/api/getAiUsage.ts` (`ai-usage-api.ts`). As fases 05 a 08 acrescentam os demais. Tipos do front entram só como `import type` via `@front/...`; o `renderer/vite-env.d.ts` cobre o `import.meta.env` desses arquivos no typecheck.
 - **Janelas:** `SingleWindowController` garante uma só janela de Configurações; `Ctrl+,`/`Cmd+,` (`shortcuts.ts`) abre de qualquer janela; abre sozinha na primeira execução sem chave do Gemini (`first-run.ts`).
 - **Tipos e testes do renderer:** `tsconfig.renderer.json` (paths explícitos para os pacotes do front), `renderer/tsconfig.json` (o mesmo, para o editor) e `vitest.renderer.config.mts` (Vitest e `setup.ts` do front).
 
@@ -88,7 +89,7 @@ export class LibraryHandler extends IpcHandler {
 
 ## Front durante a migração
 - Cada `pages/**/api.ts` mantém as mesmas assinaturas de função; só o corpo muda (de `api("/rota")` para `ipc(IpcChannels.x, payload)`). Hooks, componentes e testes de tela não mudam; os testes de `api.ts` passam a mockar `window.api`.
-- Health da Home hoje usa `fetch` direto com URL completa; passa a usar IPC na fase 4.
+- Health da Home usava `fetch` direto com URL completa; desde a fase 4 a cópia de `checkService(url)` escolhe o canal pelo final da URL (`/health/system` ou `/health/ai`), sem mudar assinatura nem hook.
 - Polling de jobs (1 s) e health (15 s) continuam via TanStack Query.
 
 ## Plataformas

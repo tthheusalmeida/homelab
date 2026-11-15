@@ -1,6 +1,13 @@
 # Fase 04 — Health e AI (leitura)
 
-Status: pendente
+Status: concluída
+
+## O que foi feito
+- Canais e contratos: `shared/channels.ts`, `shared/contracts/health.ts` e `ai.ts`.
+- Handlers `HealthHandler` e `AiHandler` (portas mínimas) e `BackServices` + `NestHost.get` para pegar os services do back no main.
+- Overrides: `home-services-api.ts`, `ai-chat-api.ts` e `ai-usage-api.ts`, registrados no `overrides.lock.json`.
+- Não foi editado `front/doc/lib.md` nem `front/doc/home.md` (regra: não alterar o front); o que mudou está em `docs/arquitetura.md` e `docs/ipc-canais.md`.
+- Verificado no Electron real (CDP, dados isolados): os 4 canais respondem, Home, Chat e Uso renderizam e **nenhuma requisição HTTP** saiu durante a navegação por essas três telas.
 
 ## Objetivo
 Primeiros domínios por IPC, só leitura, para validar a ponte de ponta a ponta.

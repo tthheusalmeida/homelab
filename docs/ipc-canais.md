@@ -35,19 +35,23 @@ Origem: os 37 endpoints HTTP atuais (`/api/v1`) + os canais novos de app, settin
 
 `config` do Whisper: `{ directory, executable, model }`. Do Ollama: `{ url }`. O ffmpeg não tem config.
 
-## health (fase 4)
-| Canal | Substitui |
-|---|---|
-| `health:system` | `GET health/system` |
-| `health:ai` | `GET health/ai` |
-
-## ai (fase 4)
-| Canal | Substitui | Payload |
+## health (fase 4, implementado)
+| Canal | Substitui | Retorno |
 |---|---|---|
-| `ai:providers` | `GET ai/providers` | — |
-| `ai:models` | `GET ai/providers/:providerId/models` | `{ providerId }` |
-| `ai:thinking` | `GET ai/thinking` | `{ providerId, modelId }` |
-| `ai:usage` | `GET ai/usage` | `{ provider? }` |
+| `health:system` | `GET health/system` | `{ service, description, checks: [{ service, description, status }] }` |
+| `health:ai` | `GET health/ai` | idem, com um check por provider (`ollama`, `gemini`) |
+
+`status` é `ok` ou `error`. Provider fora do ar vira `error` no próprio check; o canal continua `ok: true`.
+
+## ai (fase 4, implementado)
+| Canal | Substitui | Payload | Retorno |
+|---|---|---|---|
+| `ai:providers` | `GET ai/providers` | — | `[{ id, label }]` |
+| `ai:models` | `GET ai/providers/:providerId/models` | `{ providerId }` | modelos (`id`, `label`, `name`, `provider`, `details`, `capabilities`, `thinking?`) |
+| `ai:thinking` | `GET ai/thinking` | `{ providerId, modelId }` | `[{ id, label }]` |
+| `ai:usage` | `GET ai/usage` | `{ provider? }` | `{ summary, byProvider, byModel, timeline, recentRequests }` |
+
+Erros: Gemini sem chave → `NOT_CONFIGURED` (mensagem manda abrir Configurações); provider desconhecido ou Ollama fora do ar em `ai:models` → `INTERNAL`, com a mesma mensagem em português do back (hoje é HTTP 500).
 
 ## chat (fase 5)
 | Canal | Substitui | Payload |

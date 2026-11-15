@@ -28,7 +28,7 @@
 | 02 | Infra IPC (`shared`, `IpcHandler`, registrar, preload tipado, `app:*`) | concluída |
 | 03a | Núcleo de configuração: Settings, segredos, providers externos e locais (por IPC) | concluída |
 | 03b | Janela de Configurações e item no rodapé da barra lateral | concluída |
-| 04 | Health e AI (leitura) | pendente |
+| 04 | Health e AI (leitura) | concluída |
 | 05 | Chat | pendente |
 | 06a | Biblioteca, leitura | pendente |
 | 06b | Biblioteca, escrita | pendente |
