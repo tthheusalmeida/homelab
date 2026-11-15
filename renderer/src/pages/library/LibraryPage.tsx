@@ -239,7 +239,7 @@ export function LibraryPage() {
               <div
                 className={
                   view === "grid"
-                    ? "grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-3 xl:grid-cols-4"
+                    ? "grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-x-8 gap-y-12"
                     : view === "list"
                       ? "space-y-1.5"
                       : "space-y-3"

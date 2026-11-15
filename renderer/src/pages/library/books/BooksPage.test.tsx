@@ -137,4 +137,25 @@ describe("BooksPage", () => {
 
     expect(screen.getByText("livro aberto")).toBeInTheDocument();
   });
+
+  it('when the shelf is shown, should use automatic columns so more books fit as the window grows', () => {
+    books.data = [book('b1', 'Um'), book('b2', 'Dois')];
+
+    const { container } = renderPage();
+    const grid = container.querySelector('[class*="auto-fill"]');
+
+    expect(grid).not.toBeNull();
+    expect(grid?.className).toContain('minmax(11rem,1fr)');
+    expect(grid?.className).not.toMatch(/(sm|lg|xl):grid-cols/);
+    expect(grid?.children).toHaveLength(2);
+  });
+
+  it('when a book is shown, should wrap its cover in the pointer tilt effect and let the whole card trigger it', () => {
+    const { container } = renderPage();
+    const card = container.querySelector('[data-tilt-group]');
+
+    expect(card).not.toBeNull();
+    expect(card?.querySelector('[data-slot=tilt-card] [role=img]')).not.toBeNull();
+    expect(card?.querySelector('a')).toHaveAttribute('href', '/library/books/b1');
+  });
 });

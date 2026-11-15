@@ -72,3 +72,23 @@ function parseDate(date: string | Date): Date {
 
   return new Date(date);
 }
+
+/** "850 B", "12 KB", "3,4 MB", "1,2 GB": tamanho em bytes para leitura humana (base 1024). */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = bytes / 1024;
+  let unit = 0;
+
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+
+  const text = value >= 10 ? String(Math.round(value)) : value.toFixed(1).replace(".", ",");
+
+  return `${text} ${units[unit]}`;
+}

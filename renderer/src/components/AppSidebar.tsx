@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  ChevronDown,
   FilePlus,
   Gauge,
   Home,
@@ -22,27 +23,30 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
 } from '#ui/sidebar';
 
 import { Logo } from '#components/Hex';
+import { useCollapsedGroups } from '#hooks/use-collapsed-groups';
+import { useActiveJobsCount } from '../pages/jobs/track/hooks/useActiveJobsCount';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#ui/collapsible';
 import { IpcChannels } from '#shared/channels';
 import { ipc } from '#lib/ipc';
 
-/** Navegação do app. Ordem: HomeLab (Início), IA, Biblioteca e Tarefas; Configurações fica no rodapé. */
+/** Tela dos jobs: o item do menu mostra quantos estão em andamento. */
+const JOBS_URL = '/jobs/track';
+
+/**
+ * Navegação do app. Ordem: HomeLab (Início), Biblioteca, Tarefas e IA (por último); Configurações fica
+ * no rodapé. Cada seção com rótulo pode ser recolhida (e o app lembra quais).
+ */
 export const navigation = [
   {
     // Sem rótulo: o logo do topo já diz "HomeLab".
     label: '',
     items: [{ title: 'Início', url: '/', icon: Home }],
-  },
-  {
-    label: 'IA',
-    items: [
-      { title: 'Conversa', url: '/ai/chat', icon: MessageSquare },
-      { title: 'Consumo', url: '/ai/usage', icon: Gauge },
-    ],
   },
   {
     label: 'Biblioteca',
@@ -57,7 +61,14 @@ export const navigation = [
     label: 'Tarefas',
     items: [
       { title: 'Nova tarefa', url: '/jobs/create', icon: LayersPlus },
-      { title: 'Acompanhar', url: '/jobs/track', icon: StepForward },
+      { title: 'Em andamento', url: '/jobs/track', icon: StepForward },
+    ],
+  },
+  {
+    label: 'IA',
+    items: [
+      { title: 'Conversa', url: '/ai/chat', icon: MessageSquare },
+      { title: 'Consumo', url: '/ai/usage', icon: Gauge },
     ],
   },
 ];
@@ -80,6 +91,8 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const activeUrl = findActiveUrl(location.pathname, navigationUrls);
+  const [collapsed, toggleGroup] = useCollapsedGroups();
+  const activeJobs = useActiveJobsCount();
 
   return (
     <Sidebar>
@@ -91,32 +104,83 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {navigation.map((group) => (
-          <SidebarGroup key={group.label}>
-            {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
+        {navigation.map((group) => {
+          const menu = (
+            <SidebarMenu>
+              {group.items.map((item) => {
+                const isActive = item.url === activeUrl;
 
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => {
-                  const isActive = item.url === activeUrl;
+                return (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      onClick={() => navigate(item.url)}
+                      className="select-none text-[13px] [&_svg]:size-[15px]"
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
 
-                  return (
-                    <SidebarMenuItem key={item.url}>
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        onClick={() => navigate(item.url)}
-                        className="select-none text-[13px] [&_svg]:size-[15px]"
+                    {item.url === JOBS_URL && activeJobs > 0 && (
+                      <SidebarMenuBadge
+                        aria-label={`${activeJobs} em andamento`}
+                        className="bg-primary text-primary-foreground peer-hover/menu-button:text-primary-foreground peer-data-active/menu-button:text-primary-foreground"
                       >
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+                        {activeJobs}
+                      </SidebarMenuBadge>
+                    )}
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          );
+
+          // Sem rótulo (o grupo do Início) não há o que recolher.
+          if (!group.label) {
+            return (
+              <SidebarGroup key={group.label}>
+                <SidebarGroupContent>{menu}</SidebarGroupContent>
+              </SidebarGroup>
+            );
+          }
+
+          const isOpen = !collapsed.has(group.label);
+          const hasActive = group.items.some((item) => item.url === activeUrl);
+
+          return (
+            <Collapsible
+              key={group.label}
+              open={isOpen}
+              onOpenChange={() => toggleGroup(group.label)}
+              render={<SidebarGroup />}
+            >
+              <SidebarGroupLabel
+                render={
+                  <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between rounded-md select-none hover:text-sidebar-foreground" />
+                }
+              >
+                <span>{group.label}</span>
+
+                <span className="flex items-center gap-1.5">
+                  {!isOpen && hasActive && (
+                    <span
+                      aria-label={`Página atual em ${group.label}`}
+                      className="size-1.5 rounded-full bg-primary"
+                    />
+                  )}
+
+                  <ChevronDown
+                    className={`size-3.5 transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`}
+                  />
+                </span>
+              </SidebarGroupLabel>
+
+              <CollapsibleContent>
+                <SidebarGroupContent>{menu}</SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })}
       </SidebarContent>
 
       <SidebarFooter>

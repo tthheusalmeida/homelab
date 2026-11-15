@@ -4,6 +4,7 @@ import { Link } from "react-router";
 
 import { Card, CardContent, CardHeader } from "#ui/card";
 import { PaperPage } from "#components/PaperPage";
+import { TiltCard } from "#components/TiltCard";
 import { formatDate } from "#lib/format";
 
 import type { DocumentSummary } from "../types/library.types";
@@ -59,12 +60,9 @@ export function DocumentCard({
     // Miniatura de página: como o livro aparece com capa em Livros, a página aparece como folha.
     return (
       // Mesmo tamanho da capa de livro da estante (BooksPage): 176 px de largura, proporção 3:4.
-      <div className="group relative mx-auto w-full max-w-44">
-        <PaperPage
-          variant="sheet"
-          size="thumb"
-          className="transition-transform duration-200 group-hover:-translate-y-1.5"
-        >
+      <div data-tilt-group className="group relative mx-auto w-full max-w-44">
+        <TiltCard glareClassName="rounded-md">
+        <PaperPage variant="sheet" size="thumb">
           <div className="flex h-full flex-col gap-2">
             <p className="truncate text-[9px] tracking-[0.18em] text-stone-500 uppercase">
               {document.category.join(" › ") || "Sem categoria"}
@@ -97,6 +95,7 @@ export function DocumentCard({
             </div>
           </div>
         </PaperPage>
+        </TiltCard>
       </div>
     );
   }

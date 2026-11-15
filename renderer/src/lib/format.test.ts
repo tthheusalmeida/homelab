@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  formatBytes,
   formatDate,
   formatDateTime,
   formatDuration,
@@ -80,5 +81,21 @@ describe("formatServiceName", () => {
 
   it("when name is unknown, should capitalize the first letter", () => {
     expect(formatServiceName("ollama")).toBe("Ollama");
+  });
+});
+
+describe("formatBytes", () => {
+  it.each([
+    [0, "0 B"],
+    [850, "850 B"],
+    [1024, "1,0 KB"],
+    [1536, "1,5 KB"],
+    [12 * 1024, "12 KB"],
+    [3.4 * 1024 * 1024, "3,4 MB"],
+    [250 * 1024 * 1024, "250 MB"],
+    [1.2 * 1024 * 1024 * 1024, "1,2 GB"],
+    [5 * 1024 ** 4, "5,0 TB"],
+  ])("when the size is %d bytes, should write %s", (bytes, text) => {
+    expect(formatBytes(bytes)).toBe(text);
   });
 });

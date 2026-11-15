@@ -322,4 +322,12 @@ describe("LibraryPage", () => {
 
     expect(screen.queryByLabelText("Filtrar por tag")).not.toBeInTheDocument();
   });
+
+  it('when the grid view is on, should use automatic columns instead of a fixed count', () => {
+    const { container } = renderPage();
+    const grid = container.querySelector('[class*="auto-fill"]');
+
+    expect(grid?.className).toContain('minmax(11rem,1fr)');
+    expect(grid?.className).not.toMatch(/(sm|xl):grid-cols/);
+  });
 });

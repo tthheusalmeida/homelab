@@ -3,6 +3,7 @@ import * as path from "node:path";
 
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 import userEvent from "@testing-library/user-event";
 
@@ -14,6 +15,7 @@ import { ErrorState } from "#components/ErrorState";
 // O CSS é lido do disco: o Vitest roda com `css: false` e não devolve o conteúdo de `?raw`.
 const css = fs.readFileSync(path.join(__dirname, "global.css"), "utf8");
 
+import { createTestQueryClient } from "./test/utils";
 import { AppLayout } from "./app/layouts/AppLayout";
 import { JobStatusBadge } from "./pages/jobs/track/components/JobStatusBadge";
 import { JobStep } from "./pages/jobs/track/components/JobStep";
@@ -73,14 +75,16 @@ describe("AppLayout route transition", () => {
   it("when the route changes, should mount a fresh page block so it fades in again", async () => {
     const user = userEvent.setup();
     render(
-      <MemoryRouter initialEntries={["/a"]}>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/a" element={<GoTo to="/b" />} />
-            <Route path="/b" element={<p>página b</p>} />
-          </Route>
-        </Routes>
-      </MemoryRouter>,
+      <QueryClientProvider client={createTestQueryClient()}>
+        <MemoryRouter initialEntries={["/a"]}>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route path="/a" element={<GoTo to="/b" />} />
+              <Route path="/b" element={<p>página b</p>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
     const before = screen.getByRole("button", { name: "ir /b" }).parentElement!;
     expect(before).toHaveClass("animate-enter-fade");

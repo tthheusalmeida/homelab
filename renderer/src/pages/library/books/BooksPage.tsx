@@ -10,6 +10,7 @@ import { EmptyState } from "#components/EmptyState";
 import { ErrorState } from "#components/ErrorState";
 import { LoadingState } from "#components/LoadingState";
 
+import { TiltCard } from "#components/TiltCard";
 import { BookCover } from "./components/BookCover";
 import { BookFormDialog } from "./components/BookFormDialog";
 import { BookProgress } from "./components/BookProgress";
@@ -73,22 +74,27 @@ export function BooksPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-x-8 gap-y-12">
           {books.data.map((book, index) => (
             <div
               key={book.id}
+              data-tilt-group
               className="group relative animate-enter space-y-4 text-center"
               style={{ "--i": index } as CSSProperties}
             >
-              <BookCover
-                title={book.title}
-                kind={book.kind}
-                subtitle={book.subtitle}
-                color={book.coverColor}
-                imageUrl={book.coverImageUrl}
-                completed={book.completedAt !== null}
-                className="mx-auto max-w-44 transition-transform duration-200 group-hover:-translate-y-1.5"
-              />
+              <TiltCard
+                className="mx-auto max-w-44"
+                glareClassName="rounded-l-sm rounded-r-md"
+              >
+                <BookCover
+                  title={book.title}
+                  kind={book.kind}
+                  subtitle={book.subtitle}
+                  color={book.coverColor}
+                  imageUrl={book.coverImageUrl}
+                  completed={book.completedAt !== null}
+                />
+              </TiltCard>
 
               <div className="space-y-1">
                 <Link

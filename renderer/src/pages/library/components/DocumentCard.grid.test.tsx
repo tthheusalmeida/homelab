@@ -92,4 +92,26 @@ describe("previewWithoutTitle", () => {
   it("when the preview is only the title, should leave nothing", () => {
     expect(previewWithoutTitle("Subnetting", "Subnetting")).toBe("");
   });
+
+  it('when rendered as a thumbnail, should tilt with the pointer and let the whole card (with its covering link) trigger it', () => {
+    const { container } = renderGrid();
+    const group = container.querySelector('[data-tilt-group]');
+
+    expect(group).not.toBeNull();
+    expect(group?.querySelector('[data-slot=tilt-card] [data-slot=paper-page]')).not.toBeNull();
+    expect(group?.querySelector('a')).not.toBeNull();
+  });
+
+  it('when rendered as a list or a card, should not use the tilt effect', () => {
+    for (const variant of ['list', 'card'] as const) {
+      const { container, unmount } = render(
+        <MemoryRouter>
+          <DocumentCard document={document} variant={variant} />
+        </MemoryRouter>,
+      );
+
+      expect(container.querySelector('[data-slot=tilt-card]')).toBeNull();
+      unmount();
+    }
+  });
 });
