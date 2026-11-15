@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": [
-      "ES2023",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "esnext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
@@ -15,63 +11,16 @@
     "allowImportingTsExtensions": true,
     "allowArbitraryExtensions": true,
     "esModuleInterop": true,
-    "types": [],
-    "typeRoots": [
-      "../front/node_modules/@types"
-    ],
+    "types": ["vite/client"],
     "paths": {
-      "#components/*": [
-        "../front/src/components/*.tsx"
-      ],
-      "#ui/*": [
-        "../front/src/ui/*.tsx"
-      ],
-      "#lib/*": [
-        "../front/src/lib/*.ts"
-      ],
-      "#hooks/*": [
-        "../front/src/hooks/*.ts"
-      ],
-      "@front/*": [
-        "../front/src/*"
-      ],
-      "react": [
-        "../front/node_modules/@types/react"
-      ],
-      "react/*": [
-        "../front/node_modules/@types/react/*"
-      ],
-      "react-dom": [
-        "../front/node_modules/@types/react-dom"
-      ],
-      "react-dom/*": [
-        "../front/node_modules/@types/react-dom/*"
-      ],
-      "lucide-react": [
-        "../front/node_modules/lucide-react"
-      ],
-      "@tanstack/react-query": [
-        "../front/node_modules/@tanstack/react-query"
-      ],
-      "vitest": [
-        "../front/node_modules/vitest"
-      ],
-      "@testing-library/*": [
-        "../front/node_modules/@testing-library/*"
-      ],
-      "react-router": [
-        "../front/node_modules/react-router"
-      ]
+      "#components/*": ["./renderer/src/components/*.tsx"],
+      "#ui/*": ["./renderer/src/ui/*.tsx"],
+      "#lib/*": ["./renderer/src/lib/*.ts"],
+      "#hooks/*": ["./renderer/src/hooks/*.ts"],
+      "#test/*": ["./renderer/src/test/*"],
+      "#shared/*": ["./src/shared/*"]
     }
   },
-  "include": [
-    "renderer/**/*.ts",
-    "renderer/**/*.tsx",
-    "src/shared/**/*.ts"
-  ],
-  "exclude": [
-    "renderer/vite/**",
-    "src/**/*.spec.ts",
-    "src/**/testing/**"
-  ]
+  "include": ["renderer/**/*.ts", "renderer/**/*.tsx", "src/shared/**/*.ts"],
+  "exclude": ["renderer/vite-aliases.mts", "src/**/*.spec.ts", "src/**/testing/**"]
 }

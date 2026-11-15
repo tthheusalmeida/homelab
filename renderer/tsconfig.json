@@ -1,5 +1,3 @@
 {
-  "extends": "../tsconfig.renderer.json",
-  "include": ["./**/*.ts", "./**/*.tsx", "../src/shared/**/*.ts"],
-  "exclude": ["./vite/**", "../src/**/*.spec.ts", "../src/**/testing/**"]
+  "extends": "../tsconfig.renderer.json"
 }

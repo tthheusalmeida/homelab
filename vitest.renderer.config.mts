@@ -1,21 +1,21 @@
-// Testes dos componentes do renderer do desktop, com o Vitest do front.
-// Roda com:  node ../front/node_modules/vitest/vitest.mjs run --config vitest.renderer.config.mts
+// Testes do renderer. Roda com: vitest run --config vitest.renderer.config.mts
+import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createFrontBridge } from './renderer/vite/front-bridge.mts';
+import react from '@vitejs/plugin-react';
+
+import { rendererAliases } from './renderer/vite-aliases.mts';
 
 const desktopRoot = fileURLToPath(new URL('.', import.meta.url));
-const bridge = createFrontBridge(desktopRoot);
 
 export default {
   root: desktopRoot,
-  resolve: { alias: bridge.aliases },
-  plugins: [bridge.resolveFromFront(), bridge.loadPlugin<() => unknown>('@vitejs/plugin-react')()],
-  server: { fs: { allow: [bridge.frontDir, bridge.desktopRoot] } },
+  resolve: { alias: rendererAliases(desktopRoot) },
+  plugins: [react()],
   test: {
     environment: 'jsdom',
     include: ['renderer/**/*.test.{ts,tsx}'],
-    setupFiles: [`${bridge.posix(bridge.frontSrc)}/test/setup.ts`],
+    setupFiles: [path.join(desktopRoot, 'renderer', 'src', 'test', 'setup.ts')],
     css: false,
     restoreMocks: true,
   },
