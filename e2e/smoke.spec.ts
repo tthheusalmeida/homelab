@@ -1,0 +1,144 @@
+import { execFileSync, spawn } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+
+import { _electron as electron, expect, test, type ElectronApplication } from '@playwright/test';
+
+const root = path.resolve(__dirname, '..');
+
+/** Tudo (pasta de dados, biblioteca, jobs) vive numa pasta temporária: não toca nos dados reais. */
+function makeUserData(withSettings: boolean): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'homelab-e2e-'));
+
+  if (withSettings) {
+    const paths = {
+      libraryDir: path.join(dir, 'library'),
+      jobsDir: path.join(dir, 'jobs'),
+    };
+
+    fs.mkdirSync(paths.libraryDir);
+    fs.mkdirSync(paths.jobsDir);
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ paths }));
+  }
+
+  return dir;
+}
+
+function launch(userData: string): Promise<ElectronApplication> {
+  return electron.launch({
+    args: [root],
+    env: { ...process.env, HOMELAB_USER_DATA_DIR: userData },
+  });
+}
+
+/** Portas TCP em escuta do processo principal e dos filhos (só Windows). */
+function listeningPorts(pid: number): number[] {
+  const script = `
+    $ids = @(${pid})
+    do {
+      $more = Get-CimInstance Win32_Process | Where-Object { $ids -contains $_.ParentProcessId -and $ids -notcontains $_.ProcessId } | ForEach-Object { $_.ProcessId }
+      $ids += $more
+    } while ($more)
+    Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $ids -contains $_.OwningProcess } | ForEach-Object { $_.LocalPort }
+  `;
+  const out = execFileSync('powershell', ['-NoProfile', '-Command', script], { encoding: 'utf8' });
+
+  return out.split(/\s+/).filter(Boolean).map(Number);
+}
+
+test.describe('app com configuração existente', () => {
+  let app: ElectronApplication;
+  const httpRequests: string[] = [];
+
+  test.beforeAll(async () => {
+    app = await launch(makeUserData(true));
+  });
+
+  test.afterAll(async () => {
+    await app.close();
+  });
+
+  test('when the app opens, should show the home with the sidebar and check the services', async () => {
+    const page = await app.firstWindow();
+    page.on('request', (request) => {
+      if (/^https?:/.test(request.url())) httpRequests.push(request.url());
+    });
+    await page.reload();
+
+    await expect(page.getByText('Central de controle do HomeLab.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Chat', exact: true })).toBeVisible();
+    await expect(page.getByText('Serviços do sistema')).toBeVisible();
+  });
+
+  test('when navigating through the main screens, should render each one', async () => {
+    const page = await app.firstWindow();
+    const screens: [string, string | RegExp][] = [
+      ['Páginas', 'Seus conhecimentos organizados por tema.'],
+      ['Livros', /Livros/],
+      ['Chat', 'Como posso te ajudar hoje?'],
+      ['Uso', 'Uso de IA'],
+      ['Criar', /Criar/],
+      ['Inspeção', /Inspeção|Jobs/],
+    ];
+
+    for (const [link, expected] of screens) {
+      await page.getByRole('button', { name: link, exact: true }).click();
+      await expect(page.getByText(expected).first()).toBeVisible();
+    }
+  });
+
+  test('when creating an article, should save it and open it in the library', async () => {
+    const page = await app.firstWindow();
+
+    await page.getByRole('button', { name: 'Nova página', exact: true }).click();
+    await page.getByLabel('Título').fill('Ligações Peptídicas');
+    await page.getByLabel('Categoria').fill('Química');
+    await page.getByLabel('Subcategoria').fill('Ligações');
+    await page.getByLabel('Adicionar tag').fill('bioquímica');
+    await page.getByLabel('Adicionar tag').press('Enter');
+    await page.getByLabel('Conteúdo').fill('# Olá\n\nTexto do artigo.');
+    await page.getByRole('button', { name: /Salvar página/ }).click();
+
+    await expect(page.getByRole('heading', { name: 'Ligações Peptídicas' }).first()).toBeVisible();
+    await expect(page).toHaveURL(/#?\/library\/.+/);
+  });
+
+  test('when the app ran, should not have made any http request', () => {
+    expect(httpRequests).toEqual([]);
+  });
+});
+
+test('when a new user opens the app, should open the settings window without a gemini key', async () => {
+  const app = await launch(makeUserData(false));
+
+  try {
+    await expect.poll(() => app.windows().length, { timeout: 20_000 }).toBe(2);
+
+    const titles = await Promise.all(app.windows().map((window) => window.title()));
+
+    expect(titles).toContain('Configurações');
+    expect(titles).toContain('HomeLab');
+  } finally {
+    await app.close();
+  }
+});
+
+test('when the app runs on its own, should not listen on any tcp port', async () => {
+  test.skip(process.platform !== 'win32', 'verificação de portas só no Windows');
+
+  // Sem o Playwright: ele próprio abre uma porta de depuração no Electron que controla.
+  const electronBinary = require('electron') as unknown as string;
+  const child = spawn(electronBinary, [root], {
+    env: { ...process.env, HOMELAB_USER_DATA_DIR: makeUserData(true) },
+    stdio: 'ignore',
+  });
+
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
+
+    expect(listeningPorts(child.pid as number)).toEqual([]);
+  } finally {
+    execFileSync('taskkill', ['/PID', String(child.pid), '/T', '/F']);
+  }
+});

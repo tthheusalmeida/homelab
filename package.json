@@ -20,7 +20,8 @@
     "build:renderer:settings": "vite build --config vite.renderer.settings.config.mts",
     "build:renderer": "npm run build:renderer:main && npm run build:renderer:settings",
     "test:renderer": "vitest run --config vitest.renderer.config.mts",
-    "typecheck:renderer": "tsc -p tsconfig.renderer.json"
+    "typecheck:renderer": "tsc -p tsconfig.renderer.json",
+    "test:e2e": "npm run build && playwright test"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/typography": "^0.5.20",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
