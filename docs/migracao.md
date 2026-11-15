@@ -24,7 +24,7 @@
 |---|---|---|
 | 00 | Linha de base e inventário de canais | concluída |
 | 01 | Casca Electron com o front atual (HTTP como hoje) | concluída |
-| 02 | Infra IPC (`shared`, `IpcHandler`, registrar, preload tipado, `app:*`) | pendente |
+| 02 | Infra IPC (`shared`, `IpcHandler`, registrar, preload tipado, `app:*`) | concluída |
 | 03 | Settings, providers externos e locais, tela de Configurações | pendente |
 | 04 | Health e AI (leitura) | pendente |
 | 05 | Chat | pendente |

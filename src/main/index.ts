@@ -3,7 +3,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { app, BrowserWindow, dialog, net, protocol, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, net, protocol, shell } from 'electron';
+
+import { createHandlers } from '../ipc/handlers';
+import { IpcRegistrar } from '../ipc/ipc-registrar';
 
 import { waitForBackend } from './backend-ready';
 import { BackendLauncher } from './backend-launcher';
@@ -150,6 +153,9 @@ async function bootstrap(): Promise<void> {
     }
 
     await startBackend(target.origin);
+    new IpcRegistrar(ipcMain).register(
+      createHandlers({ appInfo: { version: () => app.getVersion() } }),
+    );
     createMainWindow(target);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

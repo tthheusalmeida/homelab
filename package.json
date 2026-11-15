@@ -8,7 +8,7 @@
   "scripts": {
     "build:back": "npm --prefix ../back run build",
     "build:front": "npm --prefix ../front run build",
-    "build:main": "tsc -p tsconfig.build.json",
+    "build:main": "tsc -p tsconfig.build.json && npm run build:preload",
     "build": "npm run build:back && npm run build:front && npm run build:main",
     "start": "npm run build && electron .",
     "dev": "npm run build:back && npm run build:main && concurrently -k -n front,app \"npm --prefix ../front run dev\" \"wait-on tcp:5173 && cross-env HOMELAB_FRONT_URL=http://localhost:5173 electron .\"",
@@ -16,7 +16,8 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage"
+    "test:cov": "jest --coverage",
+    "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/preload/index.js"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -42,6 +43,7 @@
     "concurrently": "^10.0.7",
     "cross-env": "^10.1.0",
     "electron": "^45.3.2",
+    "esbuild": "^0.28.2",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.7",

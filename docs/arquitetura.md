@@ -27,18 +27,23 @@ desktop/
 ## Handlers IPC (classes)
 Princípios: uma classe por domínio (S), nova funcionalidade entra com novo handler sem mexer nos existentes (O), todos respeitam o contrato de `IpcHandler` (L), contratos pequenos (I), dependem de abstrações injetadas (D).
 
-- `IpcHandler` (abstract): define `register()` e oferece o auxiliar protegido `handle(channel, fn)`, que valida, executa, devolve `IpcResult` e converte exceções com o `IpcErrorMapper`. O handler concreto só declara canal e delega ao service.
-- `IpcRegistrar`: recebe a lista de `IpcHandler` e chama `register()` de cada um. Registrar duas vezes o mesmo canal é erro.
-- `IpcMainLike`: interface mínima (`handle(channel, listener)`). O Electron real e o falso dos testes a implementam; os handlers nunca importam `electron` direto.
+- `IpcHandler` (abstract): cada handler implementa `routes()` e declara as rotas com `this.route(canal, run)`, que tipa payload e retorno pelo contrato do canal (`shared/contracts`). O handler **não** registra nada nem trata erro.
+- `IpcRegistrar`: recebe os handlers, valida cada canal (declarado em `IpcChannels`, sem duplicata), embrulha a rota no envelope `IpcResult`, converte exceções com o `IpcErrorMapper` e registra no `IpcMainLike`. É o único lugar com essa regra.
+- `IpcMainLike`: interface mínima (`handle(channel, listener)`). O `ipcMain` real e o `FakeIpcMain` dos testes (`src/ipc/testing`) a implementam; handlers nunca importam `electron`.
 - Um handler não contém regra de negócio: converte payload, chama o service, devolve o resultado.
+- Novos handlers entram na lista de `createHandlers` (`ipc/handlers/index.ts`); um teste garante que todo canal declarado tem handler.
 
 ```ts
 export class LibraryHandler extends IpcHandler {
-  constructor(ipc: IpcMainLike, private readonly library: LibraryService) { super(ipc); }
+  constructor(private readonly library: LibraryService) {
+    super();
+  }
 
-  register(): void {
-    this.handle(IpcChannels.library.inbox, () => this.library.inbox());
-    this.handle(IpcChannels.library.documents.get, ({ id }) => this.library.get(id));
+  routes(): IpcRoute[] {
+    return [
+      this.route(IpcChannels.library.inbox, () => this.library.inbox()),
+      this.route(IpcChannels.library.documents.get, ({ id }) => this.library.get(id)),
+    ];
   }
 }
 ```
@@ -51,11 +56,12 @@ export class LibraryHandler extends IpcHandler {
 ## Envelope de resultado
 - Todo canal responde `IpcResult<T>`: `{ ok: true, data }` ou `{ ok: false, error: { code, message } }`.
 - Exceções não vazam como erro cru do Electron. `NotFoundException` (Nest) → `NOT_FOUND`; erros de validação → `VALIDATION`; erro de configuração ausente → `NOT_CONFIGURED`; o restante → `INTERNAL`, preservando a mensagem em português já existente nos services.
-- No front, `#lib/ipc` chama `window.api`, desembrulha o envelope e **lança `Error`** quando `ok` é falso. Assim hooks, TanStack Query e telas continuam tratando erro como hoje.
+- No front, o cliente (`shared/ipc-client.ts`, `createIpcClient(window.api)`) chama `window.api`, desembrulha o envelope e **lança `IpcError`** (um `Error` com `code`) quando `ok` é falso. Assim hooks, TanStack Query e telas continuam tratando erro como hoje.
 
 ## Preload e segurança
 - `BrowserWindow`: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, sem `remote`.
-- O preload expõe `window.api.invoke(channel, payload)` restrito a uma lista de canais permitida (derivada de `IpcChannels`), com tipos por canal. Nunca expõe `ipcRenderer`.
+- O preload expõe `window.api.invoke(channel, payload)` restrito à lista de canais permitida (`allChannels()`, derivada de `IpcChannels`); canal fora da lista é rejeitado. Nunca expõe `ipcRenderer`.
+- Com `sandbox: true` o preload não resolve imports locais; `build:preload` (esbuild) gera um único `dist/preload/index.js`.
 - Navegação externa bloqueada; links externos abrem no navegador do sistema.
 
 ## Front durante a migração

@@ -1,3 +1,8 @@
-// Preload mínimo da fase 01: ainda não expõe nada ao renderer.
-// A ponte tipada (window.api) entra na fase 02.
-// Sem imports/exports de propósito: com sandbox ativo o preload é um script único.
+import { contextBridge, ipcRenderer } from 'electron';
+
+import { allChannels } from '../shared/channels';
+
+import { createBridge } from './bridge';
+
+// Empacotado em um único arquivo por esbuild (sandbox não resolve imports locais).
+contextBridge.exposeInMainWorld('api', createBridge(ipcRenderer, allChannels()));

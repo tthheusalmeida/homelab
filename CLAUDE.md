@@ -35,8 +35,8 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) continuam documentadas em `bac
 ## Mapa do código (alvo; criado ao longo das fases)
 - `src/main/` — `index.ts` (bootstrap), `constants.ts`, `paths.ts`, `front-target.ts`, `window-options.ts`, `navigation-guard.ts`, `static-files.ts` (protocolo `app://`), `backend-launcher.ts` e `backend-ready.ts` (Nest do back no main). Contêiner Nest (DI) entra na fase 02+
 - `src/preload/` — `contextBridge` expondo `window.api` tipado
-- `src/shared/` — **contratos usados por main e front**: `channels.ts` (constantes dos canais), `result.ts` (`IpcResult`), `contracts/*` (request/response por domínio)
-- `src/ipc/` — `IpcHandler` (base), `IpcRegistrar`, `ipc-error-mapper`, `handlers/*.handler.ts`
+- `src/shared/` — **contratos usados por main, preload e front**: `channels.ts` (`IpcChannels`), `errors.ts` (`IpcErrorCode`, `IpcError`), `result.ts` (`IpcResult`), `contracts/` (request/response por canal), `renderer-api.ts`, `ipc-client.ts` (cliente do front)
+- `src/ipc/` — `IpcHandler` (base, `routes()`), `IpcRegistrar`, `IpcErrorMapper`, `IpcMainLike`, `handlers/*.handler.ts` + `handlers/index.ts` (`createHandlers`), `testing/FakeIpcMain`
 - `src/settings/` — `SettingsStore`, segredos (`safeStorage`), `AppConfig` sobre o store
 - `resources/bin/<platform>-<arch>/` — binários nativos (Whisper). Não versionados.
 - `docs/` — documentação
@@ -63,7 +63,7 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) continuam documentadas em `bac
 - **Toda feature (nova ou alterada) vem com testes unitários na mesma entrega.** Sem teste, não está concluída; cubra caminho feliz, erros e casos de borda.
 - Teste ao lado do arquivo (`x.ts` → `x.spec.ts`).
 - **Nome de cada teste: `when <situação>, should <resultado>`.**
-- Handlers são testados com `IpcMainLike` falso e service mockado, sem Electron real.
+- Handlers são testados com `FakeIpcMain` (registrados via `IpcRegistrar`) e service mockado, sem Electron real.
 - Não chamar serviços reais (rede, ffmpeg, Whisper, Gemini, Ollama) em testes: use mocks.
 - Se uma mudança quebrar um teste, decida se é regressão (corrija o código) ou mudança de regra (atualize teste **e** `docs/`).
 - Ao mudar comportamento, atualize o `docs/` correspondente na mesma entrega.
