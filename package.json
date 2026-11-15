@@ -6,11 +6,10 @@
   "license": "MIT",
   "main": "dist/main/index.js",
   "scripts": {
-    "build:back": "npm --prefix ../back run build",
     "build:main": "tsc -p tsconfig.build.json && npm run build:preload",
-    "build": "npm run build:back && npm run build:renderer && npm run build:main",
+    "build": "npm run build:renderer && npm run build:main",
     "start": "npm run build && electron .",
-    "dev": "npm run build:back && npm run build:main && concurrently -k -n main,settings,app \"node ../front/node_modules/vite/bin/vite.js --config vite.renderer.main.config.mts\" \"node ../front/node_modules/vite/bin/vite.js --config vite.renderer.settings.config.mts\" \"wait-on tcp:5173 tcp:5174 && cross-env HOMELAB_FRONT_URL=http://localhost:5173 HOMELAB_SETTINGS_URL=http://localhost:5174 electron .\"",
+    "dev": "npm run build:main && concurrently -k -n main,settings,app \"node ../front/node_modules/vite/bin/vite.js --config vite.renderer.main.config.mts\" \"node ../front/node_modules/vite/bin/vite.js --config vite.renderer.settings.config.mts\" \"wait-on tcp:5173 tcp:5174 && cross-env HOMELAB_FRONT_URL=http://localhost:5173 HOMELAB_SETTINGS_URL=http://localhost:5174 electron .\"",
     "lint": "eslint \"src/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "jest",
@@ -60,5 +59,16 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.72.2",
     "wait-on": "^9.5.1"
+  },
+  "dependencies": {
+    "@google/genai": "^2.32.0",
+    "@nestjs/axios": "^4.0.1",
+    "@nestjs/common": "^11.2.10",
+    "@nestjs/core": "^11.2.10",
+    "axios": "^1.21.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "uuidv7": "^1.2.1",
+    "yaml": "^2.9.1"
   }
 }

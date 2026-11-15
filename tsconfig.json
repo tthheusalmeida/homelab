@@ -5,6 +5,8 @@
     "target": "ES2023",
     "lib": ["ES2023"],
     "strict": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,

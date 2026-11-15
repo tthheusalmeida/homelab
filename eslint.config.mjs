@@ -29,6 +29,34 @@ export default tseslint.config(
     },
   },
   {
+    // Código vindo do back (a regra do back permitia `any`); parâmetros com "_" ficam isentos.
+    files: ['src/back/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+  {
+    // Mocks dos testes vindos do back usam `jest.fn()` e `mock.calls` (tipados como any).
+    files: ['src/back/**/*.spec.ts', 'src/back/testing/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/no-unnecessary-type-assertion': 'off',
+    },
+  },
+  {
     rules: {
       '@typescript-eslint/no-floating-promises': 'error',
       'prettier/prettier': ['error', { endOfLine: 'auto' }],

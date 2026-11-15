@@ -1,0 +1,32 @@
+import { Module } from '@nestjs/common';
+
+import { JobService } from './application/job.service';
+import { JobRunner } from './application/job-runner.service';
+
+import { InMemoryJobRepository } from './infrastructure/repositories/in-memory-job.repository';
+import { JOB_REPOSITORY } from './infrastructure/repositories/job.repository';
+
+import { AIModule } from '../ai/ai.module';
+import { VideoModule } from '../video/video.module';
+import { VideoToTranscriptJobProcessor } from './processors/video-to-transcript/processor';
+import { VideoToSummaryJobProcessor } from './processors/video-to-resume/processor';
+
+@Module({
+  imports: [VideoModule, AIModule],
+  providers: [
+    JobService,
+    JobRunner,
+
+    VideoToTranscriptJobProcessor,
+    VideoToSummaryJobProcessor,
+
+    InMemoryJobRepository,
+
+    {
+      provide: JOB_REPOSITORY,
+      useExisting: InMemoryJobRepository,
+    },
+  ],
+  exports: [JobService, JobRunner, VideoToTranscriptJobProcessor, VideoToSummaryJobProcessor],
+})
+export class JobsModule {}
