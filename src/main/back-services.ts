@@ -1,4 +1,6 @@
 import type { BackReaders } from '../ipc/handlers';
+import { JobCatalog } from '../jobs/job-catalog';
+import { JobLauncher } from '../jobs/job-launcher';
 
 import type { BackRuntime } from './back-runtime';
 
@@ -47,7 +49,32 @@ export const BackServiceSources = {
     service: ['modules/library/application/library-classifier', 'LibraryClassifier'],
     module: ['modules/library/library.module', 'LibraryModule'],
   },
+  jobService: {
+    service: ['modules/jobs/application/job.service', 'JobService'],
+    module: ['modules/jobs/jobs.module', 'JobsModule'],
+  },
+  jobRunner: {
+    service: ['modules/jobs/application/job-runner.service', 'JobRunner'],
+    module: ['modules/jobs/jobs.module', 'JobsModule'],
+  },
+  transcriptProcessor: {
+    service: [
+      'modules/jobs/processors/video-to-transcript/processor',
+      'VideoToTranscriptJobProcessor',
+    ],
+    module: ['modules/jobs/jobs.module', 'JobsModule'],
+  },
+  summaryProcessor: {
+    service: ['modules/jobs/processors/video-to-resume/processor', 'VideoToSummaryJobProcessor'],
+    module: ['modules/jobs/jobs.module', 'JobsModule'],
+  },
 } as const satisfies Record<string, ServiceSource>;
+
+/** Valores (não instâncias) do back usados na montagem dos jobs. */
+export const BackPlainSources = {
+  parseDocumentHints: ['modules/jobs/domain/document-hints', 'parseDocumentHints'],
+  jobTypeConfig: ['modules/jobs/jobs.types', 'JobTypeConfig'],
+} as const satisfies Record<string, ClassSource>;
 
 /** Devolve a instância de `token` declarada em `moduleClass`. */
 type Resolver = (token: unknown, moduleClass: unknown) => unknown;
@@ -72,6 +99,24 @@ export class BackServices {
       library: this.service(BackServiceSources.library),
       libraryClassifier: this.service(BackServiceSources.libraryClassifier),
       books: this.service(BackServiceSources.books),
+      jobs: this.jobs(),
+    };
+  }
+
+  /** Catálogo e lançador de jobs, montados com as instâncias do `JobsModule`. */
+  private jobs(): BackReaders['jobs'] {
+    return {
+      catalog: new JobCatalog(
+        this.service(BackServiceSources.jobService),
+        () => this.load(BackPlainSources.jobTypeConfig) as Record<string, unknown>,
+      ),
+      launcher: new JobLauncher({
+        jobs: this.service(BackServiceSources.jobService),
+        runner: this.service(BackServiceSources.jobRunner),
+        transcriptProcessor: this.service(BackServiceSources.transcriptProcessor),
+        summaryProcessor: this.service(BackServiceSources.summaryProcessor),
+        parseHints: this.load(BackPlainSources.parseDocumentHints) as (raw: unknown) => unknown,
+      }),
     };
   }
 

@@ -60,6 +60,13 @@ export const IpcChannels = {
       setPosition: 'library:books:set-position',
     },
   },
+  jobs: {
+    list: 'jobs:list',
+    types: 'jobs:types',
+    get: 'jobs:get',
+    createVideoToTranscript: 'jobs:create-video-to-transcript',
+    createVideoToSummary: 'jobs:create-video-to-summary',
+  },
   providers: {
     external: {
       list: 'providers:external:list',

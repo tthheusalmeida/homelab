@@ -9,6 +9,7 @@ import { BookHandler, type BookReader, type BookWriter } from './book.handler';
 import { ChatHandler, type ChatSource } from './chat.handler';
 import { ExternalProvidersHandler } from './external-providers.handler';
 import { HealthHandler, type HealthCheckSource } from './health.handler';
+import { JobHandler, type JobCatalogPort, type JobLauncherPort } from './job.handler';
 import {
   LibraryHandler,
   type LibraryClassifierPort,
@@ -28,6 +29,7 @@ export interface BackReaders {
   library: LibraryReader & LibraryWriter;
   libraryClassifier: LibraryClassifierPort;
   books: BookReader & BookWriter;
+  jobs: { catalog: JobCatalogPort; launcher: JobLauncherPort };
 }
 
 export interface HandlerDeps {
@@ -51,5 +53,6 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
     new ChatHandler(deps.back.chat),
     new LibraryHandler(deps.back.library, deps.back.libraryClassifier),
     new BookHandler(deps.back.books),
+    new JobHandler(deps.back.jobs.catalog, deps.back.jobs.launcher),
   ];
 }

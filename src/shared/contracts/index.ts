@@ -27,6 +27,14 @@ import type {
 import type { ChatSendRequest, ChatSendResponse } from './chat';
 import type { HealthReport } from './health';
 import type {
+  CreateVideoToSummaryRequest,
+  CreateVideoToTranscriptRequest,
+  JobCreated,
+  JobRequest,
+  JobTypeView,
+  JobView,
+} from './jobs';
+import type {
   LibraryCategoryNode,
   LibraryClassificationSuggestion,
   LibraryCreateArticleRequest,
@@ -140,6 +148,18 @@ export interface IpcContracts {
     request: BookSetPositionRequest;
     response: BookDetail;
   };
+  [IpcChannels.jobs.list]: { request: void; response: JobView[] };
+  [IpcChannels.jobs.types]: { request: void; response: JobTypeView[] };
+  [IpcChannels.jobs.get]: { request: JobRequest; response: JobView };
+  [IpcChannels.jobs.createVideoToTranscript]: {
+    request: CreateVideoToTranscriptRequest;
+    response: JobCreated;
+  };
+  [IpcChannels.jobs.createVideoToSummary]: {
+    request: CreateVideoToSummaryRequest;
+    response: JobCreated;
+  };
+
   [IpcChannels.library.inbox]: { request: void; response: LibraryDocumentSummary[] };
   [IpcChannels.library.categories]: { request: void; response: LibraryCategoryNode[] };
   [IpcChannels.library.tags]: { request: void; response: LibraryTagCount[] };

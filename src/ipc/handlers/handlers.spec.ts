@@ -39,6 +39,10 @@ describe('createHandlers', () => {
             discard: jest.fn(),
           },
           libraryClassifier: { suggest: jest.fn() },
+          jobs: {
+            catalog: { list: jest.fn(), get: jest.fn(), listTypes: jest.fn() },
+            launcher: { startVideoToTranscript: jest.fn(), startVideoToSummary: jest.fn() },
+          },
           books: {
             list: jest.fn(),
             get: jest.fn(),
