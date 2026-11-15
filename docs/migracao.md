@@ -15,14 +15,15 @@
 - **Providers separados**: externos (Gemini e outras IAs) e locais (Whisper, Ollama, ffmpeg).
 - **Whisper por plataforma**: `resources/bin/<platform>-<arch>/`; só `win32-x64` agora. O modelo (1,5 GB) não vai no instalador.
 - **Jobs continuam por polling de 1 s** e **em memória**, como hoje. Persistir ou usar eventos é melhoria, fora do escopo.
+- **`back/` e `front/` não são alterados** (decisão do usuário, para não gerar commits nem gastar tokens neles): tudo é implementado em `desktop/`, que só os lê e roda seus builds. Onde a fase pedir trocar um arquivo do front ou do back, o desktop usa um **override** próprio (alias de módulo no build do front, `overrideProvider` no Nest). Cada fase confirma se isso é viável antes de implementar; se não for, pergunta.
 - Os repositórios `front` e `back` continuam separados; o `desktop` os referencia por caminho durante a migração. A forma final de consolidar fica para a fase 9/10.
 
 ## Fases e status
 
 | Fase | Entrega | Status |
 |---|---|---|
-| 00 | Linha de base e inventário de canais | aguardando validação |
-| 01 | Casca Electron com o front atual (HTTP como hoje) | pendente |
+| 00 | Linha de base e inventário de canais | concluída |
+| 01 | Casca Electron com o front atual (HTTP como hoje) | concluída |
 | 02 | Infra IPC (`shared`, `IpcHandler`, registrar, preload tipado, `app:*`) | pendente |
 | 03 | Settings, providers externos e locais, tela de Configurações | pendente |
 | 04 | Health e AI (leitura) | pendente |

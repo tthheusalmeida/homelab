@@ -6,6 +6,8 @@ App desktop (Windows primeiro; depois Linux e macOS) do HomeLab: **Electron + Re
 - `back/` (repo separado): services do Nest 11 reaproveitados no processo main. Nest vira só contêiner de injeção de dependência (`createApplicationContext`, sem HTTP no final). Os controllers são trocados por handlers IPC.
 - `desktop/` (este repo): `main`, `preload`, `shared` (contratos IPC), handlers, settings e empacotamento.
 
+**Regra: não alterar `back/` nem `front/`.** Todo código novo, adaptação e override vive só em `desktop/`; nenhum arquivo ou commit nos outros repos. Só é permitido **ler** e rodar os scripts deles (`build`, `test`). Se uma fase exigir mudança neles, pare e pergunte antes.
+
 Estado: **migração em andamento, por fases**. Ver `docs/migracao.md`.
 
 ## Como consultar
@@ -24,10 +26,14 @@ Estado: **migração em andamento, por fases**. Ver `docs/migracao.md`.
 Regras de negócio (biblioteca, jobs, IA, vídeo) continuam documentadas em `back/doc/` e `front/doc/`. Não duplique aqui; ao tocar nesses repos, leia o `CLAUDE.md` de cada um.
 
 ## Comandos
-Ainda não há `package.json` (nasce na fase 1). Ao criá-lo, documente os scripts aqui (`dev`, `build`, `test`, `lint`).
+- `npm run dev` — compila back e main, sobe o front (Vite) e abre o Electron apontando para ele
+- `npm start` — build completo (back, front, main) e abre o app com o front estático
+- `npm run build` / `build:back` / `build:front` / `build:main`
+- `npm test` (Jest, `src/**/*.spec.ts`) / `npm run test:watch` / `npm run test:cov`
+- `npm run lint` / `npm run format`
 
 ## Mapa do código (alvo; criado ao longo das fases)
-- `src/main/` — bootstrap do Electron, janela, contêiner Nest (DI)
+- `src/main/` — `index.ts` (bootstrap), `constants.ts`, `paths.ts`, `front-target.ts`, `window-options.ts`, `navigation-guard.ts`, `static-files.ts` (protocolo `app://`), `backend-launcher.ts` e `backend-ready.ts` (Nest do back no main). Contêiner Nest (DI) entra na fase 02+
 - `src/preload/` — `contextBridge` expondo `window.api` tipado
 - `src/shared/` — **contratos usados por main e front**: `channels.ts` (constantes dos canais), `result.ts` (`IpcResult`), `contracts/*` (request/response por domínio)
 - `src/ipc/` — `IpcHandler` (base), `IpcRegistrar`, `ipc-error-mapper`, `handlers/*.handler.ts`
@@ -43,7 +49,7 @@ Ainda não há `package.json` (nasce na fase 1). Ao criá-lo, documente os scrip
 - Providers separados: **externos** (Gemini e outras IAs) e **locais** (Whisper, Ollama, ffmpeg). Ver `docs/configuracoes.md`.
 - Segurança do renderer: `contextIsolation: true`, `nodeIntegration: false`; o preload expõe só métodos tipados, nunca `ipcRenderer`.
 - Durante a migração o Nest serve HTTP **e** IPC; cada domínio migrado troca só o `api.ts` do front de `fetch` para `window.api`. O HTTP só é removido na fase 9.
-- Imports absolutos a partir de `src/` (alias), como no back.
+- Imports relativos dentro de `desktop/src` (compilação com `tsc` puro, sem reescrita de alias).
 - Front: arquivos com CRLF e sem config do prettier; **não** rodar `prettier --write` em pastas, só em arquivos novos.
 
 ## Regra de entrega por fase (OBRIGATÓRIO)
