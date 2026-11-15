@@ -1,5 +1,5 @@
-import type { IpcChannel } from '../src/shared/channels';
-import { createIpcClient, type IpcClient } from '../src/shared/ipc-client';
+import type { IpcChannel } from '#shared/channels';
+import { createIpcClient, type IpcClient } from '#shared/ipc-client';
 
 type LooseClient = { invoke(channel: IpcChannel, ...payload: unknown[]): Promise<unknown> };
 

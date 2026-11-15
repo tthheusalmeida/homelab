@@ -1,0 +1,292 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Inter Variable", sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --chart-1: oklch(0.65 0.2 250);
+  --chart-2: oklch(0.7 0.18 150);
+  --chart-3: oklch(0.7 0.2 80);
+  --chart-4: oklch(0.65 0.2 330);
+  --chart-5: oklch(0.65 0.2 30);
+}
+
+:root {
+  --radius: 0.375rem;
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+
+  --chart-1: oklch(0.7 0.18 250);
+  --chart-2: oklch(0.72 0.16 150);
+  --chart-3: oklch(0.75 0.18 80);
+  --chart-4: oklch(0.7 0.18 330);
+  --chart-5: oklch(0.72 0.18 30);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    /* Barras de rolagem no tema: finas, com a cor dos textos secundários. */
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 45%, transparent)
+      transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background-color: color-mix(
+      in oklab,
+      var(--muted-foreground) 45%,
+      transparent
+    );
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(
+      in oklab,
+      var(--muted-foreground) 70%,
+      transparent
+    );
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* Confete da comemoração de livro concluído. */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(26rem) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="confetti-fall"] {
+    animation: none !important;
+  }
+}
+
+/* Destaque dos termos achados na busca do livro (CSS Custom Highlight API). */
+::highlight(find-match) {
+  background-color: oklch(0.85 0.17 95 / 0.55);
+  color: inherit;
+}
+
+::highlight(find-current) {
+  background-color: oklch(0.75 0.18 55);
+  color: black;
+}
+
+/* Exportar livro em PDF: a versão de impressão só aparece ao imprimir. */
+#print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 18mm 16mm;
+  }
+
+  body.printing-book > *:not(#print-root) {
+    display: none !important;
+  }
+
+  body.printing-book {
+    background: white !important;
+  }
+
+  body.printing-book #print-root {
+    display: block !important;
+    background: white;
+    color: #111;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Texto sempre escuro sobre branco, mesmo se o app estiver no tema escuro. */
+  body.printing-book #print-root .prose {
+    --tw-prose-body: #111;
+    --tw-prose-headings: #000;
+    --tw-prose-bold: #000;
+    --tw-prose-links: #1d4ed8;
+    --tw-prose-code: #000;
+    --tw-prose-quotes: #111;
+    --tw-prose-quote-borders: #bbb;
+    --tw-prose-counters: #444;
+    --tw-prose-bullets: #444;
+    --tw-prose-hr: #ccc;
+    --tw-prose-th-borders: #bbb;
+    --tw-prose-td-borders: #ddd;
+    --tw-prose-pre-bg: #f3f4f6;
+    --tw-prose-pre-code: #111;
+    --tw-prose-captions: #444;
+  }
+
+  #print-root .print-cover {
+    break-after: page;
+    padding-top: 3cm;
+    text-align: center;
+  }
+
+  #print-root .print-description {
+    margin: 1.5cm auto 0;
+    max-width: 14cm;
+    font-size: 12pt;
+  }
+
+  #print-root .print-date {
+    margin-top: 1cm;
+    font-size: 9pt;
+    color: #555;
+  }
+
+  #print-root .print-toc {
+    break-after: page;
+  }
+
+  #print-root .print-toc h1 {
+    margin-bottom: 0.8cm;
+    font-size: 22pt;
+    font-weight: 700;
+  }
+
+  #print-root .print-toc ol {
+    list-style: none;
+    padding: 0;
+  }
+
+  #print-root .print-toc li {
+    margin: 0.15cm 0;
+  }
+
+  #print-root .print-toc li li {
+    margin-left: 0.8cm;
+  }
+
+  #print-root .print-module {
+    break-before: page;
+    break-after: avoid;
+    margin: 0 0 1cm;
+    font-size: 24pt;
+    font-weight: 700;
+  }
+
+  #print-root .print-chapter {
+    break-before: page;
+  }
+
+  #print-root .print-module + .print-chapter {
+    break-before: avoid;
+  }
+
+  #print-root .print-chapter-label {
+    margin-bottom: 0.6cm;
+    border-bottom: 1px solid #bbb;
+    padding-bottom: 0.2cm;
+    font-size: 9pt;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #555;
+  }
+
+  #print-root h1,
+  #print-root h2,
+  #print-root h3 {
+    break-after: avoid;
+  }
+
+  #print-root pre,
+  #print-root table,
+  #print-root img {
+    break-inside: avoid;
+  }
+}
