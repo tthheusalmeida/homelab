@@ -123,6 +123,29 @@ describe('GeminiProvider', () => {
       });
     });
 
+    it('when the whole conversation is sent, should map the turns to user and model roles in order', async () => {
+      generateContent.mockResolvedValue({ text: 'r2' });
+
+      await build().chat({
+        message: 'p2',
+        model: 'gemini-3.5-flash',
+        messages: [
+          { role: 'user', content: 'p1' },
+          { role: 'assistant', content: 'r1' },
+          { role: 'user', content: 'p2' },
+        ] as never,
+      });
+
+      expect(generateContent).toHaveBeenCalledWith({
+        model: 'gemini-3.5-flash',
+        contents: [
+          { role: 'user', parts: [{ text: 'p1' }] },
+          { role: 'model', parts: [{ text: 'r1' }] },
+          { role: 'user', parts: [{ text: 'p2' }] },
+        ],
+      });
+    });
+
     it('when the model has no registered price, should have cost 0', async () => {
       generateContent.mockResolvedValue({
         text: 'r',

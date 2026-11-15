@@ -1,16 +1,27 @@
 import { IpcChannels } from '../../shared/channels';
-import type { ChatSendRequest, ChatSendResponse } from '../../shared/contracts/chat';
+import type {
+  ChatDetail,
+  ChatSendRequest,
+  ChatSendResponse,
+  ChatSummary,
+} from '../../shared/contracts/chat';
 import { IpcError, IpcErrorCode } from '../../shared/errors';
 import { IpcHandler, type IpcRoute } from '../ipc-handler';
 
 /** Porta do `ChatService` do back. */
 export interface ChatSource {
-  chat(request: ChatSendRequest): Promise<ChatSendResponse>;
+  send(request: ChatSendRequest): Promise<ChatSendResponse>;
+  cancel(chatId: string): void;
+  list(): ChatSummary[];
+  get(id: string): ChatDetail;
+  delete(id: string): void;
 }
 
 /**
- * Canal `chat:send`. Falha do provider (Gemini ou Ollama) vira `PROVIDER_FAILED` com a mensagem
- * em português de hoje; provider sem configuração já chega como `NOT_CONFIGURED` (`IpcError`).
+ * Canais `chat:*` (enviar e cancelar) e `chats:*` (lista, um chat e excluir). Falha do provider
+ * (Gemini ou Ollama) vira `PROVIDER_FAILED` com a mensagem em português de hoje; provider sem
+ * configuração já chega como `NOT_CONFIGURED` (`IpcError`); chat inexistente chega como 404
+ * (`NOT_FOUND`) e mensagem vazia ou id inválido como 400 (`VALIDATION`), pelo `IpcErrorMapper`.
  */
 export class ChatHandler extends IpcHandler {
   constructor(private readonly chat: ChatSource) {
@@ -18,14 +29,20 @@ export class ChatHandler extends IpcHandler {
   }
 
   routes(): IpcRoute[] {
-    return [this.route(IpcChannels.chat.send, (request) => this.send(request))];
+    return [
+      this.route(IpcChannels.chat.send, (request) => this.send(request)),
+      this.route(IpcChannels.chat.cancel, ({ chatId }) => this.chat.cancel(chatId)),
+      this.route(IpcChannels.chats.list, () => this.chat.list()),
+      this.route(IpcChannels.chats.get, ({ id }) => this.chat.get(id)),
+      this.route(IpcChannels.chats.delete, ({ id }) => this.chat.delete(id)),
+    ];
   }
 
   private async send(request: ChatSendRequest): Promise<ChatSendResponse> {
     try {
-      return await this.chat.chat(request);
+      return await this.chat.send(request);
     } catch (error) {
-      if (error instanceof IpcError) {
+      if (error instanceof IpcError || isClientError(error)) {
         throw error;
       }
 
@@ -35,4 +52,14 @@ export class ChatHandler extends IpcHandler {
       );
     }
   }
+}
+
+/**
+ * Erro de quem pediu (400 e 404 do Nest: mensagem vazia, id inválido, chat excluído enquanto a
+ * resposta era gerada): não é falha do provedor e segue com o código que o mapper já sabe.
+ */
+function isClientError(error: unknown): boolean {
+  const status = (error as { getStatus?: () => number } | null)?.getStatus?.();
+
+  return status === 400 || status === 404;
 }

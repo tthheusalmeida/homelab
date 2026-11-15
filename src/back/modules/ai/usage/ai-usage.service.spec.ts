@@ -233,4 +233,102 @@ describe('AiUsageService persistence', () => {
     expect(fs.existsSync(file)).toBe(false);
     expect(service.getUsage().summary.totalRequests).toBe(1);
   });
+
+  describe('backup: exportar, importar e falha ao gravar', () => {
+    let service: AiUsageService;
+
+    beforeEach(() => {
+      service = new AiUsageService();
+    });
+
+    const record = (id: string, createdAt: string): AIUsageRecord => ({
+      ...base,
+      id,
+      createdAt,
+    });
+
+    it('when exporting, should answer a copy of the records, newest first', () => {
+      service.record(base);
+      service.record(base);
+
+      const exported = service.exportRecords();
+
+      expect(exported).toHaveLength(2);
+      exported.pop();
+      expect(service.exportRecords()).toHaveLength(2);
+    });
+
+    it('when merging, should add only unknown ids, keep newest first and count the repeated ones', () => {
+      const existing = service.record(base);
+
+      const result = service.importRecords(
+        [
+          { ...existing },
+          record('velho', '2020-01-01T00:00:00.000Z'),
+          record('novo', '2099-01-01T00:00:00.000Z'),
+          { id: 7 },
+        ],
+        'merge',
+      );
+
+      expect(result).toEqual({ added: 2, skipped: 2 });
+      expect(service.exportRecords().map((item) => item.id)).toEqual([
+        'novo',
+        existing.id,
+        'velho',
+      ]);
+    });
+
+    it('when merging the same id twice in the same backup, should add it once', () => {
+      const result = service.importRecords(
+        [record('x', '2026-01-01T00:00:00.000Z'), record('x', '2026-01-01T00:00:00.000Z')],
+        'merge',
+      );
+
+      expect(result.added).toBe(1);
+      expect(service.exportRecords()).toHaveLength(1);
+    });
+
+    it('when replacing, should drop the current records and keep only the backup ones', () => {
+      service.record(base);
+
+      const result = service.importRecords([record('a', '2026-01-01T00:00:00.000Z')], 'replace');
+
+      expect(result).toEqual({ added: 1, skipped: 0 });
+      expect(service.exportRecords().map((item) => item.id)).toEqual(['a']);
+    });
+
+    it('when the backup has more records than the limit, should keep only the most recent ones', () => {
+      const many = Array.from({ length: MAX_USAGE_RECORDS + 5 }, (_unused, index) =>
+        record(`r${index}`, new Date(Date.UTC(2026, 0, 1, 0, 0, index)).toISOString()),
+      );
+
+      service.importRecords(many, 'replace');
+
+      expect(service.exportRecords()).toHaveLength(MAX_USAGE_RECORDS);
+      expect(service.exportRecords()[0].id).toBe(`r${MAX_USAGE_RECORDS + 4}`);
+    });
+
+    it('when writing the usage file fails, should keep the record in memory and tell the alerts why', () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'usage-alert-'));
+      // um arquivo no lugar da pasta faz o mkdir do arquivo de consumo falhar
+      const blocker = path.join(dir, 'bloqueio');
+
+      fs.writeFileSync(blocker, 'x');
+      const alerts = { persistFailed: jest.fn(), jobFinished: jest.fn() };
+      const failing = new AiUsageService(
+        { usageFile: path.join(blocker, 'ai-usage.json') } as BackConfig,
+        alerts,
+      );
+
+      try {
+        failing.record(base);
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+
+      expect(failing.exportRecords()).toHaveLength(1);
+      expect(alerts.persistFailed).toHaveBeenCalledWith('o consumo de IA', expect.any(String));
+    });
+  });
 });

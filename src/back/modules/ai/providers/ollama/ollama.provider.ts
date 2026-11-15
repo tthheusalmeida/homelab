@@ -11,6 +11,7 @@ import { HealthCheck, HealthStatusOptions } from '../../../health/health.model';
 import { AiUsageService } from '../../usage/ai-usage.service';
 
 import { pricing } from './ollama.pricing';
+import { chooseContextWindow, parseModelContextLimit } from './context-window';
 import { BackConfig } from '../../../../config/back-config';
 
 function parseOllamaChatResponse(data: unknown): string {
@@ -73,6 +74,8 @@ function parseOllamaModelsResponse(data: unknown): AIProviderModel[] {
 export class OllamaProvider implements AIProvider {
   readonly name = 'ollama' as const;
   private readonly baseUrl: string;
+  /** Limite de contexto de cada modelo (0 = desconhecido), consultado uma vez por modelo. */
+  private readonly contextLimits = new Map<string, number>();
 
   constructor(
     private readonly httpService: HttpService,
@@ -117,10 +120,11 @@ export class OllamaProvider implements AIProvider {
     const startedAt = Date.now();
 
     try {
+      const history = request.messages;
       const response = await firstValueFrom(
         this.httpService.post(`${this.baseUrl}/api/chat`, {
           model: request.model,
-          messages: [
+          messages: history ?? [
             {
               role: 'user',
               content: request.message,
@@ -128,6 +132,14 @@ export class OllamaProvider implements AIProvider {
           ],
           think: request.thinking === 'on',
           stream: false,
+          // Com histórico, o contexto precisa caber a conversa (senão o Ollama a corta sem avisar).
+          ...(history
+            ? {
+                options: {
+                  num_ctx: chooseContextWindow(history, await this.contextLimit(request.model)),
+                },
+              }
+            : {}),
         }),
       );
 
@@ -181,11 +193,44 @@ export class OllamaProvider implements AIProvider {
     }
   }
 
+  /** Máximo de contexto do modelo (0 se não der para saber); a consulta é feita uma vez por modelo. */
+  private async contextLimit(model: string): Promise<number> {
+    const cached = this.contextLimits.get(model);
+
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(`${this.baseUrl}/api/show`, { name: model }),
+      );
+      const limit = parseModelContextLimit(response.data);
+
+      this.contextLimits.set(model, limit);
+
+      return limit;
+    } catch {
+      return 0;
+    }
+  }
+
   async models(): Promise<AIProviderModel[]> {
     try {
       const response = await firstValueFrom(this.httpService.get(`${this.baseUrl}/api/tags`));
 
       const result = parseOllamaModelsResponse(response.data);
+
+      await Promise.all(
+        result.map(async (model) => {
+          const limit = await this.contextLimit(model.name);
+
+          // `/api/tags` não informa o contexto; o limite vem de `/api/show` e alimenta o aviso de conversa grande.
+          if (limit > 0) {
+            model.details.context_length = limit;
+          }
+        }),
+      );
 
       return result.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {

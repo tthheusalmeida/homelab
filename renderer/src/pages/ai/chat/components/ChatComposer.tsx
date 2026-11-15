@@ -12,6 +12,8 @@ interface ChatComposerProps {
   disabled?: boolean;
   isSending?: boolean;
   settings: React.ReactNode;
+  /** Texto discreto sobre o tamanho do contexto (ex.: "~12 mil tokens no contexto (estimativa)"). */
+  contextHint?: string;
 }
 
 export function ChatComposer({
@@ -21,6 +23,7 @@ export function ChatComposer({
   disabled,
   isSending,
   settings,
+  contextHint,
 }: ChatComposerProps) {
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Enter" || event.shiftKey) {
@@ -50,6 +53,7 @@ export function ChatComposer({
             size="icon"
             className="absolute right-3 bottom-3 rounded-full"
             disabled={disabled}
+            aria-label={isSending ? "Parar geração" : "Enviar mensagem"}
             onClick={onSend}
           >
             {isSending ? (
@@ -63,9 +67,11 @@ export function ChatComposer({
         <div className="mt-2 flex items-center justify-between gap-4">
           <div className="min-w-0">{settings}</div>
 
-          <span className="shrink-0 text-xs text-muted-foreground">
-            Enter para enviar · Shift + Enter para nova linha
-          </span>
+          <div className="flex shrink-0 flex-col items-end text-xs text-muted-foreground">
+            {contextHint && <span data-testid="context-hint">{contextHint}</span>}
+
+            <span>Enter para enviar · Shift + Enter para nova linha</span>
+          </div>
         </div>
       </div>
     </footer>

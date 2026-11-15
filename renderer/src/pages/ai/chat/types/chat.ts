@@ -8,6 +8,8 @@ export interface AiProvider extends AiOption {}
 export interface AiModel extends AiOption {
   providerId: string;
   contextWindow?: number;
+  /** Detalhes que o main devolve em `ai:models` (o limite de entrada fica em `context_length`). */
+  details?: { context_length?: number };
 }
 
 export interface AiThinkingOption extends AiOption {
@@ -21,13 +23,10 @@ export interface AiMessage {
 }
 
 export interface AiChatRequest {
+  chatId: string;
   providerId: string;
   modelId: string;
   thinking: string;
-  message: string;
-}
-
-export interface AiChatRequestMessage {
   message: string;
 }
 

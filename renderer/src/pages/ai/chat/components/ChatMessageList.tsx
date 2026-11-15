@@ -9,11 +9,14 @@ import { ScrollArea } from "#ui/scroll-area";
 interface ChatMessageListProps {
   messages: AiMessage[];
   status?: ChatStatus;
+  /** Falha do último envio (a mensagem volta ao campo para tentar de novo). */
+  error?: string | null;
 }
 
 export function ChatMessageList({
   messages,
   status = "idle",
+  error = null,
 }: ChatMessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -22,11 +25,15 @@ export function ChatMessageList({
       behavior: "smooth",
       block: "end",
     });
-  }, [messages, status]);
+  }, [messages, status, error]);
 
   return (
     <ScrollArea className="min-h-0 flex-1">
-      <div className="mx-auto flex w-full flex-col gap-4 px-4 py-4">
+      <div
+        role="log"
+        aria-label="Mensagens da conversa"
+        className="mx-auto flex w-full flex-col gap-4 px-4 py-4"
+      >
         {messages.map((message) => (
           <div key={message.id} className="animate-enter">
             <ChatMessage message={message} />
@@ -43,6 +50,12 @@ export function ChatMessageList({
           <div className="animate-enter-fade">
             <LoadingState message="Geração cancelada" loading={false} inline />
           </div>
+        )}
+
+        {error && (
+          <p role="alert" className="animate-enter-fade text-sm text-destructive">
+            {error}
+          </p>
         )}
 
         <div ref={bottomRef} />

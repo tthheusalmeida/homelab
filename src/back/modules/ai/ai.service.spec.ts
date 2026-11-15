@@ -118,6 +118,27 @@ describe('AIService', () => {
     });
   });
 
+  it('when chat is called with a conversation, should hand the whole history to the provider', async () => {
+    gemini.chat.mockResolvedValue('resposta');
+    const messages = [
+      { role: 'user' as const, content: 'p1' },
+      { role: 'assistant' as const, content: 'r1' },
+      { role: 'user' as const, content: 'p2' },
+    ];
+
+    await service.chat({ message: 'p2', modelId: 'm', providerId: 'gemini', messages });
+
+    expect(gemini.chat).toHaveBeenCalledWith(expect.objectContaining({ message: 'p2', messages }));
+  });
+
+  it('when chat is called without a conversation, should not add a messages field (summary jobs)', async () => {
+    gemini.chat.mockResolvedValue('resposta');
+
+    await service.chat({ message: 'x', modelId: 'm', providerId: 'gemini' });
+
+    expect(gemini.chat.mock.calls.at(-1)?.[0]).not.toHaveProperty('messages');
+  });
+
   it('when chat is called with an invalid provider, should reject', async () => {
     await expect(
       service.chat({ message: 'x', modelId: 'm', providerId: 'zzz' as never }),

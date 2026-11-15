@@ -1,4 +1,4 @@
-import type { AIProviderName } from '../ai.model';
+import type { AIChatTurn, AIProviderName } from '../ai.model';
 
 export class AiChatDto {
   message!: string;
@@ -8,4 +8,7 @@ export class AiChatDto {
   providerId!: AIProviderName;
 
   thinking?: string;
+
+  /** Conversa inteira, com a mensagem nova por último; sem ela vale só `message`. */
+  messages?: AIChatTurn[];
 }

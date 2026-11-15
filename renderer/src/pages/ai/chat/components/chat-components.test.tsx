@@ -165,3 +165,55 @@ describe("ChatEmptyState", () => {
     }
   });
 });
+
+describe("ChatComposer: dica de contexto", () => {
+  it("when a context hint is given, should show it next to the keyboard shortcuts", () => {
+    render(
+      <ChatComposer
+        value=""
+        onChange={vi.fn()}
+        onSend={vi.fn()}
+        settings={null}
+        contextHint="~12 mil tokens no contexto (estimativa)"
+      />,
+    );
+
+    expect(screen.getByTestId("context-hint")).toHaveTextContent("~12 mil tokens no contexto");
+    expect(screen.getByText(/Enter para enviar/)).toBeInTheDocument();
+  });
+
+  it("when there is no hint, should show only the keyboard shortcuts", () => {
+    render(<ChatComposer value="" onChange={vi.fn()} onSend={vi.fn()} settings={null} />);
+
+    expect(screen.queryByTestId("context-hint")).not.toBeInTheDocument();
+  });
+
+  it("when sending, should name the button as stop; otherwise as send", () => {
+    const { rerender } = render(
+      <ChatComposer value="x" onChange={vi.fn()} onSend={vi.fn()} settings={null} />,
+    );
+
+    expect(screen.getByRole("button", { name: "Enviar mensagem" })).toBeInTheDocument();
+
+    rerender(
+      <ChatComposer value="x" onChange={vi.fn()} onSend={vi.fn()} settings={null} isSending />,
+    );
+
+    expect(screen.getByRole("button", { name: "Parar geração" })).toBeInTheDocument();
+  });
+});
+
+describe("ChatMessageList: erro de envio", () => {
+  it("when there is a send error, should show it as an alert", () => {
+    render(<ChatMessageList messages={[]} error="A requisição para o chat do Ollama falhou." />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("A requisição para o chat do Ollama falhou.");
+  });
+
+  it("when there is no error, should show no alert and expose the messages as a log", () => {
+    render(<ChatMessageList messages={[{ id: "1", role: "user", content: "oi" }]} />);
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("log", { name: "Mensagens da conversa" })).toHaveTextContent("oi");
+  });
+});

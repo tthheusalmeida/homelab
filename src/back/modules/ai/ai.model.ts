@@ -31,10 +31,21 @@ export interface AIProviderModel {
   thinking?: AIThinkingOption[];
 }
 
+/** Uma fala da conversa enviada ao provedor. */
+export interface AIChatTurn {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface AIChatRequest {
   message: string;
   model: string;
   thinking?: string;
+  /**
+   * Conversa inteira (incluindo a mensagem nova, que é a última). Quando existe, o provedor a usa
+   * no lugar de `message`; sem ela vale só `message` (jobs de resumo, que são de uma mensagem só).
+   */
+  messages?: AIChatTurn[];
 }
 
 export interface AIProvider {

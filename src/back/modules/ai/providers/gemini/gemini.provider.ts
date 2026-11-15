@@ -90,7 +90,12 @@ export class GeminiProvider implements AIProvider {
     try {
       const response = await ai.models.generateContent({
         model,
-        contents: request.message,
+        contents: request.messages
+          ? request.messages.map((turn) => ({
+              role: turn.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: turn.content }],
+            }))
+          : request.message,
       });
 
       const latencyMs = Date.now() - startedAt;

@@ -136,6 +136,113 @@ describe('OllamaProvider', () => {
     });
   });
 
+  describe('chat com histórico', () => {
+    const history = [
+      { role: 'user', content: 'p1' },
+      { role: 'assistant', content: 'r1' },
+      { role: 'user', content: 'p2' },
+    ];
+
+    it('when the whole conversation is sent, should post every turn in order instead of the single message', async () => {
+      http.post.mockReturnValue(of({ data: { message: { content: 'r2' } } }));
+
+      await provider.chat({ message: 'p2', model: 'm', messages: history as never });
+
+      const [url, body] = http.post.mock.calls.find(([called]) =>
+        String(called).endsWith('/api/chat'),
+      );
+
+      expect(url).toBe(`${OLLAMA_URL}/api/chat`);
+      expect(body.messages).toEqual(history);
+    });
+
+    it('when sending a conversation, should ask for a context that fits it, capped by the model limit read from /api/show', async () => {
+      http.post.mockImplementation((url: string) =>
+        of(
+          url.endsWith('/api/show')
+            ? { data: { model_info: { 'llama.context_length': 8192 } } }
+            : { data: { message: { content: 'x' } } },
+        ),
+      );
+      const long = [{ role: 'user', content: 'a'.repeat(4 * 30_000) }];
+
+      await provider.chat({ message: 'a', model: 'm', messages: long as never });
+
+      const body = http.post.mock.calls.find(([called]) =>
+        String(called).endsWith('/api/chat'),
+      )![1];
+
+      expect(body.options).toEqual({ num_ctx: 8192 });
+    });
+
+    it('when the model limit cannot be read, should still send a context that fits the conversation', async () => {
+      http.post.mockImplementation((url: string) =>
+        url.endsWith('/api/show')
+          ? throwError(() => new Error('sem show'))
+          : of({ data: { message: { content: 'x' } } }),
+      );
+
+      await provider.chat({ message: 'p2', model: 'm', messages: history as never });
+
+      const body = http.post.mock.calls.find(([called]) =>
+        String(called).endsWith('/api/chat'),
+      )![1];
+
+      expect(body.options).toEqual({ num_ctx: 4096 });
+    });
+
+    it('when the same model is used again, should read its limit only once', async () => {
+      http.post.mockImplementation((url: string) =>
+        of(
+          url.endsWith('/api/show')
+            ? { data: { model_info: { 'llama.context_length': 32768 } } }
+            : { data: { message: { content: 'x' } } },
+        ),
+      );
+
+      await provider.chat({ message: 'a', model: 'm', messages: history as never });
+      await provider.chat({ message: 'a', model: 'm', messages: history as never });
+
+      expect(
+        http.post.mock.calls.filter(([url]) => String(url).endsWith('/api/show')),
+      ).toHaveLength(1);
+    });
+
+    it('when only a single message is sent (summary jobs), should not touch the context window nor call /api/show', async () => {
+      http.post.mockReturnValue(of({ data: { message: { content: 'x' } } }));
+
+      await provider.chat({ message: 'a', model: 'm' });
+
+      expect(http.post).toHaveBeenCalledTimes(1);
+      expect(http.post.mock.calls[0][1]).not.toHaveProperty('options');
+    });
+  });
+
+  describe('contexto dos modelos', () => {
+    it('when listing models, should fill the context length from /api/show because /api/tags does not report it', async () => {
+      http.get.mockReturnValue(of({ data: { models: [validModel('a:1b'), validModel('b:2b')] } }));
+      http.post.mockImplementation((_url: string, body: { name: string }) =>
+        of({
+          data: { model_info: { 'llama.context_length': body.name === 'a:1b' ? 131072 : 0 } },
+        }),
+      );
+
+      const models = await provider.models();
+
+      expect(models.map((model) => [model.name, model.details.context_length])).toEqual([
+        ['a:1b', 131072],
+        ['b:2b', 4096],
+      ]);
+    });
+
+    it('when /api/show fails for a model, should keep what /api/tags said and still list it', async () => {
+      http.get.mockReturnValue(of({ data: { models: [validModel('a:1b')] } }));
+      http.post.mockReturnValue(throwError(() => new Error('sem show')));
+
+      await expect(provider.models()).resolves.toHaveLength(1);
+    });
+  });
+
   describe('models', () => {
     it('when models are listed, should map, normalize details and sort by name', async () => {
       http.get.mockReturnValue(of({ data: { models: [validModel('b'), validModel('a')] } }));

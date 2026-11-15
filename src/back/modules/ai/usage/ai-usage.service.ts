@@ -3,6 +3,8 @@ import * as path from 'node:path';
 
 import { Injectable, Optional } from '@nestjs/common';
 
+import type { RecordImportResult, RestoreMode } from '../../../../shared/contracts/backup';
+import { BackAlerts } from '../../../config/back-alerts';
 import { BackConfig } from '../../../config/back-config';
 import type { AIProviderName } from '../ai.model';
 
@@ -14,6 +16,20 @@ import type {
   AIUsageSummary,
   AIUsageTimeline,
 } from './ai-usage.model';
+
+function isUsageRecord(value: unknown): value is AIUsageRecord {
+  const record = value as Partial<AIUsageRecord> | null;
+
+  return (
+    typeof record === 'object' &&
+    record !== null &&
+    typeof record.id === 'string' &&
+    typeof record.createdAt === 'string' &&
+    typeof record.provider === 'string' &&
+    typeof record.model === 'string' &&
+    typeof record.totalTokens === 'number'
+  );
+}
 
 /** Registros guardados (os mais recentes); o resto é descartado. */
 export const MAX_USAGE_RECORDS = 5000;
@@ -31,7 +47,10 @@ export class AiUsageService {
 
   private readonly file: string | null;
 
-  constructor(@Optional() config?: BackConfig) {
+  constructor(
+    @Optional() config?: BackConfig,
+    @Optional() private readonly alerts?: BackAlerts,
+  ) {
     this.file = config?.usageFile ?? null;
     this.records = this.load();
   }
@@ -78,9 +97,45 @@ export class AiUsageService {
     try {
       fs.mkdirSync(path.dirname(this.file), { recursive: true });
       fs.writeFileSync(this.file, JSON.stringify({ version: 1, records: this.records }));
-    } catch {
-      // não conseguiu gravar: o consumo segue valendo em memória
+    } catch (error) {
+      // não conseguiu gravar: o consumo segue valendo em memória, mas o usuário precisa saber
+      this.alerts?.persistFailed(
+        'o consumo de IA',
+        error instanceof Error ? error.message : 'erro desconhecido',
+      );
     }
+  }
+
+  /** Todos os registros guardados, do mais recente para o mais antigo (usado pelo backup). */
+  exportRecords(): AIUsageRecord[] {
+    return structuredClone(this.records);
+  }
+
+  /**
+   * Traz registros de um backup. `merge` só adiciona os que não existem; `replace` troca todos.
+   * Mantém só os mais recentes (o limite de sempre) e ignora entradas inválidas.
+   */
+  importRecords(raw: unknown[], mode: RestoreMode): RecordImportResult {
+    const incoming = raw.filter(isUsageRecord);
+    const known = new Set(mode === 'replace' ? [] : this.records.map((record) => record.id));
+    const fresh = incoming.filter((record) => {
+      if (known.has(record.id)) {
+        return false;
+      }
+
+      known.add(record.id);
+
+      return true;
+    });
+    const base = mode === 'replace' ? [] : this.records;
+    const merged = [...base, ...fresh]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, this.maxRecords);
+
+    this.records.splice(0, this.records.length, ...merged);
+    this.save();
+
+    return { added: fresh.length, skipped: raw.length - fresh.length };
   }
 
   getUsage(provider?: AIProviderName): AIUsageResponse {
