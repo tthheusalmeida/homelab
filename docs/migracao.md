@@ -21,7 +21,7 @@
 
 | Fase | Entrega | Status |
 |---|---|---|
-| 00 | Linha de base e inventário de canais | pendente |
+| 00 | Linha de base e inventário de canais | aguardando validação |
 | 01 | Casca Electron com o front atual (HTTP como hoje) | pendente |
 | 02 | Infra IPC (`shared`, `IpcHandler`, registrar, preload tipado, `app:*`) | pendente |
 | 03 | Settings, providers externos e locais, tela de Configurações | pendente |
