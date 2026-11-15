@@ -29,7 +29,7 @@
 
 ## Validação (ao salvar)
 - Pastas e pasta do Whisper: não vazias e **caminho absoluto**.
-- Executável e modelo do Whisper: só o nome do arquivo, sem pastas (o back junta pasta e nome).
+- Executável do Whisper: só o nome do arquivo, sem pastas. **Modelo:** o nome do arquivo (procurado na pasta do Whisper) **ou um caminho completo**, em qualquer pasta.
 - URL do Ollama: http ou https válida.
 - Erros voltam como `VALIDATION`, com mensagem em português, e nada é gravado.
 
@@ -49,6 +49,8 @@
 - `DesktopAppConfig` implementa o `AppConfig` do back e responde cada chave (`LIB_DIR`, `OLLAMA_URL`…) com o valor do Settings. Chave desconhecida lança erro.
 - O `NestHost` do desktop monta o Nest com os módulos do back, sem `ConfigModule` e sem validação de `.env`.
 - `GeminiProvider` é trocado nos metadados dos módulos que o declaram (`AIModule`, `VideoModule`) por uma fábrica: com chave, cria o provider real; sem chave, usa um provider que responde `NOT_CONFIGURED`.
+- `WhisperService` é trocado no `AIModule` (o único que o declara) pelo `DesktopWhisperService`, que lê o Settings e usa o resolvedor.
+- ffmpeg segue sendo chamado pelo PATH pelo `VideoService` (continua só testável).
 
 ## Providers
 ### Externos (`providers:external:*`)
@@ -57,7 +59,7 @@
 - O teste devolve `{ ok, message }`; falhas nunca viram exceção. A mensagem do Gemini é extraída do JSON da SDK.
 
 ### Locais (`providers:local:*`)
-- Whisper: pasta, executável e modelo. Teste verifica a existência do executável e do modelo.
+- Whisper: pasta, executável e modelo (nome ou caminho completo). O teste verifica a existência do executável e do modelo, com a mesma regra que a transcrição usa.
 - Ollama: URL. Teste faz `GET /api/tags` (5 s de limite).
 - ffmpeg: somente teste (`ffmpeg -version`). O back o chama pelo PATH; configurá-lo exigiria alterar o back.
 - Novos entram registrando outra definição (`LocalProviderDefinition`).
@@ -65,5 +67,7 @@
 ## Binários por plataforma
 - Pasta `resources/bin/<platform>-<arch>/`; hoje só `win32-x64` (`whisper-cli.exe` e DLLs de CUDA).
 - `resources/bin/README.md` explica como posicionar os arquivos. Os binários não entram no git.
-- O resolvedor de binário por plataforma, com `UNSUPPORTED_PLATFORM` e o caminho livre do modelo, chega na fase 08.
+- **Resolvedor (`WhisperBinaryResolver`, fase 08):** junta pasta + executável e confere se existe. Existe: usa (mesmo numa plataforma sem binário embutido, se o usuário apontou o dele). Não existe e a plataforma não é `win32-x64` → `UNSUPPORTED_PLATFORM` ("O Whisper embutido ainda não está disponível para <plataforma>..."). Não existe em `win32-x64` → `NOT_CONFIGURED` ("Whisper CLI não encontrado: <caminho>..."). Modelo ausente → `NOT_CONFIGURED` ("Modelo Whisper não encontrado: <caminho>..."). Quem transcreve é o `DesktopWhisperService`, que o `main/whisper-provider.ts` coloca no lugar do `WhisperService` do back (mesmo mecanismo do Gemini, sem editar o back). Os argumentos do Whisper, a limpeza do `.txt` e a mensagem "Falha ao transcrever o áudio." são os mesmos de antes.
+- No job, o erro de configuração aparece como mensagem do job (o job guarda só o texto), e o job seguinte da fila roda normalmente.
+- **Exceção ao "reiniciar":** o Whisper lê pasta, executável e modelo a cada transcrição, então valem no próximo job; a janela de Configurações continua avisando que reiniciar é necessário porque o aviso vale para todos os serviços locais.
 - O modelo `ggml-large-v3-turbo.bin` (~1,5 GB) não vai no instalador.

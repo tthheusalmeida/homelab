@@ -103,14 +103,16 @@ Leitura: a única "query" do `list` é o `documentId` (vazio ou ausente lista se
 
 Escrita: `modules` que não é lista → `VALIDATION` com "O campo "modules" deve ser uma lista." (validação no `BookHandler`, como o controller fazia). O resto das regras vem do `BookService`, com a mensagem de hoje e `VALIDATION`: título vazio, tipo ou cor de capa inválidos, imagem de capa que não é URL http(s), documento fora da biblioteca na estrutura ou como capítulo, capítulo repetido, módulo inexistente e capítulo que não está no livro (também em `mark-chapter-read` e `set-position`).
 
-## jobs (fase 8)
-| Canal | Substitui |
-|---|---|
-| `jobs:list` | `GET jobs` |
-| `jobs:types` | `GET jobs/types` |
-| `jobs:get` | `GET jobs/:id` |
-| `jobs:create-video-to-transcript` | `POST jobs/video-to-transcript` |
-| `jobs:create-video-to-summary` | `POST jobs/video-to-summary` |
+## jobs (fase 8, implementado)
+| Canal | Substitui | Payload | Retorno |
+|---|---|---|---|
+| `jobs:list` | `GET jobs` | — | jobs (`id`, `name`, `label`, `status`, `steps`, `createdAt`, `startedAt?`, `completedAt?`, `error?`; datas em texto ISO) |
+| `jobs:types` | `GET jobs/types` | — | `[{ type, label, description, steps: [{ name, label }] }]` |
+| `jobs:get` | `GET jobs/:id` | `{ id }` | um job; inexistente → `NOT_FOUND` |
+| `jobs:create-video-to-transcript` | `POST jobs/video-to-transcript` | `{ url, title?, category?, tags? }` | `{ id, status }` (status `pending`) |
+| `jobs:create-video-to-summary` | `POST jobs/video-to-summary` | `{ url, providerId, modelId, thinking?, detail?, title?, category?, tags? }` | `{ id, status }` (status `pending`) |
+
+Criar um job valida **antes** de enfileirar (título de texto com até 120 caracteres; `category` e `tags` listas de textos; categoria de 1 a 4 níveis; ver `back/doc/jobs.md`): se algo for inválido responde `VALIDATION` com a mensagem de hoje e **nenhum job é criado**. `detail` desconhecido não é erro: vale `detailed` (regra do back). O job entra na fila e responde na hora; os jobs rodam **um por vez**, na ordem de chegada. Falha do pipeline (download, ffmpeg, Whisper, IA) **não** é erro do canal: o job termina `failed` com a mensagem em `error` (ex.: "Modelo Whisper não encontrado: ..."), e a fila segue. O acompanhamento é por consulta (`jobs:list`, a cada 1 s no front).
 
 ## Regras
 - Um endpoint HTTP = um canal. `:id` e query viram campos do payload.

@@ -1,6 +1,31 @@
 # Fase 08 — Jobs e resolvedor do Whisper
 
-Status: pendente
+Status: concluída
+
+## O que foi feito
+- Canais `jobs:list|types|get|create-video-to-transcript|create-video-to-summary` (`shared/contracts/jobs.ts`) e `JobHandler`. A lógica de consulta e de criação ficou em `src/jobs`: `JobCatalog` (devolve o `Job` do back já convertido para JSON, como o HTTP fazia) e `JobLauncher` (valida as dicas **antes** de criar, cria e enfileira no `JobRunner` do back). O `BackServices` os monta com as instâncias do `JobsModule`.
+- `WhisperBinaryResolver` + `DesktopWhisperService`, que o `main/whisper-provider.ts` coloca no lugar do `WhisperService` do back (só o `AIModule` o declara). O back não foi editado.
+- O modelo do Whisper agora aceita **nome de arquivo ou caminho completo** (validador, teste do provider e tela de Configurações; o rótulo do campo mudou).
+- Overrides `jobs-create-api.ts` e `jobs-track-api.ts`; o polling de 1 s fica no hook.
+- `resources/bin/README.md`, `configuracoes.md`, `arquitetura.md` e `ipc-canais.md` atualizados.
+
+## Diferenças em relação ao plano (e por quê)
+- **`WhisperService` e `VideoService` não foram editados** (regra: não alterar o back). O `WhisperService` é trocado por um serviço do desktop com a mesma interface e os mesmos argumentos. O `VideoService` continua igual: as pastas já vêm do Settings pelo `AppConfig`, e o **ffmpeg segue pelo PATH** (só testável), como decidido na fase 03a.
+- **"Pasta ausente → `NOT_CONFIGURED`" não se aplica às pastas de vídeo e áudio:** o back as cria sozinho. O `NOT_CONFIGURED` vale para executável e modelo do Whisper ausentes.
+- **`UNSUPPORTED_PLATFORM` só quando o executável não existe:** se o usuário apontou o próprio binário numa plataforma sem binário embutido, ele é usado.
+- **`detail` inválido não é `VALIDATION`:** continua valendo `detailed`, como diz `back/doc/jobs.md` (a regra de negócio não muda). Título, categoria e tags inválidos são `VALIDATION`.
+- O job guarda só o **texto** do erro, então o código (`NOT_CONFIGURED`, `UNSUPPORTED_PLATFORM`) não aparece no job; a mensagem em português aparece.
+
+## Verificação no Electron real (CDP, dados isolados, Whisper e Gemini de verdade)
+- **Transcrição e resumo (Gemini, `brief`)** de um vídeo curto: todas as etapas completaram, os temporários de vídeo e áudio foram apagados e os dois documentos apareceram na Entrada (depois do `reindex`, que o front faz ao entrar na Biblioteca) com título, categoria e tags informados (tags em minúsculas), `status: pending` e URL de origem.
+- **Fila:** com dois jobs seguidos, o segundo ficou `pending` enquanto o primeiro rodava; nunca houve dois `running`.
+- **Validação:** título de 200 caracteres, categoria e tags que não são lista, categoria com 5 níveis e título que não é texto deram `VALIDATION` e **nenhum job foi criado**.
+- **Falhas claras sem travar a fila:** modelo inexistente ("Modelo Whisper não encontrado: <caminho>...") e pasta sem o executável ("Whisper CLI não encontrado: <caminho>..."); logo depois de um job falho, um job com URL inválida rodou e falhou sozinho. Na falha os temporários ficam no disco (regra do back).
+- **Rede:** nenhuma requisição HTTP para `/jobs`; `jobs:list` e a tela Jobs > Acompanhar mostram os jobs.
+- **Não verificado ao vivo:** resumo com Ollama (está desligado nesta máquina), os níveis `detailed` e `study`, `UNSUPPORTED_PLATFORM` (só por teste unitário; só há Windows aqui), modelo configurado só pelo nome de arquivo (usei caminho completo; o nome é coberto por teste unitário) e os cliques nos formulários de criação.
+
+## Risco observado (fase 03a, não é desta fase)
+O `safeStorage` guarda a chave de criptografia no `Local State` da pasta de dados, e o Electron só o grava ~10 s depois do primeiro uso. Num teste, matei o app 4 s depois de salvar a chave do Gemini: o segredo ficou ilegível no reinício e voltou como "não configurado". Numa instalação nova, salvar a chave e clicar logo em "Reiniciar agora" (que usa `app.exit(0)`) pode cair no mesmo caso. Não reproduzi esse fluxo exato; vale tratar na fase 10 (ex.: confirmar a gravação antes de reiniciar).
 
 ## Objetivo
 Pipelines de vídeo funcionando por IPC, com o Whisper embutido por plataforma (win32-x64).

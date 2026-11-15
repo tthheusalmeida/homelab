@@ -34,7 +34,7 @@
 | 06b | Biblioteca, escrita | concluída |
 | 07a | Livros, leitura | concluída |
 | 07b | Livros, escrita | concluída |
-| 08 | Jobs e resolvedor do Whisper (win32) | pendente |
+| 08 | Jobs e resolvedor do Whisper (win32) | concluída |
 | 09 | Remover o HTTP, o `.env` e o `fetch` | pendente |
 | 10 | Empacotamento Windows | pendente |
 
