@@ -5,7 +5,17 @@ import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
 import { GoogleGenAI } from '@google/genai';
-import { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  nativeTheme,
+  net,
+  protocol,
+  session,
+  shell,
+} from 'electron';
 
 import { createHandlers } from '../ipc/handlers';
 import { IpcRegistrar } from '../ipc/ipc-registrar';
@@ -15,7 +25,14 @@ import { BackContainer } from './back-container';
 import { BackServices } from './back-services';
 import { createServices } from './composition';
 import { applyCspHeader, buildContentSecurityPolicy, CSP_HEADER } from './content-security-policy';
-import { APP_ORIGIN, APP_SCHEME, INDEX_FILE, MainEnv, Messages } from './constants';
+import {
+  APP_ORIGIN,
+  APP_SCHEME,
+  INDEX_FILE,
+  MainEnv,
+  Messages,
+  windowBackground,
+} from './constants';
 import { electronCipher } from './electron-cipher';
 import { needsInitialSetup } from './first-run';
 import { resolveFrontTarget, type FrontTarget } from './front-target';
@@ -25,7 +42,11 @@ import { resolveFrontDist, resolveResourcesDir } from './paths';
 import { isSettingsShortcut } from './shortcuts';
 import { SingleWindowController } from './single-window';
 import { resolveStaticFile } from './static-files';
-import { createSettingsWindowOptions, createWindowOptions } from './window-options';
+import {
+  createSettingsWindowOptions,
+  createSplashWindowOptions,
+  createWindowOptions,
+} from './window-options';
 
 const run = promisify(execFile);
 
@@ -55,6 +76,10 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow: BrowserWindow | null = null;
 let settingsWindow: SingleWindowController<BrowserWindow> | null = null;
+let splashWindow: BrowserWindow | null = null;
+
+/** Fundo das janelas antes da primeira pintura: o do tema do sistema (a página aplica o escolhido). */
+const backgroundNow = () => windowBackground(nativeTheme.shouldUseDarkColors);
 
 /** Serve o build do renderer em `app://front`, com a política de segurança de conteúdo. */
 function registerAppProtocol(distDir: string, policy: string): void {
@@ -119,11 +144,32 @@ function guardWindow(window: BrowserWindow, allowedOrigins: string[]): void {
   });
 }
 
-function createMainWindow(target: FrontTarget): void {
-  const window = new BrowserWindow(createWindowOptions(preloadPath));
-  mainWindow = window;
+/** Tela de abertura (colmeia carregando): aparece na hora e some quando a janela principal abre. */
+function createSplashWindow(target: FrontTarget): void {
+  const window = new BrowserWindow(createSplashWindowOptions(backgroundNow()));
+  splashWindow = window;
 
   window.once('ready-to-show', () => window.show());
+  window.on('closed', () => {
+    splashWindow = null;
+  });
+  window.webContents.on('will-navigate', (event) => event.preventDefault());
+
+  void window.loadURL(target.splashUrl);
+}
+
+function closeSplash(): void {
+  splashWindow?.close();
+}
+
+function createMainWindow(target: FrontTarget): void {
+  const window = new BrowserWindow(createWindowOptions(preloadPath, backgroundNow()));
+  mainWindow = window;
+
+  window.once('ready-to-show', () => {
+    window.show();
+    closeSplash();
+  });
   window.on('closed', () => {
     mainWindow = null;
   });
@@ -138,7 +184,7 @@ function createMainWindow(target: FrontTarget): void {
 }
 
 function createSettingsWindow(target: FrontTarget): BrowserWindow {
-  const window = new BrowserWindow(createSettingsWindowOptions(preloadPath));
+  const window = new BrowserWindow(createSettingsWindowOptions(preloadPath, backgroundNow()));
 
   window.once('ready-to-show', () => window.show());
   guardWindow(window, [target.origin, target.settingsOrigin]);
@@ -173,7 +219,11 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
 
   // O back roda dentro do main, como contêiner de injeção de dependência: sem HTTP e sem porta.
   const container = await BackContainer.start({
-    config: new SettingsBackConfig(services.settings, await services.secrets.get('gemini.apiKey')),
+    config: new SettingsBackConfig(
+      services.settings,
+      await services.secrets.get('gemini.apiKey'),
+      path.join(app.getPath('userData'), 'ai-usage.json'),
+    ),
     whisper: services.whisper,
   });
 
@@ -263,6 +313,8 @@ async function bootstrap(): Promise<void> {
       applyDevPolicy(target, policy);
     }
 
+    createSplashWindow(target);
+
     const { needsSetup } = await startCore(target);
 
     createMainWindow(target);
@@ -273,6 +325,7 @@ async function bootstrap(): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 
+    closeSplash();
     dialog.showErrorBox(Messages.startupErrorTitle, message);
     app.quit();
   }

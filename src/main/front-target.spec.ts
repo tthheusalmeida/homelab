@@ -8,6 +8,7 @@ describe('resolveFrontTarget', () => {
       kind: 'dev',
       url: 'http://localhost:5173/',
       origin: 'http://localhost:5173',
+      splashUrl: 'http://localhost:5173/splash.html',
       settingsUrl: 'http://localhost:5174',
       settingsOrigin: 'http://localhost:5174',
     });
@@ -31,6 +32,7 @@ describe('resolveFrontTarget', () => {
       kind: 'build',
       url: 'app://front/',
       origin: 'app://front',
+      splashUrl: 'app://front/splash.html',
       settingsUrl: 'app://front/settings/index.html',
       settingsOrigin: 'app://front',
     });

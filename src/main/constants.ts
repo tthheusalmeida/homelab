@@ -26,8 +26,20 @@ export const DataFiles = {
 /** Pasta-raiz padrão dos dados do HomeLab, dentro de Documentos. */
 export const DATA_ROOT_FOLDER = 'HomeLab';
 
-/** Fundo escuro igual ao do tema, para a janela não piscar branca ao abrir. */
-export const WINDOW_BACKGROUND = '#0a0a0a';
+/** Fundos iguais aos do tema (grafite e cinza claro), para a janela não piscar na cor errada ao abrir. */
+export const WINDOW_BACKGROUNDS = { dark: '#1b1b1b', light: '#f1f1f1' } as const;
+
+export const windowBackground = (dark: boolean): string =>
+  dark ? WINDOW_BACKGROUNDS.dark : WINDOW_BACKGROUNDS.light;
+
+/** Tela de abertura (colmeia carregando): janelinha sem moldura, enquanto o app prepara tudo. */
+export const SPLASH_PATH = '/splash.html';
+
+export const SPLASH_WINDOW = {
+  width: 340,
+  height: 240,
+  title: 'HomeLab',
+} as const;
 
 export const SETTINGS_WINDOW = {
   width: 1000,

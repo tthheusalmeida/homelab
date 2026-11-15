@@ -1,4 +1,10 @@
-import { APP_ENTRY_URL, DEFAULT_SETTINGS_DEV_URL, MainEnv, SETTINGS_BUILD_PATH } from './constants';
+import {
+  APP_ENTRY_URL,
+  DEFAULT_SETTINGS_DEV_URL,
+  MainEnv,
+  SETTINGS_BUILD_PATH,
+  SPLASH_PATH,
+} from './constants';
 
 type Env = Record<string, string | undefined>;
 
@@ -7,6 +13,8 @@ export interface FrontTarget {
   /** Página principal. */
   url: string;
   origin: string;
+  /** Tela de abertura (loading de colmeia). */
+  splashUrl: string;
   /** Janela de Configurações. */
   settingsUrl: string;
   settingsOrigin: string;
@@ -26,6 +34,7 @@ export function resolveFrontTarget(env: Env, appOrigin: string): FrontTarget {
       kind: 'dev',
       url: devUrl,
       origin: new URL(devUrl).origin,
+      splashUrl: new URL(SPLASH_PATH, devUrl).toString(),
       settingsUrl,
       settingsOrigin: new URL(settingsUrl).origin,
     };
@@ -35,6 +44,7 @@ export function resolveFrontTarget(env: Env, appOrigin: string): FrontTarget {
     kind: 'build',
     url: APP_ENTRY_URL,
     origin: appOrigin,
+    splashUrl: `${appOrigin}${SPLASH_PATH}`,
     settingsUrl: `${appOrigin}${SETTINGS_BUILD_PATH}`,
     settingsOrigin: appOrigin,
   };

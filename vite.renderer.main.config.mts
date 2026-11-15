@@ -19,5 +19,15 @@ export default {
   resolve: { alias: rendererAliases(desktopRoot) },
   plugins: [react(), tailwindcss()],
   server: { port: MAIN_DEV_PORT, strictPort: true, fs: { allow: [desktopRoot] } },
-  build: { outDir: path.join(desktopRoot, 'dist-renderer'), emptyOutDir: true },
+  build: {
+    outDir: path.join(desktopRoot, 'dist-renderer'),
+    emptyOutDir: true,
+    // Duas páginas: o app e a tela de abertura (splash.html), mostrada enquanto o main prepara tudo.
+    rollupOptions: {
+      input: {
+        main: path.join(desktopRoot, 'renderer', 'index.html'),
+        splash: path.join(desktopRoot, 'renderer', 'splash.html'),
+      },
+    },
+  },
 };

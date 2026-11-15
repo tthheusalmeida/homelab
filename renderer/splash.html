@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HomeLab</title>
+    <script src="/theme-init.js"></script>
+    <!-- CSS do app como <link>: bloqueia a primeira pintura (no dev, import em JS chegaria tarde e o ícone sairia sem estilo). -->
+    <link rel="stylesheet" href="/src/global.css" />
+    <style>
+      /* Crítico: fundo do tema antes de o CSS do app chegar (mesmos tons de WINDOW_BACKGROUNDS). */
+      html { background: #f1f1f1; }
+      html.dark { background: #1b1b1b; }
+      body { margin: 0; }
+    </style>
+  </head>
+  <body>
+    <!-- Tela de abertura: a mesma colmeia carregando do app (HexLoader), na cor de destaque. -->
+    <main class="boot-splash">
+      <svg class="hex-loader boot-splash__mark" width="64" height="64" viewBox="0 0 48 48" role="img" aria-label="Carregando o HomeLab">
+        <path class="hex-cell" fill="currentColor" d="M24.00 8.90L29.72 12.20L29.72 18.80L24.00 22.10L18.28 18.80L18.28 12.20Z" />
+        <path class="hex-cell" fill="currentColor" d="M31.40 21.80L37.12 25.10L37.12 31.70L31.40 35.00L25.68 31.70L25.68 25.10Z" />
+        <path class="hex-cell" fill="currentColor" d="M16.60 21.80L22.32 25.10L22.32 31.70L16.60 35.00L10.88 31.70L10.88 25.10Z" />
+      </svg>
+
+      <p class="boot-splash__name">HomeLab</p>
+    </main>
+  </body>
+</html>
