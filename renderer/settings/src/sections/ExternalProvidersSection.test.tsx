@@ -183,4 +183,72 @@ describe('ExternalProvidersSection', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('criptografia do sistema');
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
+
+  it('when the key is not configured, should open the card with the step by step to create it', async () => {
+    mockApi({ [IpcChannels.providers.external.list]: () => ok([unconfigured]) });
+
+    renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
+
+    expect(await screen.findByRole('region', { name: 'Como criar a chave do Gemini' })).toBeVisible();
+    expect(screen.getAllByRole('listitem')).toHaveLength(6);
+    expect(screen.getByRole('link', { name: /Abrir o AI Studio/ })).toHaveAttribute(
+      'href',
+      'https://aistudio.google.com/apikey',
+    );
+    expect(screen.getByRole('link', { name: /Abrir o AI Studio/ })).toHaveAttribute('target', '_blank');
+  });
+
+  it('when the key is already configured, should not show the step by step', async () => {
+    mockApi({ [IpcChannels.providers.external.list]: () => ok([configured]) });
+    const user = userEvent.setup();
+
+    renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
+    await openCard(user, 'Gemini');
+
+    expect(screen.queryByRole('region', { name: 'Como criar a chave do Gemini' })).not.toBeInTheDocument();
+  });
+
+  it('when the key is saved and the list reloads as configured, should hide the step by step', async () => {
+    const user = userEvent.setup();
+    let saved = false;
+    mockApi({
+      [IpcChannels.providers.external.list]: () => ok([saved ? configured : unconfigured]),
+      [IpcChannels.providers.external.save]: () => {
+        saved = true;
+
+        return ok({ value: configured, restartRequired: true });
+      },
+    });
+    renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
+    await screen.findByRole('region', { name: 'Como criar a chave do Gemini' });
+
+    await user.type(screen.getByLabelText('Chave da API'), 'AIza123');
+    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('region', { name: 'Como criar a chave do Gemini' })).not.toBeInTheDocument(),
+    );
+  });
+
+  it('when the key is configured, should point to the provider panel where the real spend lives', async () => {
+    const user = userEvent.setup();
+    mockApi({ [IpcChannels.providers.external.list]: () => ok([configured]) });
+
+    renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
+    await openCard(user, 'Gemini');
+
+    expect(screen.getByRole('link', { name: /ver consumo no Gemini/ })).toHaveAttribute(
+      'href',
+      'https://aistudio.google.com/usage',
+    );
+  });
+
+  it('when the key is not configured yet, should not show the consumption link', async () => {
+    mockApi({ [IpcChannels.providers.external.list]: () => ok([unconfigured]) });
+
+    renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
+    await screen.findByText('Não configurada');
+
+    expect(screen.queryByRole('link', { name: /ver consumo/ })).not.toBeInTheDocument();
+  });
 });

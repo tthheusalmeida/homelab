@@ -7,7 +7,7 @@ import { LoadingState } from '#components/LoadingState';
 
 import type { SettingsPaths } from '#shared/contracts/settings';
 import { Field } from '../components/Field';
-import { useSnackbar } from '../components/Snackbar';
+import { useSnackbar } from '#components/Snackbar';
 import { usePaths, useSavePaths } from '../hooks';
 import { PATH_FIELDS, Strings } from '../strings';
 
@@ -48,7 +48,7 @@ function PathsForm({ paths, onSaved }: SectionProps & { paths: SettingsPaths }) 
   };
 
   return (
-    <Card>
+    <Card className="animate-enter">
       <CardContent className="flex flex-col gap-5 pt-6">
         {PATH_FIELDS.map(({ key, label, hint }) => (
           <Field

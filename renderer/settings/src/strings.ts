@@ -10,13 +10,20 @@ export const Strings = {
   test: 'Testar',
   testing: 'Testando',
   pickFolder: 'Escolher pasta',
+  appearance: {
+    theme: 'Tema',
+    themeHint: 'Sistema acompanha o tema do Windows.',
+    accent: 'Cor de destaque',
+    accentHint: 'Botões, links, item ativo do menu, foco, progresso e o carregamento.',
+    restore: 'Restaurar padrão',
+  },
   restart: {
     message: 'As alterações só valem depois de reiniciar o HomeLab.',
     action: 'Reiniciar agora',
   },
 } as const;
 
-export type SectionId = 'paths' | 'external' | 'local';
+export type SectionId = 'paths' | 'appearance' | 'external' | 'local';
 
 export const SECTIONS: ReadonlyArray<{
   id: SectionId;
@@ -27,6 +34,11 @@ export const SECTIONS: ReadonlyArray<{
     id: 'paths',
     label: 'Pastas',
     description: 'Onde ficam a biblioteca, a entrada e os arquivos temporários.',
+  },
+  {
+    id: 'appearance',
+    label: 'Aparência',
+    description: 'Tema claro ou escuro e a cor de destaque do app. Vale na hora, sem reiniciar.',
   },
   {
     id: 'external',
@@ -73,6 +85,28 @@ export const LOCAL_FIELD_LABELS: Record<string, string> = {
 
 /** Campos que aceitam o seletor de pasta do sistema. */
 export const PICKABLE_LOCAL_FIELDS: ReadonlySet<string> = new Set(['directory']);
+
+/** Passo a passo de cada serviço externo; aparece até a chave ser salva. Novo serviço = nova entrada aqui. */
+export const EXTERNAL_PROVIDER_GUIDES: Record<
+  string,
+  { title: string; steps: ReadonlyArray<{ text: string; link?: { href: string; label: string } }>; note?: string }
+> = {
+  gemini: {
+    title: 'Como criar a chave do Gemini',
+    steps: [
+      {
+        text: 'Abra o Google AI Studio e entre com a sua conta Google.',
+        link: { href: 'https://aistudio.google.com/apikey', label: 'Abrir o AI Studio' },
+      },
+      { text: 'Clique em "Criar chave de API" (Create API key).' },
+      { text: 'Escolha um projeto do Google Cloud ou deixe o AI Studio criar um novo, e confirme.' },
+      { text: 'Copie a chave gerada (ela começa com "AIza").' },
+      { text: 'Cole a chave no campo "Chave da API" abaixo e clique em "Testar" para conferir.' },
+      { text: 'Clique em "Salvar" e reinicie o HomeLab para a chave passar a valer.' },
+    ],
+    note: 'O uso gratuito tem limites por minuto e por dia. Para ir além, ative o faturamento no Google Cloud. Quem tem a chave usa a sua cota: não compartilhe.',
+  },
+};
 
 export const EXTERNAL_PROVIDER_HINTS: Record<string, string> = {
   gemini: 'Modelos de IA do Google, na nuvem.',

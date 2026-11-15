@@ -1,9 +1,9 @@
-/* Mesmo tema do app: reaproveita o CSS global do front. */
-@import "../../../../front/src/global.css";
+/* Mesmo tema do app: reaproveita o CSS global do renderer. */
+@import "../../src/global.css";
 
 /* O Tailwind só gera as classes que encontra nas fontes. Além desta janela,
-   é preciso escanear os componentes do front (ui e components) que ela reutiliza;
+   é preciso escanear os componentes (ui e components) que ela reutiliza;
    sem isso, cards, botões e inputs saem sem estilo. */
 @source "./";
-@source "../../../../front/src/ui";
-@source "../../../../front/src/components";
+@source "../../src/ui";
+@source "../../src/components";

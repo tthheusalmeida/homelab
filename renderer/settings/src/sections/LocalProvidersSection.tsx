@@ -7,8 +7,8 @@ import { LoadingState } from '#components/LoadingState';
 
 import type { LocalProviderInfo } from '#shared/contracts/providers';
 import { Field } from '../components/Field';
-import { ProviderCard } from '../components/ProviderCard';
-import { useSnackbar } from '../components/Snackbar';
+import { ProviderCard } from '#components/ProviderCard';
+import { useSnackbar } from '#components/Snackbar';
 import { TestResultMessage } from '../components/TestResultMessage';
 import { useLocalProviders, useSaveLocalProvider, useTestLocalProvider } from '../hooks';
 import {
@@ -41,14 +41,18 @@ export function LocalProvidersSection({ onSaved }: SectionProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {providers.data.map((provider) => (
-        <LocalProviderCard key={provider.id} provider={provider} onSaved={onSaved} />
+      {providers.data.map((provider, index) => (
+        <LocalProviderCard key={provider.id} provider={provider} index={index} onSaved={onSaved} />
       ))}
     </div>
   );
 }
 
-function LocalProviderCard({ provider, onSaved }: SectionProps & { provider: LocalProviderInfo }) {
+function LocalProviderCard({
+  provider,
+  index,
+  onSaved,
+}: SectionProps & { provider: LocalProviderInfo; index: number }) {
   const [config, setConfig] = useState(provider.config);
   const save = useSaveLocalProvider();
   const test = useTestLocalProvider();
@@ -65,6 +69,7 @@ function LocalProviderCard({ provider, onSaved }: SectionProps & { provider: Loc
 
   return (
     <ProviderCard
+      index={index}
       title={provider.label}
       description={LOCAL_PROVIDER_HINTS[provider.id] ?? ''}
       badge={!provider.editable && <Badge variant="outline">Somente teste</Badge>}

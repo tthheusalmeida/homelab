@@ -3,15 +3,18 @@ import { useState } from 'react';
 import { Badge } from '#ui/badge';
 import { Button } from '#ui/button';
 import { ErrorState } from '#components/ErrorState';
+import { ExternalLink } from '#components/ExternalLink';
 import { LoadingState } from '#components/LoadingState';
+import { PROVIDER_CONSOLES } from '#lib/provider-consoles';
+import { SetupGuide } from '#components/SetupGuide';
 
 import type { ExternalProviderInfo } from '#shared/contracts/providers';
 import { Field } from '../components/Field';
-import { ProviderCard } from '../components/ProviderCard';
-import { useSnackbar } from '../components/Snackbar';
+import { ProviderCard } from '#components/ProviderCard';
+import { useSnackbar } from '#components/Snackbar';
 import { TestResultMessage } from '../components/TestResultMessage';
 import { useExternalProviders, useSaveExternalProvider, useTestExternalProvider } from '../hooks';
-import { EXTERNAL_PROVIDER_HINTS, Strings } from '../strings';
+import { EXTERNAL_PROVIDER_GUIDES, EXTERNAL_PROVIDER_HINTS, Strings } from '../strings';
 
 interface SectionProps {
   onSaved: (restartRequired: boolean) => void;
@@ -36,8 +39,8 @@ export function ExternalProvidersSection({ onSaved }: SectionProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {providers.data.map((provider) => (
-        <ExternalProviderCard key={provider.id} provider={provider} onSaved={onSaved} />
+      {providers.data.map((provider, index) => (
+        <ExternalProviderCard key={provider.id} provider={provider} index={index} onSaved={onSaved} />
       ))}
     </div>
   );
@@ -45,13 +48,15 @@ export function ExternalProvidersSection({ onSaved }: SectionProps) {
 
 function ExternalProviderCard({
   provider,
+  index,
   onSaved,
-}: SectionProps & { provider: ExternalProviderInfo }) {
+}: SectionProps & { provider: ExternalProviderInfo; index: number }) {
   const [apiKey, setApiKey] = useState('');
   const save = useSaveExternalProvider();
   const test = useTestExternalProvider();
   const snackbar = useSnackbar();
 
+  const guide = EXTERNAL_PROVIDER_GUIDES[provider.id];
   const typedKey = apiKey.trim();
   const canTest = provider.configured || typedKey.length > 0;
 
@@ -63,6 +68,8 @@ function ExternalProviderCard({
 
   return (
     <ProviderCard
+      index={index}
+      defaultOpen={!provider.configured}
       title={provider.label}
       description={EXTERNAL_PROVIDER_HINTS[provider.id] ?? ''}
       badge={
@@ -101,6 +108,15 @@ function ExternalProviderCard({
         </>
       }
     >
+      {guide && (
+        <SetupGuide
+          title={guide.title}
+          steps={guide.steps}
+          note={guide.note}
+          visible={!provider.configured}
+        />
+      )}
+
       <p className="text-sm text-muted-foreground">
         {provider.configured
           ? `Chave atual: ${provider.maskedKey}`
@@ -116,6 +132,16 @@ function ExternalProviderCard({
         value={apiKey}
         onChange={change}
       />
+
+      {provider.configured && PROVIDER_CONSOLES[provider.id] && (
+        <p className="text-sm text-muted-foreground">
+          O gasto real da conta só aparece no painel do provedor:{' '}
+          <ExternalLink href={PROVIDER_CONSOLES[provider.id].usageUrl}>
+            ver consumo no {PROVIDER_CONSOLES[provider.id].label}
+          </ExternalLink>
+          . O app também registra o consumo na tela Consumo.
+        </p>
+      )}
 
       {test.data && <TestResultMessage result={test.data} />}
       {test.isError && <TestResultMessage result={{ ok: false, message: test.error.message }} />}

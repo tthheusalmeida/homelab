@@ -17,7 +17,8 @@ export default {
   cacheDir: path.join(desktopRoot, 'node_modules', '.vite-settings'),
   // Caminhos relativos: a janela abre em app://front/settings/index.html
   base: './',
-  publicDir: false,
+  // Mesma pasta public do app: leva o theme-init.js (tema antes do primeiro quadro).
+  publicDir: path.join(desktopRoot, 'renderer', 'public'),
   resolve: { alias: rendererAliases(desktopRoot) },
   plugins: [react(), tailwindcss()],
   server: { port: SETTINGS_DEV_PORT, strictPort: true, fs: { allow: [desktopRoot] } },

@@ -3,7 +3,15 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { IpcChannels } from '#shared/channels';
-import { failure, mockApi, ok, openCard, payloadsOf, renderWithProviders } from '../testing';
+import {
+  failure,
+  mockApi,
+  ok,
+  openCard,
+  payloadsOf,
+  renderWithProviders,
+  toggleCard,
+} from '../testing';
 
 import { LocalProvidersSection } from './LocalProvidersSection';
 
@@ -66,7 +74,7 @@ describe('LocalProvidersSection', () => {
     await openCard(user, 'Ollama');
     expect(screen.getByLabelText('Endereço (URL)')).toBeVisible();
 
-    await openCard(user, 'Ollama');
+    await toggleCard(user, 'Ollama');
 
     await waitFor(() => expect(screen.queryByLabelText('Endereço (URL)')).not.toBeInTheDocument());
   });
@@ -81,7 +89,7 @@ describe('LocalProvidersSection', () => {
     const url = screen.getByLabelText('Endereço (URL)');
     await user.clear(url);
     await user.type(url, 'http://outro:1234');
-    await openCard(user, 'Ollama');
+    await toggleCard(user, 'Ollama');
     await waitFor(() => expect(screen.queryByLabelText('Endereço (URL)')).not.toBeInTheDocument());
     await openCard(user, 'Ollama');
 
