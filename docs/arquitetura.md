@@ -91,6 +91,13 @@ export class LibraryHandler extends IpcHandler {
 - Exceções não vazam como erro cru do Electron. `NotFoundException` (Nest) → `NOT_FOUND`; erros de validação → `VALIDATION`; erro de configuração ausente → `NOT_CONFIGURED`; o restante → `INTERNAL`, preservando a mensagem em português já existente nos services.
 - No front, o cliente (`shared/ipc-client.ts`, `createIpcClient(window.api)`) chama `window.api`, desembrulha o envelope e **lança `IpcError`** (um `Error` com `code`) quando `ok` é falso. Assim hooks, TanStack Query e telas continuam tratando erro como hoje.
 
+## Persistência, eventos e backup (trabalho avulso)
+- **Raiz fixa** `Documentos/HomeLab` com `library`, `inbox`, `data`, `config` e `temp` (`settings/app-paths.ts`); só a biblioteca é configurável. Detalhes e decisões em `persistencia.md`.
+- **Armazenamento em JSON:** `storage/json-file.ts` (escrita atômica + cópia `.bak`), usado por configurações, jobs (`FileJobRepository`), chats (`FileChatRepository`) e consumo de IA. Gravar **nunca lança** nos repositórios: erro de disco vira aviso ao usuário (`BackAlerts`) e o dado segue em memória.
+- **Eventos main → renderer:** `shared/events.ts` (`IpcEvents`), porta `EventPublisher` (`WindowEventPublisher` envia a todas as janelas), `window.api.on` na ponte e o hook `useIpcEvent` no renderer.
+- **Avisos:** o back avisa pela porta abstrata `BackAlerts` (falha ao gravar, job terminou); o main os transforma em `app:notice` (`EventBackAlerts`). Os que nascem na abertura ficam no `NoticeStore`, que o renderer busca por `notices:pending`. A `NoticeCenter` os mostra.
+- **Backup** (`src/backup`): `zip.ts` (`yazl` e `yauzl`, por streaming, com cancelamento e proteção contra zip-slip), `manifest.ts` e `backup.service.ts` (prévia, criar, inspecionar, restaurar com desfazer). Os diálogos de arquivo são a porta `FilePicker`.
+
 ## Preload e segurança
 - `BrowserWindow`: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, sem `remote`.
 - O preload expõe `window.api.invoke(channel, payload)` restrito à lista de canais permitida (`allChannels()`, derivada de `IpcChannels`); canal fora da lista é rejeitado. Nunca expõe `ipcRenderer`.

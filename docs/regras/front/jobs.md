@@ -24,7 +24,7 @@
 - Envia `POST /jobs/video-to-summary` com `{ url, providerId, modelId, thinking, detail }` (mais título, categoria e tags se preenchidos).
 - Durante a criação, campos e botão ficam desabilitados.
 
-## Acompanhar (`/jobs/track`)
+## Em andamento (`/jobs/track`, antes "Acompanhar"; o item do menu mostra um contador com os jobs na fila ou rodando)
 - Busca `GET /jobs` a cada **1 s**. Carregando: "Carregando". Erro: "Oops! houve uma falha ao carregar os jobs."
 - Lista ordenada do **mais novo para o mais antigo** (por `createdAt`), sem alterar o array original.
 - Cada item mostra label, id, status, "Criado em" (data e hora pt-BR) e, ao expandir, o fluxo.

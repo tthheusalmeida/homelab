@@ -1,37 +1,53 @@
 # Configurações (substitui o `.env`)
 
 ## Princípios
-- O app abre **sem nenhuma configuração prévia**: pastas e Ollama têm padrões; só a chave do Gemini é necessária para usar o Gemini, e sem ela o provider responde `NOT_CONFIGURED` com mensagem em português.
+- O app abre **sem nenhuma configuração prévia** e tem **pouquíssimas opções**: só a **pasta da biblioteca** (páginas e livros), a aparência, a chave do Gemini e o endereço do Ollama são do usuário. Todo o resto (entrada, temporários, dados do app, Whisper) é padrão fixo, para reduzir atrito. Pastas e Ollama têm padrões; só a chave do Gemini é necessária para usar o Gemini, e sem ela o provider responde `NOT_CONFIGURED` com mensagem em português.
 - Nenhum caminho, URL ou chave fixos no código. Tudo vem do `SettingsStore` e do `SecretStore`.
 - **Não existe mais `.env`:** a importação única do `.env` do back (que existia só em desenvolvimento) acabou na fase 09a. Na primeira execução o usuário informa pastas e chave pela janela de Configurações, que abre sozinha.
 - **Mudar configuração exige reiniciar o app**: os services do back leem tudo uma vez, ao serem criados. Toda gravação responde `restartRequired` e o canal `app:relaunch` reinicia.
 
 ## Janela de Configurações
 - Abre pelo item **Configurações** no rodapé da barra lateral, por `Ctrl+,`/`Cmd+,` e sozinha na primeira execução sem chave do Gemini.
-- Seções: **Pastas** (com seletor de pasta do sistema), **Aparência** (tema e cor de destaque; vale na hora, sem reiniciar; ver `identidade.md`), **IAs externas** (passo a passo para criar a chave enquanto não configurada, chave mascarada, Testar/Salvar, link para o consumo real no painel do provedor) e **Serviços locais** (Whisper, Ollama e ffmpeg, só teste).
+- Seções: **Biblioteca** (a única pasta que o usuário escolhe; trocar pergunta se a biblioteca atual vai junto), **Aparência** (tema e cor de destaque; vale na hora, sem reiniciar; ver `identidade.md`), **IAs externas** (passo a passo para criar a chave enquanto não configurada, chave mascarada, Testar/Salvar, link para o consumo real no painel do provedor) e **Serviços locais** (Whisper e ffmpeg só testam; o Ollama tem o endereço) e **Backup** (criar e restaurar; ver `persistencia.md`).
 - Cada provider é um item **recolhível**: fechado mostra nome, selo de status e uma descrição; clicar abre os campos.
 - "Salvo" aparece como **snackbar** no canto inferior direito (some em 3 s). Mostra "Reiniciar agora" quando uma gravação exige reinício. Código em `renderer/settings`.
 
-## Armazenamento (`app.getPath('userData')`, ex.: `%APPDATA%\homelab-desktop`)
-- `settings.json`: pastas e providers locais. Escrita atômica; valores ausentes recebem o padrão; arquivo ilegível vai para `settings.json.corrupt`.
-- `secrets.json`: chaves de API **cifradas** com `safeStorage` (DPAPI no Windows, Keychain no macOS, libsecret no Linux), pela API **assíncrona** (`encryptStringAsync`/`decryptStringAsync`; a síncrona está obsoleta). Se o sistema trocar a chave de criptografia (`shouldReEncrypt`), o segredo é regravado. Sem criptografia disponível, o app recusa salvar. Segredo que não decifra conta como não configurado.
+## Armazenamento
+Tudo o que é do usuário mora numa **raiz fixa**, `Documentos/HomeLab` (`HOMELAB_DATA_ROOT_DIR` troca a raiz em testes e desenvolvimento), segmentada por tipo, para o backup ser simples:
+
+```
+Documentos/HomeLab/
+├─ library/        páginas e livros (único caminho que o usuário pode trocar)
+├─ inbox/          documentos pendentes dos jobs
+├─ data/           jobs.json, chats.json, ai-usage.json
+├─ config/         settings.json
+└─ temp/           vídeo e áudio temporários e áreas de restauração (nunca entram no backup)
+```
+
+- `settings.json` (em `config/`): só a pasta da biblioteca, a aparência e o endereço do Ollama. Escrita atômica com cópia `.bak` da última versão boa; valores ausentes recebem o padrão; valores antigos de pastas e do Whisper que sobrarem no arquivo são ignorados. Arquivo ilegível: usa o `.bak` (e avisa); sem `.bak`, vai para `.corrupt` e o app segue com os padrões.
+- `jobs.json`, `chats.json` e `ai-usage.json` (em `data/`): ver `persistencia.md`.
+- `secrets.json` fica em `app.getPath('userData')` (ex.: `%APPDATA%\homelab-desktop`), **fora da raiz e fora do backup**: chaves de API **cifradas** com `safeStorage` (DPAPI no Windows, Keychain no macOS, libsecret no Linux), pela API **assíncrona**. Se o sistema trocar a chave de criptografia (`shouldReEncrypt`), o segredo é regravado. Sem criptografia disponível, o app recusa salvar. Segredo que não decifra conta como não configurado.
 - O renderer **nunca** recebe a chave: só `configured` e a versão mascarada (`••••••••` + 4 últimos caracteres).
 - `HOMELAB_USER_DATA_DIR` aponta o `userData` para outra pasta (testes e desenvolvimento).
+- **Migração do formato antigo:** na primeira abertura depois da mudança, se existe o `settings.json` antigo em `userData`, o app mostra uma janela perguntando se **move** os dados para a raiz nova, **mantém** a biblioteca onde está ou deixa para depois. Nada é apagado: os arquivos antigos viram `.migrated` e as pastas antigas continuam intactas até o usuário removê-las (`src/main/legacy-migration.ts`; sai do código depois).
 
 ## Padrões (primeira execução)
 | Item | Padrão |
 |---|---|
-| Biblioteca | `Documentos/HomeLab/library` |
-| Entrada | `Documentos/HomeLab/inbox` |
-| Temporários | `Documentos/HomeLab/temp/video` e `.../temp/audio` |
-| Whisper | `resources/bin/<platform>-<arch>`, executável `whisper-cli(.exe)`, modelo `ggml-large-v3-turbo.bin` |
+| Biblioteca | `Documentos/HomeLab/library` (única pasta escolhida pelo usuário) |
+| Entrada | `Documentos/HomeLab/inbox` (fixa) |
+| Temporários | `Documentos/HomeLab/temp/video` e `.../temp/audio` (fixos) |
+| Whisper | `resources/bin/<platform>-<arch>`, executável `whisper-cli(.exe)`, modelo `ggml-large-v3-turbo.bin` **na mesma pasta** (fixos; só dá para testar) |
 | Ollama | `http://localhost:11434` |
 | Aparência | tema `system` (acompanha o Windows) e cor de destaque `cyan` (a do ícone) |
 
+### Trocar a pasta da biblioteca
+Ao salvar um caminho novo o app olha a pasta: **vazia ou nova** oferece "Mover a biblioteca atual para cá" (copia páginas e livros com progresso, confere, troca, reindexa e pede reinício; apagar a pasta antiga é uma caixa desmarcada) ou "Começar vazia"; pasta que **já tem arquivos** só oferece "Usar esta pasta" (a atual fica onde está). Falha no meio não troca nada (`LibraryMover`).
+
 ## Validação (ao salvar)
-- Pastas e pasta do Whisper: não vazias e **caminho absoluto**.
-- Executável do Whisper: só o nome do arquivo, sem pastas. **Modelo:** o nome do arquivo (procurado na pasta do Whisper) **ou um caminho completo**, em qualquer pasta.
+- Pasta da biblioteca: não vazia e **caminho absoluto**.
 - URL do Ollama: http ou https válida.
+- Tema e cor de destaque: um dos valores conhecidos.
 - Erros voltam como `VALIDATION`, com mensagem em português, e nada é gravado.
 
 ## De onde vem cada variável de hoje
@@ -39,10 +55,10 @@
 |---|---|
 | `GEMINI_API_KEY` | `SecretStore` (`gemini.apiKey`), provider externo `gemini` |
 | `OLLAMA_URL` | `settings.local.ollama.url`, provider local `ollama` |
-| `WHISPER_DIR`, `WHISPER_EXECUTABLE`, `WHISPER_MODEL` | `settings.local.whisper` (`directory`, `executable`, `model`), provider local `whisper` |
+| `WHISPER_DIR`, `WHISPER_EXECUTABLE`, `WHISPER_MODEL` | Padrão fixo do app (`resources/bin/<plataforma>`), provider local `whisper` (só teste) |
 | `LIB_DIR` | `settings.paths.libraryDir` |
-| `TEMP_DOCS_DIR` | `settings.paths.inboxDir` |
-| `TEMP_VIDEO_DIR`, `TEMP_AUDIO_DIR` | `settings.paths.videoTempDir`, `settings.paths.audioTempDir` |
+| `TEMP_DOCS_DIR` | Fixa: `<raiz>/inbox` |
+| `TEMP_VIDEO_DIR`, `TEMP_AUDIO_DIR` | Fixas: `<raiz>/temp/video` e `<raiz>/temp/audio` |
 | `PORT`, `CORS_ORIGIN` | Somem na fase 09 (sem HTTP). Até lá `CORS_ORIGIN` vem da origem do front carregado |
 | ffmpeg no PATH | Só testável (provider local `ffmpeg`, `editable: false`) |
 
@@ -64,7 +80,7 @@
 - O teste devolve `{ ok, message }`; falhas nunca viram exceção. A mensagem do Gemini é extraída do JSON da SDK.
 
 ### Locais (`providers:local:*`)
-- Whisper: pasta, executável e modelo (nome ou caminho completo). O teste verifica a existência do executável e do modelo, com a mesma regra que a transcrição usa.
+- Whisper: **só teste** (os valores são fixos: pasta `resources/bin/<plataforma>`, executável e modelo `ggml-large-v3-turbo.bin` na mesma pasta). O teste verifica a existência do executável e do modelo, com a mesma regra que a transcrição usa, e as mensagens dizem o caminho completo esperado.
 - Ollama: URL. Teste faz `GET /api/tags` (5 s de limite).
 - ffmpeg: somente teste (`ffmpeg -version`). O back o chama pelo PATH; configurá-lo exigiria alterar o back.
 - Novos entram registrando outra definição (`LocalProviderDefinition`).
@@ -75,4 +91,4 @@
 - **Resolvedor (`WhisperBinaryResolver`, fase 08):** junta pasta + executável e confere se existe. Existe: usa (mesmo numa plataforma sem binário embutido, se o usuário apontou o dele). Não existe e a plataforma não é `win32-x64` → `UNSUPPORTED_PLATFORM` ("O Whisper embutido ainda não está disponível para <plataforma>..."). Não existe em `win32-x64` → `NOT_CONFIGURED` ("Whisper CLI não encontrado: <caminho>..."). Modelo ausente → `NOT_CONFIGURED` ("Modelo Whisper não encontrado: <caminho>..."). Quem transcreve é o `DesktopWhisperService`, que o `main/whisper-provider.ts` coloca no lugar do `WhisperService` do back (mesmo mecanismo do Gemini, sem editar o back). Os argumentos do Whisper, a limpeza do `.txt` e a mensagem "Falha ao transcrever o áudio." são os mesmos de antes.
 - No job, o erro de configuração aparece como mensagem do job (o job guarda só o texto), e o job seguinte da fila roda normalmente.
 - **Exceção ao "reiniciar":** o Whisper lê pasta, executável e modelo a cada transcrição, então valem no próximo job; a janela de Configurações continua avisando que reiniciar é necessário porque o aviso vale para todos os serviços locais.
-- O modelo `ggml-large-v3-turbo.bin` (~1,5 GB) não vai no instalador.
+- O modelo `ggml-large-v3-turbo.bin` (~1,5 GB) fica **na mesma pasta dos binários** (`resources/bin/<plataforma>`); copie-o para lá. Não vai no git e, se não couber no instalador, a distribuição precisará de outra forma de entrega.

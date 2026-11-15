@@ -13,8 +13,10 @@ Origem: os 37 endpoints HTTP atuais (`/api/v1`) + os canais novos de app, settin
 ## settings (fases 03a e 03b, novos)
 | Canal | Payload | Retorno |
 |---|---|---|
-| `settings:get` | — | `{ libraryDir, inboxDir, videoTempDir, audioTempDir }` |
-| `settings:update` | parte das pastas (`Partial`) | `{ value: pastas, restartRequired }`; pasta inválida → `VALIDATION` |
+| `settings:get` | — | `{ libraryDir }` (a única pasta que o usuário escolhe) |
+| `settings:update` | `{ libraryDir? }` | `{ value, restartRequired }`; pasta inválida → `VALIDATION` (a tela usa `settings:move-library`) |
+| `settings:inspect-library` | `{ path }` | `{ path, exists, empty, fileCount }` (o que há na pasta candidata) |
+| `settings:move-library` | `{ to, mode: move|use, deleteOrigin? }` | `{ libraryDir, filesCopied, bytesCopied, originRemoved, originRemoveError?, restartRequired }`; progresso em `library-move:progress`; falha de cópia → `PERSIST_FAILED` (nada troca) |
 | `appearance:get` | — | `{ theme: system|light|dark, accent: cyan|blue|indigo|violet|emerald|rose|orange }` |
 | `appearance:update` | parte da aparência (`Partial`) | a aparência completa; tema ou cor desconhecidos → `VALIDATION`; não pede reinício |
 | `settings:pick-folder` | `{ defaultPath? }` | pasta escolhida no seletor do sistema, ou `null` se cancelar |
@@ -55,12 +57,16 @@ Origem: os 37 endpoints HTTP atuais (`/api/v1`) + os canais novos de app, settin
 
 Erros: Gemini sem chave → `NOT_CONFIGURED` (mensagem manda abrir Configurações); provider desconhecido ou Ollama fora do ar em `ai:models` → `INTERNAL`, com a mesma mensagem em português do back (hoje é HTTP 500).
 
-## chat (fase 5, implementado)
-| Canal | Substitui | Payload | Retorno |
-|---|---|---|---|
-| `chat:send` | `POST chat` | `{ message, modelId, providerId, thinking? }` | `{ message }` |
+## chat e chats (persistência)
+| Canal | Payload | Retorno |
+|---|---|---|
+| `chat:send` | `{ chatId, message, modelId, providerId, thinking? }` | `{ message, chat }` (o chat atualizado, com todas as mensagens) |
+| `chat:cancel` | `{ chatId }` | nada; descarta a resposta que ainda está sendo gerada |
+| `chats:list` | — | resumos, do mais recente para o mais antigo (`id`, `title`, `createdAt`, `updatedAt`, `providerId`, `modelId`, `thinking?`, `messageCount`) |
+| `chats:get` | `{ id }` | chat com `messages`; inexistente → `NOT_FOUND` |
+| `chats:delete` | `{ id }` | nada; inexistente → `NOT_FOUND` |
 
-Erros: falha do provider (Gemini ou Ollama) → `PROVIDER_FAILED` com a mensagem de hoje (ex.: "A requisição para o chat do Ollama falhou."); Gemini sem chave → `NOT_CONFIGURED`. A conversão para `PROVIDER_FAILED` fica no `ChatHandler` (o mapper genérico não sabe a origem do erro). O IPC não é cancelável: o cancelamento do Chat é só no renderer (rejeita com `AbortError` e descarta a resposta); a requisição já enviada termina no main e conta no Uso.
+O `chatId` é criado pela tela (uuid) ao abrir um chat novo; o chat **nasce com a primeira mensagem** (não existe canal para criar vazio). O main reenvia o **histórico inteiro** ao provedor. Pergunta e resposta só são gravadas **juntas, em caso de sucesso**. `chat:cancel` não interrompe a chamada ao provedor (os tokens são gastos): o main descarta a resposta quando ela chega (o `chat:send` responde `VALIDATION` "A resposta foi cancelada."). Um envio por chat por vez. Erros: falha do provedor → `PROVIDER_FAILED`; sem chave → `NOT_CONFIGURED`; mensagem vazia ou id inválido → `VALIDATION`; chat excluído enquanto respondia → `NOT_FOUND`; disco → o aviso `app:notice` (a conversa segue em memória).
 
 ## library (fases 6a e 6b)
 | Canal | Substitui | Payload | Retorno | Fase |
@@ -115,6 +121,39 @@ Escrita: `modules` que não é lista → `VALIDATION` com "O campo "modules" dev
 | `jobs:create-video-to-summary` | `POST jobs/video-to-summary` | `{ url, providerId, modelId, thinking?, detail?, title?, category?, tags? }` | `{ id, status }` (status `pending`) |
 
 Criar um job valida **antes** de enfileirar (título de texto com até 120 caracteres; `category` e `tags` listas de textos; categoria de 1 a 4 níveis; ver `regras/back/jobs.md`): se algo for inválido responde `VALIDATION` com a mensagem de hoje e **nenhum job é criado**. `detail` desconhecido não é erro: vale `detailed` (regra do back). O job entra na fila e responde na hora; os jobs rodam **um por vez**, na ordem de chegada. Falha do pipeline (download, ffmpeg, Whisper, IA) **não** é erro do canal: o job termina `failed` com a mensagem em `error` (ex.: "Modelo Whisper não encontrado: ..."), e a fila segue. O acompanhamento é por consulta (`jobs:list`, a cada 1 s no front).
+
+### jobs: excluir (persistência)
+| Canal | Payload | Retorno |
+|---|---|---|
+| `jobs:delete` | `{ ids }` | `{ deleted, skipped: [{ id, reason: ACTIVE|NOT_FOUND }] }` (job na fila ou rodando nunca é excluído) |
+| `jobs:delete-all` | — | o mesmo; exclui tudo que terminou e informa o que ficou por estar ativo |
+
+Excluir um job não apaga os documentos que ele gerou.
+
+## backup
+| Canal | Payload | Retorno |
+|---|---|---|
+| `backup:preview` | — | `{ items: [{ id, kind: files|records, count, bytes, estimatedZipBytes }], notIncluded }` |
+| `backup:create` | `{ items }` | `{ cancelled, path?, bytes?, files? }`; o main abre o diálogo de salvar; progresso em `backup:progress` |
+| `backup:cancel` | — | nada; cancela o backup ou a restauração (o zip parcial é apagado) |
+| `backup:inspect` | — | `{ token, fileName, createdAt, appVersion, items }` ou `null` se o usuário cancelar; o main abre o diálogo de abrir |
+| `backup:restore` | `{ token, items, mode: merge|replace }` | `{ items: [{ id, added, skipped }], safetyCopyPath, restartRequired }` |
+
+Itens: `library` (páginas e livros), `inbox`, `jobs`, `chats`, `usage`, `settings`. O renderer **nunca envia caminhos**: o zip escolhido é identificado por um token. Zip inválido, de versão futura, com arquivo desconhecido ou item ausente → `VALIDATION`; falha de disco → `PERSIST_FAILED`.
+
+## avisos
+| Canal | Payload | Retorno |
+|---|---|---|
+| `notices:pending` | — | avisos nascidos durante a abertura (entregues uma vez só) |
+
+## Eventos (main → renderer)
+Enviados com `webContents.send` a todas as janelas; a ponte (`window.api.on(evento, ouvinte)`) só entrega os de `IpcEvents` e só o payload.
+
+| Evento | Payload | Quando |
+|---|---|---|
+| `backup:progress` | `{ phase: preparing|running|verifying|done, processed, total, currentFile? }` | criar e restaurar backup |
+| `library-move:progress` | o mesmo | mover a biblioteca |
+| `app:notice` | `{ id, level: info|warning|error, title, message?, detail?, link? }` | job terminou ou falhou, falha ao gravar em disco |
 
 ## Regras
 - Um endpoint HTTP = um canal. `:id` e query viram campos do payload.
