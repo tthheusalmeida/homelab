@@ -60,7 +60,7 @@ function EditForm({ document }: { document: DocumentDetail }) {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-6">
+    <div className="animate-enter-fade space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Editar página</h1>
 

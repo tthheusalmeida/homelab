@@ -364,7 +364,7 @@ export function BookPage() {
   const hasProgress = readIds.length > 0 || book.lastPosition !== null;
 
   return (
-    <article className="space-y-6">
+    <article className="animate-enter-fade space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <Button
           variant="ghost"

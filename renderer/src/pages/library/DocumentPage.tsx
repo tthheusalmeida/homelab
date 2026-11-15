@@ -116,7 +116,7 @@ export function DocumentPage() {
   }
 
   return (
-    <article className="space-y-6">
+    <article className="animate-enter-fade space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
           <ArrowLeft /> Voltar

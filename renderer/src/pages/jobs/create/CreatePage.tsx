@@ -51,7 +51,7 @@ export function CreatePage() {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="animate-enter-fade space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Criar</h1>
 

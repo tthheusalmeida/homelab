@@ -20,10 +20,10 @@ export function AppLayout() {
         </header>
 
         <ScrollArea className="min-h-0 flex-1">
-          {/* A chave troca o bloco a cada rota, e a página nova entra com um fade curto. */}
+          {/* A chave troca o bloco a cada rota, e a página nova entra só com um fade (sem subir). */}
           <div
             key={pathname}
-            className="flex min-w-0 flex-1 animate-enter flex-col p-4"
+            className="flex min-w-0 flex-1 animate-enter-fade flex-col p-4"
           >
             <Outlet />
           </div>

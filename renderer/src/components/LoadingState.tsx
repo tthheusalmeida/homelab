@@ -5,7 +5,7 @@ interface LoadingStateProps {
 
 export function LoadingState({ message, loading = true }: LoadingStateProps) {
   return (
-    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+    <div className="flex animate-enter-fade items-center gap-1 text-sm text-muted-foreground">
       <span>{message}</span>
 
       {loading && (
