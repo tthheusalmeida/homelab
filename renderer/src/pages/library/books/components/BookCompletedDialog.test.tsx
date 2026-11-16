@@ -56,6 +56,33 @@ describe("BookCompletedDialog", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it("when open, should keep header and footer sticky, since a relative position shifts them 20px and makes this small dialog scroll", () => {
+    renderDialog();
+
+    const header = screen.getByText("Livro concluído!").parentElement;
+    const footer = screen.getByRole("button", { name: "Continuar" }).parentElement;
+
+    for (const part of [header, footer]) {
+      expect(part).toHaveClass("sticky");
+      expect(part).not.toHaveClass("relative");
+    }
+  });
+
+  it("when open, should not reserve the close button padding on the right, so the content stays centered", () => {
+    renderDialog();
+
+    const header = screen.getByText("Livro concluído!").parentElement;
+
+    expect(header).toHaveClass("pr-5", "items-center");
+    expect(header).not.toHaveClass("pr-12");
+  });
+
+  it("when open, should separate the title from the description", () => {
+    renderDialog();
+
+    expect(screen.getByText(/Você leu todos os capítulos/)).toHaveClass("mt-2");
+  });
+
   it("when closed, should render nothing", () => {
     renderDialog(false);
 

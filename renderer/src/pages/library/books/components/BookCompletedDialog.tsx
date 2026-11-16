@@ -66,14 +66,15 @@ export function BookCompletedDialog({
           ))}
         </div>
 
-        <DialogHeader className="relative items-center gap-3">
+        {/* pr-5: o cabeçalho padrão reserva pr-12 para o botão de fechar, o que deslocava o conteúdo do centro. */}
+        <DialogHeader className="items-center gap-3 pr-5">
           <div className="flex size-20 items-center justify-center rounded-full bg-amber-400 text-amber-950 shadow-[0_0_32px_rgb(251_191_36/0.6)]">
             <Trophy className="size-10" />
           </div>
 
           <DialogTitle className="text-2xl">Livro concluído!</DialogTitle>
 
-          <DialogDescription>
+          <DialogDescription className="mt-2">
             Você leu todos os capítulos de “{title}”.
           </DialogDescription>
         </DialogHeader>
@@ -102,7 +103,7 @@ export function BookCompletedDialog({
           </div>
         </dl>
 
-        <DialogFooter className="relative sm:justify-center">
+        <DialogFooter className="sm:justify-center">
           <Button onClick={() => onOpenChange(false)}>Continuar</Button>
         </DialogFooter>
       </DialogContent>
