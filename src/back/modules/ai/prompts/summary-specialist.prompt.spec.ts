@@ -53,3 +53,27 @@ describe('isSummaryDetail', () => {
     expect(DEFAULT_SUMMARY_DETAIL).toBe('detailed');
   });
 });
+
+describe('SummarySpecialistPrompt rules for classes', () => {
+  it.each(SUMMARY_DETAILS)('when the detail is %s, should not number headings', (detail) => {
+    expect(buildSummaryPrompt(detail)).not.toContain('## 1.');
+  });
+
+  it.each(SUMMARY_DETAILS)(
+    'when the detail is %s, should allow fixing tool spelling and mark doubts',
+    (detail) => {
+      const prompt = buildSummaryPrompt(detail);
+
+      expect(prompt).toContain('grafia oficial');
+      expect(prompt).toContain('[?]');
+    },
+  );
+
+  it('when the detail is detailed, should not tell the model to omit on doubt about length', () => {
+    expect(buildSummaryPrompt('detailed')).not.toContain('Na dúvida, omita');
+  });
+
+  it('when the source mentions the screen, should tell the model not to describe it', () => {
+    expect(buildSummaryPrompt('study')).toContain('demonstração na tela');
+  });
+});

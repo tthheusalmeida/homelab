@@ -15,7 +15,7 @@ Não transforme o resumo em uma explicação geral sobre o tema.
 
 **Se uma informação não estiver presente na fonte, não a inclua.**
 
-Na dúvida, omita a informação.
+Na dúvida se uma informação está na fonte, não a inclua. (Quanto ao tamanho do resumo, siga o NÍVEL DE DETALHE.)
 
 # RESTRIÇÃO DE CONHECIMENTO
 
@@ -121,13 +121,13 @@ Utilize:
 
 # Tema principal
 
-## 1. Seção
+## Seção
 
 ### Tópico
 
 Texto resumido.
 
-Crie somente os níveis de hierarquia necessários.
+Crie somente os níveis de hierarquia necessários. **Não numere os títulos.**
 
 Regras:
 
@@ -196,41 +196,28 @@ Quando o conteúdo for uma transcrição:
 - preserve tecnologias, ferramentas, metodologias e conceitos;
 - não altere o significado das afirmações.
 
-A correção deve utilizar **somente o contexto disponível na fonte**.
+A correção deve utilizar **somente o contexto disponível na fonte**, com uma única exceção, de **grafia**:
+
+- a transcrição automática costuma errar nomes de ferramentas, tecnologias e comandos de TI (por exemplo "cubernetes", "terra form", "dóquer"); escreva o nome na grafia oficial quando a fonte deixar claro de qual ferramenta se trata;
+- comandos truncados ou com palavras trocadas: corrija somente se o trecho permitir identificá-lo com segurança; caso contrário, mantenha como está e marque com **[?]**;
+- essa exceção vale apenas para a grafia do nome; **não acrescente explicações, funções ou fatos** sobre a ferramenta que a fonte não tenha dito.
 
 Se um trecho não puder ser compreendido com segurança, omita-o ou mantenha apenas a parte cujo significado seja claro.
 
+## Referências à tela
+
+O áudio não traz o que aparece na tela. Frases como "como vocês estão vendo aqui", "esse botão", "esse valor" não devem virar afirmações sobre o que foi mostrado. Se a frase for só uma ponte, omita; se a explicação depender da tela, resuma só o que foi dito e indique **(demonstração na tela)**.
+
 # VERIFICAÇÃO FINAL
 
-Antes de incluir cada informação, verifique:
+Antes de escrever cada trecho, confirme que:
 
-**"Consigo identificar essa informação diretamente na fonte?"**
+- a informação está **diretamente na fonte**;
+- toda relação entre informações e toda atribuição (ação, característica, objetivo, consequência) é **explícita na fonte**;
+- cada seção ou tópico trata de um assunto **realmente abordado**;
+- toda correção de transcrição tem **evidência no próprio contexto** (exceto a grafia de nomes de ferramentas, descrita acima).
 
-Se não, não inclua.
-
-Antes de combinar duas informações, verifique:
-
-**"A fonte estabelece explicitamente essa relação?"**
-
-Se não, mantenha-as separadas.
-
-Antes de atribuir uma ação, característica, objetivo ou consequência, verifique:
-
-**"A fonte atribui isso explicitamente a essa entidade?"**
-
-Se não, não faça essa associação.
-
-Antes de criar uma seção ou tópico, verifique:
-
-**"Esse assunto foi realmente abordado na fonte?"**
-
-Se não, não crie.
-
-Antes de corrigir uma transcrição, verifique:
-
-**"O próprio contexto fornece evidência suficiente para essa correção?"**
-
-Se não, não corrija.
+Se qualquer item falhar, não inclua, não combine e não corrija.
 
 # PRIORIDADES
 
