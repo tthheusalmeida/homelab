@@ -27,6 +27,7 @@ import {
   type DocumentType,
   type SortOption,
 } from "./types/library.types";
+import { PageHeader } from "#components/PageHeader";
 
 const ALL = "all";
 
@@ -114,14 +115,11 @@ export function LibraryPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Páginas</h1>
-
-        <p className="text-sm text-muted-foreground">
-          Seus conhecimentos organizados por tema. Pesquise por título, tags,
-          categorias ou pelo texto das páginas.
-        </p>
-      </div>
+      <PageHeader
+        title="Páginas"
+        command="library --pages"
+        description="Seus conhecimentos organizados por tema. Pesquise por título, tags, categorias ou pelo texto das páginas."
+      />
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">

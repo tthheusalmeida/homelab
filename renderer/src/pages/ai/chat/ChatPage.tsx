@@ -27,6 +27,7 @@ import { ChatMessageList } from "./components/ChatMessageList";
 import { ChatComposer } from "./components/ChatComposer";
 import { ChatSettings } from "./components/ChatSettings";
 import { ContextWarningDialog } from "./components/ContextWarningDialog";
+import { useSnackbar } from "#components/Snackbar";
 
 /** Parâmetro da URL com o chat aberto; sem ele, é um chat novo (que só é salvo ao enviar). */
 const CHAT_PARAM = "c";
@@ -63,6 +64,7 @@ export function ChatPage() {
   const chatsQuery = useChats();
   const chatQuery = useChat(urlChatId);
   const deleteChat = useDeleteChat();
+  const snackbar = useSnackbar();
   const chat = chatQuery.data;
 
   const providersQuery = useAiProviders();
@@ -224,11 +226,13 @@ export function ChatPage() {
     deleteChat.mutate(id, {
       onSuccess: () => {
         setChatToDelete(null);
+        snackbar.success("Conversa excluída");
 
         if (id === urlChatId) {
           startNewChat();
         }
       },
+      onError: (error) => snackbar.error(error.message),
     });
   }
 

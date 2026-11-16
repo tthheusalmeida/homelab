@@ -3,6 +3,8 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 
+import { SnackbarProvider } from "#components/Snackbar";
+
 const create = { mutate: vi.fn(), isPending: false, isError: false };
 const categories = { data: [] as unknown[] };
 
@@ -15,13 +17,15 @@ import { NewArticlePage } from "./NewArticlePage";
 
 const renderPage = () =>
   render(
-    <MemoryRouter initialEntries={["/library/new"]}>
-      <Routes>
-        <Route path="/library/new" element={<NewArticlePage />} />
-        <Route path="/library" element={<p>lista de páginas</p>} />
-        <Route path="/library/:id" element={<p>aberto</p>} />
-      </Routes>
-    </MemoryRouter>,
+    <SnackbarProvider>
+      <MemoryRouter initialEntries={["/library/new"]}>
+        <Routes>
+          <Route path="/library/new" element={<NewArticlePage />} />
+          <Route path="/library" element={<p>lista de páginas</p>} />
+          <Route path="/library/:id" element={<p>aberto</p>} />
+        </Routes>
+      </MemoryRouter>
+    </SnackbarProvider>,
   );
 
 async function fill(user: ReturnType<typeof userEvent.setup>) {
@@ -113,6 +117,22 @@ describe("NewArticlePage", () => {
     await user.click(save());
 
     expect(screen.getByText("aberto")).toBeInTheDocument();
+  });
+
+  it("when the page is created, should announce it at the bottom center", async () => {
+    create.mutate.mockImplementation(
+      (_input: unknown, options: { onSuccess: (r: unknown) => void }) =>
+        options.onSuccess({ meta: { id: "novo-id", title: "Ligações Peptídicas" } }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await fill(user);
+
+    await user.click(save());
+
+    const notice = screen.getByRole("status");
+    expect(notice).toHaveTextContent("Página criada: Ligações Peptídicas");
+    expect(notice.closest("[data-region]")).toHaveAttribute("data-region", "center");
   });
 
   it("when saving fails, should show an error message", () => {

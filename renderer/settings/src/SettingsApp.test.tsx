@@ -108,7 +108,7 @@ describe('SettingsApp', () => {
 
     await changeLibrary(user, 'D:/outra');
 
-    expect(await screen.findByRole('status')).toHaveClass('bottom-20');
+    expect((await screen.findByRole('status')).closest('[data-region]')).toHaveClass('bottom-20');
   });
 
   it('when a save does not require restart, should not show the notice', async () => {

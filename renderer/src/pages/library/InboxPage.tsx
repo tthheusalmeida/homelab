@@ -21,6 +21,8 @@ import {
   useReindex,
 } from "./hooks/useLibrary";
 import type { DocumentSummary } from "./types/library.types";
+import { useSnackbar } from "#components/Snackbar";
+import { PageHeader } from "#components/PageHeader";
 
 type View = "pending" | "archived";
 
@@ -39,6 +41,7 @@ export function InboxPage() {
 
   const discard = useDiscardDocument();
   const reindex = useReindex();
+  const snackbar = useSnackbar();
 
   const current = view === "pending" ? pending : archived;
 
@@ -48,7 +51,10 @@ export function InboxPage() {
     }
 
     discard.mutate(discardTarget.id, {
-      onSuccess: () => setDiscardTarget(null),
+      onSuccess: () => {
+        setDiscardTarget(null);
+        snackbar.success("Página descartada");
+      },
     });
   }
 
@@ -56,28 +62,29 @@ export function InboxPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Caixa de entrada</h1>
-
-          <p className="text-sm text-muted-foreground">
-            Resumos e transcrições gerados. Decida o que entra na biblioteca e o
-            que é descartado.
-          </p>
-        </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={reindex.isPending}
-          onClick={() => reindex.mutate()}
-        >
-          <RefreshCw
-            className={reindex.isPending ? "animate-spin" : undefined}
-          />
-          Reindexar
-        </Button>
-      </div>
+      <PageHeader
+        title="Caixa de entrada"
+        command="library --inbox"
+        description="Resumos e transcrições gerados. Decida o que entra na biblioteca e o que é descartado."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={reindex.isPending}
+            onClick={() =>
+              reindex.mutate(undefined, {
+                onSuccess: () => snackbar.success("Índice da biblioteca atualizado"),
+                onError: (error) => snackbar.error(error.message),
+              })
+            }
+          >
+            <RefreshCw
+              className={reindex.isPending ? "animate-spin" : undefined}
+            />
+            Reindexar
+          </Button>
+        }
+      />
 
       {errors.length > 0 && (
         <Card role="alert">

@@ -103,9 +103,9 @@ test.describe('app com configuração existente', () => {
       ['Páginas', 'Seus conhecimentos organizados por tema.'],
       ['Livros', /Livros/],
       ['Conversa', 'Como posso te ajudar hoje?'],
-      ['Consumo', 'Consumo de IA'],
+      ['Consumo', 'Monitora o consumo de AI'],
       ['Nova tarefa', 'Selecione o tipo de tarefa'],
-      ['Em andamento', 'Tarefas'],
+      ['Em andamento', 'Acompanhe o processamento dos jobs'],
     ];
 
     for (const [link, expected] of screens) {

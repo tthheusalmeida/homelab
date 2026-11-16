@@ -3,6 +3,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 
+import { SnackbarProvider } from "#components/Snackbar";
+
 const mutate = vi.fn();
 const jobTypes = {
   data: undefined as unknown,
@@ -44,12 +46,14 @@ import { CreatePage } from "./CreatePage";
 
 const renderPage = () =>
   render(
-    <MemoryRouter initialEntries={["/jobs/create"]}>
-      <Routes>
-        <Route path="/jobs/create" element={<CreatePage />} />
-        <Route path="/jobs/track" element={<p>tela acompanhar</p>} />
-      </Routes>
-    </MemoryRouter>,
+    <SnackbarProvider>
+      <MemoryRouter initialEntries={["/jobs/create"]}>
+        <Routes>
+          <Route path="/jobs/create" element={<CreatePage />} />
+          <Route path="/jobs/track" element={<p>tela acompanhar</p>} />
+        </Routes>
+      </MemoryRouter>
+    </SnackbarProvider>,
   );
 
 async function createTranscript(user: ReturnType<typeof userEvent.setup>) {
@@ -103,7 +107,7 @@ describe("CreatePage — creating a job", () => {
     expect(mutate).toHaveBeenCalledTimes(1);
   });
 
-  it("when the job is created, should tell it and link to the tracking screen", async () => {
+  it("when the job is created, should tell it at the bottom center and go to the tracking screen", async () => {
     const user = userEvent.setup();
     renderPage();
 
@@ -112,7 +116,8 @@ describe("CreatePage — creating a job", () => {
     const notice = await screen.findByRole("status");
 
     expect(notice).toHaveTextContent("Tarefa criada: Transcrição de vídeo");
-    await user.click(screen.getByRole("link", { name: "Acompanhar" }));
+    expect(notice.closest("[data-region]")).toHaveAttribute("data-region", "center");
+    await user.click(screen.getByRole("button", { name: "Acompanhar" }));
     expect(screen.getByText("tela acompanhar")).toBeInTheDocument();
   });
 
@@ -131,26 +136,15 @@ describe("CreatePage — creating a job", () => {
     expect(screen.getByRole("button", { name: /^Criar$/ })).toBeDisabled();
   });
 
-  it("when the window is opened again, should hide the old notice", async () => {
+  it("when the notice is closed, should remove it", async () => {
     const user = userEvent.setup();
     renderPage();
     await createTranscript(user);
     await screen.findByRole("status");
 
-    await user.click(screen.getAllByRole("button", { name: /Criar/ })[0]);
+    await user.click(screen.getByRole("button", { name: "Fechar" }));
 
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
-  });
-
-  it("when the notice is dismissed, should remove it", async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await createTranscript(user);
-    await screen.findByRole("status");
-
-    await user.click(screen.getByRole("button", { name: "Dispensar" }));
-
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
   });
 
   it("when the window is closed without creating, should not show the notice", async () => {

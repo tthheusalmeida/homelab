@@ -68,6 +68,7 @@ import {
 } from "./reader";
 import { bookStats } from "./stats";
 import type { BookSearchHit } from "./types";
+import { useSnackbar } from "#components/Snackbar";
 
 type Modal = "organize" | "edit" | "delete" | "details" | "reset" | null;
 
@@ -94,6 +95,7 @@ export function BookPage() {
   const remove = useDeleteBook();
   const setRead = useSetChapterRead();
   const resetProgress = useResetBookProgress();
+  const snackbar = useSnackbar();
   const { mutate: persistPosition } = useSaveBookPosition();
 
   const [modal, setModal] = useState<Modal>(null);
@@ -287,12 +289,18 @@ export function BookPage() {
             setCelebrate(true);
           }
         },
+        onError: (error) => snackbar.error(error.message),
       },
     );
   }
 
   function handleReset() {
-    resetProgress.mutate(book.id, { onSuccess: () => setModal(null) });
+    resetProgress.mutate(book.id, {
+      onSuccess: () => {
+        setModal(null);
+        snackbar.success("Progresso de leitura zerado");
+      },
+    });
   }
 
   function handleHit(hit: BookSearchHit) {
@@ -301,7 +309,10 @@ export function BookPage() {
 
   function handleDelete() {
     remove.mutate(book.id, {
-      onSuccess: () => navigate("/library/books"),
+      onSuccess: () => {
+        snackbar.success("Livro excluído");
+        navigate("/library/books");
+      },
     });
   }
 

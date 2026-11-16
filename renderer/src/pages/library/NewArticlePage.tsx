@@ -18,6 +18,8 @@ import { MarkdownEditor } from "#components/MarkdownEditor";
 import { countWords, formatReadingTime, minutesToRead } from "./books/stats";
 import { DocumentPreview } from "./components/DocumentPreview";
 import { useCategories, useCreateArticle } from "./hooks/useLibrary";
+import { useSnackbar } from "#components/Snackbar";
+import { PageHeader } from "#components/PageHeader";
 
 export function NewArticlePage() {
   const navigate = useNavigate();
@@ -29,6 +31,7 @@ export function NewArticlePage() {
 
   const categories = useCategories();
   const createArticle = useCreateArticle();
+  const snackbar = useSnackbar();
 
   const words = countWords(content);
 
@@ -46,20 +49,23 @@ export function NewArticlePage() {
 
     createArticle.mutate(
       { title: title.trim(), category, tags, content },
-      { onSuccess: ({ meta }) => navigate(`/library/${meta.id}`) },
+      {
+        onSuccess: ({ meta }) => {
+          snackbar.created(`Página criada: ${meta.title}`);
+          navigate(`/library/${meta.id}`);
+        },
+        onError: (error) => snackbar.error(error.message),
+      },
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Nova página</h1>
-
-        <p className="text-sm text-muted-foreground">
-          Escreva em Markdown (tabelas, links e imagens por URL funcionam) e
-          acompanhe a prévia ao lado enquanto digita.
-        </p>
-      </div>
+      <PageHeader
+        title="Nova página"
+        command="library --new"
+        description="Escreva em Markdown (tabelas, links e imagens por URL funcionam) e acompanhe a prévia ao lado enquanto digita."
+      />
 
       <section aria-label="Dados da página">
         <Card>

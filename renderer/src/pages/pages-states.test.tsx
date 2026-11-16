@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router";
 
 type QueryState = { data?: unknown; isLoading: boolean; isError: boolean };
 
@@ -41,6 +42,15 @@ import { SnackbarProvider } from "../components/Snackbar";
 import { createWrapper } from "../test/utils";
 
 const QueryWrapper = createWrapper();
+
+/** A tela de criação avisa pelo snackbar e navega para o acompanhamento. */
+function createWrapperWithRouter({ children }: { children: React.ReactNode }) {
+  return (
+    <MemoryRouter>
+      <SnackbarProvider>{children}</SnackbarProvider>
+    </MemoryRouter>
+  );
+}
 
 /** A tela de jobs exclui por mutação (TanStack Query) e avisa pelo snackbar. */
 function trackWrapper({ children }: { children: React.ReactNode }) {
@@ -91,14 +101,14 @@ describe("CreatePage", () => {
 
   it("when job types are loading, should show the loading state", () => {
     jobTypes.isLoading = true;
-    render(<CreatePage />);
+    render(<CreatePage />, { wrapper: createWrapperWithRouter });
 
     expect(screen.getByText("Carregando")).toBeInTheDocument();
   });
 
   it("when loading job types fails, should show the error message", () => {
     jobTypes.isError = true;
-    render(<CreatePage />);
+    render(<CreatePage />, { wrapper: createWrapperWithRouter });
 
     expect(
       screen.getByText(/falha ao carregar os tipos de jobs/),
@@ -107,7 +117,7 @@ describe("CreatePage", () => {
 
   it("when job types load, should list them", () => {
     jobTypes.data = [{ type: "video-to-summary", label: "Resumo", description: "d" }];
-    render(<CreatePage />);
+    render(<CreatePage />, { wrapper: createWrapperWithRouter });
 
     expect(screen.getByText("Resumo")).toBeInTheDocument();
   });
@@ -115,7 +125,7 @@ describe("CreatePage", () => {
   it("when a type is selected, should open the dialog with its form", async () => {
     jobTypes.data = [{ type: "video-to-summary", label: "Resumo", description: "d" }];
     const user = userEvent.setup();
-    render(<CreatePage />);
+    render(<CreatePage />, { wrapper: createWrapperWithRouter });
 
     await user.click(screen.getByRole("button", { name: /criar/i }));
 

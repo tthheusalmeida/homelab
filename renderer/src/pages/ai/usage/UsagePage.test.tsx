@@ -43,9 +43,9 @@ describe("UsagePage", () => {
     );
   });
 
-  it("when loaded, should title the page as Consumo de IA", () => {
+  it("when loaded, should title the page as Consumo", () => {
     render(<UsagePage />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Consumo de IA" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Consumo" })).toBeInTheDocument();
   });
 });

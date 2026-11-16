@@ -616,6 +616,21 @@
   animation: hl-exit-down var(--duration-exit) var(--ease-in-soft) both;
 }
 
+@keyframes hl-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Barra que se esgota (snackbar): a duração vem de `animation-duration` no elemento. */
+@utility animate-countdown {
+  animation: hl-countdown 3000ms linear both;
+  transform-origin: left;
+}
+
 @utility animate-collapse-down {
   animation: hl-collapse-down var(--duration-enter) var(--ease-out-soft) both;
   overflow: hidden;

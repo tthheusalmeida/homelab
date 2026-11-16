@@ -15,6 +15,7 @@ import { BookCover } from "./components/BookCover";
 import { BookFormDialog } from "./components/BookFormDialog";
 import { BookProgress } from "./components/BookProgress";
 import { useBooks } from "./hooks";
+import { PageHeader } from "#components/PageHeader";
 
 /** Estante: os livros (coleções ordenadas de documentos). */
 export function BooksPage() {
@@ -47,20 +48,17 @@ export function BooksPage() {
 
   return (
     <div className="animate-enter-fade space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Livros</h1>
-
-          <p className="text-sm text-muted-foreground">
-            Reúna páginas em ordem para ler como um livro e pesquisar dentro
-            dele.
-          </p>
-        </div>
-
-        <Button onClick={() => setCreating(true)}>
-          <Plus /> Novo livro
-        </Button>
-      </div>
+      <PageHeader
+        title="Livros"
+        command="library --books"
+        description="Reúna páginas em ordem para ler como um livro e pesquisar dentro dele."
+        status={`${books.data.length} ${books.data.length === 1 ? "livro" : "livros"}`}
+        actions={
+          <Button onClick={() => setCreating(true)}>
+            <Plus /> Novo livro
+          </Button>
+        }
+      />
 
       {books.data.length === 0 ? (
         <EmptyState

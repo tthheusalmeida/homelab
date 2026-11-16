@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
 
 import {
   Dialog,
@@ -9,10 +9,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from "#ui/dialog";
-import { Button, buttonVariants } from "#ui/button";
 import { Card, CardContent } from "#ui/card";
 
 import { ErrorState } from "#components/ErrorState";
+import { PageHeader } from "#components/PageHeader";
+import { useSnackbar } from "#components/Snackbar";
 import { LoadingState } from "#components/LoadingState";
 
 import { JobTypeList } from "./components/JobTypeList";
@@ -23,8 +24,8 @@ import { type JobType } from "../types/job.types";
 
 export function CreatePage() {
   const [selectedJobType, setSelectedJobType] = useState<JobType | null>(null);
-  // Tipo do último job criado (avisa na tela depois que a janela fecha).
-  const [createdLabel, setCreatedLabel] = useState<string | null>(null);
+  const snackbar = useSnackbar();
+  const navigate = useNavigate();
 
   const { data, isLoading, isError } = useJobTypes();
 
@@ -52,49 +53,16 @@ export function CreatePage() {
   return (
     <>
       <div className="animate-enter-fade space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Nova tarefa</h1>
-
-          <p className="text-sm text-muted-foreground">
-            Selecione o tipo de tarefa que deseja executar.
-          </p>
-        </div>
-
-        {createdLabel && (
-          <div
-            role="status"
-            className="flex animate-enter flex-wrap items-center justify-between gap-2 rounded-lg border bg-card px-4 py-3 text-sm"
-          >
-            <span>
-              Tarefa criada: <strong>{createdLabel}</strong>. Acompanhe o andamento
-              na tela Em andamento.
-            </span>
-
-            <div className="flex gap-2">
-              <Link
-                to="/jobs/track"
-                className={buttonVariants({ size: "sm", variant: "secondary" })}
-              >
-                Acompanhar
-              </Link>
-
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setCreatedLabel(null)}
-              >
-                Dispensar
-              </Button>
-            </div>
-          </div>
-        )}
+        <PageHeader
+          title="Nova tarefa"
+          command="jobs --new"
+          description="Selecione o tipo de tarefa que deseja executar."
+          status={`${data.length} ${data.length === 1 ? "tipo disponível" : "tipos disponíveis"}`}
+        />
 
         <JobTypeList
           jobTypes={data}
-          onSelect={(jobType) => {
-            setCreatedLabel(null);
-            setSelectedJobType(jobType);
-          }}
+          onSelect={setSelectedJobType}
         />
       </div>
 
@@ -123,7 +91,10 @@ export function CreatePage() {
               onCreated={() => {
                 // Fecha a janela: ao desmontar, o formulário é descartado e a
                 // próxima abertura começa limpa (sem risco de criar o job duas vezes).
-                setCreatedLabel(selectedJobType.label);
+                snackbar.created(`Tarefa criada: ${selectedJobType.label}`, {
+                  label: "Acompanhar",
+                  onClick: () => void navigate("/jobs/track"),
+                });
                 setSelectedJobType(null);
               }}
             />

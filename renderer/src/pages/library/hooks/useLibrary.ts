@@ -28,10 +28,14 @@ import type {
 
 const LIBRARY_KEY = ["library"] as const;
 
-export function useDocuments(filters: LibraryFilters = {}) {
+export function useDocuments(
+  filters: LibraryFilters = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: [...LIBRARY_KEY, "documents", filters],
     queryFn: () => getDocuments(filters),
+    enabled: options.enabled ?? true,
     // Mantém a lista anterior na tela enquanto a nova pesquisa carrega.
     placeholderData: keepPreviousData,
   });

@@ -3,6 +3,8 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 
+import { SnackbarProvider } from "#components/Snackbar";
+
 type QueryState = {
   data?: unknown[];
   isLoading: boolean;
@@ -234,6 +236,33 @@ describe("InboxPage", () => {
     renderPage();
 
     expect(screen.getByText(/Não foi possível descartar/)).toBeInTheDocument();
+  });
+
+  it("when the reindex finishes, should confirm with a snackbar; when it fails, should show the error", async () => {
+    const user = userEvent.setup();
+    reindex.mutate.mockImplementationOnce(
+      (_v: unknown, options: { onSuccess: () => void }) => options.onSuccess(),
+    );
+    render(
+      <SnackbarProvider>
+        <MemoryRouter>
+          <InboxPage />
+        </MemoryRouter>
+      </SnackbarProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Reindexar/ }));
+
+    expect(screen.getByRole("status")).toHaveTextContent("Índice da biblioteca atualizado");
+
+    reindex.mutate.mockImplementationOnce(
+      (_v: unknown, options: { onError: (e: Error) => void }) =>
+        options.onError(new Error("disco cheio")),
+    );
+
+    await user.click(screen.getByRole("button", { name: /Reindexar/ }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("disco cheio");
   });
 
   it("when Reindexar is clicked, should rebuild the index", async () => {

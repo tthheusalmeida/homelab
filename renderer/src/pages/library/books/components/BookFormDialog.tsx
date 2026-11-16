@@ -32,6 +32,7 @@ import {
   type BookSummary,
 } from "../types";
 import { BookCover } from "./BookCover";
+import { useSnackbar } from "#components/Snackbar";
 
 interface BookFormDialogProps {
   open: boolean;
@@ -92,6 +93,7 @@ function BookForm({
 
   const create = useCreateBook();
   const update = useUpdateBook();
+  const snackbar = useSnackbar();
 
   const mutation = book ? update : create;
   const imageValid = isValidCoverImageUrl(imageUrl);
@@ -110,6 +112,12 @@ function BookForm({
     };
     const options = {
       onSuccess: (saved: BookDetail) => {
+        if (book) {
+          snackbar.success("Livro atualizado");
+        } else {
+          snackbar.created(`Livro criado: ${saved.title}`);
+        }
+
         onSaved?.(saved);
         onClose();
       },

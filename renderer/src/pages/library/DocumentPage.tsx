@@ -26,6 +26,7 @@ import { DocumentSidebar } from "./components/DocumentSidebar";
 import { EditDocumentDialog } from "./components/EditDocumentDialog";
 import { AddToBookDialog } from "./books/components/AddToBookDialog";
 import { useArchiveDocument, useDocument } from "./hooks/useLibrary";
+import { useSnackbar } from "#components/Snackbar";
 
 type Modal = "about" | "edit" | "remove" | "book" | null;
 
@@ -40,6 +41,7 @@ export function DocumentPage() {
 
   const { data, isLoading, isError } = useDocument(id);
   const archive = useArchiveDocument();
+  const snackbar = useSnackbar();
 
   const headings = useMemo(
     () => extractHeadings(data?.content ?? ""),
@@ -78,8 +80,11 @@ export function DocumentPage() {
 
   function handleArchive() {
     archive.mutate(meta.id, {
-      onSuccess: () =>
-        navigate("/library", { state: { category: meta.category } }),
+      onSuccess: () => {
+        snackbar.success("Página arquivada");
+        navigate("/library", { state: { category: meta.category } });
+      },
+      onError: (error) => snackbar.error(error.message),
     });
   }
 

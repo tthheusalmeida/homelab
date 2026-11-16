@@ -11,6 +11,7 @@ import { useCategories, useUpdateDocument } from "../hooks/useLibrary";
 import type { DocumentDetail } from "../types/library.types";
 
 import { DocumentPreview } from "./DocumentPreview";
+import { useSnackbar } from "#components/Snackbar";
 
 interface EditDocumentFormProps {
   document: DocumentDetail;
@@ -32,6 +33,7 @@ export function EditDocumentForm({ document, onClose }: EditDocumentFormProps) {
 
   const categories = useCategories();
   const update = useUpdateDocument();
+  const snackbar = useSnackbar();
 
   const hasChanges =
     title.trim() !== meta.title ||
@@ -54,7 +56,12 @@ export function EditDocumentForm({ document, onClose }: EditDocumentFormProps) {
         id: meta.id,
         input: { title: title.trim(), category, tags, content },
       },
-      { onSuccess: onClose },
+      {
+        onSuccess: () => {
+          snackbar.success("Página salva");
+          onClose();
+        },
+      },
     );
   }
 

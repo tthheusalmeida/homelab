@@ -18,6 +18,7 @@ import { useCategories, usePublishDocument } from "../hooks/useLibrary";
 import { DocumentPreview } from "./DocumentPreview";
 import { SuggestionPanel } from "./SuggestionPanel";
 import type { DocumentSummary } from "../types/library.types";
+import { useSnackbar } from "#components/Snackbar";
 
 interface PublishDialogProps {
   /** Documento a adicionar; `null` mantém o diálogo fechado. */
@@ -53,6 +54,7 @@ function PublishForm({ document, onDone }: PublishFormProps) {
 
   const categories = useCategories();
   const publish = usePublishDocument();
+  const snackbar = useSnackbar();
 
   const isReadd = document.status === "archived";
   const canSubmit =
@@ -63,7 +65,12 @@ function PublishForm({ document, onDone }: PublishFormProps) {
 
     publish.mutate(
       { id: document.id, input: { title: title.trim(), category, tags } },
-      { onSuccess: onDone },
+      {
+        onSuccess: () => {
+          snackbar.success(isReadd ? "Página readicionada à biblioteca" : "Página adicionada à biblioteca");
+          onDone();
+        },
+      },
     );
   }
 

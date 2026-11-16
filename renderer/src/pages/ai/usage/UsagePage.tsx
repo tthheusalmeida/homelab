@@ -15,6 +15,7 @@ import { LoadingState } from "../../../components/LoadingState";
 import { ErrorState } from "../../../components/ErrorState";
 import { ExternalLink } from "#components/ExternalLink";
 import { PROVIDER_CONSOLES } from "#lib/provider-consoles";
+import { PageHeader } from "#components/PageHeader";
 
 export function UsagePage() {
   const [provider, setProvider] = useState<AIProviderName>();
@@ -46,42 +47,38 @@ export function UsagePage() {
 
   return (
     <div className="animate-enter-fade space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Consumo de IA</h1>
+      <PageHeader
+        title="Consumo"
+        command="ai --usage"
+        description="Monitora o consumo de AI, custo e performance."
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant={!provider ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setProvider(undefined)}
+            >
+              Todos
+            </Button>
 
-          <p className="text-sm text-muted-foreground">
-            Monitora o consumo de AI, custo e performance.
-          </p>
-        </div>
+            <Button
+              variant={provider === "ollama" ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setProvider("ollama")}
+            >
+              Ollama
+            </Button>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant={!provider ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => setProvider(undefined)}
-          >
-            Todos
-          </Button>
-
-          <Button
-            variant={provider === "ollama" ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => setProvider("ollama")}
-          >
-            Ollama
-          </Button>
-
-          <Button
-            variant={provider === "gemini" ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => setProvider("gemini")}
-          >
-            Gemini
-          </Button>
-        </div>
-      </div>
+            <Button
+              variant={provider === "gemini" ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setProvider("gemini")}
+            >
+              Gemini
+            </Button>
+          </div>
+        }
+      />
 
       {/* De onde vêm os números e onde ver o gasto real da conta */}
       <Card className="animate-enter">
