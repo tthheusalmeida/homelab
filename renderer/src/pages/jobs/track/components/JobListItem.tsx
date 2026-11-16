@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader } from "#ui/card";
 import { isActiveJob } from "../active";
 import { TrackStrings } from "../strings";
 
-import { JobFlow } from "./JobFlow";
+import { JobPipeline } from "./JobPipeline";
 import { JobLiveProgress } from "./JobLiveProgress";
 import { JobStatusBadge } from "./JobStatusBadge";
 
@@ -139,8 +139,8 @@ export function JobListItem({
         </CardHeader>
 
         <CollapsibleContent>
-          <CardContent className="space-y-4">
-            <JobFlow status={job.status} steps={job.steps} />
+          <CardContent>
+            <JobPipeline job={job} />
           </CardContent>
         </CollapsibleContent>
       </Card>

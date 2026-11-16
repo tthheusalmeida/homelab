@@ -44,4 +44,16 @@ export const TrackStrings = {
   step: (current: number, total: number, label: string) =>
     `etapa ${current}/${total} · ${label}`,
   queued: "na fila",
+  pipeline: "pipeline",
+  pipelineCount: (done: number, total: number) =>
+    `${done}/${total} ${total === 1 ? "etapa" : "etapas"}`,
+  stepProgress: (label: string) => `Em andamento: ${label}`,
+  phases: { queue: "Na fila", process: "Processando", done: "Concluído" },
+  stepStates: {
+    pending: "aguardando",
+    running: "em andamento",
+    completed: "concluído",
+    failed: "falhou",
+  } as Record<string, string>,
+  facts: { started: "Início", finished: "Fim", duration: "Duração" },
 } as const;

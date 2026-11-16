@@ -18,7 +18,7 @@ const css = fs.readFileSync(path.join(__dirname, "global.css"), "utf8");
 import { createTestQueryClient } from "./test/utils";
 import { AppLayout } from "./app/layouts/AppLayout";
 import { JobStatusBadge } from "./pages/jobs/track/components/JobStatusBadge";
-import { JobStep } from "./pages/jobs/track/components/JobStep";
+import { JobPipeline } from "./pages/jobs/track/components/JobPipeline";
 import { ServiceCard } from "./pages/home/components/ServiceCard";
 import { services } from "./pages/home/types/services.types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "#ui/collapsible";
@@ -146,18 +146,23 @@ describe("small state changes", () => {
     expect(screen.getByText("química").closest("li")).toHaveClass("animate-enter-scale");
   });
 
-  it("when a job step is completed, should swap its icon with a pop and ease the colors", () => {
-    const { container } = render(<JobStep label="Baixar" state="completed" />);
+  it("when a pipeline step is completed, should pop its check and ease the marker colors", () => {
+    const { container } = render(
+      <JobPipeline
+        job={{
+          id: "j",
+          name: "x",
+          label: "x",
+          status: "running",
+          createdAt: "",
+          completedAt: "",
+          steps: [{ name: "a", label: "Baixar", status: "completed" }],
+        }}
+      />,
+    );
 
     expect(container.querySelector("svg")).toHaveClass("animate-enter-scale");
-    expect(container.firstElementChild?.firstElementChild).toHaveClass("transition-colors");
-  });
-
-  it("when a job step is active, should keep spinning instead of popping", () => {
-    const { container } = render(<JobStep label="Baixar" state="active" />);
-
-    expect(container.querySelector("svg")).toHaveClass("animate-spin");
-    expect(container.querySelector("svg")).not.toHaveClass("animate-enter-scale");
+    expect(container.querySelector("[data-status=completed] [class*=transition-colors]")).not.toBeNull();
   });
 
   it("when a job is running, should keep the status icon spinning", () => {
