@@ -15,7 +15,7 @@ import { IpcError, IpcErrorCode } from '../shared/errors';
 import { IpcEvents } from '../shared/events';
 import type { JsonFile } from '../storage/json-file';
 
-import { COMPONENT_CATALOG, type ComponentSpec } from './component-manifest';
+import { catalogFor, platformTarget, type ComponentSpec } from './component-manifest';
 import { downloadVerified, type FetchLike } from './downloader';
 
 export const ComponentMessages = {
@@ -42,6 +42,8 @@ export interface ComponentsDeps {
   /** Onde os downloads do pacote CUDA ficam até serem extraídos. */
   downloadsDir: string;
   platform: NodeJS.Platform;
+  /** Arquitetura (`process.arch`); define quais componentes existem neste sistema. */
+  arch?: string;
   state: JsonFile<PersistedState>;
   events: EventPublisher;
   fetchFn: FetchLike;
@@ -70,7 +72,7 @@ export class ComponentsService {
   private profile: HardwareProfile | null = null;
 
   constructor(private readonly deps: ComponentsDeps) {
-    this.catalog = deps.catalog ?? COMPONENT_CATALOG;
+    this.catalog = deps.catalog ?? catalogFor(platformTarget(deps.platform, deps.arch ?? 'x64'));
   }
 
   /** Resolve quando a instalação em andamento termina (para testes e para o encerramento do app). */
@@ -250,6 +252,26 @@ export class ComponentsService {
       } finally {
         await fs.promises.rm(destination, { force: true });
       }
+    }
+
+    await this.makeExecutable(spec, destination);
+  }
+
+  /** Fora do Windows o programa baixado só roda com permissão de execução. */
+  private async makeExecutable(spec: ComponentSpec, destination: string): Promise<void> {
+    if (this.deps.platform === 'win32') {
+      return;
+    }
+
+    const files =
+      spec.kind === 'binary'
+        ? [destination]
+        : spec.kind === 'zip'
+          ? (spec.provides ?? [spec.file]).map((file) => path.join(this.deps.binDir, file))
+          : [];
+
+    for (const file of files) {
+      await fs.promises.chmod(file, 0o755).catch(() => undefined);
     }
   }
 

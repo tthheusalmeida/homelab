@@ -11,6 +11,8 @@ import {
 } from './platform-downloader';
 
 const YT_DLP = 'C:\\bin\\yt-dlp.exe';
+/** Caminho absoluto no sistema onde o teste roda (`C:\\...` não é absoluto no Linux). */
+const FFMPEG = path.resolve('/bin/ffmpeg');
 const URL_ = 'https://www.youtube.com/watch?v=abc';
 
 function failure(stderr: string) {
@@ -25,7 +27,7 @@ function build(
 
   const downloader = new PlatformDownloader({
     run,
-    ffmpegPath: 'C:\\bin\\ffmpeg.exe',
+    ffmpegPath: FFMPEG,
     tools: {
       ytDlpPath: () => (overrides.installed === false ? null : YT_DLP),
       cookiesFor,
@@ -108,7 +110,7 @@ describe('PlatformDownloader', () => {
     expect(run.mock.calls[0][0]).toBe(YT_DLP);
     expect(args).toEqual(expect.arrayContaining(['-f', 'bestaudio/best', '--no-playlist']));
     expect(args).toEqual(expect.arrayContaining(['-P', 'C:\\tmp', '-o', 'job1.%(ext)s']));
-    expect(args).toEqual(expect.arrayContaining(['--ffmpeg-location', 'C:\\bin\\ffmpeg.exe']));
+    expect(args).toEqual(expect.arrayContaining(['--ffmpeg-location', FFMPEG]));
     expect(args.at(-1)).toBe(URL_);
   });
 

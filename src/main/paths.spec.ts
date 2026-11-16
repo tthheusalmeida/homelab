@@ -16,8 +16,16 @@ describe('resolveFrontDist', () => {
 
 describe('resolveBinDir', () => {
   it('when called, should point to resources/bin/<platform>-<arch>', () => {
-    expect(resolveBinDir(path.join(root, 'resources'), 'win32', 'x64')).toBe(
+    expect(resolveBinDir(path.join(root, 'resources'), 'win32', 'x64', '/user')).toBe(
       path.join(root, 'resources', 'bin', 'win32-x64'),
+    );
+  });
+});
+
+describe('resolveBinDir outside Windows', () => {
+  it('when on Linux, should point to the user data folder, which is writable (the AppImage is not)', () => {
+    expect(resolveBinDir('/app/resources', 'linux', 'x64', '/home/u/.config/homelab')).toBe(
+      path.join('/home/u/.config/homelab', 'bin', 'linux-x64'),
     );
   });
 });
@@ -36,6 +44,8 @@ describe('resolveBinDir packaged', () => {
   it('when given the packaged resources path, should point to <resources>/bin/<platform>-<arch>', () => {
     const resources = path.resolve('/app/resources');
 
-    expect(resolveBinDir(resources, 'win32', 'x64')).toBe(path.join(resources, 'bin', 'win32-x64'));
+    expect(resolveBinDir(resources, 'win32', 'x64', '/user')).toBe(
+      path.join(resources, 'bin', 'win32-x64'),
+    );
   });
 });

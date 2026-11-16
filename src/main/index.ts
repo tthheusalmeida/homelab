@@ -264,7 +264,12 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
   const localStateGuard = new LocalStateGuard({ userDataDir: app.getPath('userData') });
   const events = new WindowEventPublisher(() => BrowserWindow.getAllWindows());
   const resourcesDir = resolveResourcesDir(projectRoot, app.isPackaged, process.resourcesPath);
-  const binDir = resolveBinDir(resourcesDir, process.platform, process.arch);
+  const binDir = resolveBinDir(
+    resourcesDir,
+    process.platform,
+    process.arch,
+    app.getPath('userData'),
+  );
   const ffmpegPath = resolveFfmpegPath({
     binDir,
     platform: process.platform,
@@ -363,7 +368,10 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
           return scan;
         },
         browser: () =>
-          detectDefaultBrowser(process.platform, async (args) => (await run('reg', args)).stdout),
+          detectDefaultBrowser(
+            process.platform,
+            async (file, args) => (await run(file, args, { timeout: 5000 })).stdout,
+          ),
       },
     ),
     whisper: services.whisper,
