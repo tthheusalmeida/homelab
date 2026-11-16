@@ -27,7 +27,7 @@ export const hardware = (overrides: Partial<HardwareProfile> = {}): HardwareProf
     accelerator: 'cuda',
     componentIds: ['cuda-pack', 'model-small'],
     modelId: 'model-small',
-    message: 'Encontramos uma placa NVIDIA. Marcamos a aceleração CUDA e o modelo small.',
+    message: 'Encontramos uma placa NVIDIA. Marcamos a aceleração por placa de vídeo e a transcrição rápida.',
   },
   ...overrides,
 });

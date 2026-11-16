@@ -15,13 +15,13 @@ import {
   useRemoveComponent,
   useSetActiveModel,
 } from '#hooks/use-components';
-import { ComponentStrings, overallPercent, pendingBytes } from '#lib/components-text';
+import { ComponentStrings, idsToInstall, overallPercent, pendingBytes } from '#lib/components-text';
 import { formatBytes } from '#lib/format';
 import type { ComponentInfo } from '#shared/contracts/components';
 
 /**
  * Configurações > Componentes: o que está instalado, o que está sendo baixado agora (com detalhe de
- * cada item) e o que dá para baixar depois (outros modelos, aceleração por placa NVIDIA). A mesma
+ * cada item) e o que dá para baixar depois (outros modelos, aceleração por placa de vídeo). A mesma
  * lista do assistente de instalação (`ComponentChecklist`).
  */
 export function ComponentsSection() {
@@ -72,9 +72,7 @@ export function ComponentsSection() {
   };
 
   const start = () => {
-    const ids = status.components
-      .filter((component) => chosen.has(component.id) && !component.required)
-      .map((component) => component.id);
+    const ids = idsToInstall(status.components, chosen).map((component) => component.id);
 
     install.mutate(ids, { onError: fail });
   };

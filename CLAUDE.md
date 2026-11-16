@@ -63,6 +63,7 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/r
 
 ## Convenções
 - Textos de interface e mensagens de erro em **português**; código e commits em inglês.
+- **Ferramentas internas são transparentes ao usuário:** nenhum texto da interface, mensagem de erro ou resultado de teste cita ffmpeg, Whisper, yt-dlp, CUDA ou nome de modelo; use "Transcrição", "Processamento de áudio", "Download de vídeos" e as opções de qualidade. Só serviços de terceiros configurados pelo usuário (Gemini, Ollama) aparecem pelo nome.
 - **Commits em Conventional Commits** (`feat:`, `fix:`, `docs:`, `build:`, `refactor:`, `test:`, `chore:`... em inglês) e versão em **SemVer**; ver a seção abaixo.
 - **Handlers IPC são classes** (`extends IpcHandler`), uma por domínio, com dependências injetadas (SOLID, clean code). Detalhes em `docs/arquitetura.md`.
 - **Nada repetido em string solta**: nomes de canal, códigos de erro e mensagens ficam em constantes (`shared/channels.ts`, `shared/errors.ts`). Handler e front importam as mesmas constantes.

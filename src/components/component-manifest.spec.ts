@@ -37,9 +37,11 @@ describe('COMPONENT_TEMPLATES', () => {
     },
   );
 
-  it('when naming the components, should use generic names without tool or system terms', () => {
+  it('when showing the components, should not expose tool or system names in labels or descriptions', () => {
     for (const template of COMPONENT_TEMPLATES) {
-      expect(template.label).not.toMatch(/ffmpeg|yt-dlp|whisper|cuda|nvidia|\.exe|win/i);
+      expect(`${template.label} ${template.description}`).not.toMatch(
+        /ffmpeg|yt-dlp|whisper|cuda|large-v3|turbo|\.exe|win32|linux/i,
+      );
     }
   });
 });
@@ -63,6 +65,12 @@ describe('catalogFor', () => {
   it('when asking for ffmpeg, should be bundled on Windows and downloaded on Linux', () => {
     expect(findComponent('ffmpeg', WINDOWS)?.kind).toBe('bundled');
     expect(findComponent('ffmpeg', LINUX)?.kind).toBe('binary');
+  });
+
+  it('when asking for the transcription, should be bundled on Windows and downloaded on Linux', () => {
+    expect(findComponent('whisper-runtime', WINDOWS)?.kind).toBe('bundled');
+    expect(findComponent('whisper-runtime', LINUX)?.kind).toBe('binary');
+    expect(findComponent('whisper-runtime', LINUX)?.download?.url).toContain('/components-v1/');
   });
 
   it('when looking up an unknown id, should return undefined', () => {

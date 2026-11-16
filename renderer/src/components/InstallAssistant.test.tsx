@@ -25,7 +25,7 @@ describe('InstallAssistant', () => {
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('Vamos preparar o HomeLab')).toBeInTheDocument();
-    expect(screen.getByText(/Marcamos a aceleração CUDA/)).toBeInTheDocument();
+    expect(screen.getByText(/Marcamos a aceleração por placa de vídeo/)).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByRole('checkbox', { name: 'Modelo small' })).toBeChecked(),
     );
@@ -42,7 +42,7 @@ describe('InstallAssistant', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('when the user installs, should send only the selected non-required ids', async () => {
+  it('when the user installs, should send the selected ids and skip the bundled ones', async () => {
     const invoke = mockApi(withStatus());
 
     renderWithQuery(<InstallAssistant />);
@@ -53,6 +53,36 @@ describe('InstallAssistant', () => {
     await waitFor(() =>
       expect(payloadsOf(invoke, IpcChannels.components.install)).toEqual([
         { ids: ['cuda-pack', 'model-small', 'model-base'] },
+      ]),
+    );
+  });
+
+  it('when a required component is missing (not bundled), should install it along with the selection', async () => {
+    const base = setupStatus();
+    const status = {
+      ...base,
+      components: [
+        component({
+          id: 'ffmpeg',
+          group: 'runtime',
+          label: 'Processamento de áudio',
+          required: true,
+          bundled: false,
+          sizeBytes: 79_826_272,
+          state: 'missing',
+        }),
+        ...base.components,
+      ],
+    };
+    const invoke = mockApi(withStatus(status));
+
+    renderWithQuery(<InstallAssistant />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Instalar' }));
+
+    await waitFor(() =>
+      expect(payloadsOf(invoke, IpcChannels.components.install)).toEqual([
+        { ids: ['ffmpeg', 'cuda-pack', 'model-small'] },
       ]),
     );
   });

@@ -89,23 +89,25 @@ describe('DesktopWhisperService', () => {
     await expect(service.transcribe(audio)).resolves.toBe('texto transcrito');
   });
 
-  it('when the executable is missing, should throw NOT_CONFIGURED and not run whisper', async () => {
+  it('when the executable is missing, should throw NOT_CONFIGURED asking to install it and not run the transcription', async () => {
     const { service, run } = setup({ existing: [model, audio] });
 
     const error = await service.transcribe(audio).catch((e: IpcError) => e);
 
     expect((error as IpcError).code).toBe('NOT_CONFIGURED');
-    expect((error as IpcError).message).toContain(exe);
+    expect((error as IpcError).message).toContain('Configurações > Componentes');
+    expect((error as IpcError).message).not.toContain(exe);
     expect(run).not.toHaveBeenCalled();
   });
 
-  it('when the model is missing, should throw a clear NOT_CONFIGURED naming it and not run whisper', async () => {
+  it('when the model is missing, should throw a clear NOT_CONFIGURED without exposing the file and not run the transcription', async () => {
     const { service, run } = setup({ existing: [exe, audio] });
 
     const error = await service.transcribe(audio).catch((e: IpcError) => e);
 
     expect((error as IpcError).code).toBe('NOT_CONFIGURED');
-    expect((error as IpcError).message).toContain(model);
+    expect((error as IpcError).message).toContain('Configurações > Componentes');
+    expect((error as IpcError).message).not.toContain(model);
     expect(run).not.toHaveBeenCalled();
   });
 

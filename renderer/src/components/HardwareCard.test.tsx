@@ -13,7 +13,7 @@ describe('HardwareCard', () => {
       screen.getByText(/NVIDIA GeForce RTX 3060 \(dedicada, 12 GB de vídeo\)/),
     ).toBeInTheDocument();
     expect(screen.getByText('32 GB de memória')).toBeInTheDocument();
-    expect(screen.getByText(/Marcamos a aceleração CUDA/)).toBeInTheDocument();
+    expect(screen.getByText(/Marcamos a aceleração por placa de vídeo/)).toBeInTheDocument();
   });
 
   it('when no GPU was identified, should say so', () => {

@@ -20,6 +20,17 @@ describe('SettingsBackConfig', () => {
 
   afterEach(() => removeDir(dir));
 
+  it('when the ffmpeg path is a function, should call it on every read', () => {
+    let path = '/a/ffmpeg';
+    const config = new SettingsBackConfig(store, appPaths, null, () => path);
+
+    expect(config.ffmpegPath()).toBe('/a/ffmpeg');
+
+    path = '/b/ffmpeg';
+
+    expect(config.ffmpegPath()).toBe('/b/ffmpeg');
+  });
+
   it('when created, should be a BackConfig so the back services can receive it', () => {
     expect(new SettingsBackConfig(store, appPaths, null)).toBeInstanceOf(BackConfig);
   });
@@ -38,7 +49,7 @@ describe('SettingsBackConfig', () => {
   it('when an ffmpeg path is given, should expose it to the back', () => {
     const config = new SettingsBackConfig(store, appPaths, null, 'C:/bin/ffmpeg.exe');
 
-    expect(config.ffmpegPath).toBe('C:/bin/ffmpeg.exe');
+    expect(config.ffmpegPath()).toBe('C:/bin/ffmpeg.exe');
   });
 
   it('when the settings change, should answer the new values on the next read', () => {

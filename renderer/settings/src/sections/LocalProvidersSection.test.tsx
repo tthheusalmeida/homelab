@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { IpcChannels } from '#shared/channels';
@@ -18,12 +18,12 @@ import { LocalProvidersSection } from './LocalProvidersSection';
 const providers = [
   {
     id: 'whisper',
-    label: 'Whisper',
+    label: 'Transcrição',
     editable: false,
     config: {},
   },
   { id: 'ollama', label: 'Ollama', editable: true, config: { url: 'http://localhost:11434' } },
-  { id: 'ffmpeg', label: 'ffmpeg', editable: false, config: {} },
+  { id: 'ffmpeg', label: 'Processamento de áudio', editable: false, config: {} },
 ];
 
 const list = { [IpcChannels.providers.local.list]: () => ok(providers) };
@@ -35,9 +35,9 @@ describe('LocalProvidersSection', () => {
     renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
 
     for (const [name, hint] of [
-      ['Whisper', 'Transcreve os áudios localmente.'],
+      ['Transcrição', 'Transcreve os áudios localmente.'],
       ['Ollama', 'Modelos de linguagem locais.'],
-      ['ffmpeg', 'Converte vídeo em áudio, usando o ffmpeg instalado no sistema.'],
+      ['Processamento de áudio', 'Converte vídeo em áudio antes de transcrever.'],
     ]) {
       const trigger = await screen.findByRole('button', { name: new RegExp(`^${name}`) });
 
@@ -45,6 +45,44 @@ describe('LocalProvidersSection', () => {
       expect(trigger).toHaveTextContent(hint);
     }
     expect(screen.queryByLabelText('Endereço (URL)')).not.toBeInTheDocument();
+  });
+
+  it('when loaded, should list transcription and audio first and keep Ollama in its own group after them', async () => {
+    mockApi(list);
+
+    renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
+
+    const tools = await screen.findByRole('region', { name: 'Transcrição e áudio' });
+    const ollama = screen.getByRole('region', { name: 'Ollama' });
+
+    expect(within(tools).getAllByRole('button').map((button) => button.textContent)).toEqual([
+      expect.stringContaining('Transcrição'),
+      expect.stringContaining('Processamento de áudio'),
+    ]);
+    expect(within(tools).queryByRole('button', { name: /^Ollama/ })).not.toBeInTheDocument();
+    expect(within(ollama).getByRole('button', { name: /^Ollama/ })).toBeInTheDocument();
+    expect(tools.compareDocumentPosition(ollama) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('when a test result appears, should keep the card footer where it was', async () => {
+    const user = userEvent.setup();
+    mockApi({
+      ...list,
+      [IpcChannels.providers.local.test]: () => ok({ ok: true, message: 'Transcrição pronta.' }),
+    });
+
+    renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
+    await openCard(user, 'Transcrição');
+
+    const slot = document.querySelector('.min-h-5');
+
+    expect(slot).toBeInTheDocument();
+    expect(slot).toBeEmptyDOMElement();
+
+    await user.click(screen.getByRole('button', { name: 'Testar' }));
+
+    expect(await screen.findByText('Transcrição pronta.')).toBeVisible();
+    expect(document.querySelectorAll('.min-h-5')).toHaveLength(1);
   });
 
   it('when a provider is opened, should show its config and leave the others collapsed', async () => {
@@ -59,7 +97,7 @@ describe('LocalProvidersSection', () => {
       'aria-expanded',
       'true',
     );
-    expect(screen.getByRole('button', { name: /^Whisper/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /^Transcrição/ })).toHaveAttribute(
       'aria-expanded',
       'false',
     );
@@ -100,19 +138,19 @@ describe('LocalProvidersSection', () => {
     mockApi(list);
 
     renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'ffmpeg');
+    await openCard(user, 'Processamento de áudio');
 
     expect((await screen.findAllByText('Somente teste')).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Testar' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument();
   });
 
-  it('when the whisper is opened, should show it as test-only with no fields and no folder button', async () => {
+  it('when the transcription is opened, should show it as test-only with no fields and no folder button', async () => {
     const user = userEvent.setup();
     mockApi(list);
 
     renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Whisper');
+    await openCard(user, 'Transcrição');
 
     expect(screen.getAllByText('Somente teste')).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Testar' })).toBeVisible();

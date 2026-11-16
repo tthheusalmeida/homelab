@@ -15,10 +15,10 @@ export const ComponentStrings = {
     model: 'Modelos de transcrição',
   } satisfies Record<ComponentGroup, string>,
   groupHints: {
-    runtime: 'Já vêm com o app e são necessários para ele funcionar.',
+    runtime: 'Necessários para o app funcionar. Se faltarem, o app os instala para você.',
     download:
       'Recomendado. Permite colar links do YouTube e de outras plataformas, não só do arquivo do vídeo.',
-    gpu: 'Opcional. Deixa a transcrição bem mais rápida em placas NVIDIA.',
+    gpu: 'Opcional. Deixa a transcrição bem mais rápida em placas de vídeo compatíveis.',
     model: 'Escolha o que baixar agora. Os outros podem ser baixados depois, nas Configurações.',
   } satisfies Record<ComponentGroup, string>,
   states: {
@@ -86,9 +86,27 @@ export function overallPercent(overall: ComponentsOverall): number {
   return progressPercent(overall.receivedBytes, overall.totalBytes);
 }
 
-/** Soma o que ainda falta baixar entre os componentes marcados. */
+/**
+ * O que a instalação deve baixar: o que o usuário marcou **mais** os obrigatórios que ainda faltam
+ * (num sistema onde o obrigatório não vem no instalador, como o Linux, ele também é baixado). O que
+ * já vem no app (`bundled`) e o que já está instalado ficam de fora.
+ */
+export function idsToInstall(
+  components: ComponentInfo[],
+  selected: ReadonlySet<string>,
+): ComponentInfo[] {
+  return components.filter(
+    (component) =>
+      !component.bundled &&
+      component.state !== 'installed' &&
+      (component.required || selected.has(component.id)),
+  );
+}
+
+/** Soma o que ainda falta baixar entre os componentes marcados e os obrigatórios que faltam. */
 export function pendingBytes(components: ComponentInfo[], selected: ReadonlySet<string>): number {
-  return components
-    .filter((component) => selected.has(component.id) && component.state !== 'installed')
-    .reduce((sum, component) => sum + component.sizeBytes, 0);
+  return idsToInstall(components, selected).reduce(
+    (sum, component) => sum + component.sizeBytes,
+    0,
+  );
 }

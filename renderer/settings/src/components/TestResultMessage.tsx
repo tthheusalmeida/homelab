@@ -16,3 +16,11 @@ export function TestResultMessage({ result }: { result: ProviderTestResult }) {
     </p>
   );
 }
+
+/**
+ * Espaço reservado para o resultado de um teste: ocupa a altura de uma linha mesmo vazio, então o
+ * resultado aparecer não empurra os botões do card para baixo.
+ */
+export function TestResultSlot({ result }: { result: ProviderTestResult | null }) {
+  return <div className="min-h-5">{result && <TestResultMessage result={result} />}</div>;
+}

@@ -53,13 +53,10 @@ describe('WhisperBinaryResolver: executável', () => {
     const error = thrown(() => resolver('win32', 'x64').resolveExecutable(location));
 
     expect(error.code).toBe('NOT_CONFIGURED');
-    expect(error.message).toBe(
-      WhisperMessages.executableMissing(path.join(dir, 'whisper-cli.exe')),
-    );
+    expect(error.message).toBe(WhisperMessages.executableMissing());
   });
 
   it.each([
-    ['linux', 'x64'],
     ['darwin', 'arm64'],
     ['win32', 'arm64'],
     ['win32', 'ia32'],
@@ -77,11 +74,17 @@ describe('WhisperBinaryResolver: executável', () => {
     expect(WhisperMessages.unsupported).not.toMatch(/whisper|win32|x64|linux/i);
   });
 
+  it('when the platform is linux-x64 and there is no binary, should answer NOT_CONFIGURED because the app can download it', () => {
+    const error = thrown(() => resolver('linux', 'x64').resolveExecutable(location));
+
+    expect(error.code).toBe('NOT_CONFIGURED');
+  });
+
   it('when an unsupported platform has the user own binary in the configured folder, should use it', () => {
     const own = { ...location, directory: path.resolve('/opt/whisper'), executable: 'whisper-cli' };
     const file = path.join(own.directory, own.executable);
 
-    expect(resolver('linux', 'x64', [file]).resolveExecutable(own)).toBe(file);
+    expect(resolver('darwin', 'arm64', [file]).resolveExecutable(own)).toBe(file);
   });
 });
 
@@ -102,13 +105,11 @@ describe('WhisperBinaryResolver: modelo', () => {
     const error = thrown(() => resolver('win32', 'x64').resolveModel(location));
 
     expect(error.code).toBe('NOT_CONFIGURED');
-    expect(error.message).toBe(
-      WhisperMessages.modelMissing(path.join(dir, 'ggml-large-v3-turbo.bin')),
-    );
+    expect(error.message).toBe(WhisperMessages.modelMissing());
   });
 
   it('when the platform is unsupported but the model is missing, should still answer NOT_CONFIGURED', () => {
-    const error = thrown(() => resolver('linux', 'x64').resolveModel(location));
+    const error = thrown(() => resolver('darwin', 'arm64').resolveModel(location));
 
     expect(error.code).toBe('NOT_CONFIGURED');
   });

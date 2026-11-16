@@ -270,11 +270,9 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     process.arch,
     app.getPath('userData'),
   );
-  const ffmpegPath = resolveFfmpegPath({
-    binDir,
-    platform: process.platform,
-    exists: fs.existsSync,
-  });
+  // Resolvido a cada uso: o ffmpeg baixado pelo assistente vale sem reiniciar o app.
+  const ffmpegPath = () =>
+    resolveFfmpegPath({ binDir, platform: process.platform, exists: fs.existsSync });
   const services = createServices({
     events,
     userDataDir: app.getPath('userData'),
@@ -288,7 +286,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     downloadFetch: (url, init) => fetch(url, init),
     runForOutput: async (file, args) => (await run(file, args, { timeout: 15000 })).stdout,
     totalMemoryMb: () => os.totalmem() / 1048576,
-    ffmpegVersion: async () => (await run(ffmpegPath, ['-version'], { timeout: 5000 })).stdout,
+    ffmpegVersion: async () => (await run(ffmpegPath(), ['-version'], { timeout: 5000 })).stdout,
     whisperIo: {
       run: (file, args) => run(file, args),
       readText: (file) => fs.promises.readFile(file, 'utf8'),

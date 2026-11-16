@@ -21,7 +21,12 @@ import {
   useComponentsStatus,
   useInstallComponents,
 } from '#hooks/use-components';
-import { ComponentStrings, overallPercent, pendingBytes } from '#lib/components-text';
+import {
+  ComponentStrings,
+  idsToInstall,
+  overallPercent,
+  pendingBytes,
+} from '#lib/components-text';
 import { formatBytes } from '#lib/format';
 
 /**
@@ -72,9 +77,7 @@ export function InstallAssistant() {
   };
 
   const start = () => {
-    const ids = status.components
-      .filter((component) => chosen.has(component.id) && !component.required)
-      .map((component) => component.id);
+    const ids = idsToInstall(status.components, chosen).map((component) => component.id);
 
     install.mutate(ids, {
       onError: (error) => snackbar.error(error.message || ComponentStrings.installFailed),

@@ -89,14 +89,14 @@ describe('createServices', () => {
     );
   });
 
-  it('when listing the providers, should expose gemini as external and whisper, ollama and ffmpeg as local', async () => {
+  it('when listing the providers, should expose gemini as external and the transcription and audio tools before ollama as local', async () => {
     const services = create();
 
     expect((await services.externalProviders.list()).map((p) => p.id)).toEqual(['gemini']);
     expect(services.localProviders.list().map((p) => p.id)).toEqual([
       'whisper',
-      'ollama',
       'ffmpeg',
+      'ollama',
     ]);
   });
 

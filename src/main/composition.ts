@@ -143,8 +143,8 @@ export function createServices(options: CompositionOptions) {
     localProviders: new LocalProvidersService(
       [
         createWhisperDefinition(options.exists, activeWhisperConfig),
-        createOllamaDefinition(options.fetchFn),
         createFfmpegDefinition(options.ffmpegVersion),
+        createOllamaDefinition(options.fetchFn),
       ],
       settings,
     ),

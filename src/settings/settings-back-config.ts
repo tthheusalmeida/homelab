@@ -16,10 +16,15 @@ export class SettingsBackConfig extends BackConfig {
     private readonly settings: SettingsStore,
     private readonly appPaths: AppPaths,
     readonly geminiApiKey: string | null,
-    readonly ffmpegPath?: string,
+    /** Caminho do ffmpeg, ou quem o resolve a cada uso (assim um ffmpeg recém-instalado vale sem reiniciar). */
+    private readonly ffmpeg?: string | (() => string),
     readonly platformTools?: PlatformTools,
   ) {
     super();
+  }
+
+  ffmpegPath(): string | undefined {
+    return typeof this.ffmpeg === 'function' ? this.ffmpeg() : this.ffmpeg;
   }
 
   get libraryDir(): string {
