@@ -65,6 +65,12 @@ describe('catalogFor', () => {
     expect(findComponent('ffmpeg', LINUX)?.kind).toBe('binary');
   });
 
+  it('when asking for the transcription, should be bundled on Windows and downloaded on Linux', () => {
+    expect(findComponent('whisper-runtime', WINDOWS)?.kind).toBe('bundled');
+    expect(findComponent('whisper-runtime', LINUX)?.kind).toBe('binary');
+    expect(findComponent('whisper-runtime', LINUX)?.download?.url).toContain('/components-v1/');
+  });
+
   it('when looking up an unknown id, should return undefined', () => {
     expect(findComponent('nao-existe', WINDOWS)).toBeUndefined();
   });

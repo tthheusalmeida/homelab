@@ -93,6 +93,15 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
     required: true,
     variants: {
       'win32-x64': { kind: 'bundled', sizeBytes: 0, file: 'whisper-cli' },
+      'linux-x64': {
+        kind: 'binary',
+        sizeBytes: 4_757_280,
+        file: 'whisper-cli',
+        download: {
+          url: `${RELEASES}/whisper-cli-linux-x64`,
+          sha256: 'c881c3b7aa897e7e4c219ae07e8651d3163bd72b191890c376f48bbcc6b9911b',
+        },
+      },
     },
   },
   {

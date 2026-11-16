@@ -17,7 +17,7 @@ O usuário vê **um item só, com nome genérico** em qualquer sistema: "Transcr
 Cada entrada (`ComponentTemplate`) tem `variants` por `<sistema>-<arch>` (a mesma chave de `resources/bin`) dizendo como obter aquele item ali (`kind`, tamanho, arquivo, `download`). `catalogFor(target)` devolve a lista já resolvida para o sistema, e é ela que o `ComponentsService` usa. Regras:
 - Entrada com `variants` só existe nos sistemas listados (o pacote CUDA não aparece no Linux, e a recomendação de hardware deixa de sugeri-lo: `accelerationAvailable`).
 - Entrada sem `variants` vale para todos (os modelos).
-- Hoje: `win32-x64` (ffmpeg e Whisper `bundled`, yt-dlp e CUDA baixados) e `linux-x64` (ffmpeg e yt-dlp baixados como programa único, direto do GitHub: build estático do `eugeneware/ffmpeg-static` e `yt-dlp_linux`).
+- Hoje: `win32-x64` (ffmpeg e Whisper `bundled`, yt-dlp e CUDA baixados) e `linux-x64` (Whisper, ffmpeg e yt-dlp baixados como programa único, direto do GitHub: build estático do `eugeneware/ffmpeg-static` e `yt-dlp_linux`).
 
 Origens: o Linux baixa o ffmpeg de `eugeneware/ffmpeg-static` (tag `b6.1.1`) e o yt-dlp do release oficial; os SHA-256 do yt-dlp vêm do `SHA2-256SUMS` do release. Modelos em `huggingface.co/ggerganov/whisper.cpp` (SHA-256 vindos da API do Hugging Face); pacote CUDA no Release `components-v1` do repositório (arquivo `whisper-cuda12-win32-x64.zip`, gerado a partir de `resources/bin/win32-x64`). O repositório precisa ser público para o download sem token.
 
@@ -47,5 +47,5 @@ Canais `components:status|install|cancel|remove|set-active-model`, evento `compo
 
 ## Pendente
 - Publicar o `.zip` do CUDA no Release `components-v1`; sem ele o item CUDA falha com 404.
-- **Transcrição no Linux:** não há `whisper-cli` oficial para Linux. O workflow `.github/workflows/whisper-linux.yml` (Actions > Run workflow) roda `scripts/build-whisper-linux.sh` (compila o `whisper.cpp` estático, em CPU), publica `whisper-cli-linux-x64` no Release `components-v1` e mostra tamanho e SHA-256 no resumo do job; com esses valores, acrescente a variante `linux-x64` em `WHISPER_RUNTIME_ID` como `kind: 'binary'`. Até lá a transcrição responde `UNSUPPORTED_PLATFORM` no Linux (a não ser que o `whisper-cli` já esteja em `userData/bin/linux-x64`). O pacote CUDA para Linux também fica para depois.
+- **Transcrição no Linux:** o `whisper-cli` (estático, CPU) é compilado pelo workflow `.github/workflows/whisper-linux.yml` (Actions > Run workflow, roda `scripts/build-whisper-linux.sh`) e publicado como `whisper-cli-linux-x64` no Release `components-v1`. Ao mudar a versão do `whisper.cpp`, rode o workflow de novo e atualize tamanho e SHA-256 da variante `linux-x64`. O pacote CUDA para Linux fica para depois.
 - macOS: sem variantes ainda.
