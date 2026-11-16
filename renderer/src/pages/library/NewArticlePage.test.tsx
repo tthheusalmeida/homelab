@@ -38,6 +38,17 @@ async function fill(user: ReturnType<typeof userEvent.setup>) {
 
 const save = () => screen.getByRole("button", { name: /Salvar página/ });
 
+describe("NewArticlePage action bar", () => {
+  it("when the page is scrolled to the end, should keep the action bar fixed without jumping", () => {
+    renderPage();
+
+    const bar = save().parentElement?.parentElement;
+
+    // sticky + margem negativa igual ao respiro da página: no fim do scroll a barra não sobe.
+    expect(bar).toHaveClass("sticky", "bottom-0", "-mb-4");
+  });
+});
+
 describe("NewArticlePage", () => {
   beforeEach(() => {
     create.mutate.mockReset();

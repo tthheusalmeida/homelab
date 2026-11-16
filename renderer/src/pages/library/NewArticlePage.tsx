@@ -136,7 +136,7 @@ export function NewArticlePage() {
         </p>
       )}
 
-      <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur">
+      <div className="sticky bottom-0 z-10 -mx-4 -mb-4 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur">
         <p className="text-sm text-muted-foreground">
           {missing.length > 0
             ? `Falta: ${missing.join(", ")}.`
