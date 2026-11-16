@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { IpcChannels } from '#shared/channels';
@@ -45,6 +45,44 @@ describe('LocalProvidersSection', () => {
       expect(trigger).toHaveTextContent(hint);
     }
     expect(screen.queryByLabelText('Endereço (URL)')).not.toBeInTheDocument();
+  });
+
+  it('when loaded, should list transcription and audio first and keep Ollama in its own group after them', async () => {
+    mockApi(list);
+
+    renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
+
+    const tools = await screen.findByRole('region', { name: 'Transcrição e áudio' });
+    const ollama = screen.getByRole('region', { name: 'Ollama' });
+
+    expect(within(tools).getAllByRole('button').map((button) => button.textContent)).toEqual([
+      expect.stringContaining('Transcrição'),
+      expect.stringContaining('Processamento de áudio'),
+    ]);
+    expect(within(tools).queryByRole('button', { name: /^Ollama/ })).not.toBeInTheDocument();
+    expect(within(ollama).getByRole('button', { name: /^Ollama/ })).toBeInTheDocument();
+    expect(tools.compareDocumentPosition(ollama) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('when a test result appears, should keep the card footer where it was', async () => {
+    const user = userEvent.setup();
+    mockApi({
+      ...list,
+      [IpcChannels.providers.local.test]: () => ok({ ok: true, message: 'Transcrição pronta.' }),
+    });
+
+    renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
+    await openCard(user, 'Transcrição');
+
+    const slot = document.querySelector('.min-h-5');
+
+    expect(slot).toBeInTheDocument();
+    expect(slot).toBeEmptyDOMElement();
+
+    await user.click(screen.getByRole('button', { name: 'Testar' }));
+
+    expect(await screen.findByText('Transcrição pronta.')).toBeVisible();
+    expect(document.querySelectorAll('.min-h-5')).toHaveLength(1);
   });
 
   it('when a provider is opened, should show its config and leave the others collapsed', async () => {

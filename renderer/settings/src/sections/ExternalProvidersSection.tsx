@@ -13,7 +13,7 @@ import type { ExternalProviderInfo } from '#shared/contracts/providers';
 import { Field } from '../components/Field';
 import { ProviderCard } from '#components/ProviderCard';
 import { useSnackbar } from '#components/Snackbar';
-import { TestResultMessage } from '../components/TestResultMessage';
+import { TestResultSlot } from '../components/TestResultMessage';
 import { useExternalProviders, useSaveExternalProvider, useTestExternalProvider } from '../hooks';
 import { EXTERNAL_PROVIDER_GUIDES, EXTERNAL_PROVIDER_HINTS, Strings } from '../strings';
 
@@ -84,6 +84,7 @@ function ExternalProviderCard({
         <>
           <Button
             variant="outline"
+            className="min-w-24"
             disabled={!canTest || test.isPending}
             onClick={() => test.mutate({ id: provider.id, apiKey: typedKey || undefined })}
           >
@@ -146,8 +147,9 @@ function ExternalProviderCard({
         </p>
       )}
 
-      {test.data && <TestResultMessage result={test.data} />}
-      {test.isError && <TestResultMessage result={{ ok: false, message: test.error.message }} />}
+      <TestResultSlot
+        result={test.data ?? (test.isError ? { ok: false, message: test.error.message } : null)}
+      />
       {save.isError && (
         <p role="alert" className="text-sm text-destructive">
           {save.error.message}

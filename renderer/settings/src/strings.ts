@@ -13,8 +13,10 @@ export const Strings = {
   groups: {
     external: 'Serviços na nuvem',
     externalHint: 'Inteligências artificiais acessadas pela internet, com a sua chave.',
-    local: 'Programas no seu computador',
-    localHint: 'Rodam localmente; a transcrição e o processamento de áudio só podem ser testados.',
+    localTools: 'Transcrição e áudio',
+    localToolsHint: 'Instalados pelo app. Aqui só dá para testar se estão funcionando.',
+    localOllama: 'Ollama',
+    localOllamaHint: 'Modelos de linguagem no seu computador. O endereço pode ser alterado.',
   },
   appearance: {
     theme: 'Tema',

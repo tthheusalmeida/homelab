@@ -10,7 +10,7 @@ import type { LocalProviderInfo } from '#shared/contracts/providers';
 import { Field } from '../components/Field';
 import { ProviderCard } from '#components/ProviderCard';
 import { useSnackbar } from '#components/Snackbar';
-import { TestResultMessage } from '../components/TestResultMessage';
+import { TestResultSlot } from '../components/TestResultMessage';
 import { useLocalProviders, useSaveLocalProvider, useTestLocalProvider } from '../hooks';
 import {
   LOCAL_FIELD_LABELS,
@@ -40,9 +40,37 @@ export function LocalProvidersSection({ onSaved }: SectionProps) {
   }
 
   return (
-    <SettingsGroup title={Strings.groups.local} hint={Strings.groups.localHint}>
+    <div className="flex flex-col gap-6">
+      <LocalGroup
+        title={Strings.groups.localTools}
+        hint={Strings.groups.localToolsHint}
+        providers={providers.data.filter((provider) => !provider.editable)}
+        onSaved={onSaved}
+      />
+      <LocalGroup
+        title={Strings.groups.localOllama}
+        hint={Strings.groups.localOllamaHint}
+        providers={providers.data.filter((provider) => provider.editable)}
+        onSaved={onSaved}
+      />
+    </div>
+  );
+}
+
+function LocalGroup({
+  title,
+  hint,
+  providers,
+  onSaved,
+}: SectionProps & { title: string; hint: string; providers: LocalProviderInfo[] }) {
+  if (providers.length === 0) {
+    return null;
+  }
+
+  return (
+    <SettingsGroup title={title} hint={hint}>
       <div className="flex flex-col gap-2">
-        {providers.data.map((provider, index) => (
+        {providers.map((provider, index) => (
           <LocalProviderCard key={provider.id} provider={provider} index={index} onSaved={onSaved} />
         ))}
       </div>
@@ -79,6 +107,7 @@ function LocalProviderCard({
         <>
           <Button
             variant="outline"
+            className="min-w-24"
             disabled={test.isPending}
             onClick={() => test.mutate({ id: provider.id, config: dirty ? config : undefined })}
           >
@@ -116,8 +145,9 @@ function LocalProviderCard({
         />
       ))}
 
-      {test.data && <TestResultMessage result={test.data} />}
-      {test.isError && <TestResultMessage result={{ ok: false, message: test.error.message }} />}
+      <TestResultSlot
+        result={test.data ?? (test.isError ? { ok: false, message: test.error.message } : null)}
+      />
       {save.isError && (
         <p role="alert" className="text-sm text-destructive">
           {save.error.message}
