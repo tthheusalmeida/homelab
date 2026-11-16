@@ -12,7 +12,7 @@ Uma entrada por componente: `id`, `group` (`runtime`, `download`, `gpu`, `model`
 **Para acrescentar uma dependência, acrescente uma entrada no catálogo**: o assistente, a seção das Configurações e a lista da sidebar a mostram sozinhos.
 
 ### Um item, vários sistemas (`variants`)
-O usuário vê **um item só, com nome genérico** em qualquer sistema: "Transcrição" (Whisper), "Processamento de áudio" (ffmpeg), "Download de vídeos" (yt-dlp) e "Aceleração por placa de vídeo" (CUDA). O nome da ferramenta aparece só entre parênteses na descrição. O `id` interno não muda.
+O usuário vê **um item só, com nome genérico** em qualquer sistema: "Transcrição" (Whisper), "Processamento de áudio" (ffmpeg), "Download de vídeos" (yt-dlp) e "Aceleração por placa de vídeo" (CUDA); os modelos viram opções de qualidade ("Transcrição rápida", "Transcrição de alta qualidade"...). **Nenhuma ferramenta aparece na interface**: nem em rótulos, descrições, mensagens de erro ou resultado de teste (um teste do manifesto trava isso). O `id` interno e os nomes entre parênteses acima valem só para o código e esta documentação. **Só serviços de terceiros que o usuário configura** (Gemini, Ollama) aparecem pelo nome.
 
 Cada entrada (`ComponentTemplate`) tem `variants` por `<sistema>-<arch>` (a mesma chave de `resources/bin`) dizendo como obter aquele item ali (`kind`, tamanho, arquivo, `download`). `catalogFor(target)` devolve a lista já resolvida para o sistema, e é ela que o `ComponentsService` usa. Regras:
 - Entrada com `variants` só existe nos sistemas listados (o pacote CUDA não aparece no Linux, e a recomendação de hardware deixa de sugeri-lo: `accelerationAvailable`).
@@ -30,7 +30,7 @@ Origens: o Linux baixa o ffmpeg de `eugeneware/ffmpeg-static` (tag `b6.1.1`) e o
 
 ## Placa de vídeo (`hardware.ts`)
 `detectHardware` lê as placas e corrige a memória de placas NVIDIA com `nvidia-smi`: no Windows por PowerShell (`Win32_VideoController`); no Linux por `lspci -mm` (`parseLspci`) e, se o `lspci` faltar, só pelo `nvidia-smi`. No macOS não lê nada (perfil "desconhecido"). NVIDIA sem pacote de aceleração no sistema (Linux) cai na recomendação de processador, com mensagem própria. `recommendFor` (função pura) escolhe:
-- NVIDIA dedicada com 6 GB ou mais: CUDA + large-v3-turbo; 3 a 6 GB: CUDA + turbo compacto; menos: CUDA + small.
+- NVIDIA dedicada com 6 GB ou mais: aceleração + alta qualidade (`large-v3-turbo`); 3 a 6 GB: aceleração + alta qualidade compacta; menos: aceleração + rápida (`small`).
 - Sem NVIDIA: CPU, turbo compacto com 15 GB de RAM ou mais, senão small. Placa integrada é citada na mensagem.
 - Nada identificado: CPU + small, com mensagem de "não identificamos".
 - Em qualquer caso, `recommendFor` acrescenta o `yt-dlp` (vale para qualquer máquina e não depende da placa).

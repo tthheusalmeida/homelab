@@ -163,7 +163,7 @@ describe('VideoService', () => {
     it('when the link is a platform page and yt-dlp is missing, should ask to install it', async () => {
       await expect(
         platformService(false).download('https://youtu.be/abc', 'job-1.mp4', tmp),
-      ).rejects.toThrow('yt-dlp');
+      ).rejects.toThrow('Download de vídeos');
     });
 
     it('when the platform asks for login, should reject with AccessRequiredError', async () => {

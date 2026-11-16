@@ -5,10 +5,12 @@ import type { LocalProviderDefinition } from './local-providers.service';
 import { whisperModelPath } from './whisper-binary-resolver';
 
 export const LocalTestMessages = {
-  whisperOk: 'Whisper e modelo encontrados.',
-  whisperExecutableMissing: (file: string) => `Executável do Whisper não encontrado: ${file}`,
-  whisperModelMissing: (file: string) =>
-    `Modelo do Whisper não encontrado: ${file}. Instale um modelo em Configurações > Componentes.`,
+  whisperOk: 'Transcrição pronta para uso.',
+  whisperExecutableMissing:
+    'A transcrição não está instalada. Instale-a em Configurações > Componentes.',
+  whisperModelMissing:
+    'Nenhum modelo de transcrição instalado. Instale um em Configurações > Componentes.',
+  ffmpegOk: 'Processamento de áudio pronto para uso.',
   ollamaOk: 'Ollama respondeu.',
   ollamaStatus: (status: number) => `O Ollama respondeu com status ${status}.`,
   ollamaUnreachable: (url: string) => `Não foi possível conectar ao Ollama em ${url}.`,
@@ -28,7 +30,7 @@ export function createWhisperDefinition(
 ): LocalProviderDefinition {
   return {
     id: 'whisper',
-    label: 'Whisper',
+    label: 'Transcrição',
     editable: false,
     read: () => ({}),
     toPatch: () => ({}),
@@ -40,14 +42,14 @@ export function createWhisperDefinition(
       if (!exists(executable)) {
         return Promise.resolve({
           ok: false,
-          message: LocalTestMessages.whisperExecutableMissing(executable),
+          message: LocalTestMessages.whisperExecutableMissing,
         });
       }
 
       if (!exists(model)) {
         return Promise.resolve({
           ok: false,
-          message: LocalTestMessages.whisperModelMissing(model),
+          message: LocalTestMessages.whisperModelMissing,
         });
       }
 
@@ -87,15 +89,15 @@ export function createOllamaDefinition(
 export function createFfmpegDefinition(version: () => Promise<string>): LocalProviderDefinition {
   return {
     id: 'ffmpeg',
-    label: 'ffmpeg',
+    label: 'Processamento de áudio',
     editable: false,
     read: () => ({}),
     toPatch: () => ({}),
     test: async () => {
       try {
-        const firstLine = (await version()).split(/\r?\n/)[0]?.trim();
+        await version();
 
-        return { ok: true, message: firstLine || 'ffmpeg encontrado.' };
+        return { ok: true, message: LocalTestMessages.ffmpegOk };
       } catch {
         return { ok: false, message: LocalTestMessages.ffmpegUnavailable };
       }

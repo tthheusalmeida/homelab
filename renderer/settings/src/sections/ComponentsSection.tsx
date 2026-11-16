@@ -21,7 +21,7 @@ import type { ComponentInfo } from '#shared/contracts/components';
 
 /**
  * Configurações > Componentes: o que está instalado, o que está sendo baixado agora (com detalhe de
- * cada item) e o que dá para baixar depois (outros modelos, aceleração por placa NVIDIA). A mesma
+ * cada item) e o que dá para baixar depois (outros modelos, aceleração por placa de vídeo). A mesma
  * lista do assistente de instalação (`ComponentChecklist`).
  */
 export function ComponentsSection() {

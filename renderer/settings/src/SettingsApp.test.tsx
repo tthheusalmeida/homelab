@@ -32,7 +32,7 @@ const handlers = (restartRequired: boolean) => {
     [IpcChannels.providers.external.list]: () =>
       ok([{ id: 'gemini', label: 'Gemini', configured: false, maskedKey: null }]),
     [IpcChannels.providers.local.list]: () =>
-      ok([{ id: 'ffmpeg', label: 'ffmpeg', editable: false, config: {} }]),
+      ok([{ id: 'ffmpeg', label: 'Processamento de áudio', editable: false, config: {} }]),
     [IpcChannels.app.relaunch]: () => ok(undefined),
   };
 };

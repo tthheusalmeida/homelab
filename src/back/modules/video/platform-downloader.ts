@@ -6,7 +6,7 @@ import { AccessRequiredError } from './access-required.error';
 
 export const PlatformMessages = {
   notInstalled:
-    'O download de vídeos de plataformas precisa do componente yt-dlp. Abra Configurações > Componentes, instale-o e tente de novo.',
+    'O download de vídeos de plataformas precisa do componente "Download de vídeos". Abra Configurações > Componentes, instale-o e tente de novo.',
   failed: (reason: string) => `Não foi possível baixar o vídeo desta plataforma. ${reason}`.trim(),
   noFile: 'O download terminou, mas o arquivo do vídeo não foi encontrado.',
   noVideoInPage:

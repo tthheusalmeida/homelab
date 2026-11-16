@@ -4,6 +4,7 @@ import {
   createFfmpegDefinition,
   createOllamaDefinition,
   createWhisperDefinition,
+  LocalTestMessages,
 } from './local-definitions';
 
 const whisperConfig = {
@@ -19,7 +20,7 @@ describe('whisper definition', () => {
     await expect(definition.test({})).resolves.toMatchObject({ ok: true });
   });
 
-  it('when the executable is missing, should answer not ok naming the file', async () => {
+  it('when the executable is missing, should answer not ok asking to install it', async () => {
     const definition = createWhisperDefinition(
       (file) => !file.endsWith('whisper-cli.exe'),
       whisperConfig,
@@ -28,16 +29,16 @@ describe('whisper definition', () => {
     const result = await definition.test({});
 
     expect(result.ok).toBe(false);
-    expect(result.message).toContain(path.join(whisperConfig.directory, 'whisper-cli.exe'));
+    expect(result.message).toBe(LocalTestMessages.whisperExecutableMissing);
   });
 
-  it('when only the model is missing, should answer not ok naming the model', async () => {
+  it('when only the model is missing, should answer not ok asking to install a model', async () => {
     const definition = createWhisperDefinition((file) => !file.endsWith('m.bin'), whisperConfig);
 
     const result = await definition.test({});
 
     expect(result.ok).toBe(false);
-    expect(result.message).toContain('m.bin');
+    expect(result.message).toBe(LocalTestMessages.whisperModelMissing);
   });
 
   it('when the model is a full path outside the whisper folder, should test that path', async () => {
@@ -57,7 +58,7 @@ describe('whisper definition', () => {
     expect(checked).not.toContain(path.join(whisperConfig.directory, model));
   });
 
-  it('when the model is a full path that does not exist, should answer not ok naming it', async () => {
+  it('when the model is a full path that does not exist, should answer not ok asking to install a model', async () => {
     const model = path.resolve('/modelos/grande.bin');
     const definition = createWhisperDefinition((file) => file !== model, {
       ...whisperConfig,
@@ -67,7 +68,7 @@ describe('whisper definition', () => {
     const result = await definition.test({});
 
     expect(result.ok).toBe(false);
-    expect(result.message).toContain(model);
+    expect(result.message).toBe(LocalTestMessages.whisperModelMissing);
   });
 
   it('when reading its config, should expose nothing because the values are fixed', () => {
@@ -109,10 +110,13 @@ describe('ollama definition', () => {
 });
 
 describe('ffmpeg definition', () => {
-  it('when ffmpeg runs, should answer ok with the first line of its version', async () => {
+  it('when ffmpeg runs, should answer ok without exposing the tool or its version', async () => {
     const definition = createFfmpegDefinition(() => Promise.resolve('ffmpeg version 7.1\nresto'));
 
-    await expect(definition.test({})).resolves.toEqual({ ok: true, message: 'ffmpeg version 7.1' });
+    await expect(definition.test({})).resolves.toEqual({
+      ok: true,
+      message: LocalTestMessages.ffmpegOk,
+    });
   });
 
   it('when ffmpeg is not available, should answer not ok asking to install it', async () => {

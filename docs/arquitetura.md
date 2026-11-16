@@ -111,6 +111,7 @@ export class LibraryHandler extends IpcHandler {
 
 ## Plataformas
 - Binários nativos ficam em `<pasta>/bin/<platform>-<arch>/` (`resolveBinDir`): no Windows em `<resources>/bin` (vêm no instalador); no Linux e no macOS em `userData/bin` (o AppImage e o `.app` são somente leitura; o assistente baixa para lá). O `WhisperBinaryResolver` (`src/providers`) confere o executável configurado; sem ele, e se o catálogo não tem a transcrição para o sistema, devolve `UNSUPPORTED_PLATFORM` com mensagem genérica (ver `configuracoes.md`).
+- **Transparência:** texto que o usuário vê (rótulos, erros de job, teste dos serviços locais) nunca cita ffmpeg, Whisper, yt-dlp ou CUDA; use o nome da função ("Transcrição", "Processamento de áudio", "Download de vídeos").
 - O que muda de um sistema para outro mora em **um lugar só**: as `variants` do catálogo (`component-manifest.ts`). O resto do código não compara `process.platform` para decidir o que oferecer.
 - Jobs: `JobCatalog` (consulta, com o `Job` do back convertido para JSON como o HTTP fazia) e `JobLauncher` (valida as dicas, cria o job e o enfileira no `JobRunner` do back) ficam em `src/jobs` e o `BackServices` os monta com as instâncias do `JobsModule`; o `JobHandler` só delega.
 - Dados do usuário em `app.getPath('userData')`.

@@ -89,7 +89,7 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
     id: WHISPER_RUNTIME_ID,
     group: 'runtime',
     label: 'Transcrição',
-    description: 'Transforma o áudio das aulas em texto, direto no seu computador (usa o Whisper).',
+    description: 'Transforma o áudio das aulas em texto, direto no seu computador.',
     required: true,
     variants: {
       'win32-x64': { kind: 'bundled', sizeBytes: 0, file: 'whisper-cli' },
@@ -108,7 +108,7 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
     id: FFMPEG_ID,
     group: 'runtime',
     label: 'Processamento de áudio',
-    description: 'Extrai o áudio dos vídeos antes de transcrever (usa o ffmpeg).',
+    description: 'Extrai o áudio dos vídeos antes de transcrever.',
     required: true,
     variants: {
       'win32-x64': { kind: 'bundled', sizeBytes: 0, file: 'ffmpeg' },
@@ -128,7 +128,7 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
     group: 'download',
     label: 'Download de vídeos',
     description:
-      'Baixa vídeos do YouTube e de outras plataformas, só o áudio (usa o yt-dlp). Sem ele o app só baixa links diretos para o arquivo do vídeo.',
+      'Baixa vídeos do YouTube e de outras plataformas, só o áudio. Sem ele o app só baixa links diretos para o arquivo do vídeo.',
     required: false,
     variants: {
       'win32-x64': {
@@ -156,7 +156,7 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
     group: 'gpu',
     label: 'Aceleração por placa de vídeo',
     description:
-      'Faz a transcrição usar a placa de vídeo, bem mais rápido que o processador. Só funciona com placa NVIDIA.',
+      'Faz a transcrição usar a placa de vídeo, bem mais rápido que o processador. Só funciona com placas de vídeo compatíveis.',
     required: false,
     variants: {
       'win32-x64': {
@@ -181,31 +181,32 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
   },
   model({
     id: 'model-large-v3-turbo',
-    label: 'Modelo large-v3-turbo',
-    description: 'Muito preciso e rápido. Pede uma boa placa de vídeo (6 GB ou mais) ou paciência.',
+    label: 'Transcrição de alta qualidade',
+    description: 'Muito precisa e rápida. Pede uma boa placa de vídeo (6 GB ou mais) ou paciência.',
     file: 'ggml-large-v3-turbo.bin',
     sizeBytes: 1_624_555_275,
     sha256: '1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69',
   }),
   model({
     id: 'model-large-v3-turbo-q5',
-    label: 'Modelo large-v3-turbo (compacto)',
-    description: 'Quase a mesma qualidade do turbo, com um terço do tamanho. Bom para processador.',
+    label: 'Transcrição de alta qualidade (compacta)',
+    description:
+      'Quase a mesma qualidade da versão completa, com um terço do tamanho. Bom para processador.',
     file: 'ggml-large-v3-turbo-q5_0.bin',
     sizeBytes: 574_041_195,
     sha256: '394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2',
   }),
   model({
     id: 'model-large-v3',
-    label: 'Modelo large-v3',
-    description: 'O mais preciso, porém lento e pesado. Para placa de vídeo forte (10 GB ou mais).',
+    label: 'Transcrição de máxima qualidade',
+    description: 'A mais precisa, porém lenta e pesada. Para placa de vídeo forte (10 GB ou mais).',
     file: 'ggml-large-v3.bin',
     sizeBytes: 3_095_033_483,
     sha256: '64d182b440b98d5203c4f9bd541544d84c605196c4f7b845dfa11fb23594d1e2',
   }),
   model({
     id: 'model-medium-q5',
-    label: 'Modelo medium (compacto)',
+    label: 'Transcrição equilibrada (compacta)',
     description: 'Equilibrado e leve. Boa opção para computador com pouca memória.',
     file: 'ggml-medium-q5_0.bin',
     sizeBytes: 539_212_467,
@@ -213,7 +214,7 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
   }),
   model({
     id: 'model-small',
-    label: 'Modelo small',
+    label: 'Transcrição rápida',
     description: 'Rápido e leve, com qualidade razoável. Para computadores simples.',
     file: 'ggml-small.bin',
     sizeBytes: 487_601_967,
@@ -221,7 +222,7 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
   }),
   model({
     id: 'model-base',
-    label: 'Modelo base',
+    label: 'Transcrição básica',
     description: 'O menor e mais rápido, mas erra mais. Serve para testar.',
     file: 'ggml-base.bin',
     sizeBytes: 147_951_465,

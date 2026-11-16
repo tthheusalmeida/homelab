@@ -69,7 +69,7 @@ export const ITEM_LABELS: Record<BackupItemId, { label: string; hint: string }> 
 export const EXCLUSION_LABELS: Record<BackupExclusionId, string> = {
   secrets: 'Chaves de API (como a do Gemini): ficam só neste computador e não vão para backup.',
   temp: 'Arquivos temporários de vídeo e áudio.',
-  'ai-binaries': 'Whisper, seus modelos e os modelos do Ollama.',
+  'ai-binaries': 'Os programas de transcrição, seus modelos e os modelos do Ollama.',
   preferences: 'Preferências de tela (como o layout dos livros).',
   'library-path': 'O caminho da pasta da biblioteca: ele é de cada computador.',
 };

@@ -25,7 +25,7 @@ describe('InstallAssistant', () => {
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('Vamos preparar o HomeLab')).toBeInTheDocument();
-    expect(screen.getByText(/Marcamos a aceleração CUDA/)).toBeInTheDocument();
+    expect(screen.getByText(/Marcamos a aceleração por placa de vídeo/)).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByRole('checkbox', { name: 'Modelo small' })).toBeChecked(),
     );

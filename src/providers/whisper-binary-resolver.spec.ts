@@ -53,9 +53,7 @@ describe('WhisperBinaryResolver: executável', () => {
     const error = thrown(() => resolver('win32', 'x64').resolveExecutable(location));
 
     expect(error.code).toBe('NOT_CONFIGURED');
-    expect(error.message).toBe(
-      WhisperMessages.executableMissing(path.join(dir, 'whisper-cli.exe')),
-    );
+    expect(error.message).toBe(WhisperMessages.executableMissing());
   });
 
   it.each([
@@ -107,9 +105,7 @@ describe('WhisperBinaryResolver: modelo', () => {
     const error = thrown(() => resolver('win32', 'x64').resolveModel(location));
 
     expect(error.code).toBe('NOT_CONFIGURED');
-    expect(error.message).toBe(
-      WhisperMessages.modelMissing(path.join(dir, 'ggml-large-v3-turbo.bin')),
-    );
+    expect(error.message).toBe(WhisperMessages.modelMissing());
   });
 
   it('when the platform is unsupported but the model is missing, should still answer NOT_CONFIGURED', () => {

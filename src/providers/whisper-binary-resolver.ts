@@ -9,10 +9,10 @@ import { IpcError, IpcErrorCode } from '../shared/errors';
 
 export const WhisperMessages = {
   unsupported: 'A transcrição ainda não está disponível neste sistema operacional.',
-  executableMissing: (file: string) =>
-    `Whisper CLI não encontrado: ${file}. Copie os arquivos do Whisper para essa pasta (veja resources/bin/README.md).`,
-  modelMissing: (file: string) =>
-    `Modelo Whisper não encontrado: ${file}. Copie o arquivo do modelo (ggml-large-v3-turbo.bin) para essa pasta (veja resources/bin/README.md).`,
+  executableMissing: () =>
+    'A transcrição não está instalada. Abra Configurações > Componentes, instale-a e tente de novo.',
+  modelMissing: () =>
+    'Nenhum modelo de transcrição instalado. Abra Configurações > Componentes, instale um e tente de novo.',
 } as const;
 
 export interface WhisperLocation {
@@ -52,14 +52,14 @@ export class WhisperBinaryResolver {
       throw new IpcError(IpcErrorCode.UNSUPPORTED_PLATFORM, WhisperMessages.unsupported);
     }
 
-    throw new IpcError(IpcErrorCode.NOT_CONFIGURED, WhisperMessages.executableMissing(file));
+    throw new IpcError(IpcErrorCode.NOT_CONFIGURED, WhisperMessages.executableMissing());
   }
 
   resolveModel({ directory, model }: WhisperLocation): string {
     const file = whisperModelPath(directory, model);
 
     if (!this.deps.exists(file)) {
-      throw new IpcError(IpcErrorCode.NOT_CONFIGURED, WhisperMessages.modelMissing(file));
+      throw new IpcError(IpcErrorCode.NOT_CONFIGURED, WhisperMessages.modelMissing());
     }
 
     return file;

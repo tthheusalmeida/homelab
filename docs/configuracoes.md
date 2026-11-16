@@ -80,7 +80,7 @@ Ao salvar um caminho novo o app olha a pasta: **vazia ou nova** oferece "Mover a
 - O teste devolve `{ ok, message }`; falhas nunca viram exceção. A mensagem do Gemini é extraída do JSON da SDK.
 
 ### Locais (`providers:local:*`)
-- Whisper: **só teste** (os valores são fixos: pasta `resources/bin/<plataforma>`, executável e modelo `ggml-large-v3-turbo.bin` na mesma pasta). O teste verifica a existência do executável e do modelo, com a mesma regra que a transcrição usa, e as mensagens dizem o caminho completo esperado.
+- Whisper: **só teste** (os valores são fixos: pasta `resources/bin/<plataforma>`, executável e modelo `ggml-large-v3-turbo.bin` na mesma pasta). O teste verifica a existência do executável e do modelo, com a mesma regra que a transcrição usa, e as mensagens mandam instalar a transcrição ou um modelo em Configurações > Componentes, sem citar ferramenta nem caminho.
 - Ollama: URL. Teste faz `GET /api/tags` (5 s de limite).
 - ffmpeg ("Processamento de áudio"): somente teste (`ffmpeg -version`). O app usa o embutido ou o instalado pelo assistente e, sem eles, o do PATH; não há campo para trocá-lo. O caminho é resolvido **a cada uso** (`BackConfig.ffmpegPath()`), então instalar o ffmpeg pelo assistente vale sem reiniciar.
 - Novos entram registrando outra definição (`LocalProviderDefinition`).

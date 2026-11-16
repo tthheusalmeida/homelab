@@ -112,7 +112,7 @@ describe('BackupSection: criar backup', () => {
     expect(within(note).getByText(/O que NÃO entra no backup/)).toBeVisible();
     expect(within(note).getByText(/Chaves de API/)).toBeVisible();
     expect(within(note).getByText(/temporários/)).toBeVisible();
-    expect(within(note).getByText(/Whisper/)).toBeVisible();
+    expect(within(note).getByText(/programas de transcrição/)).toBeVisible();
     expect(within(note).getByText(/Preferências de tela/)).toBeVisible();
     expect(within(note).getByText(/caminho da pasta da biblioteca/)).toBeVisible();
   });

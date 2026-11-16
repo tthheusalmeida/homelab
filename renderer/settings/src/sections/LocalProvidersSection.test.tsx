@@ -18,12 +18,12 @@ import { LocalProvidersSection } from './LocalProvidersSection';
 const providers = [
   {
     id: 'whisper',
-    label: 'Whisper',
+    label: 'Transcrição',
     editable: false,
     config: {},
   },
   { id: 'ollama', label: 'Ollama', editable: true, config: { url: 'http://localhost:11434' } },
-  { id: 'ffmpeg', label: 'ffmpeg', editable: false, config: {} },
+  { id: 'ffmpeg', label: 'Processamento de áudio', editable: false, config: {} },
 ];
 
 const list = { [IpcChannels.providers.local.list]: () => ok(providers) };
@@ -35,9 +35,9 @@ describe('LocalProvidersSection', () => {
     renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
 
     for (const [name, hint] of [
-      ['Whisper', 'Transcreve os áudios localmente.'],
+      ['Transcrição', 'Transcreve os áudios localmente.'],
       ['Ollama', 'Modelos de linguagem locais.'],
-      ['ffmpeg', 'Converte vídeo em áudio, usando o ffmpeg instalado no sistema.'],
+      ['Processamento de áudio', 'Converte vídeo em áudio antes de transcrever.'],
     ]) {
       const trigger = await screen.findByRole('button', { name: new RegExp(`^${name}`) });
 
@@ -59,7 +59,7 @@ describe('LocalProvidersSection', () => {
       'aria-expanded',
       'true',
     );
-    expect(screen.getByRole('button', { name: /^Whisper/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /^Transcrição/ })).toHaveAttribute(
       'aria-expanded',
       'false',
     );
@@ -100,19 +100,19 @@ describe('LocalProvidersSection', () => {
     mockApi(list);
 
     renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'ffmpeg');
+    await openCard(user, 'Processamento de áudio');
 
     expect((await screen.findAllByText('Somente teste')).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Testar' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument();
   });
 
-  it('when the whisper is opened, should show it as test-only with no fields and no folder button', async () => {
+  it('when the transcription is opened, should show it as test-only with no fields and no folder button', async () => {
     const user = userEvent.setup();
     mockApi(list);
 
     renderWithProviders(<LocalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Whisper');
+    await openCard(user, 'Transcrição');
 
     expect(screen.getAllByText('Somente teste')).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Testar' })).toBeVisible();

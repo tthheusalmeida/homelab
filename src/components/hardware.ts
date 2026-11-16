@@ -8,15 +8,15 @@ import { CUDA_PACK_ID, YTDLP_ID } from './component-manifest';
 
 export const HardwareMessages = {
   cudaStrong: (gpu: string, gb: number) =>
-    `Encontramos uma placa NVIDIA (${gpu}, ${gb} GB de memória de vídeo). Ela acelera muito a transcrição, então marcamos a aceleração CUDA e o modelo large-v3-turbo, o mais preciso que ela comporta.`,
+    `Encontramos uma placa NVIDIA (${gpu}, ${gb} GB de memória de vídeo). Ela acelera muito a transcrição, então marcamos a aceleração por placa de vídeo e a transcrição de alta qualidade, a mais precisa que ela comporta.`,
   cudaMedium: (gpu: string, gb: number) =>
-    `Encontramos uma placa NVIDIA (${gpu}, ${gb} GB de memória de vídeo). Marcamos a aceleração CUDA e a versão compacta do large-v3-turbo, que cabe bem nessa memória.`,
+    `Encontramos uma placa NVIDIA (${gpu}, ${gb} GB de memória de vídeo). Marcamos a aceleração por placa de vídeo e a transcrição de alta qualidade compacta, que cabe bem nessa memória.`,
   cudaSmall: (gpu: string) =>
-    `Encontramos uma placa NVIDIA (${gpu}) com pouca memória de vídeo. Marcamos a aceleração CUDA e o modelo small, que roda sem sobrecarregá-la.`,
+    `Encontramos uma placa NVIDIA (${gpu}) com pouca memória de vídeo. Marcamos a aceleração por placa de vídeo e a transcrição rápida, que roda sem sobrecarregá-la.`,
   cpuRam: (ramGb: number, integrated: string | null) =>
-    `${integrated ? `Sua placa de vídeo (${integrated}) é integrada e não acelera o Whisper. ` : 'Não encontramos uma placa NVIDIA. '}A transcrição vai usar o processador. Com ${ramGb} GB de memória, marcamos a versão compacta do large-v3-turbo: boa qualidade sem pesar.`,
+    `${integrated ? `Sua placa de vídeo (${integrated}) é integrada e não acelera a transcrição. ` : 'Não encontramos uma placa NVIDIA. '}A transcrição vai usar o processador. Com ${ramGb} GB de memória, marcamos a transcrição de alta qualidade compacta: boa qualidade sem pesar.`,
   cpuLowRam: (ramGb: number, integrated: string | null) =>
-    `${integrated ? `Sua placa de vídeo (${integrated}) é integrada e não acelera o Whisper. ` : 'Não encontramos uma placa NVIDIA. '}A transcrição vai usar o processador e, com ${ramGb} GB de memória, marcamos o modelo small, mais leve.`,
+    `${integrated ? `Sua placa de vídeo (${integrated}) é integrada e não acelera a transcrição. ` : 'Não encontramos uma placa NVIDIA. '}A transcrição vai usar o processador e, com ${ramGb} GB de memória, marcamos a transcrição rápida, mais leve.`,
   nvidiaWithoutAcceleration: (gpu: string, ramGb: number) =>
     `Encontramos uma placa NVIDIA (${gpu}), mas neste sistema a transcrição ainda usa o processador. Com ${ramGb} GB de memória, marcamos o modelo mais adequado a ele.`,
   unknown:
