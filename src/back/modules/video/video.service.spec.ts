@@ -144,6 +144,24 @@ describe('VideoService', () => {
       ]);
     });
 
+    it('when the config has a bundled ffmpeg path, should run that executable', async () => {
+      execFileMock.mockImplementation(
+        (_c: string, _a: string[], cb: (e: null, r: object) => void) => cb(null, {}),
+      );
+      const bundled = path.join(tmp, 'bin', 'ffmpeg.exe');
+      const withPath = new VideoService(
+        { chat } as unknown as AIService,
+        {
+          audioTempDir: path.join(tmp, 'audio'),
+          ffmpegPath: bundled,
+        } as BackConfig,
+      );
+
+      await withPath.toAudio('/x/a.mp4', tmp);
+
+      expect(execFileMock.mock.calls[0][0]).toBe(bundled);
+    });
+
     it('when ffmpeg fails, should throw a conversion error', async () => {
       execFileMock.mockImplementation((_c: string, _a: string[], cb: (e: Error) => void) =>
         cb(new Error('x')),
@@ -262,6 +280,19 @@ describe('VideoService', () => {
       expect(first).not.toContain('Não repita o título principal');
       expect(second).toContain('parte 2 de 2');
       expect(second).toContain('Não repita o título principal');
+    });
+
+    it('when a later part is summarized, should list the sections already covered', async () => {
+      chat.mockResolvedValueOnce('# Aula\n\n## Docker\n\n## Imagens').mockResolvedValueOnce('## B');
+      const long = 'Frase longa. '.repeat(1500);
+
+      await service.summarize('p', long, { providerId: 'gemini', modelId: 'm', detail: 'study' });
+
+      const first = (chat.mock.calls[0][0] as { message: string }).message;
+      const second = (chat.mock.calls[1][0] as { message: string }).message;
+
+      expect(first).not.toContain('já resumidas');
+      expect(second).toContain('já resumidas nas partes anteriores: Docker; Imagens');
     });
 
     it('when chat fails, should throw a summary error', async () => {

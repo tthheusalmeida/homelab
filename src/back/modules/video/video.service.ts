@@ -127,7 +127,7 @@ export class VideoService {
       const audioFileName = `${videoName}.wav`;
       const audioPath = path.resolve(destinationDir, audioFileName);
 
-      await execFileAsync('ffmpeg', [
+      await execFileAsync(this.config.ffmpegPath ?? 'ffmpeg', [
         '-i',
         videoPath,
         // Remove o vídeo
@@ -192,7 +192,7 @@ export class VideoService {
       const parts: string[] = [];
 
       for (const [index, chunk] of chunks.entries()) {
-        const note = this.partNote(index, chunks.length);
+        const note = this.partNote(index, chunks.length, this.headingsOf(parts));
 
         parts.push(
           await this.aiService.chat({
@@ -216,16 +216,31 @@ export class VideoService {
     }
   }
 
-  private partNote(index: number, total: number): string {
+  /** Títulos (##) já gerados nas partes anteriores, para a próxima não repeti-los. */
+  private headingsOf(parts: string[]): string[] {
+    return parts
+      .join('\n')
+      .split('\n')
+      .filter((line) => /^##\s+\S/.test(line))
+      .map((line) => line.replace(/^##\s+/, '').trim());
+  }
+
+  private partNote(index: number, total: number, covered: string[] = []): string {
     if (total <= 1) {
       return '';
     }
 
     const intro = `Esta é a parte ${index + 1} de ${total} de uma mesma aula. Resuma somente esta parte; as outras são resumidas separadamente.`;
 
-    return index === 0
-      ? `${intro}\n\n`
-      : `${intro} Não repita o título principal: comece direto pelas seções (##).\n\n`;
+    if (index === 0) {
+      return `${intro}\n\n`;
+    }
+
+    const continuation = covered.length
+      ? ` Seções já resumidas nas partes anteriores: ${covered.join('; ')}. Se esta parte continuar um desses assuntos, não repita o título nem as definições já dadas: acrescente só o que for novo.`
+      : '';
+
+    return `${intro} Não repita o título principal: comece direto pelas seções (##).${continuation}\n\n`;
   }
 
   async deleteVideo(videoPath: string): Promise<void> {

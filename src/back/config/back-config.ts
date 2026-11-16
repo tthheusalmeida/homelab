@@ -16,6 +16,9 @@ export abstract class BackConfig {
 
   abstract readonly audioTempDir: string;
 
+  /** Executável do ffmpeg (embutido ou `ffmpeg` do PATH); sem valor, usa o do PATH. */
+  readonly ffmpegPath?: string;
+
   abstract readonly ollamaUrl: string;
 
   /** Arquivo onde o consumo de IA fica guardado entre execuções; `null` guarda só em memória (testes). */

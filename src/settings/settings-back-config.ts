@@ -14,6 +14,7 @@ export class SettingsBackConfig extends BackConfig {
     private readonly settings: SettingsStore,
     private readonly appPaths: AppPaths,
     readonly geminiApiKey: string | null,
+    readonly ffmpegPath?: string,
   ) {
     super();
   }

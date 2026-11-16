@@ -35,6 +35,12 @@ describe('SettingsBackConfig', () => {
     expect(config.ollamaUrl).toBe(settings.local.ollama.url);
   });
 
+  it('when an ffmpeg path is given, should expose it to the back', () => {
+    const config = new SettingsBackConfig(store, appPaths, null, 'C:/bin/ffmpeg.exe');
+
+    expect(config.ffmpegPath).toBe('C:/bin/ffmpeg.exe');
+  });
+
   it('when the settings change, should answer the new values on the next read', () => {
     const config = new SettingsBackConfig(store, appPaths, null);
     const outra = path.resolve('/outra/biblioteca');
