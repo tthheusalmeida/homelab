@@ -1,8 +1,9 @@
-import type { Job } from "../../types/job.types";
+import { JobStatusOptions, type Job } from "../../types/job.types";
 
-import { ChevronDown, Timer } from "lucide-react";
+import { ChevronDown, RotateCcw, Timer } from "lucide-react";
 
 import { formatDateTime, formatDuration } from "#lib/format";
+import { cn } from "#lib/utils";
 
 import {
   Collapsible,
@@ -10,13 +11,23 @@ import {
   CollapsibleTrigger,
 } from "#ui/collapsible";
 import { Badge } from "#ui/badge";
+import { Button } from "#ui/button";
 import { Card, CardContent, CardHeader } from "#ui/card";
 
 import { isActiveJob } from "../active";
 import { TrackStrings } from "../strings";
 
 import { JobFlow } from "./JobFlow";
+import { JobLiveProgress } from "./JobLiveProgress";
 import { JobStatusBadge } from "./JobStatusBadge";
+
+/** Faixa lateral que mostra o estado do job de relance, como a luz de um servidor. */
+const ACCENTS: Record<string, string> = {
+  [JobStatusOptions.PENDING]: "border-l-muted-foreground",
+  [JobStatusOptions.RUNNING]: "border-l-primary",
+  [JobStatusOptions.COMPLETED]: "border-l-emerald-500",
+  [JobStatusOptions.FAILED]: "border-l-red-500",
+};
 
 interface JobListItemProps {
   job: Job;
@@ -24,6 +35,10 @@ interface JobListItemProps {
   selectable?: boolean;
   selected?: boolean;
   onSelectedChange?: (checked: boolean) => void;
+  onCancel?: () => void;
+  onRetry?: () => void;
+  /** Há uma ação (cancelar ou tentar de novo) em andamento neste job. */
+  busy?: boolean;
 }
 
 export function JobListItem({
@@ -31,8 +46,12 @@ export function JobListItem({
   selectable = false,
   selected = false,
   onSelectedChange,
+  onCancel,
+  onRetry,
+  busy = false,
 }: JobListItemProps) {
   const active = isActiveJob(job);
+  const accent = ACCENTS[job.status] ?? "border-l-border";
 
   const duration =
     job.startedAt && job.completedAt
@@ -41,7 +60,13 @@ export function JobListItem({
 
   return (
     <Collapsible className="group">
-      <Card className="transition-[box-shadow,border-color,background-color] duration-200 hover:border-primary/50 hover:ring-3 hover:ring-primary/15">
+      <Card
+        data-accent={job.status}
+        className={cn(
+          "border-l-4 transition-[box-shadow,border-color,background-color] duration-200 hover:ring-3 hover:ring-primary/15",
+          accent,
+        )}
+      >
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             {selectable && (
@@ -74,9 +99,28 @@ export function JobListItem({
               <p className="mt-1 truncate font-mono text-xs text-muted-foreground/70">
                 {job.id}
               </p>
+
+              {active && (
+                <div className="mt-1">
+                  <JobLiveProgress job={job} />
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
+              {active && !job.cancelRequested && (
+                <Button size="sm" variant="outline" disabled={busy} onClick={onCancel}>
+                  {TrackStrings.cancel}
+                </Button>
+              )}
+
+              {job.retryable && (
+                <Button size="sm" variant="outline" disabled={busy} onClick={onRetry}>
+                  <RotateCcw />
+                  {TrackStrings.retry}
+                </Button>
+              )}
+
               <div className="flex flex-col items-end gap-1">
                 <JobStatusBadge status={job.status} />
 

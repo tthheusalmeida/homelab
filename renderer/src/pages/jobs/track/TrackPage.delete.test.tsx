@@ -241,10 +241,23 @@ describe("TrackPage: excluir jobs", () => {
     expect(button).toHaveAttribute("title", expect.stringContaining("Não há processos"));
   });
 
+  it("when there are jobs in several states, should summarize them in the header", async () => {
+    setup([
+      makeJob("a", "running", 1),
+      makeJob("b", "pending", 2),
+      makeJob("c", "completed", 3),
+      makeJob("d", "failed", 4),
+    ]);
+
+    expect(await screen.findByText("2 em execução")).toBeInTheDocument();
+    expect(screen.getByText("1 concluídos")).toBeInTheDocument();
+    expect(screen.getByText("1 com falha")).toBeInTheDocument();
+  });
+
   it("when there are no jobs, should show no selection or delete buttons", async () => {
     setup([]);
 
-    await screen.findByText("Tarefas");
+    await screen.findByRole("heading", { name: "Em andamento" });
 
     expect(screen.queryByRole("button", { name: "Selecionar" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Excluir todos" })).not.toBeInTheDocument();

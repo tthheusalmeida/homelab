@@ -10,6 +10,10 @@ interface JobListProps {
   selectable?: boolean;
   selectedIds?: ReadonlySet<string>;
   onSelectedChange?: (id: string, checked: boolean) => void;
+  onCancel?: (id: string) => void;
+  onRetry?: (job: Job) => void;
+  /** Job com cancelar ou tentar de novo em andamento (desabilita os botões dele). */
+  busyId?: string;
 }
 
 export function JobList({
@@ -17,6 +21,9 @@ export function JobList({
   selectable = false,
   selectedIds,
   onSelectedChange,
+  onCancel,
+  onRetry,
+  busyId,
 }: JobListProps) {
   const sortedJobs = [...jobs].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -35,6 +42,9 @@ export function JobList({
             selectable={selectable}
             selected={selectedIds?.has(job.id) ?? false}
             onSelectedChange={(checked) => onSelectedChange?.(job.id, checked)}
+            onCancel={() => onCancel?.(job.id)}
+            onRetry={() => onRetry?.(job)}
+            busy={busyId === job.id}
           />
         </div>
       ))}

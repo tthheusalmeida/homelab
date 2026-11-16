@@ -154,11 +154,11 @@ describe("JobListItem", () => {
     expect(screen.getByText("2.5s")).toBeInTheDocument();
   });
 
-  it("when the job has not completed, should not show a duration", () => {
+  it("when the job has not completed, should not show a duration badge", () => {
     render(
       <JobListItem
         job={makeJob({
-          status: "running",
+          status: "failed",
           startedAt: "2026-01-01T10:00:00.000Z",
         })}
       />,

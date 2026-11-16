@@ -25,4 +25,23 @@ export const TrackStrings = {
       ? "1 em andamento não foi excluído"
       : `${count} em andamento não foram excluídos`,
   nothingDeleted: "Nenhum processo foi excluído",
+
+  undo: "Desfazer",
+  restored: (count: number) =>
+    count === 0
+      ? "Nada para restaurar"
+      : count === 1
+        ? "1 processo restaurado"
+        : `${count} processos restaurados`,
+
+  cancel: "Cancelar",
+  cancelling: "Cancelando ao fim da etapa…",
+  cancelled: "Tarefa cancelada",
+  cancelRequested: "Cancelamento pedido: a tarefa para ao fim da etapa em andamento",
+  notActive: "A tarefa já tinha terminado",
+  retry: "Tentar de novo",
+  retried: (label: string) => `Nova tentativa criada: ${label}`,
+  step: (current: number, total: number, label: string) =>
+    `etapa ${current}/${total} · ${label}`,
+  queued: "na fila",
 } as const;
