@@ -6,6 +6,7 @@ import {
   parseGpuList,
   parseNvidiaSmi,
   recommendFor,
+  parseLspci,
 } from './hardware';
 
 const nvidia = (vramMb: number | null, name = 'NVIDIA GeForce RTX 3060'): GpuInfo => ({
@@ -156,12 +157,106 @@ describe('detectHardware', () => {
     expect(profile.recommendation.accelerator).toBe('cpu');
   });
 
-  it('when the platform is not Windows, should not run anything and recommend CPU', async () => {
+  it('when the platform is macOS, should not run anything and recommend CPU', async () => {
     const run = jest.fn();
 
-    const profile = await detectHardware({ platform: 'linux', run, totalMemoryMb: () => 8192 });
+    const profile = await detectHardware({ platform: 'darwin', run, totalMemoryMb: () => 8192 });
 
     expect(run).not.toHaveBeenCalled();
     expect(profile.recommendation.accelerator).toBe('cpu');
+  });
+
+  describe('on Linux', () => {
+    const lspci = [
+      '00:02.0 "VGA compatible controller" "Intel Corporation" "UHD Graphics 630" -r02 "Dell" "x"',
+      '01:00.0 "VGA compatible controller" "NVIDIA Corporation" "GA106 [GeForce RTX 3060]" -ra1 "x" "y"',
+      '00:1f.3 "Audio device" "Intel Corporation" "Cannon Lake PCH cAVS" -r10 "x" "y"',
+    ].join('\n');
+
+    it('when lspci lists the cards and nvidia-smi answers, should use the real memory', async () => {
+      const run = jest
+        .fn()
+        .mockResolvedValueOnce(lspci)
+        .mockResolvedValueOnce('NVIDIA GeForce RTX 3060, 12288');
+
+      const profile = await detectHardware({
+        platform: 'linux',
+        run,
+        totalMemoryMb: () => 32768,
+        accelerationAvailable: true,
+      });
+
+      expect(run).toHaveBeenNthCalledWith(1, 'lspci', ['-mm']);
+      expect(profile.gpus.map((gpu) => gpu.vendor)).toEqual(['intel', 'nvidia']);
+      expect(profile.gpus[1].vramMb).toBe(12288);
+      expect(profile.recommendation.accelerator).toBe('cuda');
+    });
+
+    it('when lspci is missing but nvidia-smi answers, should still find the card', async () => {
+      const run = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('ENOENT'))
+        .mockResolvedValueOnce('NVIDIA GeForce RTX 3060, 12288');
+
+      const profile = await detectHardware({ platform: 'linux', run, totalMemoryMb: () => 16384 });
+
+      expect(profile.gpus).toEqual([
+        { name: 'NVIDIA GeForce RTX 3060', vendor: 'nvidia', kind: 'dedicated', vramMb: 12288 },
+      ]);
+    });
+
+    it('when neither tool exists, should recommend a safe CPU option', async () => {
+      const run = jest.fn().mockRejectedValue(new Error('ENOENT'));
+
+      const profile = await detectHardware({ platform: 'linux', run, totalMemoryMb: () => 8192 });
+
+      expect(profile.gpus).toEqual([]);
+      expect(profile.recommendation.accelerator).toBe('cpu');
+    });
+
+    it('when there is an NVIDIA card but no acceleration pack for the system, should recommend CPU without the pack', async () => {
+      const run = jest
+        .fn()
+        .mockResolvedValueOnce(lspci)
+        .mockResolvedValueOnce('NVIDIA GeForce RTX 3060, 12288');
+
+      const profile = await detectHardware({
+        platform: 'linux',
+        run,
+        totalMemoryMb: () => 32768,
+        accelerationAvailable: false,
+      });
+
+      expect(profile.recommendation.accelerator).toBe('cpu');
+      expect(profile.recommendation.componentIds).not.toContain('cuda-pack');
+      expect(profile.recommendation.message).toContain('processador');
+    });
+  });
+});
+
+describe('parseLspci', () => {
+  it('when the output has graphics cards, should keep only them with readable names', () => {
+    const gpus = parseLspci(
+      [
+        '00:02.0 "VGA compatible controller" "Intel Corporation" "UHD Graphics 630" -r02 "a" "b"',
+        '03:00.0 "VGA compatible controller" "Advanced Micro Devices, Inc. [AMD/ATI]" "Navi 23 [Radeon RX 6600]" -rc1 "a" "b"',
+        '00:1f.3 "Audio device" "Intel Corporation" "PCH cAVS" -r10 "a" "b"',
+      ].join('\n'),
+    );
+
+    expect(gpus).toEqual([
+      { name: 'Intel UHD Graphics 630', vendor: 'intel', kind: 'integrated', vramMb: null },
+      { name: 'AMD/ATI Radeon RX 6600', vendor: 'amd', kind: 'dedicated', vramMb: null },
+    ]);
+  });
+
+  it('when the card is virtual, should ignore it', () => {
+    expect(
+      parseLspci('00:02.0 "VGA compatible controller" "Red Hat, Inc." "Virtio GPU" "a" "b"'),
+    ).toEqual([]);
+  });
+
+  it('when the output is empty, should return no cards', () => {
+    expect(parseLspci('')).toEqual([]);
   });
 });

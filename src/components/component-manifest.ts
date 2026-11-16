@@ -19,10 +19,29 @@ export interface ComponentSpec {
   sizeBytes: number;
   /** Arquivo que prova que está instalado (relativo à pasta de binários ou à de modelos). */
   file: string;
-  /** Só para `file` e `zip`. */
+  /** Só para o que não é `bundled`. */
   download?: { url: string; sha256: string };
   /** Só para `zip`: arquivos extraídos (relativos à pasta de binários), conferidos na detecção. */
   provides?: string[];
+}
+
+/** Sistema + arquitetura (`win32-x64`, `linux-x64`...): a mesma chave da pasta `resources/bin`. */
+export type PlatformTarget = string;
+
+/** O que muda de um sistema para outro num mesmo componente. */
+export type ComponentVariant = Pick<ComponentSpec, 'kind' | 'sizeBytes' | 'file'> &
+  Partial<Pick<ComponentSpec, 'download' | 'provides'>>;
+
+/**
+ * Entrada do catálogo. O usuário vê um item só, com o mesmo nome em qualquer sistema; `variants`
+ * diz como ele é obtido em cada sistema. Com `variants`, o item só existe nos sistemas listados
+ * (ex.: o pacote CUDA não aparece no Linux); sem `variants`, vale para todos.
+ */
+export type ComponentTemplate = Omit<ComponentSpec, keyof ComponentVariant> &
+  Partial<ComponentVariant> & { variants?: Record<PlatformTarget, ComponentVariant> };
+
+export function platformTarget(platform: string, arch: string): PlatformTarget {
+  return `${platform}-${arch}`;
 }
 
 const HUGGING_FACE = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main';
@@ -35,6 +54,11 @@ export const YTDLP_ID = 'yt-dlp';
 
 /** Versão do yt-dlp do catálogo. O programa se atualiza sozinho (`yt-dlp -U`) quando um site muda. */
 const YTDLP_VERSION = '2026.10.26';
+const YTDLP_RELEASE = `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}`;
+
+/** Builds estáticos do ffmpeg (um arquivo só, sem instalador) usados fora do Windows. */
+const FFMPEG_STATIC = 'https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1';
+const FFMPEG_LINUX_X64_SHA256 = 'e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99';
 
 export interface ModelSpecInput {
   id: string;
@@ -45,7 +69,7 @@ export interface ModelSpecInput {
   sha256: string;
 }
 
-function model(input: ModelSpecInput): ComponentSpec {
+function model(input: ModelSpecInput): ComponentTemplate {
   return {
     id: input.id,
     group: 'model',
@@ -60,65 +84,91 @@ function model(input: ModelSpecInput): ComponentSpec {
 }
 
 /** Ordem de preferência quando o usuário ainda não escolheu o modelo ativo. */
-export const COMPONENT_CATALOG: readonly ComponentSpec[] = [
+export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
   {
     id: WHISPER_RUNTIME_ID,
     group: 'runtime',
-    label: 'Whisper (transcrição)',
-    description: 'Programa que transforma o áudio das aulas em texto. Roda no seu computador.',
+    label: 'Transcrição',
+    description: 'Transforma o áudio das aulas em texto, direto no seu computador (usa o Whisper).',
     required: true,
-    kind: 'bundled',
-    sizeBytes: 0,
-    file: 'whisper-cli',
+    variants: {
+      'win32-x64': { kind: 'bundled', sizeBytes: 0, file: 'whisper-cli' },
+    },
   },
   {
     id: FFMPEG_ID,
     group: 'runtime',
-    label: 'ffmpeg (áudio)',
-    description: 'Extrai o áudio dos vídeos antes de transcrever.',
+    label: 'Processamento de áudio',
+    description: 'Extrai o áudio dos vídeos antes de transcrever (usa o ffmpeg).',
     required: true,
-    kind: 'bundled',
-    sizeBytes: 0,
-    file: 'ffmpeg',
+    variants: {
+      'win32-x64': { kind: 'bundled', sizeBytes: 0, file: 'ffmpeg' },
+      'linux-x64': {
+        kind: 'binary',
+        sizeBytes: 79_826_272,
+        file: 'ffmpeg',
+        download: {
+          url: `${FFMPEG_STATIC}/ffmpeg-linux-x64`,
+          sha256: FFMPEG_LINUX_X64_SHA256,
+        },
+      },
+    },
   },
   {
     id: YTDLP_ID,
     group: 'download',
-    label: 'yt-dlp (vídeos de plataformas)',
+    label: 'Download de vídeos',
     description:
-      'Baixa vídeos do YouTube e de outras plataformas, só o áudio. Sem ele o app só baixa links diretos para o arquivo do vídeo.',
+      'Baixa vídeos do YouTube e de outras plataformas, só o áudio (usa o yt-dlp). Sem ele o app só baixa links diretos para o arquivo do vídeo.',
     required: false,
-    kind: 'binary',
-    sizeBytes: 23_575_744,
-    file: 'yt-dlp',
-    download: {
-      url: `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp.exe`,
-      sha256: 'f5389d3698ecde4ef06f4e6b1ce0294fe9ac1396228c8990b8d3416d6d177a7d',
+    variants: {
+      'win32-x64': {
+        kind: 'binary',
+        sizeBytes: 23_575_744,
+        file: 'yt-dlp',
+        download: {
+          url: `${YTDLP_RELEASE}/yt-dlp.exe`,
+          sha256: 'f5389d3698ecde4ef06f4e6b1ce0294fe9ac1396228c8990b8d3416d6d177a7d',
+        },
+      },
+      'linux-x64': {
+        kind: 'binary',
+        sizeBytes: 41_166_968,
+        file: 'yt-dlp',
+        download: {
+          url: `${YTDLP_RELEASE}/yt-dlp_linux`,
+          sha256: '767ba9dce7052aa196f8b12652f433d76de128ba168966fa84b6394d5e6c6795',
+        },
+      },
     },
   },
   {
     id: CUDA_PACK_ID,
     group: 'gpu',
-    label: 'Aceleração por placa NVIDIA (CUDA)',
+    label: 'Aceleração por placa de vídeo',
     description:
-      'Faz o Whisper usar a placa de vídeo NVIDIA, bem mais rápido que o processador. Só funciona com placa NVIDIA.',
+      'Faz a transcrição usar a placa de vídeo, bem mais rápido que o processador. Só funciona com placa NVIDIA.',
     required: false,
-    kind: 'zip',
-    sizeBytes: 654_034_278,
-    file: 'ggml-cuda.dll',
-    download: {
-      url: `${RELEASES}/whisper-cuda12-win32-x64.zip`,
-      sha256: 'a8c187242e3e24546c13986e769aff0213221b53448d4a15ee3c09935d232cf5',
+    variants: {
+      'win32-x64': {
+        kind: 'zip',
+        sizeBytes: 654_034_278,
+        file: 'ggml-cuda.dll',
+        download: {
+          url: `${RELEASES}/whisper-cuda12-win32-x64.zip`,
+          sha256: 'a8c187242e3e24546c13986e769aff0213221b53448d4a15ee3c09935d232cf5',
+        },
+        provides: [
+          'ggml-cuda.dll',
+          'cublas64_12.dll',
+          'cublasLt64_12.dll',
+          'cudart64_12.dll',
+          'nvblas64_12.dll',
+          'nvrtc64_120_0.dll',
+          'nvrtc-builtins64_124.dll',
+        ],
+      },
     },
-    provides: [
-      'ggml-cuda.dll',
-      'cublas64_12.dll',
-      'cublasLt64_12.dll',
-      'cudart64_12.dll',
-      'nvblas64_12.dll',
-      'nvrtc64_120_0.dll',
-      'nvrtc-builtins64_124.dll',
-    ],
   },
   model({
     id: 'model-large-v3-turbo',
@@ -170,10 +220,30 @@ export const COMPONENT_CATALOG: readonly ComponentSpec[] = [
   }),
 ];
 
-export function findComponent(id: string): ComponentSpec | undefined {
-  return COMPONENT_CATALOG.find((spec) => spec.id === id);
+/** Os componentes do sistema dado: cada item já com a forma de obtenção daquele sistema. */
+export function catalogFor(
+  target: PlatformTarget,
+  templates: readonly ComponentTemplate[] = COMPONENT_TEMPLATES,
+): ComponentSpec[] {
+  const specs: ComponentSpec[] = [];
+
+  for (const { variants, ...template } of templates) {
+    const variant = variants ? variants[target] : {};
+
+    if (!variant) {
+      continue;
+    }
+
+    specs.push({ ...template, ...variant } as ComponentSpec);
+  }
+
+  return specs;
 }
 
-export function modelSpecs(): ComponentSpec[] {
-  return COMPONENT_CATALOG.filter((spec) => spec.group === 'model');
+export function findComponent(id: string, target: PlatformTarget): ComponentSpec | undefined {
+  return catalogFor(target).find((spec) => spec.id === id);
+}
+
+export function modelSpecs(target: PlatformTarget): ComponentSpec[] {
+  return catalogFor(target).filter((spec) => spec.group === 'model');
 }

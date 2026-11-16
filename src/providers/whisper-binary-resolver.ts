@@ -1,18 +1,19 @@
 import * as path from 'node:path';
 
+import {
+  findComponent,
+  platformTarget,
+  WHISPER_RUNTIME_ID,
+} from '../components/component-manifest';
 import { IpcError, IpcErrorCode } from '../shared/errors';
 
 export const WhisperMessages = {
-  unsupported: (platform: string, arch: string) =>
-    `O Whisper embutido ainda não está disponível para ${platform}-${arch} (hoje só win32-x64).`,
+  unsupported: 'A transcrição ainda não está disponível neste sistema operacional.',
   executableMissing: (file: string) =>
     `Whisper CLI não encontrado: ${file}. Copie os arquivos do Whisper para essa pasta (veja resources/bin/README.md).`,
   modelMissing: (file: string) =>
     `Modelo Whisper não encontrado: ${file}. Copie o arquivo do modelo (ggml-large-v3-turbo.bin) para essa pasta (veja resources/bin/README.md).`,
 } as const;
-
-/** Plataformas com binário do Whisper embutido (`resources/bin/<platform>-<arch>`). */
-export const SUPPORTED_WHISPER_TARGETS: readonly string[] = ['win32-x64'];
 
 export interface WhisperLocation {
   directory: string;
@@ -34,7 +35,7 @@ export interface WhisperResolverDeps {
 /**
  * Escolhe o executável e o modelo do Whisper e explica, com o código certo, por que não dá:
  * - o binário existe na pasta configurada: usa (mesmo em plataforma sem binário embutido);
- * - não existe e a plataforma não é suportada: `UNSUPPORTED_PLATFORM`;
+ * - não existe e o catálogo não tem a transcrição para o sistema: `UNSUPPORTED_PLATFORM`;
  * - não existe numa plataforma suportada, ou falta o modelo: `NOT_CONFIGURED`.
  */
 export class WhisperBinaryResolver {
@@ -48,10 +49,7 @@ export class WhisperBinaryResolver {
     }
 
     if (!this.isSupported()) {
-      throw new IpcError(
-        IpcErrorCode.UNSUPPORTED_PLATFORM,
-        WhisperMessages.unsupported(this.deps.platform, this.deps.arch),
-      );
+      throw new IpcError(IpcErrorCode.UNSUPPORTED_PLATFORM, WhisperMessages.unsupported);
     }
 
     throw new IpcError(IpcErrorCode.NOT_CONFIGURED, WhisperMessages.executableMissing(file));
@@ -68,6 +66,10 @@ export class WhisperBinaryResolver {
   }
 
   private isSupported(): boolean {
-    return SUPPORTED_WHISPER_TARGETS.includes(`${this.deps.platform}-${this.deps.arch}`);
+    // Há transcrição embutida ou baixável quando o catálogo tem o item para este sistema.
+    return (
+      findComponent(WHISPER_RUNTIME_ID, platformTarget(this.deps.platform, this.deps.arch)) !==
+      undefined
+    );
   }
 }

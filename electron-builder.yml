@@ -39,8 +39,9 @@ nsis:
   perMachine: false
   deleteAppDataOnUninstall: false
   shortcutName: HomeLab
-# Linux e macOS: configuração pronta, mas ainda sem binários (Whisper e ffmpeg próprios de cada
-# sistema em resources/bin/linux-x64 e resources/bin/darwin-arm64). Gere cada um no seu sistema.
+# Linux: nada vai embutido. Os programas (ffmpeg, yt-dlp...) são baixados pelo assistente do app para
+# a pasta de dados do usuário, porque o AppImage é somente leitura. Gere no próprio Linux.
+# macOS: configuração pronta, mas ainda sem binários (resources/bin/darwin-arm64).
 linux:
   target:
     - target: AppImage
@@ -48,12 +49,6 @@ linux:
         - x64
   category: Utility
   artifactName: HomeLab-${version}.${ext}
-  extraResources:
-    - from: resources/bin/linux-x64
-      to: bin/linux-x64
-      filter:
-        - '**/*'
-        - '!**/*.bin'
 mac:
   target:
     - target: dmg

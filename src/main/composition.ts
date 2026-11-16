@@ -12,6 +12,7 @@ import {
 import { LocalProvidersService } from '../providers/local-providers.service';
 import { DesktopWhisperService, type WhisperRunner } from '../providers/desktop-whisper.service';
 import { ComponentsService } from '../components/components.service';
+import { CUDA_PACK_ID, findComponent, platformTarget } from '../components/component-manifest';
 import { detectHardware } from '../components/hardware';
 import type { FetchLike } from '../components/downloader';
 import { WhisperBinaryResolver } from '../providers/whisper-binary-resolver';
@@ -60,7 +61,7 @@ export interface CompositionOptions {
 export function createServices(options: CompositionOptions) {
   const appPaths = createAppPaths(options.rootDir);
   const whisperConfig = createWhisperConfig(
-    resolveBinDir(options.resourcesDir, options.platform, options.arch),
+    resolveBinDir(options.resourcesDir, options.platform, options.arch, options.userDataDir),
     options.platform,
   );
 
@@ -73,12 +74,18 @@ export function createServices(options: CompositionOptions) {
     options.cipher,
   );
 
-  const binDir = resolveBinDir(options.resourcesDir, options.platform, options.arch);
+  const binDir = resolveBinDir(
+    options.resourcesDir,
+    options.platform,
+    options.arch,
+    options.userDataDir,
+  );
   const components = new ComponentsService({
     binDir,
     modelsDir: path.join(options.userDataDir, 'components', 'models'),
     downloadsDir: path.join(options.userDataDir, 'components', 'downloads'),
     platform: options.platform,
+    arch: options.arch,
     state: new JsonFile(path.join(options.userDataDir, DataFiles.components)),
     events: options.events,
     fetchFn: options.downloadFetch,
@@ -87,6 +94,8 @@ export function createServices(options: CompositionOptions) {
         platform: options.platform,
         run: options.runForOutput,
         totalMemoryMb: options.totalMemoryMb,
+        accelerationAvailable:
+          findComponent(CUDA_PACK_ID, platformTarget(options.platform, options.arch)) !== undefined,
       }),
   });
   const activeWhisperConfig = () => ({

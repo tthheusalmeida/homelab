@@ -38,7 +38,7 @@ export const setupStatus = (overrides: Partial<ComponentsStatus> = {}): Componen
     component({
       id: 'whisper-runtime',
       group: 'runtime',
-      label: 'Whisper (transcrição)',
+      label: 'Transcrição',
       required: true,
       bundled: true,
       sizeBytes: 0,
@@ -47,7 +47,7 @@ export const setupStatus = (overrides: Partial<ComponentsStatus> = {}): Componen
     component({
       id: 'cuda-pack',
       group: 'gpu',
-      label: 'Aceleração por placa NVIDIA (CUDA)',
+      label: 'Aceleração por placa de vídeo',
       sizeBytes: 654_034_278,
       recommended: true,
     }),

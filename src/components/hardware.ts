@@ -17,6 +17,8 @@ export const HardwareMessages = {
     `${integrated ? `Sua placa de vídeo (${integrated}) é integrada e não acelera o Whisper. ` : 'Não encontramos uma placa NVIDIA. '}A transcrição vai usar o processador. Com ${ramGb} GB de memória, marcamos a versão compacta do large-v3-turbo: boa qualidade sem pesar.`,
   cpuLowRam: (ramGb: number, integrated: string | null) =>
     `${integrated ? `Sua placa de vídeo (${integrated}) é integrada e não acelera o Whisper. ` : 'Não encontramos uma placa NVIDIA. '}A transcrição vai usar o processador e, com ${ramGb} GB de memória, marcamos o modelo small, mais leve.`,
+  nvidiaWithoutAcceleration: (gpu: string, ramGb: number) =>
+    `Encontramos uma placa NVIDIA (${gpu}), mas neste sistema a transcrição ainda usa o processador. Com ${ramGb} GB de memória, marcamos o modelo mais adequado a ele.`,
   unknown:
     'Não conseguimos identificar sua placa de vídeo. Marcamos uma opção segura, que usa o processador.',
 } as const;
@@ -40,16 +42,36 @@ const gb = (mb: number) => Math.round(mb / MB);
  * Escolhe aceleração e modelo a partir do hardware e acrescenta o que vale para qualquer máquina
  * (o yt-dlp, que baixa vídeos de plataformas). Função pura (testável).
  */
-export function recommendFor(gpus: GpuInfo[], ramMb: number): HardwareRecommendation {
-  const base = recommendByHardware(gpus, ramMb);
+export function recommendFor(
+  gpus: GpuInfo[],
+  ramMb: number,
+  options: { accelerationAvailable?: boolean } = {},
+): HardwareRecommendation {
+  const base = recommendByHardware(gpus, ramMb, options.accelerationAvailable ?? true);
 
   return { ...base, componentIds: [...base.componentIds, YTDLP_ID] };
 }
 
-function recommendByHardware(gpus: GpuInfo[], ramMb: number): HardwareRecommendation {
+function recommendByHardware(
+  gpus: GpuInfo[],
+  ramMb: number,
+  accelerationAvailable: boolean,
+): HardwareRecommendation {
   const nvidia = gpus
     .filter((gpu) => gpu.vendor === 'nvidia' && gpu.kind === 'dedicated')
     .sort((a, b) => (b.vramMb ?? 0) - (a.vramMb ?? 0))[0];
+
+  if (nvidia && !accelerationAvailable) {
+    // Sem pacote de aceleração neste sistema: a placa não ajuda, escolhe o modelo pela memória do PC.
+    const modelId = ramMb >= COMFORTABLE_RAM_MB ? MODEL_TURBO_Q5 : MODEL_SMALL;
+
+    return {
+      accelerator: 'cpu',
+      componentIds: [modelId],
+      modelId,
+      message: HardwareMessages.nvidiaWithoutAcceleration(nvidia.name, gb(ramMb)),
+    };
+  }
 
   if (nvidia) {
     const vram = nvidia.vramMb ?? 0;
@@ -108,6 +130,8 @@ export interface HardwareDeps {
   /** Executa um programa e devolve a saída; falha se o programa não existir. */
   run: (file: string, args: string[]) => Promise<string>;
   totalMemoryMb: () => number;
+  /** Há pacote de aceleração (CUDA) para este sistema? Padrão: sim. */
+  accelerationAvailable?: boolean;
 }
 
 const LIST_GPUS_SCRIPT =
@@ -184,6 +208,39 @@ export function parseGpuList(json: string): GpuInfo[] {
   return gpus;
 }
 
+/**
+ * Saída de `lspci -mm` (Linux): uma linha por dispositivo, campos entre aspas. Fica só com as
+ * placas de vídeo e monta o nome legível ("NVIDIA GeForce RTX 3060", "Intel UHD Graphics 630").
+ */
+export function parseLspci(output: string): GpuInfo[] {
+  const gpus: GpuInfo[] = [];
+
+  for (const line of output.split(/\r?\n/)) {
+    const fields = [...line.matchAll(/"([^"]*)"/g)].map((match) => match[1]);
+    const [deviceClass, vendorField, deviceField] = fields;
+
+    if (!deviceClass || !/vga|3d controller|display controller/i.test(deviceClass)) {
+      continue;
+    }
+
+    const vendor = (/\[([^\]]+)\]/.exec(vendorField ?? '')?.[1] ?? vendorField ?? '')
+      .replace(/\s*(corporation|corp\.?|inc\.?)\s*$/i, '')
+      .trim();
+    const device = (/\[([^\]]+)\]/.exec(deviceField ?? '')?.[1] ?? deviceField ?? '').trim();
+    const name = `${vendor} ${device}`.trim();
+
+    if (!device || /virtio|vmware|qxl|bochs|cirrus/i.test(name)) {
+      continue;
+    }
+
+    const kindVendor = vendorOf(name);
+
+    gpus.push({ name, vendor: kindVendor, kind: kindOf(name, kindVendor), vramMb: null });
+  }
+
+  return gpus;
+}
+
 /** `nvidia-smi --query-gpu=name,memory.total` (csv, sem cabeçalho, MB): corrige a memória real. */
 export function parseNvidiaSmi(output: string): Array<{ name: string; vramMb: number }> {
   return output
@@ -211,9 +268,19 @@ export async function detectHardware(deps: HardwareDeps): Promise<HardwareProfil
     } catch {
       gpus = [];
     }
+  } else if (deps.platform === 'linux') {
+    try {
+      gpus = parseLspci(await deps.run('lspci', ['-mm']));
+    } catch {
+      gpus = [];
+    }
   }
 
-  if (gpus.some((gpu) => gpu.vendor === 'nvidia')) {
+  // No Linux o `lspci` pode faltar; o driver da NVIDIA, se existe, ainda diz qual é a placa.
+  const mayHaveNvidia =
+    gpus.some((gpu) => gpu.vendor === 'nvidia') || (deps.platform === 'linux' && gpus.length === 0);
+
+  if (mayHaveNvidia) {
     try {
       const smi = parseNvidiaSmi(
         await deps.run('nvidia-smi', [
@@ -229,10 +296,25 @@ export async function detectHardware(deps: HardwareDeps): Promise<HardwareProfil
 
         return match ? { ...gpu, vramMb: match.vramMb } : gpu;
       });
+
+      if (gpus.length === 0) {
+        gpus = smi.map((entry) => ({
+          name: entry.name,
+          vendor: 'nvidia' as const,
+          kind: 'dedicated' as const,
+          vramMb: entry.vramMb,
+        }));
+      }
     } catch {
-      // sem driver/nvidia-smi: segue com a estimativa do Windows
+      // sem driver/nvidia-smi: segue com a estimativa do sistema
     }
   }
 
-  return { gpus, ramMb, recommendation: recommendFor(gpus, ramMb) };
+  return {
+    gpus,
+    ramMb,
+    recommendation: recommendFor(gpus, ramMb, {
+      accelerationAvailable: deps.accelerationAvailable,
+    }),
+  };
 }

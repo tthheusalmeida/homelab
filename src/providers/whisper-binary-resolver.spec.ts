@@ -69,9 +69,13 @@ describe('WhisperBinaryResolver: executável', () => {
       const error = thrown(() => resolver(platform, arch).resolveExecutable(location));
 
       expect(error.code).toBe('UNSUPPORTED_PLATFORM');
-      expect(error.message).toBe(WhisperMessages.unsupported(platform, arch));
+      expect(error.message).toBe(WhisperMessages.unsupported);
     },
   );
+
+  it('when the unsupported message is shown, should not mention tools or system identifiers', () => {
+    expect(WhisperMessages.unsupported).not.toMatch(/whisper|win32|x64|linux/i);
+  });
 
   it('when an unsupported platform has the user own binary in the configured folder, should use it', () => {
     const own = { ...location, directory: path.resolve('/opt/whisper'), executable: 'whisper-cli' };

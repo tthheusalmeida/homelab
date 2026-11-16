@@ -50,12 +50,12 @@ describe('ComponentsService', () => {
   let fetchFn: jest.Mock;
   let catalog: ComponentSpec[];
 
-  const build = () =>
+  const build = (platform: NodeJS.Platform = 'win32') =>
     new ComponentsService({
       binDir,
       modelsDir: path.join(dir, 'models'),
       downloadsDir: path.join(dir, 'downloads'),
-      platform: 'win32',
+      platform,
       state: new JsonFile(path.join(dir, 'components.json')),
       events,
       fetchFn: fetchFn as unknown as FetchLike,
@@ -335,6 +335,83 @@ describe('ComponentsService', () => {
 
     expect(fs.existsSync(path.join(binDir, 'ggml-cuda.dll'))).toBe(false);
     expect(fs.existsSync(path.join(binDir, 'cudart64_12.dll'))).toBe(false);
+  });
+
+  describe('on Linux', () => {
+    const PROGRAM = Buffer.from('programa ffmpeg '.repeat(50));
+
+    beforeEach(() => {
+      bodies.set('https://x/ffmpeg-linux', PROGRAM);
+      catalog.push({
+        id: 'ffmpeg',
+        group: 'runtime',
+        label: 'Processamento de áudio',
+        description: '',
+        required: true,
+        kind: 'binary',
+        sizeBytes: PROGRAM.length,
+        file: 'ffmpeg',
+        download: { url: 'https://x/ffmpeg-linux', sha256: sha(PROGRAM) },
+      });
+    });
+
+    it('when installing a single program, should save it without extension and make it executable', async () => {
+      const service = build('linux');
+
+      await service.install(['ffmpeg']);
+      await service.whenIdle();
+
+      const file = path.join(binDir, 'ffmpeg');
+
+      expect((await infoOf(service, 'ffmpeg'))?.state).toBe('installed');
+      expect(fs.readFileSync(file)).toEqual(PROGRAM);
+      expect(fs.statSync(file).mode & 0o111).not.toBe(0);
+    });
+
+    it('when installing a zip pack, should make the extracted programs executable', async () => {
+      const zipFile = path.join(dir, 'whisper.zip');
+
+      await writeZip(zipFile, [{ name: 'whisper-cli', source: { buffer: Buffer.from('bin') } }]);
+      const zipBody = fs.readFileSync(zipFile);
+
+      bodies.set('https://x/whisper.zip', zipBody);
+      catalog.push({
+        id: 'whisper-pack',
+        group: 'runtime',
+        label: 'Transcrição',
+        description: '',
+        required: false,
+        kind: 'zip',
+        sizeBytes: zipBody.length,
+        file: 'whisper-cli',
+        download: { url: 'https://x/whisper.zip', sha256: sha(zipBody) },
+        provides: ['whisper-cli'],
+      });
+      const service = build('linux');
+
+      await service.install(['whisper-pack']);
+      await service.whenIdle();
+
+      expect(fs.statSync(path.join(binDir, 'whisper-cli')).mode & 0o111).not.toBe(0);
+    });
+
+    it('when no catalog is given, should list only the components that exist for the system', async () => {
+      const service = new ComponentsService({
+        binDir,
+        modelsDir: path.join(dir, 'models'),
+        downloadsDir: path.join(dir, 'downloads'),
+        platform: 'linux',
+        arch: 'x64',
+        state: new JsonFile(path.join(dir, 'components.json')),
+        events,
+        fetchFn: fetchFn as unknown as FetchLike,
+        hardware: () => Promise.resolve(hardware),
+      });
+      const ids = (await service.status()).components.map((component) => component.id);
+
+      expect(ids).toEqual(expect.arrayContaining(['ffmpeg', 'yt-dlp', 'model-small']));
+      expect(ids).not.toContain('cuda-pack');
+    });
   });
 
   describe('single program (binary)', () => {

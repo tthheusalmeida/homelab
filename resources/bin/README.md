@@ -5,7 +5,7 @@ Esta pasta não é versionada (exceto este README). Cada plataforma tem a sua su
 ```
 resources/bin/
   win32-x64/    whisper-cli.exe + DLLs (ggml*.dll, whisper.dll, cublas/cudart de CUDA 12…) + ffmpeg.exe
-  linux-x64/    (futuro)
+  linux-x64/    não usada: no Linux os programas são baixados pelo app para <userData>/bin/linux-x64
   darwin-arm64/ (futuro)
 ```
 

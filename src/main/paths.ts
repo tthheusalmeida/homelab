@@ -22,13 +22,23 @@ export function resolveResourcesDir(
   return packaged ? resourcesPath : path.join(projectRoot, 'resources');
 }
 
-/** Pasta dos binários nativos da plataforma: `<resources>/bin/<platform>-<arch>`. */
+/**
+ * Pasta dos binários nativos do sistema (`bin/<platform>-<arch>`).
+ * - Windows: a que vem no instalador, em `<resources>/bin` (o app é instalado para o usuário, então
+ *   dá para gravar nela).
+ * - Linux e macOS: nos dados do usuário, porque o AppImage e o `.app` são somente leitura; o
+ *   assistente baixa os programas para lá.
+ */
 export function resolveBinDir(
   resourcesDir: string,
   platform: NodeJS.Platform,
   arch: string,
+  userDataDir: string,
 ): string {
-  return path.join(resourcesDir, 'bin', `${platform}-${arch}`);
+  const base =
+    platform === 'win32' ? path.join(resourcesDir, 'bin') : path.join(userDataDir, 'bin');
+
+  return path.join(base, `${platform}-${arch}`);
 }
 
 /** Raiz dos dados do HomeLab: `HOMELAB_DATA_ROOT_DIR` ou `Documentos/HomeLab`. */
