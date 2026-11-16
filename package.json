@@ -1,6 +1,6 @@
 {
   "name": "homelab-desktop",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "HomeLab desktop (Electron)",
   "license": "MIT",
@@ -23,8 +23,11 @@
     "typecheck:renderer": "tsc -p tsconfig.renderer.json",
     "test:e2e": "npm run build && playwright test",
     "icons": "node scripts/build-icons.mjs",
-    "dist": "npm run icons && npm run build && electron-builder --win nsis --x64",
-    "dist:dir": "npm run icons && npm run build && electron-builder --win dir --x64"
+    "dist": "npm run dist:win",
+    "dist:dir": "npm run icons && npm run build && electron-builder --win dir --x64",
+    "dist:win": "npm run icons && npm run build && electron-builder --win nsis --x64",
+    "dist:linux": "npm run build && electron-builder --linux AppImage --x64",
+    "dist:mac": "npm run build && electron-builder --mac dmg --arm64"
   },
   "jest": {
     "moduleFileExtensions": [

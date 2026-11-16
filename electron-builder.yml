@@ -1,4 +1,6 @@
-# Empacotamento do HomeLab (fase 10). Só Windows x64 por enquanto; sem assinatura de código.
+# Empacotamento do HomeLab. Cada sistema tem o seu instalador, com só os binários do seu sistema,
+# e é gerado no próprio sistema (ver docs/empacotamento.md). Hoje só o Windows x64 está pronto;
+# sem assinatura de código.
 appId: homelab
 productName: HomeLab
 copyright: HomeLab
@@ -11,12 +13,8 @@ files:
   - package.json
 asar: true
 # Binários nativos ficam fora do asar (precisam ser executados): <app>/resources/bin/<plataforma>-<arch>.
-# O modelo do Whisper (.bin) não entra no instalador; o usuário informa em Configurações.
-extraResources:
-  - from: resources/bin/win32-x64
-    to: bin/win32-x64
-    filter:
-      - '**/*'
+# O instalador é pequeno: modelos do Whisper (*.bin) e o pacote CUDA (DLLs de GPU NVIDIA, ~1 GB) não
+# entram; o assistente de instalação do app baixa depois (o instalador NSIS não passa de ~2 GB).
 win:
   icon: build/icon.ico
   target:
@@ -24,9 +22,48 @@ win:
       arch:
         - x64
   artifactName: HomeLab-Setup-${version}.${ext}
+  extraResources:
+    - from: resources/bin/win32-x64
+      to: bin/win32-x64
+      filter:
+        - '**/*'
+        - '!**/*.bin'
+        - '!cublas*.dll'
+        - '!cudart*.dll'
+        - '!nvblas*.dll'
+        - '!nvrtc*.dll'
+        - '!ggml-cuda.dll'
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   perMachine: false
   deleteAppDataOnUninstall: false
   shortcutName: HomeLab
+# Linux e macOS: configuração pronta, mas ainda sem binários (Whisper e ffmpeg próprios de cada
+# sistema em resources/bin/linux-x64 e resources/bin/darwin-arm64). Gere cada um no seu sistema.
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  category: Utility
+  artifactName: HomeLab-${version}.${ext}
+  extraResources:
+    - from: resources/bin/linux-x64
+      to: bin/linux-x64
+      filter:
+        - '**/*'
+        - '!**/*.bin'
+mac:
+  target:
+    - target: dmg
+      arch:
+        - arm64
+  category: public.app-category.productivity
+  artifactName: HomeLab-${version}-${arch}.${ext}
+  extraResources:
+    - from: resources/bin/darwin-arm64
+      to: bin/darwin-arm64
+      filter:
+        - '**/*'
+        - '!**/*.bin'
