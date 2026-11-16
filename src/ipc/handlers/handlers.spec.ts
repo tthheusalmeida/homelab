@@ -13,10 +13,22 @@ describe('createHandlers', () => {
 
     new IpcRegistrar(ipc).register(
       createHandlers({
-        appInfo: { version: () => '0.0.1', relaunch: jest.fn(), openSettings: jest.fn() },
+        appInfo: {
+          version: () => '0.0.1',
+          relaunch: jest.fn(),
+          openSettings: jest.fn(),
+          takeSettingsSection: jest.fn(),
+        },
         folderPicker: { pick: jest.fn() },
         libraryMover: { inspect: jest.fn(), apply: jest.fn() },
         notices: { drain: jest.fn() },
+        components: {
+          status: jest.fn(),
+          install: jest.fn(),
+          cancel: jest.fn(),
+          remove: jest.fn(),
+          setActiveModel: jest.fn(),
+        },
         backup: {
           preview: jest.fn(),
           create: jest.fn(),

@@ -154,6 +154,12 @@ Itens: `library` (páginas e livros), `inbox`, `jobs`, `chats`, `usage`, `settin
 | Canal | Payload | Retorno |
 |---|---|---|
 | `notices:pending` | — | avisos nascidos durante a abertura (entregues uma vez só) |
+| `components:status` | — | lista de componentes, hardware, progresso e `needsSetup` (ver `componentes.md`) |
+| `components:install` | `{ ids }` | baixa e instala; progresso no evento `components:progress` |
+| `components:cancel` | — | cancela a instalação em andamento |
+| `components:remove` | `{ id }` | remove modelo ou pacote CUDA |
+| `components:set-active-model` | `{ id }` | escolhe o modelo do Whisper em uso |
+| `app:settings-section` | — | seção pedida ao abrir as Configurações (uma vez só) |
 
 ## Eventos (main → renderer)
 Enviados com `webContents.send` a todas as janelas; a ponte (`window.api.on(evento, ouvinte)`) só entrega os de `IpcEvents` e só o payload.

@@ -32,6 +32,9 @@ describe('createServices', () => {
       fetchFn: () => Promise.resolve({ ok: true, status: 200 }),
       ffmpegVersion: () => Promise.resolve('ffmpeg version 7'),
       checkGeminiKey: () => Promise.resolve(),
+      downloadFetch: () => Promise.reject(new Error('sem rede nos testes')),
+      runForOutput: () => Promise.reject(new Error('sem programas nos testes')),
+      totalMemoryMb: () => 16384,
       whisperIo: io,
     });
 

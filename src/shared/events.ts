@@ -1,3 +1,4 @@
+import type { ComponentsStatus } from './contracts/components';
 import type { AppNotice, ProgressEventPayload } from './contracts/events';
 
 /**
@@ -8,6 +9,8 @@ export const IpcEvents = {
   backupProgress: 'backup:progress',
   libraryMoveProgress: 'library-move:progress',
   notice: 'app:notice',
+  componentsProgress: 'components:progress',
+  settingsNavigate: 'settings:navigate',
 } as const;
 
 export type IpcEvent = (typeof IpcEvents)[keyof typeof IpcEvents];
@@ -17,6 +20,8 @@ export interface IpcEventPayloads {
   [IpcEvents.backupProgress]: ProgressEventPayload;
   [IpcEvents.libraryMoveProgress]: ProgressEventPayload;
   [IpcEvents.notice]: AppNotice;
+  [IpcEvents.componentsProgress]: ComponentsStatus;
+  [IpcEvents.settingsNavigate]: { section: string };
 }
 
 export type IpcEventPayload<E extends IpcEvent> = IpcEventPayloads[E];

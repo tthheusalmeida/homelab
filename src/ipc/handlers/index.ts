@@ -6,6 +6,7 @@ import type { IpcHandler } from '../ipc-handler';
 import { AiHandler, type AiCatalog, type AiUsageSource } from './ai.handler';
 import { AppHandler, type AppInfo } from './app.handler';
 import { BackupHandler, type BackupPort } from './backup.handler';
+import { ComponentsHandler, type ComponentsPort } from './components.handler';
 import { NoticeHandler, type PendingNotices } from './notice.handler';
 import { BookHandler, type BookReader, type BookWriter } from './book.handler';
 import { ChatHandler, type ChatSource } from './chat.handler';
@@ -51,6 +52,7 @@ export interface HandlerDeps {
   libraryMover: LibraryFolderPort;
   backup: BackupPort;
   notices: PendingNotices;
+  components: ComponentsPort;
   settings: SettingsService;
   externalProviders: ExternalProvidersService;
   localProviders: LocalProvidersService;
@@ -71,6 +73,7 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
     new BookHandler(deps.back.books),
     new BackupHandler(deps.backup),
     new NoticeHandler(deps.notices),
+    new ComponentsHandler(deps.components),
     new JobHandler(
       deps.back.jobs.catalog,
       deps.back.jobs.launcher,

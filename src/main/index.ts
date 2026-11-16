@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
@@ -50,7 +51,9 @@ import { needsInitialSetup } from './first-run';
 import { resolveFrontTarget, type FrontTarget } from './front-target';
 import { LocalStateGuard } from './local-state-guard';
 import { classifyNavigation } from './navigation-guard';
-import { resolveDataRoot, resolveFrontDist, resolveResourcesDir } from './paths';
+import { IpcEvents } from '../shared/events';
+import { resolveFfmpegPath } from '../providers/ffmpeg-binary-resolver';
+import { resolveBinDir, resolveDataRoot, resolveFrontDist, resolveResourcesDir } from './paths';
 import { isSettingsShortcut } from './shortcuts';
 import { SingleWindowController } from './single-window';
 import { SystemNotifier } from './system-notifier';
@@ -90,6 +93,8 @@ protocol.registerSchemesAsPrivileged([
 let mainWindow: BrowserWindow | null = null;
 let settingsWindow: SingleWindowController<BrowserWindow> | null = null;
 let splashWindow: BrowserWindow | null = null;
+/** Seção pedida para a janela de Configurações que ainda vai abrir (lida uma vez por ela). */
+let pendingSettingsSection: string | null = null;
 
 /** Fundo das janelas antes da primeira pintura: o do tema do sistema (a página aplica o escolhido). */
 const backgroundNow = () => windowBackground(nativeTheme.shouldUseDarkColors);
@@ -248,17 +253,26 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
 
   const localStateGuard = new LocalStateGuard({ userDataDir: app.getPath('userData') });
   const events = new WindowEventPublisher(() => BrowserWindow.getAllWindows());
+  const resourcesDir = resolveResourcesDir(projectRoot, app.isPackaged, process.resourcesPath);
+  const ffmpegPath = resolveFfmpegPath({
+    binDir: resolveBinDir(resourcesDir, process.platform, process.arch),
+    platform: process.platform,
+    exists: fs.existsSync,
+  });
   const services = createServices({
     events,
     userDataDir: app.getPath('userData'),
     rootDir: resolveDataRoot(app.getPath('documents'), process.env),
-    resourcesDir: resolveResourcesDir(projectRoot, app.isPackaged, process.resourcesPath),
+    resourcesDir,
     platform: process.platform,
     arch: process.arch,
     cipher: electronCipher,
     exists: fs.existsSync,
     fetchFn: (url, init) => fetch(url, init),
-    ffmpegVersion: async () => (await run('ffmpeg', ['-version'], { timeout: 5000 })).stdout,
+    downloadFetch: (url, init) => fetch(url, init),
+    runForOutput: async (file, args) => (await run(file, args, { timeout: 15000 })).stdout,
+    totalMemoryMb: () => os.totalmem() / 1048576,
+    ffmpegVersion: async () => (await run(ffmpegPath, ['-version'], { timeout: 5000 })).stdout,
     whisperIo: {
       run: (file, args) => run(file, args),
       readText: (file) => fs.promises.readFile(file, 'utf8'),
@@ -301,6 +315,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       services.settings,
       services.appPaths,
       await services.secrets.get('gemini.apiKey'),
+      ffmpegPath,
     ),
     whisper: services.whisper,
     alerts: new EventBackAlerts(events, systemNotifier),
@@ -353,8 +368,20 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
           }
           app.exit(0);
         },
-        openSettings: () => {
+        openSettings: (section) => {
+          pendingSettingsSection = section ?? null;
           settingsWindow?.open();
+
+          if (section) {
+            events.publish(IpcEvents.settingsNavigate, { section });
+          }
+        },
+        takeSettingsSection: () => {
+          const section = pendingSettingsSection;
+
+          pendingSettingsSection = null;
+
+          return section;
         },
       },
       folderPicker: {
@@ -376,6 +403,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       libraryMover: services.libraryMover,
       backup,
       notices,
+      components: services.components,
       settings: services.settingsService,
       externalProviders: services.externalProviders,
       localProviders: services.localProviders,

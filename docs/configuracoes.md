@@ -60,7 +60,7 @@ Ao salvar um caminho novo o app olha a pasta: **vazia ou nova** oferece "Mover a
 | `TEMP_DOCS_DIR` | Fixa: `<raiz>/inbox` |
 | `TEMP_VIDEO_DIR`, `TEMP_AUDIO_DIR` | Fixas: `<raiz>/temp/video` e `<raiz>/temp/audio` |
 | `PORT`, `CORS_ORIGIN` | Somem na fase 09 (sem HTTP). Até lá `CORS_ORIGIN` vem da origem do front carregado |
-| ffmpeg no PATH | Só testável (provider local `ffmpeg`, `editable: false`) |
+| ffmpeg embutido (`resources/bin`) ou no PATH | Só testável (provider local `ffmpeg`, `editable: false`) |
 
 ## Como o back recebe esses valores (desde a fase 09a)
 - O back (`src/back`) recebe a configuração por uma `BackConfig` tipada (`libraryDir`, `inboxDir`, `videoTempDir`, `audioTempDir`, `ollamaUrl`, `geminiApiKey`), implementada pelo `SettingsBackConfig`: pastas e URL vêm do `settings.json` a cada leitura e a chave do Gemini, dos segredos, lida uma vez na inicialização. Os services a leem **na criação**, por isso mudar configuração exige reiniciar (exceto o Whisper, que lê a cada transcrição).
@@ -71,7 +71,7 @@ Ao salvar um caminho novo o app olha a pasta: **vazia ou nova** oferece "Mover a
 - O `NestHost` do desktop monta o Nest com os módulos do back, sem `ConfigModule` e sem validação de `.env`.
 - `GeminiProvider` é trocado nos metadados dos módulos que o declaram (`AIModule`, `VideoModule`) por uma fábrica: com chave, cria o provider real; sem chave, usa um provider que responde `NOT_CONFIGURED`.
 - `WhisperService` é trocado no `AIModule` (o único que o declara) pelo `DesktopWhisperService`, que lê o Settings e usa o resolvedor.
-- ffmpeg segue sendo chamado pelo PATH pelo `VideoService` (continua só testável).
+- O `VideoService` chama o ffmpeg embutido em `resources/bin/<plataforma>-<arch>` (`BackConfig.ffmpegPath`, via `resolveFfmpegPath`) e, sem ele, o do PATH; continua só testável.
 
 ## Providers
 ### Externos (`providers:external:*`)
@@ -82,7 +82,7 @@ Ao salvar um caminho novo o app olha a pasta: **vazia ou nova** oferece "Mover a
 ### Locais (`providers:local:*`)
 - Whisper: **só teste** (os valores são fixos: pasta `resources/bin/<plataforma>`, executável e modelo `ggml-large-v3-turbo.bin` na mesma pasta). O teste verifica a existência do executável e do modelo, com a mesma regra que a transcrição usa, e as mensagens dizem o caminho completo esperado.
 - Ollama: URL. Teste faz `GET /api/tags` (5 s de limite).
-- ffmpeg: somente teste (`ffmpeg -version`). O back o chama pelo PATH; configurá-lo exigiria alterar o back.
+- ffmpeg: somente teste (`ffmpeg -version`). O app usa o embutido e, sem ele, o do PATH; não há campo para trocá-lo.
 - Novos entram registrando outra definição (`LocalProviderDefinition`).
 
 ## Binários por plataforma

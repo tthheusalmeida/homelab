@@ -5,8 +5,10 @@ export interface AppInfo {
   version(): string;
   /** Reinicia o app (usado para aplicar mudanças de configuração). */
   relaunch(): void | Promise<void>;
-  /** Abre (ou foca) a janela de Configurações. */
-  openSettings(): void;
+  /** Abre (ou foca) a janela de Configurações, já numa seção quando informada. */
+  openSettings(section?: string): void;
+  /** Seção pedida ao abrir as Configurações; entregue uma vez só. */
+  takeSettingsSection(): string | null;
 }
 
 /** Canais `app:*`. */
@@ -20,7 +22,10 @@ export class AppHandler extends IpcHandler {
       this.route(IpcChannels.app.ping, () => 'pong' as const),
       this.route(IpcChannels.app.version, () => this.appInfo.version()),
       this.route(IpcChannels.app.relaunch, () => this.appInfo.relaunch()),
-      this.route(IpcChannels.app.openSettings, () => this.appInfo.openSettings()),
+      this.route(IpcChannels.app.openSettings, (request: { section?: string } | void) =>
+        this.appInfo.openSettings(request ? request.section : undefined),
+      ),
+      this.route(IpcChannels.app.settingsSection, () => this.appInfo.takeSettingsSection()),
     ];
   }
 }

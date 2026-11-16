@@ -8,7 +8,7 @@ export const LocalTestMessages = {
   whisperOk: 'Whisper e modelo encontrados.',
   whisperExecutableMissing: (file: string) => `Executável do Whisper não encontrado: ${file}`,
   whisperModelMissing: (file: string) =>
-    `Modelo do Whisper não encontrado: ${file}. Copie o arquivo do modelo para essa pasta (veja resources/bin/README.md).`,
+    `Modelo do Whisper não encontrado: ${file}. Instale um modelo em Configurações > Componentes.`,
   ollamaOk: 'Ollama respondeu.',
   ollamaStatus: (status: number) => `O Ollama respondeu com status ${status}.`,
   ollamaUnreachable: (url: string) => `Não foi possível conectar ao Ollama em ${url}.`,
@@ -23,7 +23,7 @@ const pickDefined = (config: Record<string, string>, keys: string[]) =>
 /** Whisper com os padrões do app (pasta de binários, executável e modelo): só dá para testar. */
 export function createWhisperDefinition(
   exists: (file: string) => boolean,
-  config: WhisperConfig,
+  configOrGetter: WhisperConfig | (() => WhisperConfig),
 ): LocalProviderDefinition {
   return {
     id: 'whisper',
@@ -32,6 +32,7 @@ export function createWhisperDefinition(
     read: () => ({}),
     toPatch: () => ({}),
     test: () => {
+      const config = typeof configOrGetter === 'function' ? configOrGetter() : configOrGetter;
       const executable = path.join(config.directory, config.executable);
       const model = whisperModelPath(config.directory, config.model);
 

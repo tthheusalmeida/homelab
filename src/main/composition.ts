@@ -11,6 +11,9 @@ import {
 } from '../providers/local-definitions';
 import { LocalProvidersService } from '../providers/local-providers.service';
 import { DesktopWhisperService, type WhisperRunner } from '../providers/desktop-whisper.service';
+import { ComponentsService } from '../components/components.service';
+import { detectHardware } from '../components/hardware';
+import type { FetchLike } from '../components/downloader';
 import { WhisperBinaryResolver } from '../providers/whisper-binary-resolver';
 import { createAppPaths, createWhisperConfig } from '../settings/app-paths';
 import { JsonFile } from '../storage/json-file';
@@ -37,6 +40,11 @@ export interface CompositionOptions {
   exists: (file: string) => boolean;
   fetchFn: Parameters<typeof createOllamaDefinition>[0];
   ffmpegVersion: () => Promise<string>;
+  /** Cliente HTTP em fluxo, usado para baixar modelos e pacotes (`fetch` do Electron). */
+  downloadFetch: FetchLike;
+  /** Executa um programa e devolve a saída (detecção da placa de vídeo). */
+  runForOutput: (file: string, args: string[]) => Promise<string>;
+  totalMemoryMb: () => number;
   checkGeminiKey: GeminiKeyChecker;
   /** Envia eventos (progresso, avisos) às janelas abertas. */
   events: EventPublisher;
@@ -65,8 +73,29 @@ export function createServices(options: CompositionOptions) {
     options.cipher,
   );
 
+  const binDir = resolveBinDir(options.resourcesDir, options.platform, options.arch);
+  const components = new ComponentsService({
+    binDir,
+    modelsDir: path.join(options.userDataDir, 'components', 'models'),
+    downloadsDir: path.join(options.userDataDir, 'components', 'downloads'),
+    platform: options.platform,
+    state: new JsonFile(path.join(options.userDataDir, DataFiles.components)),
+    events: options.events,
+    fetchFn: options.downloadFetch,
+    hardware: () =>
+      detectHardware({
+        platform: options.platform,
+        run: options.runForOutput,
+        totalMemoryMb: options.totalMemoryMb,
+      }),
+  });
+  const activeWhisperConfig = () => ({
+    ...whisperConfig,
+    model: components.activeModelRef(whisperConfig.model),
+  });
+
   const whisper = new DesktopWhisperService({
-    config: () => whisperConfig,
+    config: activeWhisperConfig,
     resolver: new WhisperBinaryResolver({
       platform: options.platform,
       arch: options.arch,
@@ -96,6 +125,7 @@ export function createServices(options: CompositionOptions) {
     settings,
     secrets,
     whisper,
+    components,
     settingsService: new SettingsService(settings),
     externalProviders: new ExternalProvidersService(
       [createGeminiDefinition(options.checkGeminiKey)],
@@ -103,7 +133,7 @@ export function createServices(options: CompositionOptions) {
     ),
     localProviders: new LocalProvidersService(
       [
-        createWhisperDefinition(options.exists, whisperConfig),
+        createWhisperDefinition(options.exists, activeWhisperConfig),
         createOllamaDefinition(options.fetchFn),
         createFfmpegDefinition(options.ffmpegVersion),
       ],

@@ -22,6 +22,8 @@ export const MainEnv = {
 /** Arquivos que ficam em userData (segredos cifrados com a chave do usuário do sistema: não portáveis). */
 export const DataFiles = {
   secrets: 'secrets.json',
+  /** Qual modelo do Whisper está em uso (ver `components/components.service.ts`). */
+  components: 'components.json',
 } as const;
 
 /** Pasta-raiz padrão dos dados do HomeLab, dentro de Documentos. */

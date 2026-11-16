@@ -10,6 +10,7 @@ function setup() {
     version: jest.fn().mockReturnValue('0.0.1'),
     relaunch: jest.fn(),
     openSettings: jest.fn(),
+    takeSettingsSection: jest.fn().mockReturnValue('components'),
   };
   new IpcRegistrar(ipc).register([new AppHandler(appInfo)]);
 
@@ -47,6 +48,23 @@ describe('AppHandler', () => {
     expect(appInfo.openSettings).toHaveBeenCalledTimes(1);
   });
 
+  it('when app:open-settings is called with a section, should pass it to AppInfo', async () => {
+    const { ipc, appInfo } = setup();
+
+    await ipc.invoke(IpcChannels.app.openSettings, { section: 'components' });
+
+    expect(appInfo.openSettings).toHaveBeenCalledWith('components');
+  });
+
+  it('when app:settings-section is called, should answer the pending section from AppInfo', async () => {
+    const { ipc } = setup();
+
+    await expect(ipc.invoke(IpcChannels.app.settingsSection)).resolves.toEqual({
+      ok: true,
+      data: 'components',
+    });
+  });
+
   it('when AppInfo fails, should answer a failed envelope instead of rejecting', async () => {
     const ipc = new FakeIpcMain();
     const appInfo = {
@@ -55,6 +73,7 @@ describe('AppHandler', () => {
       },
       relaunch: jest.fn(),
       openSettings: jest.fn(),
+      takeSettingsSection: jest.fn(),
     };
     new IpcRegistrar(ipc).register([new AppHandler(appInfo)]);
 

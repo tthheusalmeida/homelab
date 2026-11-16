@@ -10,6 +10,7 @@ export const IpcChannels = {
     version: 'app:version',
     relaunch: 'app:relaunch',
     openSettings: 'app:open-settings',
+    settingsSection: 'app:settings-section',
   },
   settings: {
     get: 'settings:get',
@@ -41,6 +42,13 @@ export const IpcChannels = {
   },
   notices: {
     pending: 'notices:pending',
+  },
+  components: {
+    status: 'components:status',
+    install: 'components:install',
+    cancel: 'components:cancel',
+    remove: 'components:remove',
+    setActiveModel: 'components:set-active-model',
   },
   chat: {
     send: 'chat:send',

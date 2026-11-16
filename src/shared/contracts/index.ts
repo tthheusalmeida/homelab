@@ -24,6 +24,7 @@ import type {
   BookSummary,
   BookUpdateRequest,
 } from './books';
+import type { ComponentRequest, ComponentsInstallRequest, ComponentsStatus } from './components';
 import type {
   BackupCreateRequest,
   BackupCreateResult,
@@ -97,7 +98,10 @@ export interface IpcContracts {
   [IpcChannels.app.ping]: { request: void; response: 'pong' };
   [IpcChannels.app.version]: { request: void; response: string };
   [IpcChannels.app.relaunch]: { request: void; response: void };
-  [IpcChannels.app.openSettings]: { request: void; response: void };
+  /** Abre (ou foca) as Configurações; com `section`, já na seção pedida (ex.: `components`). */
+  [IpcChannels.app.openSettings]: { request: { section?: string } | void; response: void };
+  /** Seção pedida ao abrir as Configurações (entregue uma vez só; `null` se não houve pedido). */
+  [IpcChannels.app.settingsSection]: { request: void; response: string | null };
 
   [IpcChannels.settings.get]: { request: void; response: SettingsPaths };
   [IpcChannels.settings.update]: {
@@ -132,6 +136,22 @@ export interface IpcContracts {
 
   /** Avisos criados enquanto o app abria (entregues uma vez só). Os seguintes chegam pelo evento `app:notice`. */
   [IpcChannels.notices.pending]: { request: void; response: AppNotice[] };
+  /** Lista de componentes (Whisper, ffmpeg, CUDA, modelos) com estado, hardware e recomendação. */
+  [IpcChannels.components.status]: { request: void; response: ComponentsStatus };
+  /** Baixa e instala os componentes escolhidos; o progresso vai em `components:progress`. */
+  [IpcChannels.components.install]: {
+    request: ComponentsInstallRequest;
+    response: ComponentsStatus;
+  };
+  /** Cancela a instalação em andamento. */
+  [IpcChannels.components.cancel]: { request: void; response: void };
+  /** Remove um componente opcional (modelo ou pacote CUDA). */
+  [IpcChannels.components.remove]: { request: ComponentRequest; response: ComponentsStatus };
+  /** Escolhe o modelo do Whisper em uso. */
+  [IpcChannels.components.setActiveModel]: {
+    request: ComponentRequest;
+    response: ComponentsStatus;
+  };
 
   /** Mostra o que dá para incluir no backup, com tamanhos, e o que não entra. */
   [IpcChannels.backup.preview]: { request: void; response: BackupPreview };
