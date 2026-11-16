@@ -42,7 +42,10 @@ export class VideoService {
   ) {
     this.platform = new PlatformDownloader({
       tools: config.platformTools,
-      ffmpegPath: config.ffmpegPath,
+      // Lido a cada download: o ffmpeg pode ser instalado pelo app com ele já aberto.
+      get ffmpegPath() {
+        return config.ffmpegPath?.();
+      },
       run: (file, args) => execFileAsync(file, args),
     });
   }
@@ -159,7 +162,7 @@ export class VideoService {
       const audioFileName = `${videoName}.wav`;
       const audioPath = path.resolve(destinationDir, audioFileName);
 
-      await execFileAsync(this.config.ffmpegPath ?? 'ffmpeg', [
+      await execFileAsync(this.config.ffmpegPath?.() ?? 'ffmpeg', [
         '-i',
         videoPath,
         // Remove o vídeo

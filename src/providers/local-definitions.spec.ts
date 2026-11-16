@@ -121,7 +121,7 @@ describe('ffmpeg definition', () => {
     const result = await definition.test({});
 
     expect(result.ok).toBe(false);
-    expect(result.message).toMatch(/PATH/);
+    expect(result.message).toMatch(/Componentes/);
   });
 
   it('when inspecting it, should be read-only', () => {

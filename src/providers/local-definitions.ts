@@ -12,7 +12,8 @@ export const LocalTestMessages = {
   ollamaOk: 'Ollama respondeu.',
   ollamaStatus: (status: number) => `O Ollama respondeu com status ${status}.`,
   ollamaUnreachable: (url: string) => `Não foi possível conectar ao Ollama em ${url}.`,
-  ffmpegUnavailable: 'ffmpeg não encontrado. Instale-o e deixe-o no PATH do sistema.',
+  ffmpegUnavailable:
+    'O processamento de áudio não foi encontrado. Instale-o em Configurações > Componentes.',
 } as const;
 
 const OLLAMA_TIMEOUT_MS = 5000;
@@ -82,7 +83,7 @@ export function createOllamaDefinition(
   };
 }
 
-/** O back chama `ffmpeg` pelo PATH; por isso aqui só é possível testar, não configurar. */
+/** O app usa o ffmpeg instalado pelo assistente (ou o do PATH); aqui só é possível testar, não configurar. */
 export function createFfmpegDefinition(version: () => Promise<string>): LocalProviderDefinition {
   return {
     id: 'ffmpeg',

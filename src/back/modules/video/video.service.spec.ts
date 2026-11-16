@@ -226,7 +226,7 @@ describe('VideoService', () => {
         { chat } as unknown as AIService,
         {
           audioTempDir: path.join(tmp, 'audio'),
-          ffmpegPath: bundled,
+          ffmpegPath: () => bundled,
         } as BackConfig,
       );
 

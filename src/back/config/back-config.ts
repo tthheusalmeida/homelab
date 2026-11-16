@@ -19,7 +19,7 @@ export abstract class BackConfig {
   abstract readonly audioTempDir: string;
 
   /** Executável do ffmpeg (embutido ou `ffmpeg` do PATH); sem valor, usa o do PATH. */
-  readonly ffmpegPath?: string;
+  ffmpegPath?(): string | undefined;
 
   /** yt-dlp e cookies de login para baixar vídeos de plataformas; sem valor, só links diretos. */
   readonly platformTools?: PlatformTools;
