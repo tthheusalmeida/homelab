@@ -101,6 +101,7 @@ export const IpcChannels = {
     undoDelete: 'jobs:undo-delete',
     cancel: 'jobs:cancel',
     retry: 'jobs:retry',
+    grantAccess: 'jobs:grant-access',
   },
   providers: {
     external: {

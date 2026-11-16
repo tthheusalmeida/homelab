@@ -162,6 +162,8 @@ export class ComponentsService {
       for (const file of spec.provides ?? []) {
         await fs.promises.rm(path.join(this.deps.binDir, file), { force: true });
       }
+    } else if (spec.kind === 'binary') {
+      await fs.promises.rm(path.join(this.deps.binDir, this.exe(spec.file)), { force: true });
     } else {
       await fs.promises.rm(path.join(this.deps.modelsDir, spec.file), { force: true });
     }
@@ -225,10 +227,7 @@ export class ComponentsService {
       return;
     }
 
-    const destination =
-      spec.kind === 'zip'
-        ? path.join(this.deps.downloadsDir, `${spec.id}.zip`)
-        : path.join(this.deps.modelsDir, spec.file);
+    const destination = this.downloadDestination(spec);
 
     this.setRuntime(spec.id, 'downloading', { receivedBytes: 0, totalBytes: spec.sizeBytes });
 
@@ -251,6 +250,18 @@ export class ComponentsService {
       } finally {
         await fs.promises.rm(destination, { force: true });
       }
+    }
+  }
+
+  /** Onde o arquivo baixado é gravado: pacote na pasta de downloads, programa em binários, modelo em modelos. */
+  private downloadDestination(spec: ComponentSpec): string {
+    switch (spec.kind) {
+      case 'zip':
+        return path.join(this.deps.downloadsDir, `${spec.id}.zip`);
+      case 'binary':
+        return path.join(this.deps.binDir, this.exe(spec.file));
+      default:
+        return path.join(this.deps.modelsDir, spec.file);
     }
   }
 
@@ -308,7 +319,7 @@ export class ComponentsService {
   }
 
   private isInstalled(spec: ComponentSpec): boolean {
-    if (spec.kind === 'bundled') {
+    if (spec.kind === 'bundled' || spec.kind === 'binary') {
       return fs.existsSync(path.join(this.deps.binDir, this.exe(spec.file)));
     }
 

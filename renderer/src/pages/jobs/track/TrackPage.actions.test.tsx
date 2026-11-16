@@ -139,6 +139,70 @@ describe("TrackPage — job actions", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Este job é antigo");
   });
 
+  describe("videos that need login", () => {
+    const waiting = () =>
+      makeJob("v", "failed", {
+        retryable: true,
+        errorCode: "ACCESS_REQUIRED",
+        accessUrl: "https://curso.edu/aula/1",
+      });
+
+    it("when a job failed asking for access, should offer to sign in to the site", async () => {
+      setup([waiting()]);
+
+      expect(await screen.findByRole("button", { name: "Entrar no site" })).toBeInTheDocument();
+    });
+
+    it("when a job failed for another reason, should not offer to sign in", async () => {
+      setup([makeJob("f", "failed", { retryable: true })]);
+
+      await screen.findByText("Resumo f");
+
+      expect(screen.queryByRole("button", { name: "Entrar no site" })).not.toBeInTheDocument();
+    });
+
+    it("when the user signs in and closes the window, should retry the job automatically", async () => {
+      const user = userEvent.setup();
+      const invoke = setup([waiting()], {
+        [IpcChannels.jobs.grantAccess]: () => ok({ id: "v", granted: true }),
+        [IpcChannels.jobs.retry]: () => ok({ id: "novo", status: "pending" }),
+      });
+
+      await user.click(await screen.findByRole("button", { name: "Entrar no site" }));
+
+      await waitFor(() =>
+        expect(payloadsOf(invoke, IpcChannels.jobs.grantAccess)).toEqual([{ id: "v" }]),
+      );
+      await waitFor(() => expect(payloadsOf(invoke, IpcChannels.jobs.retry)).toEqual([{ id: "v" }]));
+      expect(await screen.findByText("Acesso liberado. Tentando de novo: Resumo v")).toBeInTheDocument();
+    });
+
+    it("when the window is closed without signing in, should explain and not retry", async () => {
+      const user = userEvent.setup();
+      const invoke = setup([waiting()], {
+        [IpcChannels.jobs.grantAccess]: () => ok({ id: "v", granted: false }),
+        [IpcChannels.jobs.retry]: () => ok({ id: "novo", status: "pending" }),
+      });
+
+      await user.click(await screen.findByRole("button", { name: "Entrar no site" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("Não encontramos um login");
+      expect(payloadsOf(invoke, IpcChannels.jobs.retry)).toEqual([]);
+    });
+
+    it("when opening the login fails, should show the reason", async () => {
+      const user = userEvent.setup();
+
+      setup([waiting()], {
+        [IpcChannels.jobs.grantAccess]: () => failure("VALIDATION", "Este job não está esperando acesso."),
+      });
+
+      await user.click(await screen.findByRole("button", { name: "Entrar no site" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("não está esperando acesso");
+    });
+  });
+
   it("when jobs are deleted, should offer to undo and bring them back", async () => {
     const user = userEvent.setup();
     const invoke = setup([makeJob("d", "completed")], {

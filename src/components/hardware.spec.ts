@@ -26,7 +26,7 @@ describe('recommendFor', () => {
     const result = recommendFor([nvidia(12288)], 32768);
 
     expect(result.accelerator).toBe('cuda');
-    expect(result.componentIds).toEqual(['cuda-pack', 'model-large-v3-turbo']);
+    expect(result.componentIds).toEqual(['cuda-pack', 'model-large-v3-turbo', 'yt-dlp']);
     expect(result.modelId).toBe('model-large-v3-turbo');
     expect(result.message).toBe(HardwareMessages.cudaStrong('NVIDIA GeForce RTX 3060', 12));
   });
@@ -34,27 +34,33 @@ describe('recommendFor', () => {
   it('when the NVIDIA card has between 3 and 6 GB, should recommend CUDA and the compact turbo', () => {
     const result = recommendFor([nvidia(4096)], 16384);
 
-    expect(result.componentIds).toEqual(['cuda-pack', 'model-large-v3-turbo-q5']);
+    expect(result.componentIds).toEqual(['cuda-pack', 'model-large-v3-turbo-q5', 'yt-dlp']);
   });
 
   it('when the NVIDIA card has little memory, should recommend CUDA and the small model', () => {
     const result = recommendFor([nvidia(2048)], 16384);
 
-    expect(result.componentIds).toEqual(['cuda-pack', 'model-small']);
+    expect(result.componentIds).toEqual(['cuda-pack', 'model-small', 'yt-dlp']);
   });
 
   it('when there is only an integrated GPU and plenty of RAM, should recommend CPU and the compact turbo', () => {
     const result = recommendFor([intel], 16384);
 
     expect(result.accelerator).toBe('cpu');
-    expect(result.componentIds).toEqual(['model-large-v3-turbo-q5']);
+    expect(result.componentIds).toEqual(['model-large-v3-turbo-q5', 'yt-dlp']);
     expect(result.message).toContain('integrada');
   });
 
   it('when there is only an integrated GPU and little RAM, should recommend the small model', () => {
     const result = recommendFor([intel], 8192);
 
-    expect(result.componentIds).toEqual(['model-small']);
+    expect(result.componentIds).toEqual(['model-small', 'yt-dlp']);
+  });
+
+  it('when the hardware is any, should always recommend yt-dlp to download platform videos', () => {
+    for (const gpus of [[], [intel], [nvidia(12288)]]) {
+      expect(recommendFor(gpus, 8192).componentIds).toContain('yt-dlp');
+    }
   });
 
   it('when no GPU is known, should recommend a safe CPU option', () => {

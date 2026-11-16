@@ -10,11 +10,14 @@ import { formatBytes } from './format';
 export const ComponentStrings = {
   groups: {
     runtime: 'Obrigatórios',
+    download: 'Download de vídeos',
     gpu: 'Aceleração por placa de vídeo',
     model: 'Modelos de transcrição',
   } satisfies Record<ComponentGroup, string>,
   groupHints: {
     runtime: 'Já vêm com o app e são necessários para ele funcionar.',
+    download:
+      'Recomendado. Permite colar links do YouTube e de outras plataformas, não só do arquivo do vídeo.',
     gpu: 'Opcional. Deixa a transcrição bem mais rápida em placas NVIDIA.',
     model: 'Escolha o que baixar agora. Os outros podem ser baixados depois, nas Configurações.',
   } satisfies Record<ComponentGroup, string>,

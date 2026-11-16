@@ -27,6 +27,16 @@ describe('COMPONENT_CATALOG', () => {
     expect(findComponent('nao-existe')).toBeUndefined();
   });
 
+  it('when looking up yt-dlp, should be an optional single program from the official releases', () => {
+    const spec = findComponent('yt-dlp');
+
+    expect(spec?.kind).toBe('binary');
+    expect(spec?.required).toBe(false);
+    expect(spec?.download?.url).toMatch(
+      /^https:\/\/github\.com\/yt-dlp\/yt-dlp\/releases\/download\//,
+    );
+  });
+
   it('when listing models, should only return the model group', () => {
     expect(modelSpecs().every((spec) => spec.group === 'model')).toBe(true);
     expect(modelSpecs().length).toBeGreaterThan(1);

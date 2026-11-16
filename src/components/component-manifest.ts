@@ -7,6 +7,7 @@ import type { ComponentGroup } from '../shared/contracts/components';
  * - `bundled`: já vem no instalador; só é conferido (existe o arquivo?).
  * - `file`: arquivo baixado para a pasta de modelos.
  * - `zip`: pacote baixado e extraído na pasta de binários (ao lado do `whisper-cli`).
+ * - `binary`: programa único baixado direto para a pasta de binários (o yt-dlp).
  */
 export interface ComponentSpec {
   id: string;
@@ -14,7 +15,7 @@ export interface ComponentSpec {
   label: string;
   description: string;
   required: boolean;
-  kind: 'bundled' | 'file' | 'zip';
+  kind: 'bundled' | 'file' | 'zip' | 'binary';
   sizeBytes: number;
   /** Arquivo que prova que está instalado (relativo à pasta de binários ou à de modelos). */
   file: string;
@@ -30,6 +31,10 @@ const RELEASES = 'https://github.com/tthheusalmeida/homelab/releases/download/co
 export const CUDA_PACK_ID = 'cuda-pack';
 export const WHISPER_RUNTIME_ID = 'whisper-runtime';
 export const FFMPEG_ID = 'ffmpeg';
+export const YTDLP_ID = 'yt-dlp';
+
+/** Versão do yt-dlp do catálogo. O programa se atualiza sozinho (`yt-dlp -U`) quando um site muda. */
+const YTDLP_VERSION = '2026.10.26';
 
 export interface ModelSpecInput {
   id: string;
@@ -75,6 +80,21 @@ export const COMPONENT_CATALOG: readonly ComponentSpec[] = [
     kind: 'bundled',
     sizeBytes: 0,
     file: 'ffmpeg',
+  },
+  {
+    id: YTDLP_ID,
+    group: 'download',
+    label: 'yt-dlp (vídeos de plataformas)',
+    description:
+      'Baixa vídeos do YouTube e de outras plataformas, só o áudio. Sem ele o app só baixa links diretos para o arquivo do vídeo.',
+    required: false,
+    kind: 'binary',
+    sizeBytes: 23_575_744,
+    file: 'yt-dlp',
+    download: {
+      url: `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp.exe`,
+      sha256: 'f5389d3698ecde4ef06f4e6b1ce0294fe9ac1396228c8990b8d3416d6d177a7d',
+    },
   },
   {
     id: CUDA_PACK_ID,

@@ -1,5 +1,7 @@
 import { BackConfig } from '../back/config/back-config';
 
+import type { PlatformTools } from '../back/modules/video/platform-downloader';
+
 import type { AppPaths } from './app-paths';
 import type { SettingsStore } from './settings-store';
 
@@ -15,6 +17,7 @@ export class SettingsBackConfig extends BackConfig {
     private readonly appPaths: AppPaths,
     readonly geminiApiKey: string | null,
     readonly ffmpegPath?: string,
+    readonly platformTools?: PlatformTools,
   ) {
     super();
   }

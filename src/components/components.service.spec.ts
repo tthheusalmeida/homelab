@@ -336,4 +336,67 @@ describe('ComponentsService', () => {
     expect(fs.existsSync(path.join(binDir, 'ggml-cuda.dll'))).toBe(false);
     expect(fs.existsSync(path.join(binDir, 'cudart64_12.dll'))).toBe(false);
   });
+
+  describe('single program (binary)', () => {
+    const PROGRAM = Buffer.from('programa yt-dlp '.repeat(50));
+
+    beforeEach(() => {
+      bodies.set('https://x/yt-dlp.exe', PROGRAM);
+      catalog.push({
+        id: 'yt-dlp',
+        group: 'download',
+        label: 'yt-dlp',
+        description: '',
+        required: false,
+        kind: 'binary',
+        sizeBytes: PROGRAM.length,
+        file: 'yt-dlp',
+        download: { url: 'https://x/yt-dlp.exe', sha256: sha(PROGRAM) },
+      });
+    });
+
+    it('when the program is not in the bin folder, should list it as missing', async () => {
+      expect((await infoOf(build(), 'yt-dlp'))?.state).toBe('missing');
+    });
+
+    it('when installing it, should save the .exe in the bin folder and report it installed', async () => {
+      const service = build();
+
+      await service.install(['yt-dlp']);
+      await service.whenIdle();
+
+      expect((await infoOf(service, 'yt-dlp'))?.state).toBe('installed');
+      expect(fs.readFileSync(path.join(binDir, 'yt-dlp.exe'))).toEqual(PROGRAM);
+      expect(fs.existsSync(path.join(binDir, 'yt-dlp.exe.part'))).toBe(false);
+    });
+
+    it('when the downloaded file does not match the checksum, should fail and not keep the file', async () => {
+      bodies.set('https://x/yt-dlp.exe', Buffer.from('adulterado'));
+      const service = build();
+
+      await service.install(['yt-dlp']);
+      await service.whenIdle();
+
+      expect((await infoOf(service, 'yt-dlp'))?.state).toBe('failed');
+      expect(fs.existsSync(path.join(binDir, 'yt-dlp.exe'))).toBe(false);
+    });
+
+    it('when removing it, should delete the program and not require it for the app to be ready', async () => {
+      const service = build();
+
+      await service.install(['yt-dlp']);
+      await service.whenIdle();
+      await service.remove('yt-dlp');
+
+      expect(fs.existsSync(path.join(binDir, 'yt-dlp.exe'))).toBe(false);
+      expect((await infoOf(service, 'yt-dlp'))?.state).toBe('missing');
+    });
+
+    it('when it is missing but a model exists, should not ask for setup', async () => {
+      fs.mkdirSync(path.join(dir, 'models'), { recursive: true });
+      fs.writeFileSync(path.join(dir, 'models', 'a.bin'), MODEL_A);
+
+      expect((await build().status()).needsSetup).toBe(false);
+    });
+  });
 });

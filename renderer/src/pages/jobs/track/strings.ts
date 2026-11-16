@@ -41,6 +41,12 @@ export const TrackStrings = {
   notActive: "A tarefa já tinha terminado",
   retry: "Tentar de novo",
   retried: (label: string) => `Nova tentativa criada: ${label}`,
+  signIn: "Entrar no site",
+  signInHint:
+    "Uma janela do site vai abrir. Entre com a sua conta e feche a janela: o app tenta de novo sozinho.",
+  accessGranted: (label: string) => `Acesso liberado. Tentando de novo: ${label}`,
+  accessNotGranted:
+    "Não encontramos um login nesse site. Entre na sua conta na janela e feche-a para continuar.",
   step: (current: number, total: number, label: string) =>
     `etapa ${current}/${total} · ${label}`,
   queued: "na fila",

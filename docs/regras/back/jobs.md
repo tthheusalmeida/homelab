@@ -20,7 +20,7 @@
 
 ## Fila (`JobRunner`)
 - Jobs rodam **um por vez**, na ordem de chegada (fila em memória).
-- Erro do processor marca o job `failed` com a mensagem do erro (ou "Erro desconhecido" se não for `Error`) e a fila segue.
+- Erro do processor marca o job `failed` com a mensagem do erro (ou "Erro desconhecido" se não for `Error`) e a fila segue. Se o erro é `AccessRequiredError` (vídeo que exige login), o job também guarda `errorInfo { code: 'ACCESS_REQUIRED', url }`, que a tela usa para oferecer "Entrar no site"; uma nova falha sem esse erro limpa o `errorInfo`.
 - O job é salvo no repositório ao iniciar, ao completar e ao falhar.
 
 ## Serviço e repositório

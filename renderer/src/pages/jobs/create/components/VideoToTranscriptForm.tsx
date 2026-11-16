@@ -3,12 +3,11 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "#ui/button";
-import { Input } from "#ui/input";
-import { Label } from "#ui/label";
 
 import { buildDocumentHints } from "../hints";
 import { useCreateVideoToTranscript } from "../hooks/useCreateVideoToTranscript";
 import { JobDocumentFields } from "./JobDocumentFields";
+import { VideoUrlField } from "./VideoUrlField";
 
 interface VideoToTranscriptFormProps {
   /** Chamado quando o job foi criado (a janela usa para fechar e limpar o formulário). */
@@ -49,23 +48,7 @@ export function VideoToTranscriptForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="video-url">URL do vídeo</Label>
-
-        <Input
-          id="video-url"
-          type="url"
-          placeholder="https://..."
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          disabled={locked}
-          required
-        />
-
-        <p className="text-sm text-muted-foreground">
-          Informe a URL direta do vídeo que deseja transcrever.
-        </p>
-      </div>
+      <VideoUrlField value={url} onChange={setUrl} disabled={locked} />
 
       <JobDocumentFields
         idPrefix="transcript"

@@ -1,6 +1,6 @@
 import { JobStatusOptions, type Job } from "../../types/job.types";
 
-import { ChevronDown, RotateCcw, Timer } from "lucide-react";
+import { ChevronDown, LogIn, RotateCcw, Timer } from "lucide-react";
 
 import { formatDateTime, formatDuration } from "#lib/format";
 import { cn } from "#lib/utils";
@@ -37,7 +37,9 @@ interface JobListItemProps {
   onSelectedChange?: (checked: boolean) => void;
   onCancel?: () => void;
   onRetry?: () => void;
-  /** Há uma ação (cancelar ou tentar de novo) em andamento neste job. */
+  /** Abre o login do site de um vídeo que pediu acesso (e tenta de novo ao fechar). */
+  onGrantAccess?: () => void;
+  /** Há uma ação (cancelar, entrar no site ou tentar de novo) em andamento neste job. */
   busy?: boolean;
 }
 
@@ -48,6 +50,7 @@ export function JobListItem({
   onSelectedChange,
   onCancel,
   onRetry,
+  onGrantAccess,
   busy = false,
 }: JobListItemProps) {
   const active = isActiveJob(job);
@@ -111,6 +114,18 @@ export function JobListItem({
               {active && !job.cancelRequested && (
                 <Button size="sm" variant="outline" disabled={busy} onClick={onCancel}>
                   {TrackStrings.cancel}
+                </Button>
+              )}
+
+              {job.errorCode === "ACCESS_REQUIRED" && (
+                <Button
+                  size="sm"
+                  disabled={busy}
+                  onClick={onGrantAccess}
+                  title={TrackStrings.signInHint}
+                >
+                  <LogIn />
+                  {TrackStrings.signIn}
                 </Button>
               )}
 

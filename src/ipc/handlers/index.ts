@@ -1,3 +1,4 @@
+import { JobAccess, type PlatformLogin } from '../../jobs/job-access';
 import type { ExternalProvidersService } from '../../providers/external-providers.service';
 import type { LocalProvidersService } from '../../providers/local-providers.service';
 import type { SettingsService } from '../../settings/settings.service';
@@ -53,6 +54,8 @@ export interface HandlerDeps {
   backup: BackupPort;
   notices: PendingNotices;
   components: ComponentsPort;
+  /** Janela de login dos sites de vídeo (acesso a vídeos que exigem entrar). */
+  platformLogin: PlatformLogin;
   settings: SettingsService;
   externalProviders: ExternalProvidersService;
   localProviders: LocalProvidersService;
@@ -79,6 +82,7 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
       deps.back.jobs.launcher,
       deps.back.jobs.deleter,
       deps.back.jobs.canceller,
+      new JobAccess(deps.back.jobs.catalog, deps.platformLogin),
     ),
   ];
 }

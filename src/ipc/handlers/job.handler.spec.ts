@@ -4,6 +4,7 @@ import { FakeIpcMain } from '../testing/fake-ipc-main';
 
 import {
   JobHandler,
+  type JobAccessPort,
   type JobCancellerPort,
   type JobCatalogPort,
   type JobDeleterPort,
@@ -28,12 +29,14 @@ type CatalogFakes = Record<keyof JobCatalogPort, jest.Mock>;
 type LauncherFakes = Record<keyof JobLauncherPort, jest.Mock>;
 type DeleterFakes = Record<keyof JobDeleterPort, jest.Mock>;
 type CancellerFakes = Record<keyof JobCancellerPort, jest.Mock>;
+type AccessFakes = Record<keyof JobAccessPort, jest.Mock>;
 
 function setup(
   catalog: Partial<CatalogFakes> = {},
   launcher: Partial<LauncherFakes> = {},
   deleter: Partial<DeleterFakes> = {},
   canceller: Partial<CancellerFakes> = {},
+  access: Partial<AccessFakes> = {},
 ) {
   const catalogFakes: CatalogFakes = {
     list: jest.fn().mockReturnValue([]),
@@ -57,12 +60,17 @@ function setup(
     cancel: jest.fn().mockReturnValue({ id: 'j1', outcome: 'cancelled' }),
     ...canceller,
   };
+  const accessFakes: AccessFakes = {
+    grantAccess: jest.fn().mockResolvedValue({ id: 'j1', granted: true }),
+    ...access,
+  };
   const ipc = new FakeIpcMain();
   new IpcRegistrar(ipc).register([
-    new JobHandler(catalogFakes, launcherFakes, deleterFakes, cancellerFakes),
+    new JobHandler(catalogFakes, launcherFakes, deleterFakes, cancellerFakes, accessFakes),
   ]);
 
   return {
+    access: accessFakes,
     ipc,
     catalog: catalogFakes,
     launcher: launcherFakes,
@@ -318,6 +326,33 @@ describe('JobHandler: cancelar, tentar de novo e desfazer', () => {
     await expect(ipc.invoke(IpcChannels.jobs.retry, { id: 'j1' })).resolves.toEqual({
       ok: false,
       error: { code: 'VALIDATION', message: 'Só dá para tentar de novo um job que falhou.' },
+    });
+  });
+
+  it('when jobs:grant-access is called, should open the login for that job and answer the result', async () => {
+    const { ipc, access } = setup();
+
+    await expect(ipc.invoke(IpcChannels.jobs.grantAccess, { id: 'j1' })).resolves.toEqual({
+      ok: true,
+      data: { id: 'j1', granted: true },
+    });
+    expect(access.grantAccess).toHaveBeenCalledWith('j1');
+  });
+
+  it('when the job is not waiting for access, should answer VALIDATION', async () => {
+    const { ipc } = setup(
+      {},
+      {},
+      {},
+      {},
+      {
+        grantAccess: jest.fn().mockRejectedValue(invalid('Este job não está esperando acesso.')),
+      },
+    );
+
+    await expect(ipc.invoke(IpcChannels.jobs.grantAccess, { id: 'j1' })).resolves.toEqual({
+      ok: false,
+      error: { code: 'VALIDATION', message: 'Este job não está esperando acesso.' },
     });
   });
 

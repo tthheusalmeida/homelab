@@ -48,6 +48,7 @@ import type {
   CreateVideoToTranscriptRequest,
   JobCreated,
   JobDeleteRequest,
+  JobAccessResult,
   JobCancelResult,
   JobDeleteResult,
   JobUndoDeleteResult,
@@ -246,6 +247,8 @@ export interface IpcContracts {
   [IpcChannels.jobs.cancel]: { request: JobRequest; response: JobCancelResult };
   /** Cria um job novo com os mesmos dados de um que falhou. */
   [IpcChannels.jobs.retry]: { request: JobRequest; response: JobCreated };
+  /** Abre a janela de login do site do vídeo; ao fechá-la, guarda o acesso para o próximo download. */
+  [IpcChannels.jobs.grantAccess]: { request: JobRequest; response: JobAccessResult };
 
   [IpcChannels.library.inbox]: { request: void; response: LibraryDocumentSummary[] };
   [IpcChannels.library.categories]: { request: void; response: LibraryCategoryNode[] };

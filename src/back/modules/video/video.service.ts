@@ -12,8 +12,14 @@ import { SummaryDetail } from '../ai/prompts/summary-specialist.prompt';
 import { splitText } from '../../utils/text';
 import { AIService } from '../ai/ai.service';
 import { BackConfig } from '../../config/back-config';
+import { isDirectMediaUrl, isHttpUrl } from '../../../shared/media-url';
+import { PlatformDownloader } from './platform-downloader';
 
 const execFileAsync = promisify(execFile);
+
+export const VideoMessages = {
+  invalidUrl: 'Informe um link que comece com http:// ou https://.',
+} as const;
 
 export interface VideoSummarizeOptions {
   providerId: AIProviderName;
@@ -28,16 +34,42 @@ export const SUMMARY_CHUNK_CHARS = 12000;
 
 @Injectable()
 export class VideoService {
+  private readonly platform: PlatformDownloader;
+
   constructor(
     private readonly aiService: AIService,
     private readonly config: BackConfig,
-  ) {}
+  ) {
+    this.platform = new PlatformDownloader({
+      tools: config.platformTools,
+      ffmpegPath: config.ffmpegPath,
+      run: (file, args) => execFileAsync(file, args),
+    });
+  }
 
+  /**
+   * Baixa o vídeo. Link direto para um arquivo vai por HTTP; qualquer outro link (YouTube, Vimeo,
+   * páginas de curso) vai pelo yt-dlp, que baixa só o áudio e devolve o arquivo que gravou.
+   */
   async download(
     url: string,
     fileName: string = 'video-baixado.mp4',
     destinationDir: string = this.config.videoTempDir,
   ): Promise<string> {
+    if (!isHttpUrl(url)) {
+      throw new Error(VideoMessages.invalidUrl);
+    }
+
+    if (this.config.platformTools && !isDirectMediaUrl(url)) {
+      fs.mkdirSync(destinationDir, { recursive: true });
+
+      return this.platform.download(url, path.parse(fileName).name, destinationDir);
+    }
+
+    return this.downloadFile(url, fileName, destinationDir);
+  }
+
+  private downloadFile(url: string, fileName: string, destinationDir: string): Promise<string> {
     // path.resolve lida automaticamente com diferenças de sistema operacional
     const outputPath = path.resolve(destinationDir, fileName);
 
@@ -68,7 +100,7 @@ export class VideoService {
           // Libera o response atual porque ele não contém o vídeo.
           response.resume();
 
-          this.download(new URL(response.headers.location, url).href, fileName, destinationDir)
+          this.downloadFile(new URL(response.headers.location, url).href, fileName, destinationDir)
             .then(resolve)
             .catch(reject);
 

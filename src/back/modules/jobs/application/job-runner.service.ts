@@ -7,6 +7,7 @@ import { BackAlerts } from '../../../config/back-alerts';
 import type { JobCancelResult } from '../../../../shared/contracts/jobs';
 import { CANCELLED_JOB_ERROR, Job } from '../domain/job.entity';
 import { JobStatus } from '../domain/job-status.enum';
+import { ACCESS_REQUIRED_CODE, AccessRequiredError } from '../../video/access-required.error';
 import { JobProcessor } from '../domain/job-processor.interface';
 
 import { JOB_REPOSITORY } from '../infrastructure/repositories/job.repository';
@@ -99,7 +100,11 @@ export class JobRunner {
       this.repository.save(job);
       this.notify(job);
     } catch (error) {
-      job.fail(error instanceof Error ? error.message : 'Erro desconhecido');
+      if (error instanceof AccessRequiredError) {
+        job.fail(error.message, { code: ACCESS_REQUIRED_CODE, url: error.url });
+      } else {
+        job.fail(error instanceof Error ? error.message : 'Erro desconhecido');
+      }
 
       this.repository.save(job);
 

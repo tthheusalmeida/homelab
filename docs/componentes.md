@@ -3,10 +3,11 @@
 O instalador é pequeno (app, Whisper em CPU e ffmpeg). O que é grande (modelos do Whisper e o pacote CUDA) é baixado **pelo app**, com progresso, checksum e escolha do usuário. O instalador NSIS não passa de ~2 GB, por isso isso não entra nele.
 
 ## Catálogo (`src/components/component-manifest.ts`)
-Uma entrada por componente: `id`, `group` (`runtime`, `gpu`, `model`), `label`, `description`, `required`, `kind`, tamanho, arquivo que prova a instalação e, se baixável, `download: { url, sha256 }`.
+Uma entrada por componente: `id`, `group` (`runtime`, `download`, `gpu`, `model`), `label`, `description`, `required`, `kind`, tamanho, arquivo que prova a instalação e, se baixável, `download: { url, sha256 }`.
 - `bundled`: já vem no instalador (Whisper, ffmpeg); só é conferido.
 - `file`: arquivo baixado para `<userData>/components/models`.
 - `zip`: pacote baixado e extraído ao lado do `whisper-cli` (pacote CUDA); `provides` lista os arquivos esperados.
+- `binary`: programa único baixado direto para a pasta de binários (o `yt-dlp.exe`, ver `download-de-videos.md`); a detecção olha se o arquivo existe, então o programa pode se atualizar sozinho sem o catálogo notar.
 
 **Para acrescentar uma dependência, acrescente uma entrada no catálogo**: o assistente, a seção das Configurações e a lista da sidebar a mostram sozinhos.
 
@@ -24,6 +25,7 @@ Origens: modelos em `huggingface.co/ggerganov/whisper.cpp` (SHA-256 vindos da AP
 - NVIDIA dedicada com 6 GB ou mais: CUDA + large-v3-turbo; 3 a 6 GB: CUDA + turbo compacto; menos: CUDA + small.
 - Sem NVIDIA: CPU, turbo compacto com 15 GB de RAM ou mais, senão small. Placa integrada é citada na mensagem.
 - Nada identificado: CPU + small, com mensagem de "não identificamos".
+- Em qualquer caso, `recommendFor` acrescenta o `yt-dlp` (vale para qualquer máquina e não depende da placa).
 A mensagem em português vai ao usuário junto com a pré-seleção.
 
 ## Interface

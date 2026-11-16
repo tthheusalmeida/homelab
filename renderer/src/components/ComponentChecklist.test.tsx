@@ -27,6 +27,28 @@ describe('ComponentChecklist', () => {
     expect(within(models).getAllByRole('checkbox')).toHaveLength(2);
   });
 
+  it('when the catalog has the video download tool, should list it in its own group', () => {
+    render(
+      <ComponentChecklist
+        components={[
+          component({
+            id: 'yt-dlp',
+            group: 'download',
+            label: 'yt-dlp (vídeos de plataformas)',
+            recommended: true,
+          }),
+        ]}
+        selected={new Set(['yt-dlp'])}
+        onToggle={vi.fn()}
+      />,
+    );
+
+    const group = screen.getByRole('region', { name: 'Download de vídeos' });
+
+    expect(within(group).getByText('yt-dlp (vídeos de plataformas)')).toBeInTheDocument();
+    expect(within(group).getByRole('checkbox')).toBeChecked();
+  });
+
   it('when a component is required, should show it checked and locked', () => {
     render(
       <ComponentChecklist
