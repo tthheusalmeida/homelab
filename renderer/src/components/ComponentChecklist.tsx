@@ -72,7 +72,11 @@ export function ComponentChecklist({
                 <ComponentRow
                   key={component.id}
                   component={component}
-                  checked={component.required || selected.has(component.id)}
+                  checked={
+                    component.required ||
+                    component.state === 'installed' ||
+                    selected.has(component.id)
+                  }
                   disabled={locked || component.required || component.state === 'installed'}
                   onToggle={() => onToggle(component.id)}
                   actions={actions?.(component)}

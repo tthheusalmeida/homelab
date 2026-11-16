@@ -58,11 +58,30 @@ describe('ComponentChecklist', () => {
       />,
     );
 
-    const box = screen.getByRole('checkbox', { name: 'Whisper (transcrição)' });
+    const box = screen.getByRole('checkbox', { name: 'Transcrição' });
 
     expect(box).toBeChecked();
     expect(box).toBeDisabled();
     expect(screen.getByText('Já incluído no app')).toBeInTheDocument();
+  });
+
+  it('when an optional component is already installed, should show it checked and locked even if not selected', () => {
+    render(
+      <ComponentChecklist
+        components={[
+          component({ id: 'yt-dlp', group: 'download', label: 'Download de vídeos', state: 'installed' }),
+          component({ id: 'model-base', label: 'Modelo base', state: 'missing' }),
+        ]}
+        selected={new Set()}
+        onToggle={vi.fn()}
+      />,
+    );
+
+    const installed = screen.getByRole('checkbox', { name: 'Download de vídeos' });
+
+    expect(installed).toBeChecked();
+    expect(installed).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'Modelo base' })).not.toBeChecked();
   });
 
   it('when the user toggles a model, should call onToggle with its id', async () => {
