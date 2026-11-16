@@ -74,7 +74,7 @@ export function CreatePage() {
           }
         }}
       >
-        <DialogContent className="max-h-[90dvh] w-full max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {selectedJobType ? selectedJobType.label : ""}

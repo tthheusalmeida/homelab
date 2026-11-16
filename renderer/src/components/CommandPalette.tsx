@@ -127,7 +127,11 @@ export function CommandPalette({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="top-[20%] translate-y-0 gap-0 p-0 sm:max-w-xl">
+      <DialogContent
+        showCloseButton={false}
+        bodyClassName="gap-0 overflow-visible p-0"
+        className="top-[20%] translate-y-0 sm:max-w-xl"
+      >
         <DialogTitle className="sr-only">{Texts.title}</DialogTitle>
         <DialogDescription className="sr-only">{Texts.description}</DialogDescription>
 

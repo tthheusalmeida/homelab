@@ -92,7 +92,7 @@ export function InstallAssistant() {
   return (
     <Dialog open={open} onOpenChange={(next) => !next && setDismissed(true)}>
       <DialogContent
-        className="max-h-[90svh] overflow-y-auto sm:max-w-2xl"
+        className="sm:max-w-2xl"
         showCloseButton={!status.running}
       >
         <DialogHeader>

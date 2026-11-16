@@ -41,9 +41,12 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  bodyClassName,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  /** Classes do miolo que rola (ex.: sem padding, na paleta de comandos). */
+  bodyClassName?: string
 }) {
   return (
     <DialogPortal>
@@ -51,12 +54,18 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 rounded-xl bg-popover p-6 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
       >
-        {children}
+        {/* Só este miolo rola: DialogHeader e DialogFooter ficam presos ao topo e à base (sticky). */}
+        <div
+          data-slot="dialog-scroll"
+          className={cn("grid min-h-0 flex-1 gap-4 overflow-y-auto p-5", bodyClassName)}
+        >
+          {children}
+        </div>
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
@@ -82,7 +91,11 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2", className)}
+      className={cn(
+        // sticky respeita o padding do miolo (p-5): o deslocamento negativo cola o cabeçalho na borda de cima.
+        "sticky top-[-1.25rem] z-10 -mx-5 -mt-5 flex flex-col gap-1 border-b bg-popover px-5 pt-4 pr-12 pb-3",
+        className
+      )}
       {...props}
     />
   )
@@ -100,7 +113,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        "sticky bottom-[-1.25rem] z-10 -mx-5 -mb-5 flex flex-col-reverse gap-2 border-t bg-popover px-5 py-3 sm:flex-row sm:justify-end",
         className
       )}
       {...props}

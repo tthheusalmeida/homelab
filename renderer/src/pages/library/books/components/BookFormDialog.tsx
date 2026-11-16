@@ -59,7 +59,7 @@ export function BookFormDialog({
 }: BookFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl">
         {open && (
           <BookForm
             key={book?.id ?? "new"}

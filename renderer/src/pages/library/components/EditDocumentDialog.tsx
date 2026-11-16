@@ -24,7 +24,7 @@ export function EditDocumentDialog({
 }: EditDocumentDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="top-0 left-0 h-dvh w-screen max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-none sm:max-w-none">
+      <DialogContent className="top-0 left-0 h-dvh w-screen max-w-none translate-x-0 translate-y-0 max-h-none rounded-none sm:max-w-none">
         <DialogHeader>
           <DialogTitle>Editar página</DialogTitle>
 
