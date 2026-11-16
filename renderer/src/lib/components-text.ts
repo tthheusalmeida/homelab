@@ -86,9 +86,27 @@ export function overallPercent(overall: ComponentsOverall): number {
   return progressPercent(overall.receivedBytes, overall.totalBytes);
 }
 
-/** Soma o que ainda falta baixar entre os componentes marcados. */
+/**
+ * O que a instalação deve baixar: o que o usuário marcou **mais** os obrigatórios que ainda faltam
+ * (num sistema onde o obrigatório não vem no instalador, como o Linux, ele também é baixado). O que
+ * já vem no app (`bundled`) e o que já está instalado ficam de fora.
+ */
+export function idsToInstall(
+  components: ComponentInfo[],
+  selected: ReadonlySet<string>,
+): ComponentInfo[] {
+  return components.filter(
+    (component) =>
+      !component.bundled &&
+      component.state !== 'installed' &&
+      (component.required || selected.has(component.id)),
+  );
+}
+
+/** Soma o que ainda falta baixar entre os componentes marcados e os obrigatórios que faltam. */
 export function pendingBytes(components: ComponentInfo[], selected: ReadonlySet<string>): number {
-  return components
-    .filter((component) => selected.has(component.id) && component.state !== 'installed')
-    .reduce((sum, component) => sum + component.sizeBytes, 0);
+  return idsToInstall(components, selected).reduce(
+    (sum, component) => sum + component.sizeBytes,
+    0,
+  );
 }

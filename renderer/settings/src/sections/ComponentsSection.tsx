@@ -15,7 +15,7 @@ import {
   useRemoveComponent,
   useSetActiveModel,
 } from '#hooks/use-components';
-import { ComponentStrings, overallPercent, pendingBytes } from '#lib/components-text';
+import { ComponentStrings, idsToInstall, overallPercent, pendingBytes } from '#lib/components-text';
 import { formatBytes } from '#lib/format';
 import type { ComponentInfo } from '#shared/contracts/components';
 
@@ -72,9 +72,7 @@ export function ComponentsSection() {
   };
 
   const start = () => {
-    const ids = status.components
-      .filter((component) => chosen.has(component.id) && !component.required)
-      .map((component) => component.id);
+    const ids = idsToInstall(status.components, chosen).map((component) => component.id);
 
     install.mutate(ids, { onError: fail });
   };

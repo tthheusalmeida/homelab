@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { component } from '#test/components-fixtures';
 
-import { overallPercent, pendingBytes, progressPercent, progressText } from './components-text';
+import {
+  idsToInstall,
+  overallPercent,
+  pendingBytes,
+  progressPercent,
+  progressText,
+} from './components-text';
 
 describe('components-text', () => {
   it('when computing a percentage, should round and cap it at 100', () => {
@@ -35,5 +41,27 @@ describe('components-text', () => {
     ];
 
     expect(pendingBytes(list, new Set(['a', 'b']))).toBe(100);
+  });
+});
+
+describe('idsToInstall', () => {
+  const list = [
+    component({ id: 'ffmpeg', required: true, bundled: false, sizeBytes: 80, state: 'missing' }),
+    component({ id: 'runtime', required: true, bundled: true, sizeBytes: 0, state: 'missing' }),
+    component({ id: 'done', required: true, bundled: false, sizeBytes: 5, state: 'installed' }),
+    component({ id: 'model', sizeBytes: 20, state: 'missing' }),
+    component({ id: 'other', sizeBytes: 30, state: 'missing' }),
+  ];
+
+  it('when a required component is missing and downloadable, should include it without being selected', () => {
+    expect(idsToInstall(list, new Set(['model'])).map((c) => c.id)).toEqual(['ffmpeg', 'model']);
+  });
+
+  it('when a component is bundled or already installed, should leave it out', () => {
+    expect(idsToInstall(list, new Set(['runtime', 'done'])).map((c) => c.id)).toEqual(['ffmpeg']);
+  });
+
+  it('when counting bytes, should include the missing required ones', () => {
+    expect(pendingBytes(list, new Set(['model']))).toBe(100);
   });
 });
