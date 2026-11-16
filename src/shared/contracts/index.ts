@@ -47,7 +47,9 @@ import type {
   CreateVideoToTranscriptRequest,
   JobCreated,
   JobDeleteRequest,
+  JobCancelResult,
   JobDeleteResult,
+  JobUndoDeleteResult,
   JobRequest,
   JobTypeView,
   JobView,
@@ -218,6 +220,12 @@ export interface IpcContracts {
   /** Exclui jobs do histórico (só os que não estão na fila nem rodando). */
   [IpcChannels.jobs.delete]: { request: JobDeleteRequest; response: JobDeleteResult };
   [IpcChannels.jobs.deleteAll]: { request: void; response: JobDeleteResult };
+  /** Desfaz a última exclusão (guardada só enquanto o app está aberto). */
+  [IpcChannels.jobs.undoDelete]: { request: void; response: JobUndoDeleteResult };
+  /** Cancela um job na fila (sai da fila) ou rodando (para ao fim da etapa em andamento). */
+  [IpcChannels.jobs.cancel]: { request: JobRequest; response: JobCancelResult };
+  /** Cria um job novo com os mesmos dados de um que falhou. */
+  [IpcChannels.jobs.retry]: { request: JobRequest; response: JobCreated };
 
   [IpcChannels.library.inbox]: { request: void; response: LibraryDocumentSummary[] };
   [IpcChannels.library.categories]: { request: void; response: LibraryCategoryNode[] };

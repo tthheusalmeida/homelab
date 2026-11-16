@@ -137,6 +137,49 @@ describe('JobService', () => {
     it('when deleting all with an empty history, should delete nothing', () => {
       expect(service.deleteAll()).toEqual({ deleted: [], skipped: [] });
     });
+
+    it('when the last deletion is undone, should bring the jobs back to the history', () => {
+      const a = finished();
+      const b = finished();
+
+      service.deleteMany([a.id, b.id]);
+
+      expect(service.undoDelete()).toEqual({ restored: [a.id, b.id] });
+      expect(service.findAll()).toEqual([a, b]);
+    });
+
+    it('when undoing twice, should restore nothing the second time', () => {
+      const a = finished();
+
+      service.deleteMany([a.id]);
+      service.undoDelete();
+
+      expect(service.undoDelete()).toEqual({ restored: [] });
+    });
+
+    it('when nothing was deleted yet, should restore nothing', () => {
+      expect(service.undoDelete()).toEqual({ restored: [] });
+    });
+
+    it('when a second deletion happens, should undo only the latest one', () => {
+      const a = finished();
+      const b = finished();
+
+      service.deleteMany([a.id]);
+      service.deleteMany([b.id]);
+
+      expect(service.undoDelete()).toEqual({ restored: [b.id] });
+      expect(service.findAll()).toEqual([b]);
+    });
+
+    it('when a deletion removes nothing, should keep the previous undo available', () => {
+      const a = finished();
+
+      service.deleteMany([a.id]);
+      service.deleteMany(['nope']);
+
+      expect(service.undoDelete()).toEqual({ restored: [a.id] });
+    });
   });
 
   describe('backup: exportar e importar', () => {

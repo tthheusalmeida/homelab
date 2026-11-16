@@ -26,6 +26,10 @@ export interface JobView {
   startedAt?: string;
   completedAt?: string;
   error?: string;
+  /** O cancelamento foi pedido: o job para ao terminar a etapa em andamento. */
+  cancelRequested?: boolean;
+  /** Falhou e guarda os dados de criação: dá para tentar de novo. */
+  retryable?: boolean;
 }
 
 /** Tipo de job (resposta de `jobs:types`). */
@@ -67,6 +71,20 @@ export interface CreateVideoToSummaryRequest extends JobHints {
 export interface JobCreated {
   id: string;
   status: JobStatusId;
+}
+
+/**
+ * Resultado de cancelar: `cancelled` (estava na fila e saiu dela), `cancelling` (rodando: para ao
+ * fim da etapa em andamento) ou `not-active` (já tinha terminado).
+ */
+export interface JobCancelResult {
+  id: string;
+  outcome: 'cancelled' | 'cancelling' | 'not-active';
+}
+
+/** Jobs que voltaram ao histórico ao desfazer a última exclusão. */
+export interface JobUndoDeleteResult {
+  restored: string[];
 }
 
 export interface JobDeleteRequest {

@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 
 import type { RecordImportResult, RestoreMode } from '../../../../shared/contracts/backup';
-import type { JobDeleteResult } from '../../../../shared/contracts/jobs';
+import type { JobDeleteResult, JobUndoDeleteResult } from '../../../../shared/contracts/jobs';
 import type { DocumentHints } from '../domain/document-hints';
 import { Job, type JobSnapshot } from '../domain/job.entity';
 import { isJobSnapshot } from '../infrastructure/repositories/file-job.repository';
@@ -16,8 +16,11 @@ export class JobService {
     private readonly repository: JobRepository,
   ) {}
 
-  create(name: string, documentHints?: DocumentHints): Job {
-    const job = new Job(name, documentHints);
+  /** Última exclusão (só em memória): permite desfazer enquanto o app está aberto. */
+  private lastDeleted: Job[] = [];
+
+  create(name: string, documentHints?: DocumentHints, request?: unknown): Job {
+    const job = new Job(name, documentHints, request);
 
     this.repository.save(job);
 
@@ -47,6 +50,7 @@ export class JobService {
   deleteMany(ids: string[]): JobDeleteResult {
     const skipped: JobDeleteResult['skipped'] = [];
     const removable: string[] = [];
+    const deletedJobs = new Map<string, Job>();
 
     for (const id of new Set(ids)) {
       const job = this.repository.findById(id);
@@ -57,10 +61,36 @@ export class JobService {
         skipped.push({ id, reason: 'ACTIVE' });
       } else {
         removable.push(id);
+        deletedJobs.set(id, job);
       }
     }
 
-    return { deleted: this.repository.remove(removable), skipped };
+    const removed = new Set(this.repository.remove(removable));
+
+    if (removed.size > 0) {
+      this.lastDeleted = removable
+        .filter((id) => removed.has(id))
+        .map((id) => deletedJobs.get(id))
+        .filter((job): job is Job => job !== undefined);
+    }
+
+    return { deleted: [...removed], skipped };
+  }
+
+  /** Traz de volta o que a última exclusão tirou (os que já existem de novo não são duplicados). */
+  undoDelete(): JobUndoDeleteResult {
+    const restored: string[] = [];
+
+    for (const job of this.lastDeleted) {
+      if (!this.repository.findById(job.id)) {
+        this.repository.save(job);
+        restored.push(job.id);
+      }
+    }
+
+    this.lastDeleted = [];
+
+    return { restored };
   }
 
   /** Exclui todo o histórico, menos o que está na fila ou rodando. */

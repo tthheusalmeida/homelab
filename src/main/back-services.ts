@@ -77,6 +77,7 @@ export class BackServices {
     return {
       catalog: new JobCatalog(this.get(JobService), () => JobTypeConfig),
       deleter: this.get(JobService),
+      canceller: this.get(JobRunner),
       launcher: new JobLauncher({
         jobs: this.get(JobService),
         runner: this.get(JobRunner),

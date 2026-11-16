@@ -1,4 +1,4 @@
-import { INTERRUPTED_JOB_ERROR, Job } from './job.entity';
+import { INTERRUPTED_JOB_ERROR, Job, CANCELLED_JOB_ERROR, JobCancelledError } from './job.entity';
 import { JobStatus } from './job-status.enum';
 import { JobTypeConfig } from '../jobs.types';
 
@@ -132,12 +132,14 @@ describe('Job', () => {
 
     expect(Object.keys(job.toJSON()).sort()).toEqual(
       [
+        'cancelRequested',
         'completedAt',
         'createdAt',
         'error',
         'id',
         'label',
         'name',
+        'retryable',
         'startedAt',
         'status',
         'steps',
@@ -238,6 +240,66 @@ describe('Job', () => {
       expect(job.status).toBe(JobStatus.FAILED);
       expect(job.error).toBe('Motivo próprio');
       expect(job.steps.every((step) => step.status === JobStatus.PENDING)).toBe(true);
+    });
+  });
+
+  describe('cancelar e tentar de novo', () => {
+    it('when cancel is requested, should not start the next step', async () => {
+      const job = new Job('video-to-summary');
+      const callback = jest.fn().mockResolvedValue('x');
+
+      job.requestCancel();
+
+      await expect(job.runStep(job.steps[0].name, callback)).rejects.toThrow(CANCELLED_JOB_ERROR);
+      expect(callback).not.toHaveBeenCalled();
+      expect(job.steps[0].status).toBe(JobStatus.PENDING);
+    });
+
+    it('when cancel is requested during a step, should let that step finish and stop at the next', async () => {
+      const job = new Job('video-to-summary');
+
+      await job.runStep(job.steps[0].name, async () => {
+        job.requestCancel();
+      });
+
+      expect(job.steps[0].status).toBe(JobStatus.COMPLETED);
+      await expect(job.runStep(job.steps[1].name, async () => 'x')).rejects.toBeInstanceOf(
+        JobCancelledError,
+      );
+    });
+
+    it('when the job failed and kept its request, should be retryable', () => {
+      const job = new Job('video-to-summary', {}, { url: 'u' });
+
+      job.start();
+      job.fail('x');
+
+      expect(job.retryable).toBe(true);
+      expect(job.toJSON().retryable).toBe(true);
+    });
+
+    it('when the job has no request or did not fail, should not be retryable', () => {
+      const old = new Job('video-to-summary');
+      const running = new Job('video-to-summary', {}, { url: 'u' });
+
+      old.fail('x');
+      running.start();
+
+      expect(old.retryable).toBe(false);
+      expect(running.retryable).toBe(false);
+    });
+
+    it('when saved and restored, should keep the request', () => {
+      const job = new Job('video-to-summary', {}, { url: 'u', modelId: 'm' });
+
+      expect(Job.restore(job.snapshot()).request).toEqual({ url: 'u', modelId: 'm' });
+    });
+
+    it('when restored from an old snapshot without request, should have none', () => {
+      const snapshot = new Job('video-to-summary').snapshot();
+
+      expect(snapshot).not.toHaveProperty('request');
+      expect(Job.restore(snapshot).request).toBeUndefined();
     });
   });
 });

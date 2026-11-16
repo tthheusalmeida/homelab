@@ -90,6 +90,9 @@ export const IpcChannels = {
     createVideoToSummary: 'jobs:create-video-to-summary',
     delete: 'jobs:delete',
     deleteAll: 'jobs:delete-all',
+    undoDelete: 'jobs:undo-delete',
+    cancel: 'jobs:cancel',
+    retry: 'jobs:retry',
   },
   providers: {
     external: {

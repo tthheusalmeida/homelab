@@ -4,7 +4,8 @@ import { Injectable, Inject, Optional } from '@nestjs/common';
 
 import { BackAlerts } from '../../../config/back-alerts';
 
-import { Job } from '../domain/job.entity';
+import type { JobCancelResult } from '../../../../shared/contracts/jobs';
+import { CANCELLED_JOB_ERROR, Job } from '../domain/job.entity';
 import { JobStatus } from '../domain/job-status.enum';
 import { JobProcessor } from '../domain/job-processor.interface';
 
@@ -20,6 +21,7 @@ export class JobRunner {
   }> = [];
 
   private running = false;
+  private current: Job | null = null;
 
   constructor(
     @Inject(JOB_REPOSITORY)
@@ -35,6 +37,33 @@ export class JobRunner {
     });
 
     void this.processQueue();
+  }
+
+  /**
+   * Cancela um job. Na fila: sai dela e termina como falha "Cancelado pelo usuário". Rodando: o
+   * cancelamento é pedido e o job para ao fim da etapa em andamento (download, ffmpeg, Whisper e IA
+   * não são interrompidos no meio).
+   */
+  cancel(id: string): JobCancelResult {
+    const index = this.queue.findIndex((item) => item.job.id === id);
+
+    if (index >= 0) {
+      const [{ job }] = this.queue.splice(index, 1);
+
+      job.fail(CANCELLED_JOB_ERROR);
+      this.repository.save(job);
+
+      return { id, outcome: 'cancelled' };
+    }
+
+    if (this.current?.id === id) {
+      this.current.requestCancel();
+      this.repository.save(this.current);
+
+      return { id, outcome: 'cancelling' };
+    }
+
+    return { id, outcome: 'not-active' };
   }
 
   private async processQueue(): Promise<void> {
@@ -58,6 +87,8 @@ export class JobRunner {
     processor: JobProcessor<TInput, TResult>,
     input: TInput,
   ): Promise<void> {
+    this.current = job;
+
     try {
       job.start();
       this.repository.save(job);
@@ -71,7 +102,13 @@ export class JobRunner {
       job.fail(error instanceof Error ? error.message : 'Erro desconhecido');
 
       this.repository.save(job);
-      this.notify(job);
+
+      // cancelar foi escolha do usuário: não vale um aviso de falha
+      if (!job.cancelRequested) {
+        this.notify(job);
+      }
+    } finally {
+      this.current = null;
     }
   }
 

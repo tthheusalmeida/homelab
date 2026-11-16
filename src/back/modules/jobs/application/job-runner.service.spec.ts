@@ -1,5 +1,5 @@
 import { JobRunner } from './job-runner.service';
-import { Job } from '../domain/job.entity';
+import { CANCELLED_JOB_ERROR, Job } from '../domain/job.entity';
 import { JobStatus } from '../domain/job-status.enum';
 import { InMemoryJobRepository } from '../infrastructure/repositories/in-memory-job.repository';
 import { JobProcessor } from '../domain/job-processor.interface';
@@ -178,6 +178,80 @@ describe('JobRunner', () => {
       await flush();
 
       expect(job.status).toBe(JobStatus.COMPLETED);
+    });
+  });
+
+  describe('cancelar', () => {
+    it('when a queued job is cancelled, should leave the queue and fail as cancelled', async () => {
+      const first = new Job('video-to-transcript');
+      const queued = new Job('video-to-transcript');
+      let release: () => void = () => undefined;
+      const slow: JobProcessor<string> = {
+        process: jest.fn(() => new Promise<void>((resolve) => (release = resolve))),
+      };
+      const never: JobProcessor<string> = { process: jest.fn() };
+
+      runner.run(first, slow, 'a');
+      runner.run(queued, never, 'b');
+      await flush();
+
+      expect(runner.cancel(queued.id)).toEqual({ id: queued.id, outcome: 'cancelled' });
+      expect(queued.status).toBe(JobStatus.FAILED);
+      expect(queued.error).toBe(CANCELLED_JOB_ERROR);
+
+      release();
+      await flush();
+
+      expect(never.process).not.toHaveBeenCalled();
+    });
+
+    it('when the running job is cancelled, should stop before the next step and not alert a failure', async () => {
+      const alerts = { persistFailed: jest.fn(), jobFinished: jest.fn() };
+      const withAlerts = new JobRunner(repository, alerts);
+      const job = new Job('video-to-summary');
+      const processor: JobProcessor<string> = {
+        process: async (current) => {
+          await current.runStep(current.steps[0].name, async () => {
+            withAlerts.cancel(current.id);
+          });
+          await current.runStep(current.steps[1].name, async () => undefined);
+        },
+      };
+
+      withAlerts.run(job, processor, 'x');
+      await flush();
+
+      expect(job.status).toBe(JobStatus.FAILED);
+      expect(job.error).toBe(CANCELLED_JOB_ERROR);
+      expect(job.steps[1].status).toBe(JobStatus.PENDING);
+      expect(alerts.jobFinished).not.toHaveBeenCalled();
+    });
+
+    it('when the running job is cancelled, should answer cancelling', async () => {
+      const job = new Job('video-to-transcript');
+      let release: () => void = () => undefined;
+      const slow: JobProcessor<string> = {
+        process: jest.fn(() => new Promise<void>((resolve) => (release = resolve))),
+      };
+
+      runner.run(job, slow, 'a');
+      await flush();
+
+      expect(runner.cancel(job.id)).toEqual({ id: job.id, outcome: 'cancelling' });
+      expect(job.cancelRequested).toBe(true);
+
+      release();
+      await flush();
+    });
+
+    it('when the job already finished or does not exist, should answer not-active', async () => {
+      const job = new Job('video-to-transcript');
+
+      runner.run(job, { process: jest.fn().mockResolvedValue(undefined) }, 'a');
+      await flush();
+
+      expect(runner.cancel(job.id)).toEqual({ id: job.id, outcome: 'not-active' });
+      expect(runner.cancel('nope')).toEqual({ id: 'nope', outcome: 'not-active' });
     });
   });
 });

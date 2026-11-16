@@ -13,6 +13,7 @@ import { ExternalProvidersHandler } from './external-providers.handler';
 import { HealthHandler, type HealthCheckSource } from './health.handler';
 import {
   JobHandler,
+  type JobCancellerPort,
   type JobCatalogPort,
   type JobDeleterPort,
   type JobLauncherPort,
@@ -36,7 +37,12 @@ export interface BackReaders {
   library: LibraryReader & LibraryWriter;
   libraryClassifier: LibraryClassifierPort;
   books: BookReader & BookWriter;
-  jobs: { catalog: JobCatalogPort; launcher: JobLauncherPort; deleter: JobDeleterPort };
+  jobs: {
+    catalog: JobCatalogPort;
+    launcher: JobLauncherPort;
+    deleter: JobDeleterPort;
+    canceller: JobCancellerPort;
+  };
 }
 
 export interface HandlerDeps {
@@ -65,6 +71,11 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
     new BookHandler(deps.back.books),
     new BackupHandler(deps.backup),
     new NoticeHandler(deps.notices),
-    new JobHandler(deps.back.jobs.catalog, deps.back.jobs.launcher, deps.back.jobs.deleter),
+    new JobHandler(
+      deps.back.jobs.catalog,
+      deps.back.jobs.launcher,
+      deps.back.jobs.deleter,
+      deps.back.jobs.canceller,
+    ),
   ];
 }

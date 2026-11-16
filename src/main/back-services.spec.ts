@@ -103,7 +103,11 @@ describe('BackServices', () => {
       .jobs.launcher.startVideoToTranscript({ url: 'https://x/v.mp4', title: '  Aula   1  ' });
 
     expect(created).toEqual({ id: 'j1', status: 'pending' });
-    expect(create).toHaveBeenCalledWith('video-to-transcript', { title: 'Aula 1' });
+    expect(create).toHaveBeenCalledWith(
+      'video-to-transcript',
+      { title: 'Aula 1' },
+      { url: 'https://x/v.mp4', title: '  Aula   1  ' },
+    );
     expect(run).toHaveBeenCalledWith(job, transcript, 'https://x/v.mp4');
   });
 

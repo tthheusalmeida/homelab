@@ -6,6 +6,17 @@ import type { DocumentHints } from './document-hints';
 /** Texto gravado no job que estava em andamento quando o app foi fechado. */
 export const INTERRUPTED_JOB_ERROR = 'Interrompido ao fechar o app.';
 
+/** Texto gravado no job cancelado pelo usuário. */
+export const CANCELLED_JOB_ERROR = 'Cancelado pelo usuário.';
+
+/** Lançado ao tentar começar uma etapa de um job cujo cancelamento foi pedido. */
+export class JobCancelledError extends Error {
+  constructor() {
+    super(CANCELLED_JOB_ERROR);
+    this.name = 'JobCancelledError';
+  }
+}
+
 /** Job como vai para o disco: datas em texto ISO e as dicas do documento (que o `toJSON` não tem). */
 export interface JobSnapshot {
   id: string;
@@ -18,6 +29,8 @@ export interface JobSnapshot {
   error?: string;
   steps: JobStep[];
   documentHints: DocumentHints;
+  /** Dados de criação do job (permite tentar de novo); jobs antigos não têm. */
+  request?: unknown;
 }
 
 export class Job {
@@ -30,12 +43,14 @@ export class Job {
   private _startedAt?: Date;
   private _completedAt?: Date;
   private _error?: string;
+  private _cancelRequested = false;
 
   private _steps: JobStep[] = [];
 
   constructor(
     name: string,
     private readonly _documentHints: DocumentHints = {},
+    private readonly _request?: unknown,
   ) {
     const jobTypeConfig = JobTypeConfig[name as keyof typeof JobTypeConfig];
 
@@ -75,6 +90,8 @@ export class Job {
       _error: snapshot.error,
       _steps: snapshot.steps.map((step) => ({ ...step })),
       _documentHints: structuredClone(snapshot.documentHints ?? {}),
+      _request: snapshot.request === undefined ? undefined : structuredClone(snapshot.request),
+      _cancelRequested: false,
     });
 
     return job;
@@ -83,6 +100,25 @@ export class Job {
   /** Título, categoria e tags opcionais para o documento que o job gera. */
   get documentHints(): DocumentHints {
     return this._documentHints;
+  }
+
+  /** Dados com que o job foi criado (url, modelo, dicas...), quando guardados. */
+  get request(): unknown {
+    return this._request;
+  }
+
+  get cancelRequested(): boolean {
+    return this._cancelRequested;
+  }
+
+  /** Falhou e guarda os dados de criação: dá para criar outro igual. */
+  get retryable(): boolean {
+    return this._status === JobStatus.FAILED && this._request !== undefined;
+  }
+
+  /** Pede para parar: a etapa em andamento termina e a próxima não começa (`runStep` lança). */
+  requestCancel(): void {
+    this._cancelRequested = true;
   }
 
   get label(): string | undefined {
@@ -149,6 +185,10 @@ export class Job {
   }
 
   startStep(name: string): void {
+    if (this._cancelRequested) {
+      throw new JobCancelledError();
+    }
+
     const step = this.findStep(name);
 
     step.status = JobStatus.RUNNING;
@@ -204,6 +244,7 @@ export class Job {
       error: this._error,
       steps: this._steps.map((step) => ({ ...step })),
       documentHints: structuredClone(this._documentHints),
+      ...(this._request === undefined ? {} : { request: structuredClone(this._request) }),
     };
   }
 
@@ -218,6 +259,8 @@ export class Job {
       status: this.status,
       startedAt: this.startedAt,
       steps: this.steps,
+      cancelRequested: this._cancelRequested,
+      retryable: this.retryable,
     };
   }
 }

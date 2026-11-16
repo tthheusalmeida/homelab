@@ -56,8 +56,13 @@ describe('createHandlers', () => {
           libraryClassifier: { suggest: jest.fn() },
           jobs: {
             catalog: { list: jest.fn(), get: jest.fn(), listTypes: jest.fn() },
-            launcher: { startVideoToTranscript: jest.fn(), startVideoToSummary: jest.fn() },
-            deleter: { deleteMany: jest.fn(), deleteAll: jest.fn() },
+            launcher: {
+              startVideoToTranscript: jest.fn(),
+              startVideoToSummary: jest.fn(),
+              retry: jest.fn(),
+            },
+            deleter: { deleteMany: jest.fn(), deleteAll: jest.fn(), undoDelete: jest.fn() },
+            canceller: { cancel: jest.fn() },
           },
           books: {
             list: jest.fn(),

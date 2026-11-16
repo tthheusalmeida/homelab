@@ -5,16 +5,24 @@ import { JobLauncher } from './job-launcher';
 const transcriptProcessor = { name: 'transcript' };
 const summaryProcessor = { name: 'summary' };
 
-function setup(parseHints: (raw: unknown) => unknown = (raw) => ({ parsed: raw })) {
+function setup(
+  parseHints: (raw: unknown) => unknown = (raw) => ({ parsed: raw }),
+  original: { id: string; status: string; name?: string; request?: unknown } = {
+    id: 'old',
+    status: 'failed',
+  },
+) {
   const calls: string[] = [];
   const job = { id: 'job-1', status: 'pending' };
   const jobs = {
-    create: jest.fn((name: string, hints?: unknown) => {
+    create: jest.fn((name: string, hints?: unknown, request?: unknown) => {
       calls.push(`create:${name}`);
       void hints;
+      void request;
 
       return job;
     }),
+    findById: jest.fn(() => original),
   };
   const runner = {
     run: jest.fn(() => {
@@ -45,9 +53,11 @@ describe('JobLauncher: transcrição', () => {
 
     launcher.startVideoToTranscript({ ...request, title: 'Aula', tags: ['devops'] });
 
-    expect(jobs.create).toHaveBeenCalledWith('video-to-transcript', {
-      parsed: { ...request, title: 'Aula', tags: ['devops'] },
-    });
+    expect(jobs.create).toHaveBeenCalledWith(
+      'video-to-transcript',
+      { parsed: { ...request, title: 'Aula', tags: ['devops'] } },
+      { ...request, title: 'Aula', tags: ['devops'] },
+    );
   });
 
   it('when starting, should queue the job with the transcript processor and only the url as input', () => {
@@ -103,9 +113,11 @@ describe('JobLauncher: resumo', () => {
 
     launcher.startVideoToSummary({ ...request, category: ['Tecnologia', 'DevOps'] });
 
-    expect(jobs.create).toHaveBeenCalledWith('video-to-summary', {
-      parsed: { ...request, category: ['Tecnologia', 'DevOps'] },
-    });
+    expect(jobs.create).toHaveBeenCalledWith(
+      'video-to-summary',
+      { parsed: { ...request, category: ['Tecnologia', 'DevOps'] } },
+      { ...request, category: ['Tecnologia', 'DevOps'] },
+    );
   });
 
   it('when starting, should queue the job with the summary processor and the whole request as input', () => {
@@ -142,5 +154,59 @@ describe('JobLauncher: resumo', () => {
 
     expect(jobs.create).toHaveBeenCalledTimes(2);
     expect(runner.run).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('JobLauncher: tentar de novo', () => {
+  const request = { url: 'https://exemplo.com/v.mp4' };
+
+  it('when a failed transcript job is retried, should create a new one with the same request', () => {
+    const { launcher, jobs, runner, job } = setup(undefined, {
+      id: 'old',
+      status: 'failed',
+      name: 'video-to-transcript',
+      request,
+    });
+
+    expect(launcher.retry('old')).toEqual({ id: 'job-1', status: 'pending' });
+    expect(jobs.create).toHaveBeenCalledWith('video-to-transcript', { parsed: request }, request);
+    expect(runner.run).toHaveBeenCalledWith(job, transcriptProcessor, request.url);
+  });
+
+  it('when a failed summary job is retried, should queue it with the summary processor', () => {
+    const summary = { url: 'https://exemplo.com/v.mp4', providerId: 'gemini', modelId: 'm' };
+    const { launcher, runner, job } = setup(undefined, {
+      id: 'old',
+      status: 'failed',
+      name: 'video-to-summary',
+      request: summary,
+    });
+
+    launcher.retry('old');
+
+    expect(runner.run).toHaveBeenCalledWith(job, summaryProcessor, summary);
+  });
+
+  it('when the job did not fail, should refuse and create nothing', () => {
+    const { launcher, jobs } = setup(undefined, {
+      id: 'old',
+      status: 'completed',
+      name: 'video-to-summary',
+      request,
+    });
+
+    expect(() => launcher.retry('old')).toThrow('Só dá para tentar de novo');
+    expect(jobs.create).not.toHaveBeenCalled();
+  });
+
+  it('when an old job kept no request, should refuse with a clear message', () => {
+    const { launcher, jobs } = setup(undefined, {
+      id: 'old',
+      status: 'failed',
+      name: 'video-to-summary',
+    });
+
+    expect(() => launcher.retry('old')).toThrow('não guardou os dados');
+    expect(jobs.create).not.toHaveBeenCalled();
   });
 });

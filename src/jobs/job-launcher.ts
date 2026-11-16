@@ -1,3 +1,5 @@
+import { BadRequestException } from '@nestjs/common';
+
 import {
   JobTypeIds,
   type CreateVideoToSummaryRequest,
@@ -9,11 +11,15 @@ import {
 interface JobLike {
   id: string;
   status: string;
+  name?: string;
+  /** Dados com que o job foi criado (guardados para tentar de novo). */
+  request?: unknown;
 }
 
 /** Parte do `JobService` do back usada para criar jobs. */
 export interface JobFactory {
-  create(name: string, hints?: unknown): JobLike;
+  create(name: string, hints?: unknown, request?: unknown): JobLike;
+  findById(id: string): JobLike;
 }
 
 /** Fila do back (`JobRunner`): um job por vez, na ordem de chegada. */
@@ -42,6 +48,7 @@ export class JobLauncher {
     const job = this.deps.jobs.create(
       JobTypeIds.VIDEO_TO_TRANSCRIPT,
       this.deps.parseHints(request),
+      request,
     );
 
     this.deps.runner.run(job, this.deps.transcriptProcessor, request.url);
@@ -50,11 +57,39 @@ export class JobLauncher {
   }
 
   startVideoToSummary(request: CreateVideoToSummaryRequest): JobCreated {
-    const job = this.deps.jobs.create(JobTypeIds.VIDEO_TO_SUMMARY, this.deps.parseHints(request));
+    const job = this.deps.jobs.create(
+      JobTypeIds.VIDEO_TO_SUMMARY,
+      this.deps.parseHints(request),
+      request,
+    );
 
     this.deps.runner.run(job, this.deps.summaryProcessor, request);
 
     return this.created(job);
+  }
+
+  /** Cria outro job com os mesmos dados de um que falhou (o original continua no histórico). */
+  retry(id: string): JobCreated {
+    const original = this.deps.jobs.findById(id);
+
+    if (original.status !== 'failed') {
+      throw new BadRequestException('Só dá para tentar de novo um job que falhou.');
+    }
+
+    if (original.request === undefined) {
+      throw new BadRequestException(
+        'Este job é antigo e não guardou os dados de criação. Crie uma nova tarefa.',
+      );
+    }
+
+    switch (original.name) {
+      case JobTypeIds.VIDEO_TO_TRANSCRIPT:
+        return this.startVideoToTranscript(original.request as CreateVideoToTranscriptRequest);
+      case JobTypeIds.VIDEO_TO_SUMMARY:
+        return this.startVideoToSummary(original.request as CreateVideoToSummaryRequest);
+      default:
+        throw new BadRequestException('Este tipo de job não pode ser repetido.');
+    }
   }
 
   private created(job: JobLike): JobCreated {
