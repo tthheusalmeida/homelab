@@ -44,6 +44,10 @@ export interface Job {
   cancelRequested?: boolean;
   /** Falhou e guarda os dados de criação: dá para tentar de novo. */
   retryable?: boolean;
+  /** Falhou porque o vídeo exige login: a tela oferece "Entrar no site" e tenta de novo. */
+  errorCode?: "ACCESS_REQUIRED";
+  /** Endereço do vídeo que pediu login. */
+  accessUrl?: string;
   steps: JobStepType[];
 }
 

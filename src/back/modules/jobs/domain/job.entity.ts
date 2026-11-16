@@ -17,6 +17,12 @@ export class JobCancelledError extends Error {
   }
 }
 
+/** Motivo especial da falha: o vídeo exige login e a tela oferece "Entrar no site". */
+export interface JobErrorInfo {
+  code: 'ACCESS_REQUIRED';
+  url: string;
+}
+
 /** Job como vai para o disco: datas em texto ISO e as dicas do documento (que o `toJSON` não tem). */
 export interface JobSnapshot {
   id: string;
@@ -27,6 +33,7 @@ export interface JobSnapshot {
   startedAt?: string;
   completedAt?: string;
   error?: string;
+  errorInfo?: JobErrorInfo;
   steps: JobStep[];
   documentHints: DocumentHints;
   /** Dados de criação do job (permite tentar de novo); jobs antigos não têm. */
@@ -43,6 +50,7 @@ export class Job {
   private _startedAt?: Date;
   private _completedAt?: Date;
   private _error?: string;
+  private _errorInfo?: JobErrorInfo;
   private _cancelRequested = false;
 
   private _steps: JobStep[] = [];
@@ -88,6 +96,7 @@ export class Job {
       _startedAt: toDate(snapshot.startedAt),
       _completedAt: toDate(snapshot.completedAt),
       _error: snapshot.error,
+      _errorInfo: snapshot.errorInfo ? { ...snapshot.errorInfo } : undefined,
       _steps: snapshot.steps.map((step) => ({ ...step })),
       _documentHints: structuredClone(snapshot.documentHints ?? {}),
       _request: snapshot.request === undefined ? undefined : structuredClone(snapshot.request),
@@ -145,6 +154,11 @@ export class Job {
     return this._error;
   }
 
+  /** Motivo especial da falha (vídeo que exige login), quando houver. */
+  get errorInfo(): JobErrorInfo | undefined {
+    return this._errorInfo;
+  }
+
   get steps(): JobStep[] {
     return this._steps;
   }
@@ -167,9 +181,10 @@ export class Job {
     this._completedAt = new Date();
   }
 
-  fail(error: string): void {
+  fail(error: string, info?: JobErrorInfo): void {
     this._status = JobStatus.FAILED;
     this._error = error;
+    this._errorInfo = info;
   }
 
   /** Job que não terminou antes de o app fechar: falha com o motivo e a etapa em andamento também. */
@@ -242,6 +257,7 @@ export class Job {
       startedAt: this._startedAt?.toISOString(),
       completedAt: this._completedAt?.toISOString(),
       error: this._error,
+      ...(this._errorInfo ? { errorInfo: { ...this._errorInfo } } : {}),
       steps: this._steps.map((step) => ({ ...step })),
       documentHints: structuredClone(this._documentHints),
       ...(this._request === undefined ? {} : { request: structuredClone(this._request) }),
@@ -253,6 +269,8 @@ export class Job {
       completedAt: this.completedAt,
       createdAt: this.createdAt,
       error: this.error,
+      errorCode: this._errorInfo?.code,
+      accessUrl: this._errorInfo?.url,
       id: this.id,
       name: this.name,
       label: this.label,

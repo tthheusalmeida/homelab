@@ -132,10 +132,12 @@ describe('Job', () => {
 
     expect(Object.keys(job.toJSON()).sort()).toEqual(
       [
+        'accessUrl',
         'cancelRequested',
         'completedAt',
         'createdAt',
         'error',
+        'errorCode',
         'id',
         'label',
         'name',
@@ -186,6 +188,30 @@ describe('Job', () => {
       expect(restored.status).toBe(JobStatus.COMPLETED);
       expect(restored.documentHints).toEqual({ tags: ['x'] });
       expect(JSON.parse(JSON.stringify(restored))).toEqual(JSON.parse(JSON.stringify(job)));
+    });
+
+    it('when a failed job asked for access and is restored, should keep the access request', () => {
+      const job = new Job('video-to-transcript');
+
+      job.start();
+      job.fail('Este vídeo precisa de login.', { code: 'ACCESS_REQUIRED', url: 'https://a.edu/1' });
+
+      const restored = Job.restore(JSON.parse(JSON.stringify(job.snapshot())));
+
+      expect(restored.errorInfo).toEqual({ code: 'ACCESS_REQUIRED', url: 'https://a.edu/1' });
+      expect(restored.toJSON()).toMatchObject({
+        errorCode: 'ACCESS_REQUIRED',
+        accessUrl: 'https://a.edu/1',
+      });
+    });
+
+    it('when a job fails again without access info, should drop the previous access request', () => {
+      const job = new Job('video-to-transcript');
+
+      job.fail('x', { code: 'ACCESS_REQUIRED', url: 'https://a.edu/1' });
+      job.fail('outro erro');
+
+      expect(job.errorInfo).toBeUndefined();
     });
 
     it('when restoring a job whose type no longer exists, should still restore it instead of throwing', () => {

@@ -1,7 +1,9 @@
 # Vídeo, Whisper e arquivos (modules/video, ai/whisper)
 
 ## Download
-- Aceita http e https. Segue redirecionamentos 3xx; o `Location` pode ser absoluto ou relativo (resolvido contra a URL atual).
+- Só http e https; outro protocolo rejeita com "Informe um link que comece com http:// ou https://".
+- **Link direto** (extensão de vídeo ou áudio): download HTTP próprio, descrito abaixo. **Outro link**: yt-dlp, só o áudio (`PlatformDownloader`); login exigido vira `AccessRequiredError`. Quando o back não recebe `platformTools` (testes), tudo vai pelo download direto. Ver `docs/download-de-videos.md`.
+- Segue redirecionamentos 3xx; o `Location` pode ser absoluto ou relativo (resolvido contra a URL atual).
 - Status diferente de 200 rejeita com "Falha ao baixar. Status Code: N" e apaga o arquivo parcial.
 - Erro de rede/escrita rejeita com mensagem específica e apaga o arquivo parcial.
 - Destino padrão: `TEMP_VIDEO_DIR`; a pasta é criada se não existir.

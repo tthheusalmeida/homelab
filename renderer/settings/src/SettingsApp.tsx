@@ -5,6 +5,7 @@ import {
   Cpu,
   Download,
   Folder,
+  KeyRound,
   Palette,
   type LucideIcon,
 } from 'lucide-react';
@@ -32,6 +33,7 @@ import { IpcEvents } from '#shared/events';
 import { relaunchApp } from './hooks';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { BackupSection } from './sections/BackupSection';
+import { AccessSection } from './sections/AccessSection';
 import { ComponentsSection } from './sections/ComponentsSection';
 import { ExternalProvidersSection } from './sections/ExternalProvidersSection';
 import { LocalProvidersSection } from './sections/LocalProvidersSection';
@@ -50,6 +52,7 @@ const SECTION_ICONS: Record<SectionId, LucideIcon> = {
   external: Cloud,
   local: Cpu,
   components: Download,
+  access: KeyRound,
   backup: Archive,
 };
 
@@ -165,6 +168,7 @@ export function SettingsApp() {
               {sectionId === 'external' && <ExternalProvidersSection onSaved={handleSaved} />}
               {sectionId === 'local' && <LocalProvidersSection onSaved={handleSaved} />}
               {sectionId === 'components' && <ComponentsSection />}
+              {sectionId === 'access' && <AccessSection />}
               {sectionId === 'backup' && <BackupSection onSaved={handleSaved} />}
             </main>
           </ScrollArea>

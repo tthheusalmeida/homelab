@@ -30,6 +30,16 @@ export interface JobView {
   cancelRequested?: boolean;
   /** Falhou e guarda os dados de criação: dá para tentar de novo. */
   retryable?: boolean;
+  /** Falhou porque o vídeo exige login: a tela oferece "Entrar no site" e depois tenta de novo. */
+  errorCode?: 'ACCESS_REQUIRED';
+  /** Endereço do vídeo que pediu login (junto com `errorCode`). */
+  accessUrl?: string;
+}
+
+/** Resultado de `jobs:grant-access`: `granted` é falso se a janela de login foi fechada sem entrar. */
+export interface JobAccessResult {
+  id: string;
+  granted: boolean;
 }
 
 /** Tipo de job (resposta de `jobs:types`). */

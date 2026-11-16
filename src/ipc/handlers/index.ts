@@ -1,3 +1,4 @@
+import { JobAccess, type PlatformLogin } from '../../jobs/job-access';
 import type { ExternalProvidersService } from '../../providers/external-providers.service';
 import type { LocalProvidersService } from '../../providers/local-providers.service';
 import type { SettingsService } from '../../settings/settings.service';
@@ -7,6 +8,7 @@ import { AiHandler, type AiCatalog, type AiUsageSource } from './ai.handler';
 import { AppHandler, type AppInfo } from './app.handler';
 import { BackupHandler, type BackupPort } from './backup.handler';
 import { ComponentsHandler, type ComponentsPort } from './components.handler';
+import { PlatformHandler, type PlatformLoginsPort } from './platform.handler';
 import { NoticeHandler, type PendingNotices } from './notice.handler';
 import { BookHandler, type BookReader, type BookWriter } from './book.handler';
 import { ChatHandler, type ChatSource } from './chat.handler';
@@ -53,6 +55,9 @@ export interface HandlerDeps {
   backup: BackupPort;
   notices: PendingNotices;
   components: ComponentsPort;
+  /** Janela de login dos sites de vídeo (acesso a vídeos que exigem entrar). */
+  platformLogin: PlatformLogin;
+  platformLogins: PlatformLoginsPort;
   settings: SettingsService;
   externalProviders: ExternalProvidersService;
   localProviders: LocalProvidersService;
@@ -74,11 +79,13 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
     new BackupHandler(deps.backup),
     new NoticeHandler(deps.notices),
     new ComponentsHandler(deps.components),
+    new PlatformHandler(deps.platformLogins),
     new JobHandler(
       deps.back.jobs.catalog,
       deps.back.jobs.launcher,
       deps.back.jobs.deleter,
       deps.back.jobs.canceller,
+      new JobAccess(deps.back.jobs.catalog, deps.platformLogin),
     ),
   ];
 }

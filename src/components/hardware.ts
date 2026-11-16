@@ -4,7 +4,7 @@ import type {
   HardwareRecommendation,
 } from '../shared/contracts/components';
 
-import { CUDA_PACK_ID } from './component-manifest';
+import { CUDA_PACK_ID, YTDLP_ID } from './component-manifest';
 
 export const HardwareMessages = {
   cudaStrong: (gpu: string, gb: number) =>
@@ -36,8 +36,17 @@ const COMFORTABLE_RAM_MB = 15 * MB;
 
 const gb = (mb: number) => Math.round(mb / MB);
 
-/** Escolhe aceleração e modelo a partir do hardware. Função pura (testável). */
+/**
+ * Escolhe aceleração e modelo a partir do hardware e acrescenta o que vale para qualquer máquina
+ * (o yt-dlp, que baixa vídeos de plataformas). Função pura (testável).
+ */
 export function recommendFor(gpus: GpuInfo[], ramMb: number): HardwareRecommendation {
+  const base = recommendByHardware(gpus, ramMb);
+
+  return { ...base, componentIds: [...base.componentIds, YTDLP_ID] };
+}
+
+function recommendByHardware(gpus: GpuInfo[], ramMb: number): HardwareRecommendation {
   const nvidia = gpus
     .filter((gpu) => gpu.vendor === 'nvidia' && gpu.kind === 'dedicated')
     .sort((a, b) => (b.vramMb ?? 0) - (a.vramMb ?? 0))[0];

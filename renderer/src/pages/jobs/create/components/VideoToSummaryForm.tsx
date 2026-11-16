@@ -3,8 +3,6 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "#ui/button";
-import { Input } from "#ui/input";
-import { Label } from "#ui/label";
 
 import { useAiModels } from "../../../ai/chat/hooks/useAiModels";
 import { useAiProviders } from "../../../ai/chat/hooks/useAiProviders";
@@ -18,6 +16,7 @@ import {
 } from "../summary-detail";
 import { useCreateVideoToSummary } from "../hooks/useCreateVideoToSummary";
 import { JobDocumentFields } from "./JobDocumentFields";
+import { VideoUrlField } from "./VideoUrlField";
 import { OptionSelect } from "#components/OptionSelect";
 
 interface VideoToSummaryFormProps {
@@ -99,23 +98,7 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="video-url">URL do vídeo</Label>
-
-        <Input
-          id="video-url"
-          type="url"
-          placeholder="https://..."
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          disabled={locked}
-          required
-        />
-
-        <p className="text-sm text-muted-foreground">
-          Informe a URL direta do vídeo que deseja resumir.
-        </p>
-      </div>
+      <VideoUrlField value={url} onChange={setUrl} disabled={locked} />
 
       <div className="flex items-center gap-2">
         <OptionSelect

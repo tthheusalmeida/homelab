@@ -110,6 +110,79 @@ describe('VideoService', () => {
     });
   });
 
+  describe('download from platforms', () => {
+    const ytDlp = path.join('C:', 'bin', 'yt-dlp.exe');
+
+    function platformService(installed = true) {
+      return new VideoService(
+        { chat } as unknown as AIService,
+        {
+          videoTempDir: path.join(tmp, 'video'),
+          platformTools: {
+            ytDlpPath: () => (installed ? ytDlp : null),
+            cookiesFor: async () => null,
+          },
+        } as unknown as BackConfig,
+      );
+    }
+
+    it('when the link is a platform page, should download through yt-dlp and return its file', async () => {
+      const printed = path.join(tmp, 'job-1.webm');
+
+      execFileMock.mockImplementation(
+        (_c: string, _a: string[], cb: (e: null, r: object) => void) =>
+          cb(null, { stdout: `${printed}\n`, stderr: '' }),
+      );
+
+      const out = await platformService().download('https://youtu.be/abc', 'job-1.mp4', tmp);
+
+      expect(out).toBe(path.resolve(printed));
+      expect(execFileMock.mock.calls[0][0]).toBe(ytDlp);
+      expect(execFileMock.mock.calls[0][1]).toEqual(
+        expect.arrayContaining(['-o', 'job-1.%(ext)s']),
+      );
+    });
+
+    it('when the link is a direct file, should not use yt-dlp', async () => {
+      const server = http.createServer((_req, res) => {
+        res.writeHead(200);
+        res.end('conteudo');
+      });
+
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+
+      const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/aula.mp4`;
+      const out = await platformService().download(url, 'direto.mp4', tmp);
+
+      await new Promise((resolve) => server.close(resolve));
+
+      expect(fs.readFileSync(out, 'utf8')).toBe('conteudo');
+      expect(execFileMock).not.toHaveBeenCalled();
+    });
+
+    it('when the link is a platform page and yt-dlp is missing, should ask to install it', async () => {
+      await expect(
+        platformService(false).download('https://youtu.be/abc', 'job-1.mp4', tmp),
+      ).rejects.toThrow('yt-dlp');
+    });
+
+    it('when the platform asks for login, should reject with AccessRequiredError', async () => {
+      execFileMock.mockImplementation((_c: string, _a: string[], cb: (e: Error) => void) =>
+        cb(Object.assign(new Error('fail'), { stderr: 'ERROR: Private video' })),
+      );
+
+      await expect(
+        platformService().download('https://curso.edu/aula/1', 'job-1.mp4', tmp),
+      ).rejects.toMatchObject({ code: 'ACCESS_REQUIRED', url: 'https://curso.edu/aula/1' });
+    });
+
+    it('when the link is not http or https, should reject with a clear message', async () => {
+      await expect(service.download('file:///C:/video.mp4', 'x.mp4', tmp)).rejects.toThrow(
+        'http:// ou https://',
+      );
+    });
+  });
+
   describe('toAudio', () => {
     it('when no dir is given, should write the audio in TEMP_AUDIO_DIR', async () => {
       execFileMock.mockImplementation(

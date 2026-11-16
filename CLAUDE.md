@@ -23,6 +23,7 @@ Estado: app instalável e em uso (versão `0.1.x`). Falta o que está em `docs/m
 | `docs/testing.md` | Convenções de teste, mocks, checklist manual e smoke E2E |
 | `docs/identidade.md` | Identidade Colmeia: tema claro/escuro/sistema, cor de destaque configurável, componentes hexagonais |
 | `docs/componentes.md` | Catálogo de componentes (Whisper, ffmpeg, CUDA, modelos), download com checksum, recomendação por hardware e assistente de instalação |
+| `docs/download-de-videos.md` | Download de YouTube e outras plataformas com yt-dlp, aviso ao usuário e login por janela do app (cookies temporários) |
 | `docs/atalhos.md` | Paleta de comandos (Ctrl K), atalhos "G e uma letra" e notificação do sistema quando um job termina |
 | `docs/movimento.md` | Transições e animações: réguas de tempo, utilities `animate-*`, onde aplicar |
 | `docs/empacotamento.md` | Instalador Windows (`electron-builder`), binários, caminhos empacotados, ícone |

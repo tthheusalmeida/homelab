@@ -58,6 +58,7 @@ export type SectionId =
   | 'external'
   | 'local'
   | 'components'
+  | 'access'
   | 'backup';
 
 /** Chave de `useCollapsedGroups` das Configurações (separada da barra do app). */
@@ -73,7 +74,7 @@ export interface SectionInfo {
 export const SECTION_GROUPS: ReadonlyArray<{ label: string; ids: readonly SectionId[] }> = [
   { label: 'Geral', ids: ['appearance', 'paths'] },
   { label: 'IA', ids: ['external', 'local'] },
-  { label: 'Sistema', ids: ['components', 'backup'] },
+  { label: 'Sistema', ids: ['components', 'access', 'backup'] },
 ];
 
 export const SECTIONS: ReadonlyArray<SectionInfo> = [
@@ -103,6 +104,12 @@ export const SECTIONS: ReadonlyArray<SectionInfo> = [
     label: 'Componentes',
     description:
       'O que o app precisa para transcrever: Whisper, ffmpeg, aceleração por placa de vídeo e modelos. Baixe outros modelos quando quiser.',
+  },
+  {
+    id: 'access',
+    label: 'Acessos',
+    description:
+      'Logins que o HomeLab guarda, cifrados, para baixar vídeos de sites que exigem conta. Você entra uma vez; aqui dá para esquecê-los.',
   },
   {
     id: 'backup',

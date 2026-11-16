@@ -408,7 +408,7 @@ test('when the settings window opens, should offer the library and backup sectio
 
     await expect(settings.getByRole('button', { name: /^Biblioteca/ })).toBeVisible();
     await expect(settings.getByRole('button', { name: /^Backup/ })).toBeVisible();
-    await expect(settings.getByLabel('Biblioteca')).toBeVisible();
+    await expect(settings.getByRole('textbox', { name: 'Biblioteca' })).toBeVisible();
     await expect(settings.getByLabel('Entrada')).toHaveCount(0);
     await expect(settings.getByLabel('Vídeos temporários')).toHaveCount(0);
 

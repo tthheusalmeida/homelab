@@ -2,6 +2,7 @@ import { IpcChannels } from '../../shared/channels';
 import type {
   CreateVideoToSummaryRequest,
   CreateVideoToTranscriptRequest,
+  JobAccessResult,
   JobCreated,
   JobDeleteRequest,
   JobCancelResult,
@@ -41,6 +42,11 @@ export interface JobCancellerPort {
   cancel(id: JobRequest['id']): JobCancelResult;
 }
 
+/** Acesso a vídeos que pedem login: abre a janela de login do site e guarda o acesso. */
+export interface JobAccessPort {
+  grantAccess(id: JobRequest['id']): Promise<JobAccessResult>;
+}
+
 /**
  * Canais `jobs:*`. Dica inválida (título, categoria, tags) chega como 400 do Nest (`VALIDATION`)
  * antes de enfileirar e job inexistente como 404 (`NOT_FOUND`), ambos pelo `IpcErrorMapper`.
@@ -53,6 +59,7 @@ export class JobHandler extends IpcHandler {
     private readonly launcher: JobLauncherPort,
     private readonly deleter: JobDeleterPort,
     private readonly canceller: JobCancellerPort,
+    private readonly access: JobAccessPort,
   ) {
     super();
   }
@@ -73,6 +80,7 @@ export class JobHandler extends IpcHandler {
       this.route(IpcChannels.jobs.undoDelete, () => this.deleter.undoDelete()),
       this.route(IpcChannels.jobs.cancel, ({ id }) => this.canceller.cancel(id)),
       this.route(IpcChannels.jobs.retry, ({ id }) => this.launcher.retry(id)),
+      this.route(IpcChannels.jobs.grantAccess, ({ id }) => this.access.grantAccess(id)),
     ];
   }
 }

@@ -49,6 +49,18 @@ describe("VideoToTranscriptForm", () => {
     expect(screen.getByRole("button", { name: /criar/i })).toBeDisabled();
   });
 
+  it("when opened, should warn about downloading from platforms", () => {
+    render(<VideoToTranscriptForm />);
+
+    expect(screen.getByRole("note")).toHaveTextContent("termos de uso");
+  });
+
+  it("when the summary form is opened, should warn about downloading from platforms too", () => {
+    render(<VideoToSummaryForm />);
+
+    expect(screen.getByRole("note")).toHaveTextContent("termos de uso");
+  });
+
   it("when a url is typed and submitted, should create the job with it", async () => {
     const user = userEvent.setup();
     render(<VideoToTranscriptForm />);
@@ -202,13 +214,15 @@ describe("JobForm", () => {
   it("when type is video-to-transcript, should render the transcript form", () => {
     render(<JobForm jobType={jobType("video-to-transcript")} />);
 
-    expect(screen.getByText(/que deseja transcrever/)).toBeInTheDocument();
+    expect(screen.getByLabelText("URL do vídeo")).toBeInTheDocument();
+    expect(screen.queryByText("Provedor")).not.toBeInTheDocument();
   });
 
   it("when type is video-to-summary, should render the summary form", () => {
     render(<JobForm jobType={jobType("video-to-summary")} />);
 
-    expect(screen.getByText(/que deseja resumir/)).toBeInTheDocument();
+    expect(screen.getByLabelText("URL do vídeo")).toBeInTheDocument();
+    expect(screen.getByText("Provedor")).toBeInTheDocument();
   });
 
   it("when type is unknown, should render nothing", () => {

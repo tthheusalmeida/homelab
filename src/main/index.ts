@@ -51,8 +51,18 @@ import { needsInitialSetup } from './first-run';
 import { resolveFrontTarget, type FrontTarget } from './front-target';
 import { LocalStateGuard } from './local-state-guard';
 import { classifyNavigation } from './navigation-guard';
+import { findMediaInPage } from './media-finder';
+import {
+  openPlatformLoginWindow,
+  platformSession,
+  restorePlatformCookies,
+} from './platform-login-window';
 import { IpcEvents } from '../shared/events';
+import { CookieVault } from '../platform/cookie-vault';
+import { detectDefaultBrowser } from '../platform/default-browser';
+import { PlatformSessions } from '../platform/platform-sessions';
 import { resolveFfmpegPath } from '../providers/ffmpeg-binary-resolver';
+import { resolveYtDlpPath } from '../providers/ytdlp-binary-resolver';
 import { resolveBinDir, resolveDataRoot, resolveFrontDist, resolveResourcesDir } from './paths';
 import { isSettingsShortcut } from './shortcuts';
 import { SingleWindowController } from './single-window';
@@ -254,8 +264,9 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
   const localStateGuard = new LocalStateGuard({ userDataDir: app.getPath('userData') });
   const events = new WindowEventPublisher(() => BrowserWindow.getAllWindows());
   const resourcesDir = resolveResourcesDir(projectRoot, app.isPackaged, process.resourcesPath);
+  const binDir = resolveBinDir(resourcesDir, process.platform, process.arch);
   const ffmpegPath = resolveFfmpegPath({
-    binDir: resolveBinDir(resourcesDir, process.platform, process.arch),
+    binDir,
     platform: process.platform,
     exists: fs.existsSync,
   });
@@ -281,6 +292,23 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     checkGeminiKey: async (apiKey) => {
       await new GoogleGenAI({ apiKey }).models.list();
     },
+  });
+  // Vídeos que exigem login: o usuário entra uma vez numa janela do app, os logins ficam cifrados e vão ao yt-dlp em arquivo temporário.
+  const cookieVault = new CookieVault(services.secrets, () => Date.now());
+  const platformSessions = new PlatformSessions({
+    readSession: () => platformSession().cookies.get({}),
+    restoreSession: (cookies) => restorePlatformCookies(platformSession(), cookies),
+    loadSaved: () => cookieVault.load(),
+    saveCookies: (cookies) => cookieVault.save(cookies),
+    clearSession: () => platformSession().clearStorageData(),
+    openWindow: (url, title) => openPlatformLoginWindow({ parent: mainWindow, url, title }),
+    tempDir: path.join(app.getPath('userData'), 'cookies-temp'),
+    writeFile: async (file, text) => {
+      await fs.promises.mkdir(path.dirname(file), { recursive: true });
+      await fs.promises.writeFile(file, text, { mode: 0o600 });
+    },
+    removeFile: (file) => fs.promises.rm(file, { force: true }),
+    now: () => Date.now(),
   });
 
   const firstRun = services.settings.isFirstRun();
@@ -316,6 +344,27 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       services.appPaths,
       await services.secrets.get('gemini.apiKey'),
       ffmpegPath,
+      {
+        ytDlpPath: () =>
+          resolveYtDlpPath({ binDir, platform: process.platform, exists: fs.existsSync }),
+        cookiesFor: () => platformSessions.cookiesFor(),
+        findMedia: async (url) => {
+          const session = platformSession();
+
+          await restorePlatformCookies(session, await cookieVault.load());
+
+          const scan = await findMediaInPage(url, session);
+          const cookies = await session.cookies.get({});
+
+          if (cookies.length > 0) {
+            await cookieVault.save(cookies).catch(() => undefined);
+          }
+
+          return scan;
+        },
+        browser: () =>
+          detectDefaultBrowser(process.platform, async (args) => (await run('reg', args)).stdout),
+      },
     ),
     whisper: services.whisper,
     alerts: new EventBackAlerts(events, systemNotifier),
@@ -356,6 +405,8 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
 
   new IpcRegistrar(ipcMain).register(
     createHandlers({
+      platformLogin: platformSessions,
+      platformLogins: platformSessions,
       appInfo: {
         version: () => app.getVersion(),
         // No modo dev o Vite morre junto com o app, então só fecha (rode `npm run dev` de novo).

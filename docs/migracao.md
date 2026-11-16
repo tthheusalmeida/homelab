@@ -33,6 +33,5 @@ Convenção de versão e de mudanças (SemVer, Conventional Commits, branch + me
 ## Pendências que não são fase
 - **Linux e macOS:** falta o `whisper-cli` compilado e o ffmpeg de cada um (`resources/bin/linux-x64`, `darwin-arm64`), o catálogo de componentes deles e o build em cada sistema (matriz da CI, fase 12). A configuração do `electron-builder.yml` já existe.
 - **Assinatura de código** do instalador (certificado pago); sem ela o SmartScreen avisa.
-- **Download de vídeo** só aceita link direto http/https (sem YouTube).
 - **`npm install --legacy-peer-deps`** por causa do peer do Babel entre Jest e o plugin React do Vite; decidir se resolve de outro jeito (a CI da fase 11 vai depender disso).
-- O smoke E2E não cobre criar um job nem uma conversa real, e não roda com as mudanças recentes (assistente de instalação, conversa, modais).
+- O smoke E2E (14 testes) passa com o app atual, mas não cobre criar um job nem uma conversa real, nem o download de plataformas (a janela de login depende de um site real).

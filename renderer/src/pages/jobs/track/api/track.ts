@@ -2,6 +2,7 @@ import type { Job } from '../../types/job.types';
 
 import { IpcChannels } from '#shared/channels';
 import type {
+  JobAccessResult,
   JobCancelResult,
   JobCreated,
   JobDeleteResult,
@@ -32,6 +33,11 @@ export async function cancelJob(id: string): Promise<JobCancelResult> {
 /** Cria outro job com os mesmos dados de um que falhou. */
 export async function retryJob(id: string): Promise<JobCreated> {
   return ipc.invoke(IpcChannels.jobs.retry, { id });
+}
+
+/** Abre a janela de login do site do vídeo e guarda o acesso quando o usuário a fecha. */
+export async function grantJobAccess(id: string): Promise<JobAccessResult> {
+  return ipc.invoke(IpcChannels.jobs.grantAccess, { id });
 }
 
 /** Desfaz a última exclusão do histórico. */

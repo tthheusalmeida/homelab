@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { cancelJob, retryJob, undoDeleteJobs } from "../api/track";
+import { cancelJob, grantJobAccess, retryJob, undoDeleteJobs } from "../api/track";
 
 /** Cancela um job e atualiza a lista na hora. */
 export function useCancelJob() {
@@ -20,6 +20,11 @@ export function useRetryJob() {
     mutationFn: retryJob,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["jobs"] }),
   });
+}
+
+/** Abre o login do site de um vídeo que pediu acesso; resolve quando o usuário fecha a janela. */
+export function useGrantJobAccess() {
+  return useMutation({ mutationFn: grantJobAccess });
 }
 
 /** Desfaz a última exclusão e atualiza a lista. */

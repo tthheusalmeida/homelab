@@ -46,6 +46,7 @@ describe('SettingsApp menu groups', () => {
       'IAs externas',
       'Serviços locais',
       'Componentes',
+      'Acessos',
       'Backup',
     ].map((name) => screen.getByRole('button', { name }));
 

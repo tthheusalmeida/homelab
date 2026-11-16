@@ -1,3 +1,5 @@
+import type { PlatformTools } from '../modules/video/platform-downloader';
+
 /**
  * Configuração que os services do back precisam, já tipada (substitui o `AppConfig` do `.env`).
  * É a ponte entre o back e o Settings/Secrets do desktop (ver `settings/settings-back-config.ts`);
@@ -18,6 +20,9 @@ export abstract class BackConfig {
 
   /** Executável do ffmpeg (embutido ou `ffmpeg` do PATH); sem valor, usa o do PATH. */
   readonly ffmpegPath?: string;
+
+  /** yt-dlp e cookies de login para baixar vídeos de plataformas; sem valor, só links diretos. */
+  readonly platformTools?: PlatformTools;
 
   abstract readonly ollamaUrl: string;
 

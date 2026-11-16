@@ -3,6 +3,7 @@ import { CANCELLED_JOB_ERROR, Job } from '../domain/job.entity';
 import { JobStatus } from '../domain/job-status.enum';
 import { InMemoryJobRepository } from '../infrastructure/repositories/in-memory-job.repository';
 import { JobProcessor } from '../domain/job-processor.interface';
+import { AccessRequiredError } from '../../video/access-required.error';
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
@@ -69,6 +70,33 @@ describe('JobRunner', () => {
 
     expect(job.status).toBe(JobStatus.FAILED);
     expect(job.error).toBe('Erro desconhecido');
+  });
+
+  it('when the processor throws AccessRequiredError, should fail the job keeping the link to ask for access', async () => {
+    const job = new Job('video-to-transcript');
+    const processor: JobProcessor<string> = {
+      process: jest.fn().mockRejectedValue(new AccessRequiredError('https://curso.edu/aula/1')),
+    };
+
+    runner.run(job, processor, 'x');
+    await flush();
+
+    expect(job.status).toBe(JobStatus.FAILED);
+    expect(job.errorInfo).toEqual({ code: 'ACCESS_REQUIRED', url: 'https://curso.edu/aula/1' });
+    expect(job.toJSON()).toMatchObject({
+      errorCode: 'ACCESS_REQUIRED',
+      accessUrl: 'https://curso.edu/aula/1',
+    });
+  });
+
+  it('when the processor throws a common error, should not set an access request', async () => {
+    const job = new Job('video-to-transcript');
+
+    runner.run(job, { process: () => Promise.reject(new Error('x')) }, '');
+    await flush();
+
+    expect(job.errorInfo).toBeUndefined();
+    expect(job.toJSON().errorCode).toBeUndefined();
   });
 
   it('when several jobs are queued, should process them in series in arrival order', async () => {

@@ -16,7 +16,12 @@ import { JobList } from "./components/JobList";
 import { describeDeleteResult } from "./delete-message";
 import { useDeleteAllJobs, useDeleteJobs } from "./hooks/useDeleteJobs";
 import { useJobs } from "./hooks/useJobs";
-import { useCancelJob, useRetryJob, useUndoDeleteJobs } from "./hooks/useJobActions";
+import {
+  useCancelJob,
+  useGrantJobAccess,
+  useRetryJob,
+  useUndoDeleteJobs,
+} from "./hooks/useJobActions";
 import { TrackStrings } from "./strings";
 
 type Confirming = "selected" | "all" | null;
@@ -29,6 +34,7 @@ export function TrackPage() {
   const undoDelete = useUndoDeleteJobs();
   const cancel = useCancelJob();
   const retry = useRetryJob();
+  const grant = useGrantJobAccess();
 
   // A seleção vive aqui, fora da consulta: o polling de 1 s não a perde.
   const [selecting, setSelecting] = useState(false);
@@ -122,6 +128,24 @@ export function TrackPage() {
       onError: (error) => snackbar.error(error.message),
     });
 
+  // Abre o login do site; ao fechar a janela com acesso guardado, cria o job de novo.
+  const grantAccess = (job: Job) =>
+    grant.mutate(job.id, {
+      onSuccess: ({ granted }) => {
+        if (!granted) {
+          snackbar.error(TrackStrings.accessNotGranted);
+
+          return;
+        }
+
+        retry.mutate(job.id, {
+          onSuccess: () => snackbar.created(TrackStrings.accessGranted(job.label)),
+          onError: (error) => snackbar.error(error.message),
+        });
+      },
+      onError: (error) => snackbar.error(error.message),
+    });
+
   const stopSelecting = () => {
     setSelecting(false);
     setSelected(new Set());
@@ -208,7 +232,16 @@ export function TrackPage() {
         onSelectedChange={toggle}
         onCancel={cancelJob}
         onRetry={retryJob}
-        busyId={cancel.isPending ? cancel.variables : retry.isPending ? retry.variables : undefined}
+        onGrantAccess={grantAccess}
+        busyId={
+          cancel.isPending
+            ? cancel.variables
+            : retry.isPending
+              ? retry.variables
+              : grant.isPending
+                ? grant.variables
+                : undefined
+        }
       />
 
       <ConfirmDialog
