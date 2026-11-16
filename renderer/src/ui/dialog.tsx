@@ -62,7 +62,13 @@ function DialogContent({
         {/* Só este miolo rola: DialogHeader e DialogFooter ficam presos ao topo e à base (sticky). */}
         <div
           data-slot="dialog-scroll"
-          className={cn("grid min-h-0 flex-1 gap-4 overflow-y-auto p-5", bodyClassName)}
+          className={cn(
+            "grid min-h-0 flex-1 gap-4 overflow-y-auto p-5",
+            // Sem conteúdo entre o cabeçalho e o rodapé (ex.: confirmação só com texto): não deixa
+            // a faixa vazia entre as duas bordas, junta o rodapé ao cabeçalho.
+            "[&>[data-slot=dialog-header]:has(+[data-slot=dialog-footer])]:border-b-0 [&>[data-slot=dialog-header]+[data-slot=dialog-footer]]:-mt-4",
+            bodyClassName
+          )}
         >
           {children}
         </div>

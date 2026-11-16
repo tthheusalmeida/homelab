@@ -31,11 +31,14 @@ import { SidebarSection } from '#components/SidebarSection';
 import { SidebarSetupProgress } from '#components/SidebarSetupProgress';
 import { useCollapsedGroups } from '#hooks/use-collapsed-groups';
 import { useActiveJobsCount } from '../pages/jobs/track/hooks/useActiveJobsCount';
+import { useInboxCount } from '../pages/library/hooks/useLibrary';
 import { IpcChannels } from '#shared/channels';
 import { ipc } from '#lib/ipc';
 
 /** Tela dos jobs: o item do menu mostra quantos estão em andamento. */
 const JOBS_URL = '/jobs/track';
+/** Caixa de entrada: o item do menu mostra quantas páginas aguardam decisão. */
+const INBOX_URL = '/library/inbox';
 
 /**
  * Navegação do app. Ordem: HomeLab (Início), Biblioteca, Tarefas e IA (por último); Configurações fica
@@ -52,7 +55,7 @@ export const navigation = [
     items: [
       { title: 'Páginas', url: '/library', icon: Library },
       { title: 'Livros', url: '/library/books', icon: BookOpen },
-      { title: 'Caixa de entrada', url: '/library/inbox', icon: Inbox },
+      { title: 'Caixa de entrada', url: INBOX_URL, icon: Inbox },
       { title: 'Nova página', url: '/library/new', icon: FilePlus },
     ],
   },
@@ -92,6 +95,11 @@ export function AppSidebar() {
   const activeUrl = findActiveUrl(location.pathname, navigationUrls);
   const [collapsed, toggleGroup] = useCollapsedGroups();
   const activeJobs = useActiveJobsCount();
+  const inboxCount = useInboxCount();
+  const badges: Record<string, { count: number; label: string }> = {
+    [JOBS_URL]: { count: activeJobs, label: `${activeJobs} em andamento` },
+    [INBOX_URL]: { count: inboxCount, label: `${inboxCount} na caixa de entrada` },
+  };
 
   return (
     <Sidebar>
@@ -108,6 +116,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {group.items.map((item) => {
                 const isActive = item.url === activeUrl;
+                const badge = badges[item.url];
 
                 return (
                   <SidebarMenuItem key={item.url}>
@@ -120,12 +129,12 @@ export function AppSidebar() {
                       <span>{item.title}</span>
                     </SidebarMenuButton>
 
-                    {item.url === JOBS_URL && activeJobs > 0 && (
+                    {badge && badge.count > 0 && (
                       <SidebarMenuBadge
-                        aria-label={`${activeJobs} em andamento`}
+                        aria-label={badge.label}
                         className="bg-primary text-primary-foreground peer-hover/menu-button:text-primary-foreground peer-data-active/menu-button:text-primary-foreground"
                       >
-                        {activeJobs}
+                        {badge.count}
                       </SidebarMenuBadge>
                     )}
                   </SidebarMenuItem>

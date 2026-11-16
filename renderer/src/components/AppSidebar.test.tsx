@@ -128,6 +128,66 @@ describe('AppSidebar', () => {
   });
 });
 
+describe('AppSidebar: contador da caixa de entrada', () => {
+  const page = (id: string) => ({ id, title: `Página ${id}`, status: 'pending' });
+
+  it('when there are pages waiting, should show how many next to Caixa de entrada', async () => {
+    mockApi({ [IpcChannels.library.inbox]: () => ok([page('1'), page('2'), page('3')]) });
+
+    renderSidebar();
+
+    const badge = await screen.findByLabelText('3 na caixa de entrada');
+
+    expect(badge).toHaveTextContent('3');
+    expect(badge.closest('li')).toHaveTextContent('Caixa de entrada');
+  });
+
+  it('when the inbox is empty, should show no counter', async () => {
+    const invoke = mockApi({ [IpcChannels.library.inbox]: () => ok([]) });
+
+    renderSidebar();
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith(IpcChannels.library.inbox));
+
+    expect(screen.queryByLabelText(/na caixa de entrada$/)).not.toBeInTheDocument();
+  });
+
+  it('when the inbox cannot be loaded, should still render the menu without a counter', () => {
+    mockApi({});
+
+    renderSidebar();
+
+    expect(screen.getByText('Caixa de entrada')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/na caixa de entrada$/)).not.toBeInTheDocument();
+  });
+
+  it('when pages wait and jobs run, should keep each counter on its own item', async () => {
+    mockApi({
+      [IpcChannels.library.inbox]: () => ok([page('1')]),
+      [IpcChannels.jobs.list]: () =>
+        ok([
+          {
+            id: 'j',
+            name: 'video-to-transcript',
+            label: 'x',
+            status: 'running',
+            createdAt: '2026-01-01T10:00:00.000Z',
+            completedAt: '',
+            steps: [],
+          },
+        ]),
+    });
+
+    renderSidebar();
+
+    expect((await screen.findByLabelText('1 na caixa de entrada')).closest('li')).toHaveTextContent(
+      'Caixa de entrada',
+    );
+    expect((await screen.findByLabelText('1 em andamento')).closest('li')).toHaveTextContent(
+      'Em andamento',
+    );
+  });
+});
+
 describe('AppSidebar: contador de jobs em andamento', () => {
   const job = (id: string, status: string) => ({
     id,

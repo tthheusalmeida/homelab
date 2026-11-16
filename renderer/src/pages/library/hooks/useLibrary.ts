@@ -56,6 +56,13 @@ export function useInbox() {
   });
 }
 
+/** Quantas páginas aguardam decisão na caixa de entrada (o contador da barra lateral). Compartilha a consulta da tela. */
+export function useInboxCount(): number {
+  const { data } = useInbox();
+
+  return data?.length ?? 0;
+}
+
 export function useCategories() {
   return useQuery({
     queryKey: [...LIBRARY_KEY, "categories"],

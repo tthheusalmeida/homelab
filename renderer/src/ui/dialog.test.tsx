@@ -32,6 +32,33 @@ function renderDialog() {
   );
 }
 
+describe('DialogContent: sem conteúdo entre cabeçalho e rodapé', () => {
+  it('when the footer comes right after the header, should drop the gap and the header bottom border so no empty strip shows', () => {
+    render(
+      <Dialog open>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir</DialogTitle>
+            <DialogDescription>Só texto.</DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <button type="button">Cancelar</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>,
+    );
+
+    const scroll = screen.getByRole('dialog').querySelector('[data-slot=dialog-scroll]');
+    const classes = scroll?.className ?? '';
+
+    expect(classes).toContain('[&>[data-slot=dialog-header]:has(+[data-slot=dialog-footer])]:border-b-0');
+    expect(classes).toContain('[&>[data-slot=dialog-header]+[data-slot=dialog-footer]]:-mt-4');
+    expect(scroll?.children[0]).toHaveAttribute('data-slot', 'dialog-header');
+    expect(scroll?.children[1]).toHaveAttribute('data-slot', 'dialog-footer');
+  });
+});
+
 describe('DialogContent', () => {
   it('when the content is long, should scroll only the body and keep the popup inside the viewport', () => {
     renderDialog();
