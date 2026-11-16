@@ -12,6 +12,7 @@ import {
   ipcMain,
   nativeTheme,
   net,
+  Notification,
   protocol,
   session,
   shell,
@@ -52,6 +53,7 @@ import { classifyNavigation } from './navigation-guard';
 import { resolveDataRoot, resolveFrontDist, resolveResourcesDir } from './paths';
 import { isSettingsShortcut } from './shortcuts';
 import { SingleWindowController } from './single-window';
+import { SystemNotifier } from './system-notifier';
 import { resolveStaticFile } from './static-files';
 import {
   createSettingsWindowOptions,
@@ -270,6 +272,30 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
   const firstRun = services.settings.isFirstRun();
 
   // O back roda dentro do main, como contêiner de injeção de dependência: sem HTTP e sem porta.
+  // Job que termina com o app minimizado ou em segundo plano avisa pelo sistema operacional.
+  const systemNotifier = new SystemNotifier({
+    isAppFocused: () => BrowserWindow.getAllWindows().some((window) => window.isFocused()),
+    isSupported: () => Notification.isSupported(),
+    show: ({ title, body }, onClick) => {
+      const notification = new Notification({ title, body });
+
+      notification.on('click', onClick);
+      notification.show();
+    },
+    focusApp: () => {
+      if (!mainWindow) {
+        return;
+      }
+
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+      }
+
+      mainWindow.show();
+      mainWindow.focus();
+    },
+  });
+
   const container = await BackContainer.start({
     config: new SettingsBackConfig(
       services.settings,
@@ -277,7 +303,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       await services.secrets.get('gemini.apiKey'),
     ),
     whisper: services.whisper,
-    alerts: new EventBackAlerts(events),
+    alerts: new EventBackAlerts(events, systemNotifier),
   });
 
   const notices = new NoticeStore();

@@ -77,5 +77,36 @@ describe('EventBackAlerts', () => {
         },
       ]);
     });
+
+    it('when a job finishes and a system notifier exists, should also notify the system', () => {
+      const system = { notify: jest.fn() };
+
+      new EventBackAlerts(new FakeEventPublisher(), system).jobFinished({
+        id: 'j3',
+        label: 'Resumo de vídeo',
+        status: 'completed',
+      });
+
+      expect(system.notify).toHaveBeenCalledWith({
+        title: 'Resumo de vídeo concluído',
+        body: expect.stringContaining('HomeLab'),
+      });
+    });
+
+    it('when a job fails, should notify the system with the failure title', () => {
+      const system = { notify: jest.fn() };
+
+      new EventBackAlerts(new FakeEventPublisher(), system).jobFinished({
+        id: 'j4',
+        label: 'Resumo de vídeo',
+        status: 'failed',
+        error: 'x',
+      });
+
+      expect(system.notify).toHaveBeenCalledWith({
+        title: 'Resumo de vídeo falhou',
+        body: expect.stringContaining('etapa'),
+      });
+    });
   });
 });
