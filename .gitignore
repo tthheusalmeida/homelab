@@ -61,3 +61,6 @@ Thumbs.db
 # Playwright
 /test-results/
 /playwright-report/
+
+# Binários gerados por scripts/build-whisper-linux.sh
+/dist-components/
