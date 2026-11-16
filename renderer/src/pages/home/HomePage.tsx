@@ -1,6 +1,9 @@
-import { HoneycombBackdrop } from "#components/Hex";
+import { HexDot, HoneycombBackdrop } from "#components/Hex";
 
+import { ActivitySection } from "./components/ActivitySection";
 import { OverviewSection } from "./components/OverviewSection";
+import { QuickActions } from "./components/QuickActions";
+import { RecentPagesSection } from "./components/RecentPagesSection";
 import { ServicesSection } from "./components/ServicesSection";
 import { SystemStatus } from "./components/SystemStatus";
 
@@ -14,32 +17,35 @@ export function HomePage() {
       <HoneycombBackdrop />
 
       <div className="relative mx-auto space-y-8">
-        {/* Terminal */}
-        <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-          <span>root@homelab:~$</span>
-          <span>./home</span>
-          <span className="inline-block h-3.5 w-1.5 animate-pulse bg-brand" />
-        </div>
+        {/* Painel de terminal: a cara de console do homelab */}
+        <section
+          aria-label="Painel do HomeLab"
+          className="overflow-hidden rounded-lg border border-border bg-card/60 select-none"
+        >
+          <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-3 py-2">
+            <HexDot className="bg-red-500/80" />
+            <HexDot className="bg-amber-500/80" />
+            <HexDot className="bg-emerald-500/80" />
 
-        {/* Hero */}
-        <section className="border-b border-border pb-4 select-none">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <span className="ml-2 font-mono text-xs text-muted-foreground">homelab — status</span>
+          </div>
+
+          <div className="flex flex-col gap-6 p-5 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-3">
-              <div>
-                <h1 className="flex flex-col gap-0.5 tracking-tight">
-                  <span className="text-sm text-muted-foreground ">
-                    Bem-vindo,
-                  </span>
-                  <span className="font-semibold text-3xl">Matheus</span>
-                </h1>
-
-                <p className="mt-4 text-muted-foreground text-xs">
-                  Central de controle do HomeLab.
-                </p>
+              <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+                <span className="text-brand">root@homelab:~$</span>
+                <span>./home --status</span>
+                <span className="inline-block h-3.5 w-1.5 animate-pulse bg-brand" />
               </div>
+
+              <h1 className="text-4xl font-semibold tracking-tight">HomeLab</h1>
+
+              <p className="text-sm text-muted-foreground">
+                Central de controle do seu ambiente.
+              </p>
             </div>
 
-            <div className="flex flex-col items-end font-mono text-xs text-muted-foreground">
+            <div className="flex flex-col font-mono text-xs text-muted-foreground sm:items-end">
               <span>/status</span>
               <SystemStatus
                 isLoading={health.isLoading}
@@ -51,6 +57,12 @@ export function HomePage() {
         </section>
 
         <OverviewSection health={health} />
+
+        <ActivitySection />
+
+        <QuickActions />
+
+        <RecentPagesSection />
 
         <ServicesSection />
       </div>
