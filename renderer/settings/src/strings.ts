@@ -60,11 +60,23 @@ export type SectionId =
   | 'components'
   | 'backup';
 
-export const SECTIONS: ReadonlyArray<{
+/** Chave de `useCollapsedGroups` das Configurações (separada da barra do app). */
+export const SETTINGS_COLLAPSED_KEY = 'homelab.settings-collapsed';
+
+export interface SectionInfo {
   id: SectionId;
   label: string;
   description: string;
-}> = [
+}
+
+/** Grupos do menu das Configurações, na mesma ordem e com o mesmo comportamento da barra do app. */
+export const SECTION_GROUPS: ReadonlyArray<{ label: string; ids: readonly SectionId[] }> = [
+  { label: 'Geral', ids: ['appearance', 'paths'] },
+  { label: 'IA', ids: ['external', 'local'] },
+  { label: 'Sistema', ids: ['components', 'backup'] },
+];
+
+export const SECTIONS: ReadonlyArray<SectionInfo> = [
   {
     id: 'paths',
     label: 'Biblioteca',

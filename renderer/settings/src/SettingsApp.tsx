@@ -14,8 +14,6 @@ import { ScrollArea } from '#ui/scroll-area';
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -24,7 +22,9 @@ import {
 } from '#ui/sidebar';
 
 import { RestartBanner } from './components/RestartBanner';
+import { SidebarSection } from '#components/SidebarSection';
 import { SnackbarProvider } from '#components/Snackbar';
+import { useCollapsedGroups } from '#hooks/use-collapsed-groups';
 import { useIpcEvent } from '#hooks/use-ipc-event';
 import { ipc } from '#lib/ipc';
 import { IpcChannels } from '#shared/channels';
@@ -36,7 +36,13 @@ import { ComponentsSection } from './sections/ComponentsSection';
 import { ExternalProvidersSection } from './sections/ExternalProvidersSection';
 import { LocalProvidersSection } from './sections/LocalProvidersSection';
 import { PathsSection } from './sections/PathsSection';
-import { SECTIONS, Strings, type SectionId } from './strings';
+import {
+  SECTION_GROUPS,
+  SECTIONS,
+  SETTINGS_COLLAPSED_KEY,
+  Strings,
+  type SectionId,
+} from './strings';
 
 const SECTION_ICONS: Record<SectionId, LucideIcon> = {
   paths: Folder,
@@ -54,6 +60,7 @@ const SECTION_ICONS: Record<SectionId, LucideIcon> = {
 export function SettingsApp() {
   const [sectionId, setSectionId] = useState<SectionId>('paths');
   const [restartPending, setRestartPending] = useState(false);
+  const [collapsed, toggleGroup] = useCollapsedGroups(SETTINGS_COLLAPSED_KEY);
 
   const handleSaved = (restartRequired: boolean) => {
     if (restartRequired) {
@@ -102,29 +109,42 @@ export function SettingsApp() {
           </SidebarHeader>
 
           <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {SECTIONS.map(({ id, label }) => {
-                    const Icon = SECTION_ICONS[id];
+            {/* Mesmo padrão da barra do app: grupos com rótulo, recolhíveis, e lembrados. */}
+            {SECTION_GROUPS.map((group) => {
+              const isOpen = !collapsed.has(group.label);
 
-                    return (
-                      <SidebarMenuItem key={id}>
-                        <SidebarMenuButton
-                          isActive={id === sectionId}
-                          aria-current={id === sectionId ? 'page' : undefined}
-                          onClick={() => setSectionId(id)}
-                          className="text-[13px] select-none [&_svg]:size-[15px]"
-                        >
-                          <Icon />
-                          <span>{label}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+              return (
+                <SidebarSection
+                  key={group.label}
+                  label={group.label}
+                  open={isOpen}
+                  onToggle={() => toggleGroup(group.label)}
+                  hasActive={group.ids.includes(sectionId)}
+                  activeLabel={`Seção atual em ${group.label}`}
+                >
+                  <SidebarMenu>
+                    {group.ids.map((id) => {
+                      const info = SECTIONS.find((candidate) => candidate.id === id);
+                      const Icon = SECTION_ICONS[id];
+
+                      return (
+                        <SidebarMenuItem key={id}>
+                          <SidebarMenuButton
+                            isActive={id === sectionId}
+                            aria-current={id === sectionId ? 'page' : undefined}
+                            onClick={() => setSectionId(id)}
+                            className="text-[13px] select-none [&_svg]:size-[15px]"
+                          >
+                            <Icon />
+                            <span>{info?.label}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarSection>
+              );
+            })}
           </SidebarContent>
         </Sidebar>
 

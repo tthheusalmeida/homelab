@@ -1,6 +1,5 @@
 import {
   BookOpen,
-  ChevronDown,
   FilePlus,
   Gauge,
   Home,
@@ -20,7 +19,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuBadge,
@@ -29,10 +27,10 @@ import {
 } from '#ui/sidebar';
 
 import { Logo } from '#components/Hex';
+import { SidebarSection } from '#components/SidebarSection';
 import { SidebarSetupProgress } from '#components/SidebarSetupProgress';
 import { useCollapsedGroups } from '#hooks/use-collapsed-groups';
 import { useActiveJobsCount } from '../pages/jobs/track/hooks/useActiveJobsCount';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#ui/collapsible';
 import { IpcChannels } from '#shared/channels';
 import { ipc } from '#lib/ipc';
 
@@ -149,37 +147,15 @@ export function AppSidebar() {
           const hasActive = group.items.some((item) => item.url === activeUrl);
 
           return (
-            <Collapsible
+            <SidebarSection
               key={group.label}
+              label={group.label}
               open={isOpen}
-              onOpenChange={() => toggleGroup(group.label)}
-              render={<SidebarGroup />}
+              onToggle={() => toggleGroup(group.label)}
+              hasActive={hasActive}
             >
-              <SidebarGroupLabel
-                render={
-                  <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between rounded-md select-none hover:text-sidebar-foreground" />
-                }
-              >
-                <span>{group.label}</span>
-
-                <span className="flex items-center gap-1.5">
-                  {!isOpen && hasActive && (
-                    <span
-                      aria-label={`Página atual em ${group.label}`}
-                      className="size-1.5 rounded-full bg-primary"
-                    />
-                  )}
-
-                  <ChevronDown
-                    className={`size-3.5 transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`}
-                  />
-                </span>
-              </SidebarGroupLabel>
-
-              <CollapsibleContent>
-                <SidebarGroupContent>{menu}</SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
+              {menu}
+            </SidebarSection>
           );
         })}
       </SidebarContent>
