@@ -130,6 +130,15 @@ Criar um job valida **antes** de enfileirar (título de texto com até 120 carac
 
 Excluir um job não apaga os documentos que ele gerou.
 
+### jobs: cancelar, tentar de novo e desfazer exclusão
+| Canal | Payload | Retorno |
+|---|---|---|
+| `jobs:cancel` | `{ id }` | `{ id, outcome: 'cancelled' \| 'cancelling' \| 'not-active' }`. Na fila: sai dela e termina como falha "Cancelado pelo usuário.". Rodando: o cancelamento é pedido e o job para **ao fim da etapa em andamento** (download, ffmpeg, Whisper e IA não são interrompidos no meio). Cancelar não gera aviso de falha. |
+| `jobs:retry` | `{ id }` | `{ id, status }` do **novo** job, criado com os mesmos dados do que falhou (o original continua no histórico). Só job `failed` que guardou os dados de criação (`request`); job antigo sem `request` responde `VALIDATION` com mensagem clara. |
+| `jobs:undo-delete` | — | `{ restored: string[] }`. Traz de volta o que a **última** exclusão tirou (guardado só em memória, enquanto o app está aberto). |
+
+`JobView` ganhou `cancelRequested` e `retryable`. O `Job` grava `request` (corpo original da criação) no `jobs.json`.
+
 ## backup
 | Canal | Payload | Retorno |
 |---|---|---|

@@ -10,7 +10,7 @@
 - Abre pelo item **Configurações** no rodapé da barra lateral, por `Ctrl+,`/`Cmd+,` e sozinha na primeira execução sem chave do Gemini.
 - Seções: **Biblioteca** (a única pasta que o usuário escolhe; trocar pergunta se a biblioteca atual vai junto), **Aparência** (tema e cor de destaque; vale na hora, sem reiniciar; ver `identidade.md`), **IAs externas** (passo a passo para criar a chave enquanto não configurada, chave mascarada, Testar/Salvar, link para o consumo real no painel do provedor) e **Serviços locais** (Whisper e ffmpeg só testam; o Ollama tem o endereço) e **Backup** (criar e restaurar; ver `persistencia.md`).
 - Cada provider é um item **recolhível**: fechado mostra nome, selo de status e uma descrição; clicar abre os campos.
-- "Salvo" aparece como **snackbar** no canto inferior direito (some em 3 s). Mostra "Reiniciar agora" quando uma gravação exige reinício. Código em `renderer/settings`.
+- "Salvo" aparece como **snackbar** no canto inferior direito (some em 3 s, com barra de progresso). Mostra "Reiniciar agora" quando uma gravação exige reinício. Código em `renderer/settings`.
 
 ## Armazenamento
 Tudo o que é do usuário mora numa **raiz fixa**, `Documentos/HomeLab` (`HOMELAB_DATA_ROOT_DIR` troca a raiz em testes e desenvolvimento), segmentada por tipo, para o backup ser simples:

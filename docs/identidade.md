@@ -52,3 +52,8 @@ Outros detalhes: rótulos de grupo e de caminho em fonte mono (`ui-monospace`/Ca
 4. Carregando: `LoadingState` (`inline` quando for pequeno).
 
 Testes: `lib/appearance.test.ts` (modos, `data-accent`, cache, blocos de tokens por cor), `hooks/use-appearance.test.tsx`, `components/Hex.test.tsx`, `settings/src/sections/AppearanceSection.test.tsx` e os de `settings` no main (store, validador, serviço e handler).
+
+## Mensagens (Snackbar) e cabeçalho de página
+- **`Snackbar`** (`components/Snackbar.tsx`) é a única forma de avisar resultado de uma ação. `useSnackbar()` expõe: `success(msg)` (ou `show`) e `error(msg)` no **canto inferior direito**; `created(msg, { label, onClick })` **embaixo no centro**, para quando algo foi criado (ex.: "Tarefa criada", com o atalho "Acompanhar"). Todas têm barra de progresso que se esgota no tempo em tela (3 s; erro 6 s). Uma mensagem por região: a nova substitui a anterior. `success` e `created` aceitam um botão (ex.: "Desfazer" depois de excluir jobs, "Acompanhar" depois de criar uma tarefa). Avisos persistentes (job que falhou, disco) continuam no `NoticeCenter`.
+- **`PageHeader`** (`components/PageHeader.tsx`): prompt de terminal (`root@homelab:~$ comando`), título, descrição, linha de status mono e ações. O **título é sempre o texto do item da sidebar** (Início, Páginas, Livros, Caixa de entrada, Nova página, Nova tarefa, Em andamento, Consumo). Usado em todas as telas do menu (menos Conversa e Início, que têm layout próprio).
+- A Início usa um painel de terminal (barra com hexágonos, `./home --status`); o nome do usuário não aparece: o texto é genérico.

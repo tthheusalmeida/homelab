@@ -21,6 +21,7 @@ Estado: **migração em andamento, por fases**. Ver `docs/migracao.md`.
 | `docs/configuracoes.md` | Settings (substitui `.env`), providers externos e locais, segredos, binários por plataforma |
 | `docs/testing.md` | Convenções de teste, mocks, checklist manual e smoke E2E |
 | `docs/identidade.md` | Identidade Colmeia: tema claro/escuro/sistema, cor de destaque configurável, componentes hexagonais |
+| `docs/atalhos.md` | Paleta de comandos (Ctrl K), atalhos "G e uma letra" e notificação do sistema quando um job termina |
 | `docs/movimento.md` | Transições e animações: réguas de tempo, utilities `animate-*`, onde aplicar |
 | `docs/empacotamento.md` | Instalador Windows (`electron-builder`), binários, caminhos empacotados, ícone |
 | `docs/persistencia.md` | Trabalho avulso (fora das fases): jobs e chats em disco, pasta-raiz única para backup, exclusão de jobs, seção de Chats |

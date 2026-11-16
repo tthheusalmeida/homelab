@@ -87,6 +87,10 @@ Hoje seus dados estão em pastas soltas (`D:\homelab\lib`, `D:/homelab/temp/docs
 - Job `pending`/`running` **não é excluído** (`ACTIVE`); "excluir todos" apaga todos menos os ativos e informa quantos ficaram.
 - UI (Jobs → Acompanhar): modo de seleção, "Selecionar todos", **Excluir selecionados**, **Excluir todos**, com diálogo de confirmação ("N processos serão excluídos do histórico; os documentos gerados continuam na biblioteca"). Reutilizar `ui/` e `components/`. O polling de 1 s não pode perder a seleção nem ressuscitar itens excluídos.
 
+**Ações nos jobs (cancelar, tentar de novo, desfazer)**
+- Canais `jobs:cancel`, `jobs:retry` e `jobs:undo-delete` (ver `docs/ipc-canais.md`). Cancelar é cooperativo: para ao fim da etapa em andamento.
+- Na tela Em andamento: botão **Cancelar** nos jobs ativos, **Tentar de novo** nos que falharam (e guardam `request`), linha ao vivo com **etapa n/total, nome da etapa e tempo decorrido**, e **Desfazer** no snackbar depois de excluir.
+
 ## Parte C. Seção de Chats
 **Modelo** (em `chats.json`)
 ```
