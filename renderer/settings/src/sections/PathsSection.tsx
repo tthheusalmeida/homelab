@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 import { Button } from '#ui/button';
-import { Card, CardContent, CardFooter } from '#ui/card';
+import { SettingsGroup, SettingsPanel } from '#components/SettingsGroup';
 import { ErrorState } from '#components/ErrorState';
 import { LoadingState } from '#components/LoadingState';
 
@@ -70,8 +70,8 @@ function PathsForm({ paths, onSaved }: SectionProps & { paths: SettingsPaths }) 
   };
 
   return (
-    <Card className="animate-enter">
-      <CardContent className="flex flex-col gap-5">
+    <SettingsGroup title={Strings.library.groupTitle} hint={Strings.library.groupHint}>
+      <SettingsPanel>
         {PATH_FIELDS.map(({ key, label, hint }) => (
           <Field
             key={key}
@@ -83,27 +83,28 @@ function PathsForm({ paths, onSaved }: SectionProps & { paths: SettingsPaths }) 
             onChange={(value) => change(key, value)}
           />
         ))}
-      </CardContent>
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0 text-sm">
+            {inspect.isError && (
+              <p role="alert" className="text-destructive">
+                {inspect.error.message}
+              </p>
+            )}
+          </div>
 
-      <CardFooter className="flex items-center justify-between gap-4">
-        <div className="min-w-0 text-sm">
-          {inspect.isError && (
-            <p role="alert" className="text-destructive">
-              {inspect.error.message}
-            </p>
-          )}
+          <Button
+            disabled={!dirty || inspect.isPending}
+            onClick={() =>
+              inspect.mutate({ path: values.libraryDir.trim() }, { onSuccess: setFolder })
+            }
+          >
+            {inspect.isPending && <Loader2 className="animate-spin" />}
+            {inspect.isPending ? Strings.library.inspecting : Strings.save}
+          </Button>
         </div>
-
-        <Button
-          disabled={!dirty || inspect.isPending}
-          onClick={() => inspect.mutate({ path: values.libraryDir.trim() }, { onSuccess: setFolder })}
-        >
-          {inspect.isPending && <Loader2 className="animate-spin" />}
-          {inspect.isPending ? Strings.library.inspecting : Strings.save}
-        </Button>
-      </CardFooter>
+      </SettingsPanel>
 
       <LibraryChangeDialog folder={folder} onClose={() => setFolder(null)} onDone={finish} />
-    </Card>
+    </SettingsGroup>
   );
 }

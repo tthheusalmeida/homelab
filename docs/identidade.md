@@ -45,6 +45,9 @@ Serviços externos têm um guia numerado (ex.: como criar a chave do Gemini, com
 
 Outros detalhes: rótulos de grupo e de caminho em fonte mono (`ui-monospace`/Cascadia, sem dependência nova), item ativo da sidebar (achado por `findActiveUrl`, o endereço mais específico) com fundo `primary/15`, barra lateral e transição de cor, cards clicáveis com anel `primary` no hover, raio de borda 0,5 rem e `favicon.svg` com o ícone.
 
+## Padrão das telas de Configurações
+Toda seção usa `SettingsGroup` (título mono em maiúsculas, dica e conteúdo) e `SettingsPanel` (caixa de borda fina com fundo de card; `highlight` para o item ativo); `ProviderCard` e `ComponentChecklist` seguem a mesma caixa. Seção nova: agrupe com `SettingsGroup`, não crie outro visual.
+
 ## Ao criar componente novo
 1. Cor de ação: `bg-primary`, `text-primary`, `ring-ring` (ou o `Button` padrão). Texto em destaque sobre fundo: `text-brand-text`. Marca: `text-brand`, `fill-brand`.
 2. Status: `HexDot` com a cor do estado (verde, âmbar e vermelho não mudam com o destaque).

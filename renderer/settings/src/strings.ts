@@ -10,6 +10,12 @@ export const Strings = {
   test: 'Testar',
   testing: 'Testando',
   pickFolder: 'Escolher pasta',
+  groups: {
+    external: 'Serviços na nuvem',
+    externalHint: 'Inteligências artificiais acessadas pela internet, com a sua chave.',
+    local: 'Programas no seu computador',
+    localHint: 'Rodam localmente; o Whisper e o ffmpeg só podem ser testados.',
+  },
   appearance: {
     theme: 'Tema',
     themeHint: 'Sistema acompanha o tema do Windows.',
@@ -18,6 +24,8 @@ export const Strings = {
     restore: 'Restaurar padrão',
   },
   library: {
+    groupTitle: 'Pasta de documentos',
+    groupHint: 'Páginas e livros ficam aqui. Todo o resto tem lugar fixo.',
     inspecting: 'Verificando a pasta',
     dialogTitle: 'Trocar a pasta da biblioteca',
     moveOption: 'Mover a biblioteca atual para cá',
@@ -44,7 +52,13 @@ export const Strings = {
   },
 } as const;
 
-export type SectionId = 'paths' | 'appearance' | 'external' | 'local' | 'backup';
+export type SectionId =
+  | 'paths'
+  | 'appearance'
+  | 'external'
+  | 'local'
+  | 'components'
+  | 'backup';
 
 export const SECTIONS: ReadonlyArray<{
   id: SectionId;
@@ -71,6 +85,12 @@ export const SECTIONS: ReadonlyArray<{
     id: 'local',
     label: 'Serviços locais',
     description: 'Programas que rodam no seu computador: Whisper, Ollama e ffmpeg.',
+  },
+  {
+    id: 'components',
+    label: 'Componentes',
+    description:
+      'O que o app precisa para transcrever: Whisper, ffmpeg, aceleração por placa de vídeo e modelos. Baixe outros modelos quando quiser.',
   },
   {
     id: 'backup',

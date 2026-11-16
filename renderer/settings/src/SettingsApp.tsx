@@ -1,5 +1,13 @@
-import { useState, type CSSProperties } from 'react';
-import { Archive, Cloud, Cpu, Folder, Palette, type LucideIcon } from 'lucide-react';
+import { useEffect, useState, type CSSProperties } from 'react';
+import {
+  Archive,
+  Cloud,
+  Cpu,
+  Download,
+  Folder,
+  Palette,
+  type LucideIcon,
+} from 'lucide-react';
 
 import { Logo } from '#components/Hex';
 import { ScrollArea } from '#ui/scroll-area';
@@ -17,9 +25,14 @@ import {
 
 import { RestartBanner } from './components/RestartBanner';
 import { SnackbarProvider } from '#components/Snackbar';
+import { useIpcEvent } from '#hooks/use-ipc-event';
+import { ipc } from '#lib/ipc';
+import { IpcChannels } from '#shared/channels';
+import { IpcEvents } from '#shared/events';
 import { relaunchApp } from './hooks';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { BackupSection } from './sections/BackupSection';
+import { ComponentsSection } from './sections/ComponentsSection';
 import { ExternalProvidersSection } from './sections/ExternalProvidersSection';
 import { LocalProvidersSection } from './sections/LocalProvidersSection';
 import { PathsSection } from './sections/PathsSection';
@@ -30,6 +43,7 @@ const SECTION_ICONS: Record<SectionId, LucideIcon> = {
   appearance: Palette,
   external: Cloud,
   local: Cpu,
+  components: Download,
   backup: Archive,
 };
 
@@ -46,6 +60,27 @@ export function SettingsApp() {
       setRestartPending(true);
     }
   };
+
+  const goTo = (requested: string | null | undefined) => {
+    const found = SECTIONS.find(({ id }) => id === requested);
+
+    if (found) {
+      setSectionId(found.id);
+    }
+  };
+
+  // Aberta pelo atalho "ver detalhes da instalação": o main guarda a seção pedida até a janela perguntar.
+  useEffect(() => {
+    ipc
+      .invoke(IpcChannels.app.settingsSection)
+      .then(goTo)
+      .catch(() => undefined);
+    // só na abertura
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Janela já aberta: o main avisa a seção pedida.
+  useIpcEvent(IpcEvents.settingsNavigate, ({ section: requested }) => goTo(requested));
 
   const section = SECTIONS.find(({ id }) => id === sectionId) ?? SECTIONS[0];
 
@@ -109,6 +144,7 @@ export function SettingsApp() {
               {sectionId === 'appearance' && <AppearanceSection />}
               {sectionId === 'external' && <ExternalProvidersSection onSaved={handleSaved} />}
               {sectionId === 'local' && <LocalProvidersSection onSaved={handleSaved} />}
+              {sectionId === 'components' && <ComponentsSection />}
               {sectionId === 'backup' && <BackupSection onSaved={handleSaved} />}
             </main>
           </ScrollArea>

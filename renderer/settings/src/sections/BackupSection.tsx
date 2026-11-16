@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Loader2, TriangleAlert } from 'lucide-react';
 
 import { Button } from '#ui/button';
-import { Card, CardContent, CardFooter } from '#ui/card';
+import { SettingsGroup, SettingsPanel } from '#components/SettingsGroup';
 import { Label } from '#ui/label';
 import { ConfirmDialog } from '#components/ConfirmDialog';
 import { ErrorState } from '#components/ErrorState';
@@ -59,11 +59,12 @@ function BackupProgress({ title }: { title: string }) {
   useIpcEvent(IpcEvents.backupProgress, setProgress);
 
   const known = progress && progress.phase === 'running' && progress.total > 0;
-  const text = !progress || progress.phase === 'preparing'
-    ? BackupStrings.progress.preparing
-    : progress.phase === 'verifying'
-      ? BackupStrings.progress.verifying
-      : BackupStrings.progress.running(progress.processed, progress.total);
+  const text =
+    !progress || progress.phase === 'preparing'
+      ? BackupStrings.progress.preparing
+      : progress.phase === 'verifying'
+        ? BackupStrings.progress.verifying
+        : BackupStrings.progress.running(progress.processed, progress.total);
 
   return (
     <div role="status" className="flex flex-col gap-2">
@@ -132,13 +133,18 @@ function ItemList({
               onChange={(event) => onToggle(item.id, event.target.checked)}
             />
 
-            <Label htmlFor={`${idPrefix}-${item.id}`} className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+            <Label
+              htmlFor={`${idPrefix}-${item.id}`}
+              className="flex min-w-0 flex-1 flex-col items-start gap-0.5"
+            >
               <span className="font-medium">{label}</span>
               <span className="text-xs font-normal text-muted-foreground">{hint}</span>
             </Label>
 
             <span className="shrink-0 text-right text-xs text-muted-foreground">
-              {empty ? BackupStrings.emptyItem : `${countLabel(item.kind, item.count)} · ${formatBytes(item.bytes)}`}
+              {empty
+                ? BackupStrings.emptyItem
+                : `${countLabel(item.kind, item.count)} · ${formatBytes(item.bytes)}`}
             </span>
           </li>
         );
@@ -206,13 +212,8 @@ function CreateBackupCard() {
   };
 
   return (
-    <Card className="animate-enter" role="region" aria-label={BackupStrings.createTitle}>
-      <CardContent className="flex flex-col gap-5">
-        <div>
-          <h3 className="font-semibold">{BackupStrings.createTitle}</h3>
-          <p className="text-sm text-muted-foreground">{BackupStrings.createHint}</p>
-        </div>
-
+    <SettingsGroup title={BackupStrings.createTitle} hint={BackupStrings.createHint}>
+      <SettingsPanel>
         <ItemList
           items={items}
           chosen={chosen}
@@ -227,7 +228,10 @@ function CreateBackupCard() {
             : BackupStrings.total(formatBytes(original), formatBytes(zipped))}
         </p>
 
-        <div role="note" className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+        <div
+          role="note"
+          className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm"
+        >
           <p className="mb-1 flex items-center gap-2 font-medium">
             <TriangleAlert className="size-4 text-amber-500" />
             {BackupStrings.notIncludedTitle}
@@ -249,15 +253,14 @@ function CreateBackupCard() {
         )}
 
         {outcome && !create.isPending && <p className="text-sm text-muted-foreground">{outcome}</p>}
-      </CardContent>
-
-      <CardFooter className="justify-end">
-        <Button disabled={picked.length === 0 || create.isPending} onClick={start}>
-          {create.isPending && <Loader2 className="animate-spin" />}
-          {BackupStrings.create}
-        </Button>
-      </CardFooter>
-    </Card>
+        <div className="flex justify-end gap-2">
+          <Button disabled={picked.length === 0 || create.isPending} onClick={start}>
+            {create.isPending && <Loader2 className="animate-spin" />}
+            {BackupStrings.create}
+          </Button>
+        </div>
+      </SettingsPanel>
+    </SettingsGroup>
   );
 }
 
@@ -306,13 +309,8 @@ function RestoreBackupCard({ onSaved }: SectionProps) {
   const busy = restore.isPending || inspect.isPending;
 
   return (
-    <Card className="animate-enter" role="region" aria-label={BackupStrings.restoreTitle}>
-      <CardContent className="flex flex-col gap-5">
-        <div>
-          <h3 className="font-semibold">{BackupStrings.restoreTitle}</h3>
-          <p className="text-sm text-muted-foreground">{BackupStrings.restoreHint}</p>
-        </div>
-
+    <SettingsGroup title={BackupStrings.restoreTitle} hint={BackupStrings.restoreHint}>
+      <SettingsPanel>
         {backup && (
           <>
             <div>
@@ -386,28 +384,27 @@ function RestoreBackupCard({ onSaved }: SectionProps) {
             <p className="text-xs text-muted-foreground">{BackupStrings.geminiReminder}</p>
           </div>
         )}
-      </CardContent>
+        <div className="flex justify-end gap-2">
+          {backup && (
+            <Button
+              disabled={selected.size === 0 || busy}
+              onClick={() => (mode === 'replace' ? setConfirming(true) : run())}
+            >
+              {restore.isPending && <Loader2 className="animate-spin" />}
+              {BackupStrings.restore}
+            </Button>
+          )}
 
-      <CardFooter className="justify-end gap-2">
-        {backup && (
-          <Button
-            disabled={selected.size === 0 || busy}
-            onClick={() => (mode === 'replace' ? setConfirming(true) : run())}
-          >
-            {restore.isPending && <Loader2 className="animate-spin" />}
-            {BackupStrings.restore}
+          <Button variant={backup ? 'outline' : 'default'} disabled={busy} onClick={choose}>
+            {inspect.isPending && <Loader2 className="animate-spin" />}
+            {inspect.isPending
+              ? BackupStrings.choosing
+              : backup || result
+                ? BackupStrings.restoreAnother
+                : BackupStrings.choose}
           </Button>
-        )}
-
-        <Button variant={backup ? 'outline' : 'default'} disabled={busy} onClick={choose}>
-          {inspect.isPending && <Loader2 className="animate-spin" />}
-          {inspect.isPending
-            ? BackupStrings.choosing
-            : backup || result
-              ? BackupStrings.restoreAnother
-              : BackupStrings.choose}
-        </Button>
-      </CardFooter>
+        </div>
+      </SettingsPanel>
 
       <ConfirmDialog
         open={confirming}
@@ -418,6 +415,6 @@ function RestoreBackupCard({ onSaved }: SectionProps) {
         destructive
         onConfirm={run}
       />
-    </Card>
+    </SettingsGroup>
   );
 }

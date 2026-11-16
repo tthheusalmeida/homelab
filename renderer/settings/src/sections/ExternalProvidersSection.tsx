@@ -5,6 +5,7 @@ import { Button } from '#ui/button';
 import { ErrorState } from '#components/ErrorState';
 import { ExternalLink } from '#components/ExternalLink';
 import { LoadingState } from '#components/LoadingState';
+import { SettingsGroup } from '#components/SettingsGroup';
 import { PROVIDER_CONSOLES } from '#lib/provider-consoles';
 import { SetupGuide } from '#components/SetupGuide';
 
@@ -38,11 +39,13 @@ export function ExternalProvidersSection({ onSaved }: SectionProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {providers.data.map((provider, index) => (
-        <ExternalProviderCard key={provider.id} provider={provider} index={index} onSaved={onSaved} />
-      ))}
-    </div>
+    <SettingsGroup title={Strings.groups.external} hint={Strings.groups.externalHint}>
+      <div className="flex flex-col gap-2">
+        {providers.data.map((provider, index) => (
+          <ExternalProviderCard key={provider.id} provider={provider} index={index} onSaved={onSaved} />
+        ))}
+      </div>
+    </SettingsGroup>
   );
 }
 

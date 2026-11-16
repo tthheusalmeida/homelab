@@ -4,6 +4,7 @@ import { Badge } from '#ui/badge';
 import { Button } from '#ui/button';
 import { ErrorState } from '#components/ErrorState';
 import { LoadingState } from '#components/LoadingState';
+import { SettingsGroup } from '#components/SettingsGroup';
 
 import type { LocalProviderInfo } from '#shared/contracts/providers';
 import { Field } from '../components/Field';
@@ -39,11 +40,13 @@ export function LocalProvidersSection({ onSaved }: SectionProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {providers.data.map((provider, index) => (
-        <LocalProviderCard key={provider.id} provider={provider} index={index} onSaved={onSaved} />
-      ))}
-    </div>
+    <SettingsGroup title={Strings.groups.local} hint={Strings.groups.localHint}>
+      <div className="flex flex-col gap-2">
+        {providers.data.map((provider, index) => (
+          <LocalProviderCard key={provider.id} provider={provider} index={index} onSaved={onSaved} />
+        ))}
+      </div>
+    </SettingsGroup>
   );
 }
 

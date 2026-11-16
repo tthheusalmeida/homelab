@@ -1,0 +1,137 @@
+import { describe, expect, it, vi } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
+import { component, setupStatus } from '#test/components-fixtures';
+
+import { ComponentChecklist } from './ComponentChecklist';
+
+describe('ComponentChecklist', () => {
+  it('when listing, should group the components and mark the recommended ones', () => {
+    render(
+      <ComponentChecklist
+        components={setupStatus().components}
+        selected={new Set()}
+        onToggle={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('region', { name: 'Obrigatórios' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('region', { name: 'Aceleração por placa de vídeo' }),
+    ).toBeInTheDocument();
+
+    const models = screen.getByRole('region', { name: 'Modelos de transcrição' });
+
+    expect(within(models).getByText('Recomendado')).toBeInTheDocument();
+    expect(within(models).getAllByRole('checkbox')).toHaveLength(2);
+  });
+
+  it('when a component is required, should show it checked and locked', () => {
+    render(
+      <ComponentChecklist
+        components={setupStatus().components}
+        selected={new Set()}
+        onToggle={vi.fn()}
+      />,
+    );
+
+    const box = screen.getByRole('checkbox', { name: 'Whisper (transcrição)' });
+
+    expect(box).toBeChecked();
+    expect(box).toBeDisabled();
+    expect(screen.getByText('Já incluído no app')).toBeInTheDocument();
+  });
+
+  it('when the user toggles a model, should call onToggle with its id', async () => {
+    const onToggle = vi.fn();
+
+    render(
+      <ComponentChecklist
+        components={setupStatus().components}
+        selected={new Set(['model-small'])}
+        onToggle={onToggle}
+      />,
+    );
+
+    expect(screen.getByRole('checkbox', { name: 'Modelo small' })).toBeChecked();
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Modelo base' }));
+
+    expect(onToggle).toHaveBeenCalledWith('model-base');
+  });
+
+  it('when locked, should disable every checkbox', () => {
+    render(
+      <ComponentChecklist
+        components={setupStatus().components}
+        selected={new Set()}
+        onToggle={vi.fn()}
+        locked
+      />,
+    );
+
+    for (const box of screen.getAllByRole('checkbox')) {
+      expect(box).toBeDisabled();
+    }
+  });
+
+  it('when a component is downloading, should show the bar with bytes and percent', () => {
+    render(
+      <ComponentChecklist
+        components={[
+          component({
+            state: 'downloading',
+            progress: { receivedBytes: 243_800_983, totalBytes: 487_601_967 },
+          }),
+        ]}
+        selected={new Set()}
+        onToggle={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('progressbar', { name: 'Baixando Modelo small' })).toHaveAttribute(
+      'aria-valuenow',
+      '50',
+    );
+    expect(screen.getByText(/\(50%\)/)).toBeInTheDocument();
+  });
+
+  it('when a component failed, should show the reason as an alert', () => {
+    render(
+      <ComponentChecklist
+        components={[component({ state: 'failed', error: 'Arquivo corrompido.' })]}
+        selected={new Set()}
+        onToggle={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Arquivo corrompido.');
+  });
+
+  it('when a component is installed, should lock its checkbox and show the active badge', () => {
+    render(
+      <ComponentChecklist
+        components={[component({ state: 'installed', active: true })]}
+        selected={new Set()}
+        onToggle={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('checkbox', { name: 'Modelo small' })).toBeDisabled();
+    expect(screen.getByText('Em uso')).toBeInTheDocument();
+  });
+
+  it('when actions are given, should render them inside the item', () => {
+    render(
+      <ComponentChecklist
+        components={[component({ state: 'installed' })]}
+        selected={new Set()}
+        onToggle={vi.fn()}
+        actions={() => <button type="button">Remover</button>}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Remover' })).toBeInTheDocument();
+  });
+});

@@ -29,6 +29,7 @@ import {
 } from '#ui/sidebar';
 
 import { Logo } from '#components/Hex';
+import { SidebarSetupProgress } from '#components/SidebarSetupProgress';
 import { useCollapsedGroups } from '#hooks/use-collapsed-groups';
 import { useActiveJobsCount } from '../pages/jobs/track/hooks/useActiveJobsCount';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#ui/collapsible';
@@ -184,6 +185,8 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
+        <SidebarSetupProgress />
+
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton

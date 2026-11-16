@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarTrigger } from "#ui/sidebar";
 import { AppSidebar } from "../../components/AppSidebar";
 import { ClockAndTime } from "#components/ClockAndTime";
 import { CommandPalette } from "#components/CommandPalette";
+import { InstallAssistant } from "#components/InstallAssistant";
 import { NoticeCenter } from "#components/NoticeCenter";
 import { useAppShortcuts } from "#hooks/use-app-shortcuts";
 import { ScrollArea } from "#ui/scroll-area";
@@ -50,6 +51,8 @@ export function AppLayout() {
       </main>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+
+      <InstallAssistant />
 
       <NoticeCenter />
     </SidebarProvider>

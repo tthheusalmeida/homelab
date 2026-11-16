@@ -1,7 +1,6 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-import { Card } from '#ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#ui/collapsible';
 
 interface ProviderCardProps {
@@ -35,9 +34,12 @@ export function ProviderCard({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <Card className="animate-enter gap-0 py-0" style={{ '--i': index } as CSSProperties}>
+    <div
+      className="animate-enter rounded-lg border bg-card transition-colors hover:border-primary/40"
+      style={{ '--i': index } as CSSProperties}
+    >
       <Collapsible open={open} onOpenChange={setOpen}>
-        <CollapsibleTrigger className="group flex w-full cursor-pointer items-center justify-between gap-4 px-6 py-4 text-left">
+        <CollapsibleTrigger className="group flex w-full cursor-pointer items-center justify-between gap-4 px-4 py-3 text-left">
           <span className="flex min-w-0 flex-col gap-0.5">
             <span className="flex items-center gap-2 font-medium">
               {title}
@@ -50,13 +52,13 @@ export function ProviderCard({
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <div className="flex flex-col gap-4 border-t px-6 py-5">
+          <div className="flex flex-col gap-4 border-t px-4 py-4">
             {children}
 
             {footer && <div className="flex justify-end gap-2">{footer}</div>}
           </div>
         </CollapsibleContent>
       </Collapsible>
-    </Card>
+    </div>
   );
 }

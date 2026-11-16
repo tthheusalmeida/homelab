@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Check, RotateCcw } from 'lucide-react';
 
 import { Button } from '#ui/button';
-import { Card, CardContent } from '#ui/card';
+import { SettingsGroup, SettingsPanel } from '#components/SettingsGroup';
 import { useAppearance } from '#hooks/use-appearance';
 import { accentLabels, themeLabels } from '#lib/appearance';
 import { cn } from '#lib/utils';
@@ -33,17 +33,14 @@ export function AppearanceSection() {
     appearance.accent === DEFAULT_APPEARANCE.accent;
 
   return (
-    <Card className="animate-enter">
-      <CardContent className="flex flex-col gap-8">
-        <div className="flex flex-col gap-2">
-          <div>
-            <p className="text-sm font-medium" id="theme-label">
-              {Strings.appearance.theme}
-            </p>
-            <p className="text-xs text-muted-foreground">{Strings.appearance.themeHint}</p>
-          </div>
-
-          <div role="radiogroup" aria-labelledby="theme-label" className="inline-flex w-fit gap-1">
+    <div className="flex flex-col gap-6">
+      <SettingsGroup title={Strings.appearance.theme} hint={Strings.appearance.themeHint}>
+        <SettingsPanel>
+          <div
+            role="radiogroup"
+            aria-label={Strings.appearance.theme}
+            className="inline-flex w-fit gap-1"
+          >
             {THEME_MODES.map((mode) => (
               <Button
                 key={mode}
@@ -58,17 +55,16 @@ export function AppearanceSection() {
               </Button>
             ))}
           </div>
-        </div>
+        </SettingsPanel>
+      </SettingsGroup>
 
-        <div className="flex flex-col gap-2">
-          <div>
-            <p className="text-sm font-medium" id="accent-label">
-              {Strings.appearance.accent}
-            </p>
-            <p className="text-xs text-muted-foreground">{Strings.appearance.accentHint}</p>
-          </div>
-
-          <div role="radiogroup" aria-labelledby="accent-label" className="flex flex-wrap gap-2.5">
+      <SettingsGroup title={Strings.appearance.accent} hint={Strings.appearance.accentHint}>
+        <SettingsPanel>
+          <div
+            role="radiogroup"
+            aria-label={Strings.appearance.accent}
+            className="flex flex-wrap gap-2.5"
+          >
             {ACCENT_IDS.map((accent) => {
               const selected = appearance.accent === accent;
 
@@ -93,29 +89,29 @@ export function AppearanceSection() {
               );
             })}
           </div>
-        </div>
+        </SettingsPanel>
+      </SettingsGroup>
 
-        {error && (
-          <p role="alert" className="animate-enter-fade text-sm text-destructive">
-            {error}
-          </p>
-        )}
+      {error && (
+        <p role="alert" className="animate-enter-fade text-sm text-destructive">
+          {error}
+        </p>
+      )}
 
-        <div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={isDefault}
-            onClick={() => {
-              setError(null);
-              reset().catch((failure: Error) => setError(failure.message));
-            }}
-          >
-            <RotateCcw /> {Strings.appearance.restore}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      <div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isDefault}
+          onClick={() => {
+            setError(null);
+            reset().catch((failure: Error) => setError(failure.message));
+          }}
+        >
+          <RotateCcw /> {Strings.appearance.restore}
+        </Button>
+      </div>
+    </div>
   );
 }
