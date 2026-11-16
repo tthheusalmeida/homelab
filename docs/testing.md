@@ -3,7 +3,7 @@
 ## Camadas
 - **Unitários do main** (`src/**/*.spec.ts`): Jest + ts-jest, mesmo padrão do back. Cobrem handlers, registrar, mapper de erro, settings, resolvedor de binário e as funções puras do main.
 - **Unitários do front** (`*.test.ts(x)`, Vitest): cobrem os `api.ts` migrados (mockando `window.api`), `#lib/ipc` e a tela de Configurações. Convenções em `regras/front/testing.md`.
-- **Checklist manual** por fase (`docs/fases/fase-XX.md`): o que o usuário valida no ambiente real.
+- **Checklist manual** de cada fase pendente (`docs/fases/fase-XX.md`) e o roteiro "O que testar" de cada entrega: o que o usuário valida no ambiente real.
 - **Smoke E2E** (`npm run test:e2e`, pasta `e2e/`, Playwright para Electron; faz o build antes): abre o app com `userData` temporário e verifica a Home, a navegação pelas telas, a criação de um artigo, que nenhuma requisição `http(s)` é feita, que um usuário novo abre a janela de Configurações e que o app, lançado sem o Playwright, não escuta nenhuma porta TCP e que salvar a chave do Gemini e reiniciar na hora não a perde (Windows). Não toca nos dados reais.
 
 ## Regra de entrega
@@ -36,15 +36,9 @@ Toda feature (nova ou alterada) vem com testes unitários na mesma entrega. Cubr
 ## Testes do renderer (Vitest do front)
 - `npm run test:renderer` roda `renderer/**/*.test.tsx` com o Vitest, o jsdom e o `setup.ts` do front (config em `vitest.renderer.config.mts`). `npm run typecheck:renderer` confere os tipos.
 - Componentes são testados com `renderWithQuery` (`#test/utils`) e `window.api` falso (`mockApi`, `ok`, `failure` e `payloadsOf` em `renderer/src/test/api-mock.ts`). Nome: `when ..., should ...`.
-- O renderer tem suas próprias dependências (fase 09b); `npm run test:renderer` roda as suítes do front copiado e das Configurações.
+- O renderer tem suas próprias dependências; `npm run test:renderer` roda as suítes do front e das Configurações.
 
 ## Cobertura atual
-Fase 03b: janela de Configurações (opções), controle de janela única, atalho, abertura automática, `FolderPicker`, mecanismo de overrides, CSP e `SecretStore` assíncrono (Jest, 220 testes no total); cards recolhíveis, snackbar, seções e cópia do `AppSidebar` (Vitest, 52 testes).
-
-Fase 03a: settings (store, validador, segredos, importação do .env, config do back), serviços e definições de providers, handlers, patch de módulo, fábrica do Gemini, BackRuntime e composição (173 testes no total).
-
-Fase 02: canais, erros, resultado, cliente do front, mapper, registrar, handler base, `AppHandler`, cobertura de canais e ponte do preload (61 testes no total).
-
-Fase 01: `paths`, `front-target`, `window-options`, `navigation-guard`, `static-files`, `backend-ready`, `backend-launcher` (26 testes).
+Todo o main (`src`: handlers, settings, providers, componentes, back, storage, backup) e o renderer (páginas, componentes, hooks e Configurações) têm testes; a contagem muda a cada entrega, então rode `npm test` e `npm run test:renderer` para ver o número do momento.
 
 Não coberto: `main/index.ts` (cola com o Electron real), `preload/index.ts` e `constants.ts`.

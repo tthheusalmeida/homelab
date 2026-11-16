@@ -2,7 +2,7 @@
 
 Status: **implementado** (ver "Como ficou" no fim; o smoke E2E fica para o usuário validar)
 
-> Trabalho **avulso**: não é uma fase, não entra em `docs/fases` nem na tabela de `migracao.md`. Será feito **antes da fase 10** (o empacotamento fixa caminhos e formatos de arquivo). Aqui o escopo de produto *cresce* de propósito (a regra "só migrar" das fases não vale), por pedido do usuário.
+> Foi feito antes do empacotamento, que fixa caminhos e formatos de arquivo, e por pedido do usuário o escopo de produto cresceu além da migração.
 
 ## Objetivo
 1. Nada que o usuário produz ou consulta se perde ao fechar o app: **histórico de jobs** e **conversas do chat** ficam em disco.
