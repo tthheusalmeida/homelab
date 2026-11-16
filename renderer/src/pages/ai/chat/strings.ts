@@ -1,6 +1,7 @@
 /** Textos da tela de chat (interface em português). */
 export const ChatStrings = {
   newChat: "Novo chat",
+  listTitle: "conversas",
   listLabel: "Conversas",
   emptyList: "Nenhuma conversa ainda. Envie uma mensagem para começar.",
   loadListError: "Não foi possível carregar as conversas.",

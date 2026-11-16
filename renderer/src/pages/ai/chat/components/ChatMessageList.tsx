@@ -4,7 +4,6 @@ import type { AiMessage, ChatStatus } from "../types/chat";
 
 import { ChatMessage } from "./ChatMessage";
 import { LoadingState } from "#components/LoadingState";
-import { ScrollArea } from "#ui/scroll-area";
 
 interface ChatMessageListProps {
   messages: AiMessage[];
@@ -18,21 +17,21 @@ export function ChatMessageList({
   status = "idle",
   error = null,
 }: ChatMessageListProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Rola só esta lista até o fim (scrollIntoView também moveria a página e a barra de envio).
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "end",
-    });
+    const element = scrollRef.current;
+
+    element?.scrollTo?.({ top: element.scrollHeight, behavior: "smooth" });
   }, [messages, status, error]);
 
   return (
-    <ScrollArea className="min-h-0 flex-1">
+    <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
       <div
         role="log"
         aria-label="Mensagens da conversa"
-        className="mx-auto flex w-full flex-col gap-4 px-4 py-4"
+        className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-4"
       >
         {messages.map((message) => (
           <div key={message.id} className="animate-enter">
@@ -57,9 +56,7 @@ export function ChatMessageList({
             {error}
           </p>
         )}
-
-        <div ref={bottomRef} />
       </div>
-    </ScrollArea>
+    </div>
   );
 }

@@ -251,8 +251,10 @@ export function ChatPage() {
 
   const showMessages = messages.length > 0 || chatStatus !== "idle" || sendError !== null;
 
+  // O AppLayout não rola nesta rota: a raiz ocupa a área útil e só a lista de conversas e o
+  // conteúdo da conversa rolam; o campo de mensagem fica sempre à vista.
   return (
-    <div className="flex min-h-[90dvh] flex-1 gap-4">
+    <div className="flex min-h-0 flex-1 gap-4">
       <ChatList
         chats={chatsQuery.data}
         isLoading={chatsQuery.isLoading}
@@ -265,7 +267,7 @@ export function ChatPage() {
         onRetry={() => void chatsQuery.refetch()}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {urlChatId && chatQuery.isError ? (
           <div className="flex flex-1 items-center justify-center">
             <ErrorState

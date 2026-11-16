@@ -12,8 +12,12 @@ import { NoticeCenter } from "#components/NoticeCenter";
 import { useAppShortcuts } from "#hooks/use-app-shortcuts";
 import { ScrollArea } from "#ui/scroll-area";
 
+/** Telas que ocupam a área útil inteira e cuidam da própria rolagem (a conversa, como no ChatGPT). */
+const FILL_ROUTES = ["/ai/chat"];
+
 export function AppLayout() {
   const { pathname } = useLocation();
+  const fill = FILL_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
   const [paletteOpen, setPaletteOpen] = useState(false);
   const openPalette = useCallback(() => setPaletteOpen(true), []);
 
@@ -39,6 +43,14 @@ export function AppLayout() {
           <ClockAndTime />
         </header>
 
+        {fill ? (
+          <div
+            key={pathname}
+            className="flex min-h-0 min-w-0 flex-1 animate-enter-fade flex-col overflow-hidden p-4"
+          >
+            <Outlet />
+          </div>
+        ) : (
         <ScrollArea className="min-h-0 flex-1">
           {/* A chave troca o bloco a cada rota, e a página nova entra só com um fade (sem subir). */}
           <div
@@ -48,6 +60,7 @@ export function AppLayout() {
             <Outlet />
           </div>
         </ScrollArea>
+        )}
       </main>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />

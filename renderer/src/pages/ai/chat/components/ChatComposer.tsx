@@ -2,7 +2,7 @@ import type { KeyboardEvent } from "react";
 
 import { Pause, Send } from "lucide-react";
 
-import { Button } from "#ui/button";
+import { HexButton } from "#components/HexButton";
 import { Textarea } from "#ui/textarea";
 
 interface ChatComposerProps {
@@ -38,9 +38,9 @@ export function ChatComposer({
   }
 
   return (
-    <footer className="shrink-0">
-      <div className="mx-auto w-full">
-        <div className="relative rounded-xl border bg-muted/30 shadow-sm">
+    <footer className="shrink-0 pt-3">
+      <div className="mx-auto w-full max-w-3xl">
+        <div className="relative rounded-xl border bg-card shadow-lg">
           <Textarea
             value={value}
             onChange={(event) => onChange(event.target.value)}
@@ -49,9 +49,8 @@ export function ChatComposer({
             className="min-h-24 resize-none border-0 bg-transparent pr-14 shadow-none focus-visible:ring-0"
           />
 
-          <Button
-            size="icon"
-            className="absolute right-3 bottom-3 rounded-full"
+          <HexButton
+            className="absolute right-3 bottom-3"
             disabled={disabled}
             aria-label={isSending ? "Parar geração" : "Enviar mensagem"}
             onClick={onSend}
@@ -61,7 +60,7 @@ export function ChatComposer({
             ) : (
               <Send className="size-4 top-2" />
             )}
-          </Button>
+          </HexButton>
         </div>
 
         <div className="mt-2 flex items-center justify-between gap-4">

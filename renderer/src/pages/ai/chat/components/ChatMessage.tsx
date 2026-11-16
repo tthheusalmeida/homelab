@@ -1,40 +1,43 @@
-import { Bot, User } from "lucide-react";
-
 import type { AiMessage } from "../types/chat";
+import { HexDot } from "#components/Hex";
 import { MarkdownMessage } from "#components/MarkdownMessage";
+import { cn } from "#lib/utils";
 
 interface ChatMessageProps {
   message: AiMessage;
 }
 
+/**
+ * Mensagem em estilo terminal: uma linha mono com quem fala (`você@homelab`, `assistente`) e o
+ * texto numa caixa de borda fina. A do usuário vem à direita, na cor de destaque; a do assistente
+ * ocupa a largura toda.
+ */
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
 
   return (
-    <div className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
-      {!isUser && (
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted">
-          <Bot className="size-4" />
-        </div>
-      )}
+    <div className={cn("flex flex-col gap-1.5", isUser ? "items-end" : "items-start")}>
+      <p className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
+        <HexDot className={isUser ? "bg-primary" : "bg-emerald-500"} />
+        {isUser ? (
+          <span>
+            você<span className="text-primary">@</span>homelab
+          </span>
+        ) : (
+          <span>assistente</span>
+        )}
+      </p>
 
       <div
-        className={`max-w-[70%] rounded-xl px-3 py-2 text-sm leading-6 ${
-          isUser ? "bg-primary text-primary-foreground" : "bg-muted"
-        }`}
-      >
-        {isUser ? (
-          message.content
-        ) : (
-          <MarkdownMessage content={message.content} />
+        className={cn(
+          "rounded-lg border px-3.5 py-2.5 text-sm leading-6",
+          isUser
+            ? "max-w-[75%] border-primary/30 bg-primary/10 whitespace-pre-wrap"
+            : "w-full bg-card",
         )}
+      >
+        {isUser ? message.content : <MarkdownMessage content={message.content} />}
       </div>
-
-      {isUser && (
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border">
-          <User className="size-4" />
-        </div>
-      )}
     </div>
   );
 }

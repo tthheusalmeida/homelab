@@ -36,8 +36,12 @@ export function ChatList({
   return (
     <nav
       aria-label={ChatStrings.listLabel}
-      className="flex w-60 shrink-0 flex-col gap-2 border-r pr-3"
+      className="flex min-h-0 w-60 shrink-0 flex-col gap-2 overflow-y-auto border-r pr-3"
     >
+      <p className="px-1 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+        <span className="text-primary">$</span> {ChatStrings.listTitle}
+      </p>
+
       <Button variant="outline" className="justify-start" disabled={disabled} onClick={onNew}>
         <Plus />
         {ChatStrings.newChat}
@@ -87,7 +91,7 @@ export function ChatList({
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{chat.title}</span>
 
-                  <span className="block text-xs text-muted-foreground">
+                  <span className="block font-mono text-[11px] text-muted-foreground">
                     {ChatStrings.messages(chat.messageCount)}
                   </span>
                 </span>

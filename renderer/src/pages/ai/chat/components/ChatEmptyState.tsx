@@ -1,3 +1,4 @@
+import { HexFrame } from "#components/Hex";
 import { Bot } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -70,16 +71,17 @@ export function ChatEmptyState() {
 
   return (
     <div className="flex h-full flex-1 flex-col items-center justify-center p-6 text-center select-none">
-      <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
-        <Bot className="size-6" />
-      </div>
+      <HexFrame className="mb-4 text-primary">
+        <Bot className="size-5" />
+      </HexFrame>
 
       <div className="max-w-sm space-y-1">
         <h2 className="text-lg font-medium tracking-tight">
           Como posso te ajudar hoje?
         </h2>
 
-        <div className="h-6 text-muted-foreground font-mono text-xs">
+        <div className="h-6 font-mono text-xs text-muted-foreground">
+          <span className="text-primary">$ </span>
           <span>{phrase}</span>
           <span className="ml-0.5 animate-pulse">|</span>
         </div>
