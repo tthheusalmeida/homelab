@@ -103,6 +103,9 @@ export const IpcChannels = {
     retry: 'jobs:retry',
     grantAccess: 'jobs:grant-access',
   },
+  platform: {
+    forgetLogins: 'platform:forget-logins',
+  },
   providers: {
     external: {
       list: 'providers:external:list',

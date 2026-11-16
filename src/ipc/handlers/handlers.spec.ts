@@ -40,6 +40,7 @@ describe('createHandlers', () => {
         externalProviders: {} as ExternalProvidersService,
         localProviders: {} as LocalProvidersService,
         platformLogin: { openLogin: jest.fn() },
+        platformLogins: { forgetLogins: jest.fn() },
         back: {
           healthSystem: { check: jest.fn() },
           healthAi: { check: jest.fn() },

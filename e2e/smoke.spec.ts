@@ -92,9 +92,9 @@ test.describe('app com configuração existente', () => {
     });
     await page.reload();
 
-    await expect(page.getByText('Central de controle do HomeLab.')).toBeVisible();
+    await expect(page.getByText('Central de controle do seu ambiente.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Conversa', exact: true })).toBeVisible();
-    await expect(page.getByText('Serviços do sistema')).toBeVisible();
+    await expect(page.getByText('Acesso rápido aos serviços do seu ambiente.')).toBeVisible();
   });
 
   test('when navigating through the main screens, should render each one', async () => {

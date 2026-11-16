@@ -143,6 +143,7 @@ Excluir um job não apaga os documentos que ele gerou.
 | Canal | Payload | Retorno |
 |---|---|---|
 | `jobs:grant-access` | `{ id }` | `{ id, granted }`. Abre a janela de login do site do vídeo (o job precisa ter falhado com `errorCode: 'ACCESS_REQUIRED'`, senão `VALIDATION`) e **só responde quando o usuário a fecha**. `granted` é `true` se o app tem cookies desse site. A tela então chama `jobs:retry`. |
+| `platform:forget-logins` | – | `{ removed }`. Apaga os logins guardados dos sites de vídeo (cofre cifrado e sessão aberta); `removed` é quantos cookies saíram (0 = não havia). Botão em Configurações > Acessos. |
 
 `JobView` ganhou `errorCode` (`'ACCESS_REQUIRED'`) e `accessUrl`. Detalhes em `download-de-videos.md`.
 

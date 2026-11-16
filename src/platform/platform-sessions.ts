@@ -19,6 +19,8 @@ export interface PlatformSessionsDeps {
   /** Logins guardados (cifrados em disco com a criptografia do sistema). */
   loadSaved: () => Promise<CookieLike[]>;
   saveCookies: (cookies: CookieLike[]) => Promise<void>;
+  /** Esvazia a sessão em memória da janela de login (cookies e armazenamento do site). */
+  clearSession: () => Promise<void>;
   /** Abre a janela do site e resolve quando o usuário a fecha. */
   openWindow: (url: string, title: string) => Promise<void>;
   /** Pasta para o arquivo temporário de cookies. */
@@ -54,6 +56,16 @@ export class PlatformSessions implements PlatformLogin {
     await this.deps.saveCookies(cookies);
 
     return cookies.some((cookie) => cookieMatchesHost(cookie, hostname));
+  }
+
+  /** Esquece os logins guardados e a sessão aberta; devolve quantos cookies foram apagados. */
+  async forgetLogins(): Promise<number> {
+    const removed = (await this.deps.loadSaved()).length;
+
+    await this.deps.saveCookies([]);
+    await this.deps.clearSession();
+
+    return removed;
   }
 
   /**

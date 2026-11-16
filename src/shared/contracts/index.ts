@@ -56,6 +56,7 @@ import type {
   JobTypeView,
   JobView,
 } from './jobs';
+import type { PlatformLoginsResult } from './platform';
 import type {
   LibraryCategoryNode,
   LibraryClassificationSuggestion,
@@ -249,6 +250,9 @@ export interface IpcContracts {
   [IpcChannels.jobs.retry]: { request: JobRequest; response: JobCreated };
   /** Abre a janela de login do site do vídeo; ao fechá-la, guarda o acesso para o próximo download. */
   [IpcChannels.jobs.grantAccess]: { request: JobRequest; response: JobAccessResult };
+
+  /** Apaga os logins guardados dos sites de vídeo (o usuário entra de novo na próxima vez). */
+  [IpcChannels.platform.forgetLogins]: { request: void; response: PlatformLoginsResult };
 
   [IpcChannels.library.inbox]: { request: void; response: LibraryDocumentSummary[] };
   [IpcChannels.library.categories]: { request: void; response: LibraryCategoryNode[] };

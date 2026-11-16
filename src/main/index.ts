@@ -300,6 +300,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     restoreSession: (cookies) => restorePlatformCookies(platformSession(), cookies),
     loadSaved: () => cookieVault.load(),
     saveCookies: (cookies) => cookieVault.save(cookies),
+    clearSession: () => platformSession().clearStorageData(),
     openWindow: (url, title) => openPlatformLoginWindow({ parent: mainWindow, url, title }),
     tempDir: path.join(app.getPath('userData'), 'cookies-temp'),
     writeFile: async (file, text) => {
@@ -405,6 +406,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
   new IpcRegistrar(ipcMain).register(
     createHandlers({
       platformLogin: platformSessions,
+      platformLogins: platformSessions,
       appInfo: {
         version: () => app.getVersion(),
         // No modo dev o Vite morre junto com o app, então só fecha (rode `npm run dev` de novo).

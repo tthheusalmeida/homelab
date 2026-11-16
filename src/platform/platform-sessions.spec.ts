@@ -9,6 +9,7 @@ function build(cookies: CookieLike[] = [COOKIE], saved: CookieLike[] = cookies) 
     restoreSession: jest.fn().mockResolvedValue(undefined),
     loadSaved: jest.fn().mockResolvedValue(saved),
     saveCookies: jest.fn().mockResolvedValue(undefined),
+    clearSession: jest.fn().mockResolvedValue(undefined),
     openWindow: jest.fn().mockResolvedValue(undefined),
     tempDir: 'C:\\tmp',
     writeFile: jest.fn().mockResolvedValue(undefined),
@@ -62,6 +63,22 @@ describe('PlatformSessions.openLogin', () => {
       PlatformSessionMessages.invalidUrl,
     );
     expect(deps.openWindow).not.toHaveBeenCalled();
+  });
+});
+
+describe('PlatformSessions.forgetLogins', () => {
+  it('when there are saved logins, should empty the vault and the open session', async () => {
+    const { sessions, deps } = build([COOKIE], [COOKIE, { ...COOKIE, name: 'other' }]);
+
+    await expect(sessions.forgetLogins()).resolves.toBe(2);
+    expect(deps.saveCookies).toHaveBeenCalledWith([]);
+    expect(deps.clearSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('when nothing was saved, should report zero removed', async () => {
+    const { sessions } = build([], []);
+
+    await expect(sessions.forgetLogins()).resolves.toBe(0);
   });
 });
 

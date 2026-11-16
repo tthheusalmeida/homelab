@@ -34,7 +34,7 @@ Se a página não tem vídeo: "Não encontrei nenhum vídeo nesta página". Play
 - **DRM** (Netflix, Hotmart, Udemy e similares): não funciona e não há o que fazer.
 - Login do **Google** costuma recusar navegador embutido; portais de faculdade (Moodle, Canvas, Blackboard) funcionam bem.
 - Login com segundo fator: o usuário faz tudo na janela, mas a sessão pode expirar e pedir de novo.
-- Os logins guardados ficam cifrados em `secrets.json` (chave `platform.cookies`). Ainda não há botão para esquecê-los; apagar a entrada `platform.cookies` desse arquivo (app fechado) os remove. Se o sistema não tiver criptografia disponível, o login não é guardado e o app avisa o erro (o secrets.json nunca recebe texto puro).
+- Os logins guardados ficam cifrados em `secrets.json` (chave `platform.cookies`). Para esquecê-los: **Configurações > Acessos > Esquecer logins** (canal `platform:forget-logins`; apaga o cofre e a sessão aberta). Se o sistema não tiver criptografia disponível, o login não é guardado e o app avisa o erro (o `secrets.json` nunca recebe texto puro).
 - Só `win32-x64`: Linux e macOS terão `yt-dlp_linux` e `yt-dlp_macos` no catálogo deles.
 
 ## Onde está o código
