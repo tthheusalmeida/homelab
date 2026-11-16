@@ -48,6 +48,12 @@ Outros detalhes: rótulos de grupo e de caminho em fonte mono (`ui-monospace`/Ca
 ## Padrão das telas de Configurações
 Toda seção usa `SettingsGroup` (título mono em maiúsculas, dica e conteúdo) e `SettingsPanel` (caixa de borda fina com fundo de card; `highlight` para o item ativo); `ProviderCard` e `ComponentChecklist` seguem a mesma caixa. Seção nova: agrupe com `SettingsGroup`, não crie outro visual.
 
+## Modais, conversa e barras de ação
+- **Modais** (`ui/dialog.tsx`): só o miolo rola. `DialogHeader` (título e subtítulo) e `DialogFooter` (confirmar e cancelar) são `sticky`, mesmo dentro de um `<form>`; o botão de fechar fica fora do miolo. `bodyClassName` ajusta o miolo (ex.: paleta de comandos, sem padding). Não coloque `overflow` nem `max-h` no `DialogContent`.
+- **Conversa:** a página tem altura fixa (`100dvh - 5,5rem`); só a lista de conversas e o conteúdo da conversa rolam, e o campo de mensagem fica sempre embaixo, flutuando sobre a página.
+- **Barra de ações fixa** (ex.: Nova página): `sticky bottom-0` com `-mb-4` (o respiro do layout), para não subir ao chegar ao fim do scroll.
+- **Item de job** (`JobPipeline`): o interior é um pipeline em estilo terminal, com um marcador hexagonal por etapa (verde, cor de destaque pulsando, vermelho ou neutro), estado ao lado, barra fina na etapa em execução, erro em destaque e início, fim e duração.
+
 ## Ao criar componente novo
 1. Cor de ação: `bg-primary`, `text-primary`, `ring-ring` (ou o `Button` padrão). Texto em destaque sobre fundo: `text-brand-text`. Marca: `text-brand`, `fill-brand`.
 2. Status: `HexDot` com a cor do estado (verde, âmbar e vermelho não mudam com o destaque).
