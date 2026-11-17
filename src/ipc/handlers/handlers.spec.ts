@@ -37,6 +37,7 @@ describe('createHandlers', () => {
           install: jest.fn(),
           setAutoCheck: jest.fn(),
         },
+        notesTranslator: { available: jest.fn(), translate: jest.fn() },
         backup: {
           preview: jest.fn(),
           create: jest.fn(),

@@ -47,6 +47,30 @@ export function useInstallUpdate() {
   return useStatusMutation(() => ipc.invoke(IpcChannels.updates.install));
 }
 
+export const TranslationAvailableKey = ['updates', 'translation-available'] as const;
+
+/**
+ * Se dá para traduzir as notas: só com a IA local (Ollama) ligada e com um modelo de texto. Consulta
+ * de novo a cada vez que a seção abre, porque o Ollama pode ser ligado ou desligado a qualquer hora.
+ */
+export function useTranslationAvailable(enabled = true) {
+  return useQuery({
+    queryKey: TranslationAvailableKey,
+    queryFn: async () => (await ipc.invoke(IpcChannels.updates.translationAvailable)).available,
+    enabled,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    retry: false,
+  });
+}
+
+/** Traduz para português as notas da versão nova, com a IA local. */
+export function useTranslateNotes() {
+  return useMutation({
+    mutationFn: () => ipc.invoke(IpcChannels.updates.translateNotes),
+  });
+}
+
 /** Liga ou desliga a verificação automática (a manual continua funcionando). */
 export function useSetAutoCheck() {
   const queryClient = useQueryClient();

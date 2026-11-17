@@ -27,6 +27,17 @@ describe('UpdatesSection', () => {
     expect(screen.getByText('Ainda não verificou nesta sessão')).toBeVisible();
   });
 
+  it('when the app is not packaged (development), should explain it and offer no check or auto-check', async () => {
+    withStatus(updateStatus({ enabled: false }));
+
+    renderWithProviders(<UpdatesSection />);
+
+    expect(await screen.findByText('0.2.0')).toBeVisible();
+    expect(screen.getByText(/execução de desenvolvimento/)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Verificar agora' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(AUTO_CHECK)).not.toBeInTheDocument();
+  });
+
   it('when the status cannot be read, should show the error with a retry', async () => {
     mockApi({ [IpcChannels.updates.status]: () => failure('INTERNAL', 'falhou') });
 
@@ -273,5 +284,133 @@ describe('UpdatesSection', () => {
     await user.click(await screen.findByRole('button', { name: 'Verificar agora' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível concluir');
+  });
+});
+
+describe('UpdatesSection notes translation (local AI)', () => {
+  const TRANSLATED = {
+    version: '0.3.0',
+    notes: '## Novidades\n\n- Leitura bem mais rápida',
+  };
+
+  const withTranslation = (available: boolean, translate: () => unknown = () => ok(TRANSLATED)) =>
+    withStatus(availableUpdate(), {
+      [IpcChannels.updates.translationAvailable]: () => ok({ available }),
+      [IpcChannels.updates.translateNotes]: translate,
+    });
+
+  it('when the local AI is on, should offer to translate the notes', async () => {
+    withTranslation(true);
+
+    renderWithProviders(<UpdatesSection />);
+
+    expect(await screen.findByRole('button', { name: 'Traduzir para português' })).toBeEnabled();
+    expect(screen.getByText('Leitura mais rápida')).toBeVisible();
+  });
+
+  it('when the local AI is off, should not offer to translate and keep the notes as they are', async () => {
+    const invoke = withTranslation(false);
+
+    renderWithProviders(<UpdatesSection />);
+
+    expect(await screen.findByText('Leitura mais rápida')).toBeVisible();
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith(IpcChannels.updates.translationAvailable),
+    );
+    expect(screen.queryByRole('button', { name: 'Traduzir para português' })).not.toBeInTheDocument();
+  });
+
+  it('when the availability cannot be checked, should not offer to translate', async () => {
+    withStatus(availableUpdate(), {
+      [IpcChannels.updates.translationAvailable]: () => failure('INTERNAL', 'falhou'),
+    });
+
+    renderWithProviders(<UpdatesSection />);
+
+    expect(await screen.findByText('Leitura mais rápida')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Traduzir para português' })).not.toBeInTheDocument();
+  });
+
+  it('when the release has no notes, should not offer to translate even with the local AI on', async () => {
+    const status = availableUpdate();
+
+    withStatus({ ...status, latest: { ...status.latest!, notes: '  ' } }, {
+      [IpcChannels.updates.translationAvailable]: () => ok({ available: true }),
+    });
+
+    renderWithProviders(<UpdatesSection />);
+
+    expect(await screen.findByText('Esta versão não traz notas.')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Traduzir para português' })).not.toBeInTheDocument();
+  });
+
+  it('when translating, should show a loading button that is disabled until the answer comes', async () => {
+    let finish: (value: unknown) => void = () => undefined;
+    const pendingAnswer = new Promise((resolve) => {
+      finish = resolve;
+    });
+
+    withTranslation(true, () => pendingAnswer);
+
+    const user = userEvent.setup();
+
+    renderWithProviders(<UpdatesSection />);
+
+    await user.click(await screen.findByRole('button', { name: 'Traduzir para português' }));
+
+    expect(await screen.findByRole('button', { name: 'Traduzindo…' })).toBeDisabled();
+
+    await act(async () => finish(ok(TRANSLATED)));
+
+    expect(await screen.findByText('Leitura bem mais rápida')).toBeVisible();
+  });
+
+  it('when translated, should show the Portuguese notes, the hint and no more translate button', async () => {
+    withTranslation(true);
+
+    const user = userEvent.setup();
+
+    renderWithProviders(<UpdatesSection />);
+
+    await user.click(await screen.findByRole('button', { name: 'Traduzir para português' }));
+
+    expect(await screen.findByText('Leitura bem mais rápida')).toBeVisible();
+    expect(screen.queryByText('Leitura mais rápida')).not.toBeInTheDocument();
+    expect(screen.getByText('Traduzido pela IA local; pode ter imprecisões.')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Traduzir para português' })).not.toBeInTheDocument();
+  });
+
+  it('when translated, should let the user go back to the original and to the translation', async () => {
+    withTranslation(true);
+
+    const user = userEvent.setup();
+
+    renderWithProviders(<UpdatesSection />);
+
+    await user.click(await screen.findByRole('button', { name: 'Traduzir para português' }));
+    await user.click(await screen.findByRole('button', { name: 'Ver original' }));
+
+    expect(screen.getByText('Leitura mais rápida')).toBeVisible();
+    expect(screen.queryByText('Leitura bem mais rápida')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Ver tradução' }));
+
+    expect(screen.getByText('Leitura bem mais rápida')).toBeVisible();
+  });
+
+  it('when the translation fails, should say so, keep the original and allow trying again', async () => {
+    withTranslation(true, () => failure('PROVIDER_FAILED', 'falhou'));
+
+    const user = userEvent.setup();
+
+    renderWithProviders(<UpdatesSection />);
+
+    await user.click(await screen.findByRole('button', { name: 'Traduzir para português' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Não foi possível traduzir. Tente de novo.',
+    );
+    expect(screen.getByText('Leitura mais rápida')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Traduzir para português' })).toBeEnabled();
   });
 });

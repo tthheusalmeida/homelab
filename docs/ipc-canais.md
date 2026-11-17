@@ -19,6 +19,8 @@ Origem: os 37 endpoints HTTP atuais (`/api/v1`) + os canais novos de app, settin
 | `updates:check` | — | o `UpdateStatus` depois de consultar o GitHub (falha de rede vira `error`, nunca exceção) |
 | `updates:install` | — | o `UpdateStatus`. Com a versão `ready`, reinicia e instala (`quitAndInstall`); com o download automático falho (`available`), baixa só a diferença de novo. Fora do Windows abre a página do Release. Sem versão nova, não faz nada |
 | `updates:set-auto-check` | `{ autoCheck: boolean }` | o `UpdateStatus` depois de gravar `updates.autoCheck` (valor que não é booleano: `VALIDATION`) |
+| `updates:translation-available` | — | `{ available: boolean }`: `true` com o Ollama respondendo e ao menos um modelo de texto instalado (nunca lança: sem Ollama, `false`) |
+| `updates:translate-notes` | — | `{ version, notes }` com as notas da versão nova em português, traduzidas pelo menor modelo do Ollama. O texto vem do estado do app, nunca do renderer. Sem versão nova ou sem notas: `VALIDATION`; sem IA local: `NOT_CONFIGURED`; falha do modelo: `PROVIDER_FAILED` |
 
 Evento `updates:changed` (main → renderer): o `UpdateStatus` a cada mudança (nova versão, progresso, erro).
 

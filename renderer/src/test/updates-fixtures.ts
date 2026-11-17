@@ -7,6 +7,7 @@ export const updateStatus = (overrides: Partial<UpdateStatus> = {}): UpdateStatu
   progress: 0,
   error: null,
   checkedAt: null,
+  enabled: true,
   canInstall: true,
   autoCheck: true,
   ...overrides,

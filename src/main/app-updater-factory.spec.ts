@@ -32,6 +32,7 @@ function setup(overrides: Partial<AppUpdaterWiring> = {}) {
   const native = makeNative();
   const updater = createAppUpdater({
     currentVersion: '0.2.0',
+    enabled: true,
     native,
     ...mocks,
     ...overrides,
