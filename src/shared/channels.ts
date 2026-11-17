@@ -11,6 +11,8 @@ export const IpcChannels = {
     relaunch: 'app:relaunch',
     openSettings: 'app:open-settings',
     settingsSection: 'app:settings-section',
+    restartPending: 'app:restart-pending',
+    markRestartPending: 'app:mark-restart-pending',
   },
   settings: {
     get: 'settings:get',

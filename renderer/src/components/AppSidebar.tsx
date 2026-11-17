@@ -28,6 +28,7 @@ import {
 
 import { Logo } from '#components/Hex';
 import { SidebarSection } from '#components/SidebarSection';
+import { SidebarRestartNotice } from '#components/SidebarRestartNotice';
 import { SidebarSetupProgress } from '#components/SidebarSetupProgress';
 import { useCollapsedGroups } from '#hooks/use-collapsed-groups';
 import { useActiveJobsCount } from '../pages/jobs/track/hooks/useActiveJobsCount';
@@ -170,6 +171,8 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
+        <SidebarRestartNotice />
+
         <SidebarSetupProgress />
 
         <SidebarMenu>

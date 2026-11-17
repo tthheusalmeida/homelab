@@ -18,6 +18,8 @@ describe('createHandlers', () => {
           relaunch: jest.fn(),
           openSettings: jest.fn(),
           takeSettingsSection: jest.fn(),
+          restartPending: jest.fn(),
+          markRestartPending: jest.fn(),
         },
         folderPicker: { pick: jest.fn() },
         libraryMover: { inspect: jest.fn(), apply: jest.fn() },

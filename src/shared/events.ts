@@ -11,6 +11,7 @@ export const IpcEvents = {
   notice: 'app:notice',
   componentsProgress: 'components:progress',
   settingsNavigate: 'settings:navigate',
+  restartPending: 'app:restart-needed',
 } as const;
 
 export type IpcEvent = (typeof IpcEvents)[keyof typeof IpcEvents];
@@ -22,6 +23,8 @@ export interface IpcEventPayloads {
   [IpcEvents.notice]: AppNotice;
   [IpcEvents.componentsProgress]: ComponentsStatus;
   [IpcEvents.settingsNavigate]: { section: string };
+  /** Há alteração que só vale depois de reiniciar (sempre `true`: o estado zera ao reiniciar). */
+  [IpcEvents.restartPending]: boolean;
 }
 
 export type IpcEventPayload<E extends IpcEvent> = IpcEventPayloads[E];

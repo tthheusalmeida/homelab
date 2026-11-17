@@ -58,6 +58,7 @@ import {
   restorePlatformCookies,
 } from './platform-login-window';
 import { IpcEvents } from '../shared/events';
+import { RestartState } from './restart-state';
 import { CookieVault } from '../platform/cookie-vault';
 import { detectDefaultBrowser } from '../platform/default-browser';
 import { PlatformSessions } from '../platform/platform-sessions';
@@ -263,6 +264,10 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
 
   const localStateGuard = new LocalStateGuard({ userDataDir: app.getPath('userData') });
   const events = new WindowEventPublisher(() => BrowserWindow.getAllWindows());
+  // Reinício pendente: vale para todas as janelas e sobrevive a fechar as Configurações.
+  const restartState = new RestartState((pending) =>
+    events.publish(IpcEvents.restartPending, pending),
+  );
   const resourcesDir = resolveResourcesDir(projectRoot, app.isPackaged, process.resourcesPath);
   const binDir = resolveBinDir(
     resourcesDir,
@@ -433,6 +438,8 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
             events.publish(IpcEvents.settingsNavigate, { section });
           }
         },
+        restartPending: () => restartState.isPending(),
+        markRestartPending: () => restartState.mark(),
         takeSettingsSection: () => {
           const section = pendingSettingsSection;
 

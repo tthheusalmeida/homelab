@@ -104,6 +104,10 @@ export interface IpcContracts {
   [IpcChannels.app.openSettings]: { request: { section?: string } | void; response: void };
   /** Seção pedida ao abrir as Configurações (entregue uma vez só; `null` se não houve pedido). */
   [IpcChannels.app.settingsSection]: { request: void; response: string | null };
+  /** Se alguma alteração salva só vale depois de reiniciar (vale para todas as janelas). */
+  [IpcChannels.app.restartPending]: { request: void; response: boolean };
+  /** Marca que há reinício pendente e avisa todas as janelas (evento `app:restart-needed`). */
+  [IpcChannels.app.markRestartPending]: { request: void; response: void };
 
   [IpcChannels.settings.get]: { request: void; response: SettingsPaths };
   [IpcChannels.settings.update]: {
