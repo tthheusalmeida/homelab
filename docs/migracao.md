@@ -1,6 +1,6 @@
 # Do front + back ao app desktop: decisões e próximos passos
 
-O HomeLab (front React + back Nest) virou um **app desktop Electron com IPC**, instalável no Windows. A migração (antigas fases 00 a 10: casca Electron, infra IPC, configurações, IA, chat, biblioteca, livros, jobs, back e front dentro do desktop e empacotamento) **está concluída**; os arquivos por fase foram apagados porque descreviam trabalho já feito. O histórico fica no Git.
+O HomeLab (front React + back Nest) virou um **app desktop Electron com IPC**, instalável no Windows e executável no Linux (AppImage). A migração (casca Electron, infra IPC, configurações, IA, chat, biblioteca, livros, jobs, back e front dentro do desktop, empacotamento, validação de commits, release automático e atualização no app) **está concluída**; os arquivos por fase foram apagados porque descreviam trabalho já feito. O histórico fica no Git.
 
 ## Decisões que continuam valendo
 - **Nest como contêiner de DI** no processo main (`createApplicationContext`): services e testes do back foram reaproveitados e os controllers viraram handlers IPC. Sem HTTP, sem porta, sem `.env`.
@@ -13,25 +13,15 @@ O HomeLab (front React + back Nest) virou um **app desktop Electron com IPC**, i
 - **Binários por plataforma** em `resources/bin/<plataforma>-<arch>/`; modelos e pacote CUDA são baixados pelo app. Ver `componentes.md` e `empacotamento.md`.
 - Jobs continuam por polling de 1 s; o progresso detalhado vem na própria consulta.
 
-## O que ainda falta (plano, em ordem)
-| Fase | Entrega | Status |
-|---|---|---|
-| 11 | Validação do padrão de commits (commitlint, ganchos, CI) e proteção da `main` | aguardando validação (código entregue; falta ligar a proteção da `main` no GitHub) |
-| 12 | Release automático em todo `feat`/`fix` na `main` (versão, changelog, tag, Release, `.exe` do Windows e AppImage do Linux) | aguardando validação (código entregue; faltam os passos manuais de `empacotamento.md`) |
-| 13 | Atualização automática no app (aviso e download só da diferença) | aguardando validação (código entregue, `atualizacoes.md`; o fluxo real só se confirma com dois releases da CI) |
+## Estado
+Todas as fases estão **concluídas**. O que cada uma deixou virou documentação de uso em `docs/` (ver a tabela do `CLAUDE.md`): `versionamento.md` (commits e proteção da `main`), `empacotamento.md` (release automático e Linux) e `atualizacoes.md` (atualização no app). Mudanças novas seguem o fluxo de `versionamento.md`: branch, commits no padrão e merge request.
 
-Cada fase tem um arquivo em `docs/fases/` com escopo, testes e checklist. Status: `pendente`, `em andamento`, `aguardando validação` (entregue, esperando o "ok") ou `concluída`. **Fase concluída tem o arquivo apagado**: o que ela deixou vira documentação de uso (`docs/*.md`) e o Git guarda o resto.
+## Fora do escopo (decidido)
+- **macOS:** não haverá build.
+- **Assinatura de código** do instalador do Windows (certificado pago): não haverá; o SmartScreen avisa na instalação.
+- **Atualização automática no Linux:** o AppImage só avisa e abre o Release.
 
-Convenção de versão e de mudanças (SemVer, Conventional Commits, branch + merge request): `versionamento.md`.
-
-## Regra de entrega
-- Uma fase por vez; a seguinte só começa com o "ok" do usuário.
-- Cada fase entrega código, testes unitários, `docs/` atualizado e o roteiro "O que testar".
-- Toda mudança segue o fluxo de `versionamento.md`: branch, commits no padrão e merge request.
-- Ao terminar, a resposta diz que terminou e lista "O que testar".
-
-## Pendências que não são fase
-- **Linux e macOS:** falta o `whisper-cli` compilado e o ffmpeg de cada um (`resources/bin/linux-x64`, `darwin-arm64`), o catálogo de componentes deles e o build em cada sistema (matriz da CI, fase 12). A configuração do `electron-builder.yml` já existe.
-- **Assinatura de código** do instalador (certificado pago); sem ela o SmartScreen avisa.
-- **`npm install --legacy-peer-deps`** por causa do peer do Babel entre Jest e o plugin React do Vite; decidir se resolve de outro jeito (a CI da fase 11 vai depender disso).
+## Pendências técnicas
+- **`npm install --legacy-peer-deps`** por causa do peer do Babel entre Jest e o plugin React do Vite; decidir se resolve de outro jeito (a CI depende disso).
 - O smoke E2E (14 testes) passa com o app atual, mas não cobre criar um job nem uma conversa real, nem o download de plataformas (a janela de login depende de um site real).
+- O fluxo real de atualização no app (download só da diferença) se confirma quando houver dois releases seguidos com as próximas funcionalidades.

@@ -1,6 +1,6 @@
 # CLAUDE.md — Desktop (homelab-desktop)
 
-App desktop (Windows primeiro; depois Linux e macOS) do HomeLab: **Electron + React + IPC**. É a raiz do projeto Electron: o front fala com o back por **IPC** (não há HTTP). A migração do front + back para o desktop está **concluída**; o projeto evolui com funcionalidades novas, sempre pelo fluxo de `docs/versionamento.md`.
+App desktop (Windows e Linux; sem macOS) do HomeLab: **Electron + React + IPC**. É a raiz do projeto Electron: o front fala com o back por **IPC** (não há HTTP). A migração do front + back para o desktop está **concluída**; o projeto evolui com funcionalidades novas, sempre pelo fluxo de `docs/versionamento.md`.
 
 - **Back:** os services do Nest 11 vivem em `src/back` (copiados do antigo `back/`). Nest é só contêiner de injeção de dependência (`createApplicationContext`): sem HTTP, sem controllers, sem `.env`, sem porta. Os handlers IPC substituíram os controllers.
 - **Front:** o renderer é o próprio front em `renderer/src` (mesma estrutura de pastas: `pages/<rota>`, `components`, `ui`, `lib`, `hooks`, `app`), com IPC nos `api.ts`, sem overrides e sem `fetch`.
@@ -8,19 +8,19 @@ App desktop (Windows primeiro; depois Linux e macOS) do HomeLab: **Electron + Re
 
 **Independência:** o desktop **não lê mais `../back` nem `../front`**; os dois são repositórios antigos, sem manutenção. **Não os edite nem commite neles.** Mudanças de código vão só em `desktop/`.
 
-Estado: app instalável e em uso (versão `0.1.x`). Falta o que está em `docs/migracao.md` (fases 11 a 13: validação de commits, release automatizado, atualização no app).
+Estado: app instalável e em uso (versão `0.1.x`). Todas as fases da migração estão concluídas (`docs/migracao.md`).
 
 ## Como consultar
-**Leia `docs/` antes de abrir código.** Cada arquivo descreve em frases uma área. Abra só o que a tarefa pede; para trabalhar numa fase pendente, leia apenas `docs/fases/fase-XX.md` dela (fase concluída tem o arquivo apagado).
+**Leia `docs/` antes de abrir código.** Cada arquivo descreve em frases uma área. Abra só o que a tarefa pede.
 
 | Arquivo | Assunto |
 |---|---|
-| `docs/migracao.md` | Decisões da migração (concluída), fases pendentes (11 a 13), regra de entrega e pendências |
+| `docs/migracao.md` | Decisões da migração (concluída), o que ficou fora do escopo e pendências técnicas |
 | `docs/versionamento.md` | **SemVer, Conventional Commits, branch + merge request e validação** (regra obrigatória) |
 | `docs/arquitetura.md` | Processos, estrutura de pastas, Nest como DI, padrão dos handlers (classes/SOLID), envelope de resultado, preload e segurança |
 | `docs/ipc-canais.md` | Inventário dos 37 endpoints HTTP → canais IPC (nomes e payloads) |
 | `docs/configuracoes.md` | Settings (substitui `.env`), providers externos e locais, segredos, binários por plataforma |
-| `docs/testing.md` | Convenções de teste, mocks, checklist manual e smoke E2E |
+| `docs/testing.md` | Convenções de teste, mocks, roteiro manual e smoke E2E |
 | `docs/identidade.md` | Identidade Colmeia: tema claro/escuro/sistema, cor de destaque configurável, componentes hexagonais |
 | `docs/componentes.md` | Catálogo de componentes (Whisper, ffmpeg, CUDA, modelos), download com checksum, recomendação por hardware e assistente de instalação |
 | `docs/download-de-videos.md` | Download de YouTube e outras plataformas com yt-dlp, aviso ao usuário e login por janela do app (cookies temporários) |
@@ -28,10 +28,9 @@ Estado: app instalável e em uso (versão `0.1.x`). Falta o que está em `docs/m
 | `docs/desempenho.md` | Otimizações para PCs fracos (telas sob demanda, consultas mais calmas) e o que foi deixado de fora para não perder fluidez |
 | `docs/movimento.md` | Transições e animações: réguas de tempo, utilities `animate-*`, onde aplicar |
 | `docs/atualizacoes.md` | Atualização do app: consulta aos Releases do GitHub, cartão na barra lateral, seção em Configurações, download com checksum e instalação |
-| `docs/empacotamento.md` | Instalador Windows (`electron-builder`), binários, caminhos empacotados, ícone |
+| `docs/empacotamento.md` | Instalador Windows e AppImage Linux (`electron-builder`), release na CI, como rodar no Linux, binários, caminhos empacotados, ícone |
 | `docs/persistencia.md` | Jobs e chats em disco, pasta-raiz única para backup, exclusão de jobs, seção de Chats |
 | `docs/regras-de-negocio.md` | Onde ficam as regras que **não mudam** (`docs/regras/back`, `docs/regras/front`) |
-| `docs/fases/fase-11.md` … `fase-13.md` | Plano das fases pendentes: escopo, testes e checklist (apagar o arquivo ao concluir) |
 
 Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/regras/back/` e `docs/regras/front/` (ver `docs/regras-de-negocio.md`). Leia a regra antes de mexer em `src/back`.
 
@@ -45,7 +44,7 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/r
 - `npm run dist:dir` / `npm run dist` — app desempacotado / instalador Windows (ver `docs/empacotamento.md`); `npm run icons` gera o `.ico`
 - `npm run lint` / `npm run format`
 
-## Mapa do código (alvo; criado ao longo das fases)
+## Mapa do código
 - `src/main/` — `index.ts` (bootstrap), `content-security-policy.ts`, `first-run.ts`, `local-state-guard.ts`, `shortcuts.ts`, `single-window.ts`, `constants.ts`, `paths.ts`, `front-target.ts`, `window-options.ts`, `navigation-guard.ts`, `static-files.ts` (protocolo `app://`), `back-container.ts` (Nest como contêiner de DI), `back-services.ts` (instâncias do back para os handlers), `composition.ts`, `electron-cipher.ts`
 - `src/back/` — o back dentro do desktop: `back.module.ts` (`BackModule.forRoot`), `config/back-config.ts` (`BackConfig`), `modules/{ai,chat,health,jobs,library,video}` (services, domínio, providers; testes ao lado), `utils/`, `testing/` (helper de biblioteca temporária)
 - `src/storage/` — `json-file.ts` (JSON atômico com `.bak`) e `tree.ts` (cópia conferida de pastas, escaneamento, progresso)
@@ -90,11 +89,11 @@ Detalhes em `docs/versionamento.md`. Vale para toda mudança feita **depois** da
 - A versão sai dos commits e o release é **automático**: todo merge na `main` com `feat`, `fix` ou quebra publica tag `v<versão>` e Release com changelog, `.exe` e AppImage (`.github/workflows/release.yml`; ver `versionamento.md`). Não escolher número de versão "no olho" nem editar a versão à mão.
 - Commits e branches só quando o usuário pedir; **push e abertura do MR também só quando ele pedir**.
 
-## Regra de entrega por fase (OBRIGATÓRIO)
-- Entregas **faseadas**: uma fase por vez, na ordem de `docs/migracao.md`. **Não comece a fase seguinte sem o "ok" do usuário.**
-- Cada fase entrega: código + testes unitários + atualização de `docs/` + checklist manual (`docs/fases/fase-XX.md`).
+## Regra de entrega (OBRIGATÓRIO)
+- Entregas **faseadas** quando o trabalho for grande: uma etapa por vez, e **não comece a seguinte sem o "ok" do usuário**.
+- Cada entrega traz: código + testes unitários + atualização de `docs/`.
 - Ao terminar, dizer que terminou **e** listar "O que testar" (passos numerados e resultado esperado) do lado do usuário.
-- Ao concluir a fase (depois do "ok"): atualize `docs/migracao.md` e **apague o arquivo da fase**; o que ela deixou vira documentação de uso em `docs/`.
+- O que uma entrega deixar de novo vira documentação de uso em `docs/`, não arquivos de plano.
 
 ## Regras para testes (OBRIGATÓRIO)
 - **Toda feature (nova ou alterada) vem com testes unitários na mesma entrega.** Sem teste, não está concluída; cubra caminho feliz, erros e casos de borda.

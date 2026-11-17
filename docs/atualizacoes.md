@@ -9,7 +9,7 @@ O app confere o GitHub por versão nova, avisa na barra lateral, **baixa só a d
 4. **Reiniciar e atualizar** (pede confirmação, porque tarefas em andamento são interrompidas) fecha o app, instala em modo silencioso e abre o HomeLab de novo. Se o usuário não clicar, a versão baixada é instalada **sozinha quando ele fechar o app**.
 5. Biblioteca, conversas, configurações, chaves e componentes baixados (modelos, pacote CUDA) ficam em `Documentos/HomeLab` e `userData`, fora da pasta de instalação: **nada é tocado**.
 
-Falha de rede nunca atrapalha o app: a seção mostra "Não foi possível verificar as atualizações" e o estado volta ao que era. Se o download falhar, volta a "disponível" com a mensagem e o botão **Baixar atualização** tenta de novo. **Linux, macOS e o app não empacotado** (dev) só avisam: o botão vira "Ver a versão no navegador" e abre o Release (o AppImage é baixado à mão).
+Falha de rede nunca atrapalha o app: a seção mostra "Não foi possível verificar as atualizações" e o estado volta ao que era. Se o download falhar, volta a "disponível" com a mensagem e o botão **Baixar atualização** tenta de novo. **Linux e o app não empacotado** (dev) só avisam: o botão vira "Ver a versão no navegador" e abre o Release (o AppImage é baixado à mão).
 
 ## Como funciona
 - **Quem decide a versão:** `GitHubReleaseSource` lista `releases?per_page=30` e escolhe a **maior versão pelo SemVer** entre os Releases que não são rascunho nem pré-lançamento e cuja tag é `v<major>.<minor>.<patch>`. Releases de componentes (`components-vN`) e de binários (`bin-vN`) não contam. Dele vêm também as notas (o texto do Release, em Markdown) e a página da versão.
@@ -37,4 +37,4 @@ Canais `updates:status`, `updates:check`, `updates:install`, `updates:set-auto-c
 - O download diferencial só aparece quando o `.blockmap` da versão instalada existe no Release dela (a CI de agora em diante anexa). Sem ele, o `electron-updater` baixa o instalador inteiro, o que funciona do mesmo jeito.
 - Sem assinatura de código: o SmartScreen pode avisar de novo depois da atualização.
 - O repositório precisa continuar público (a API do GitHub é consultada sem token; o limite é de 60 consultas por hora por IP, e o app faz poucas).
-- Linux e macOS não atualizam sozinhos; canal beta e reversão de versão não existem.
+- O Linux não atualiza sozinho; canal beta e reversão de versão não existem.

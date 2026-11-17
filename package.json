@@ -26,7 +26,6 @@
     "dist:dir": "npm run icons && npm run build && electron-builder --win dir --x64",
     "dist:win": "npm run icons && npm run build && electron-builder --win nsis --x64",
     "dist:linux": "npm run build && electron-builder --linux AppImage --x64",
-    "dist:mac": "npm run build && electron-builder --mac dmg --arm64",
     "prepare": "husky",
     "test:commitlint": "node --test scripts/commitlint.test.mjs",
     "test:release": "node --test scripts/release/release.test.mjs scripts/bin-utils.test.mjs",
