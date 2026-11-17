@@ -1,5 +1,5 @@
 {
-  "_comment": "Pacote com os binários do Windows (whisper-cli.exe, DLLs de CPU, ffmpeg.exe) que a CI embute no instalador. Gerado por `npm run bin:pack` e publicado no Release bin-v1 (docs/empacotamento.md). Preencha url e sha256 com o resultado.",
-  "url": "",
-  "sha256": ""
+  "_comment": "Pacote com os binários do Windows (whisper-cli.exe, DLLs de CPU, ffmpeg.exe) que a CI embute no instalador. Gerado por `npm run bin:pack` e publicado no Release bin-v1 (docs/empacotamento.md). Se gerar o zip de novo, o SHA-256 muda: reenvie o zip e atualize este arquivo.",
+  "url": "https://github.com/tthheusalmeida/homelab/releases/download/bin-v1/win32-x64.zip",
+  "sha256": "1b2b4cf8c31a8687e0600cf3550bda5961f7f756661da80d7ea9251e02d6a199"
 }
