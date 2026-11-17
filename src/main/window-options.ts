@@ -1,6 +1,6 @@
 import type { BrowserWindowConstructorOptions } from 'electron';
 
-import { SETTINGS_WINDOW, SPLASH_WINDOW, WINDOW, WINDOW_BACKGROUNDS } from './constants';
+import { SPLASH_WINDOW, WINDOW, WINDOW_BACKGROUNDS } from './constants';
 
 /** Flags de segurança obrigatórias em toda janela (ver docs/arquitetura.md). */
 function secureWebPreferences(preloadPath: string) {
@@ -22,24 +22,6 @@ export function createWindowOptions(
     height: WINDOW.height,
     minWidth: WINDOW.minWidth,
     minHeight: WINDOW.minHeight,
-    show: false,
-    autoHideMenuBar: true,
-    backgroundColor: background,
-    webPreferences: secureWebPreferences(preloadPath),
-  };
-}
-
-/** Opções da janela de Configurações. */
-export function createSettingsWindowOptions(
-  preloadPath: string,
-  background: string = WINDOW_BACKGROUNDS.dark,
-): BrowserWindowConstructorOptions {
-  return {
-    width: SETTINGS_WINDOW.width,
-    height: SETTINGS_WINDOW.height,
-    minWidth: SETTINGS_WINDOW.minWidth,
-    minHeight: SETTINGS_WINDOW.minHeight,
-    title: SETTINGS_WINDOW.title,
     show: false,
     autoHideMenuBar: true,
     backgroundColor: background,

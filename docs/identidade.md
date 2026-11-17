@@ -13,7 +13,7 @@ O app tem uma identidade própria, derivada do ícone: três hexágonos (uma col
 - **Main:** a aparência vive em `settings.json` (`appearance`), validada em `settings-validator.ts` (tema ou cor desconhecidos dão `VALIDATION`). Canais `appearance:get` e `appearance:update` (ver `ipc-canais.md`); `SettingsService.updateAppearance` não pede reinício.
 - **Renderer:** `AppearanceProvider` (`components/AppearanceProvider.tsx`, `hooks/use-appearance.ts`, `lib/appearance.ts`) aplica no `<html>` a classe `dark` e o atributo `data-accent`. As cores são só CSS: tokens em `global.css` (`:root` claro, `.dark` escuro, um bloco `[data-accent="..."]` por cor, claro e escuro).
 - **Sem "piscar":** `public/theme-init.js` (arquivo separado, a CSP bloqueia script inline) lê a cópia local (`localStorage`, chave `homelab.appearance`) antes do primeiro quadro. O valor salvo no main é a fonte da verdade e é relido ao abrir e a cada vez que a janela volta ao foco.
-- **Entre janelas:** `BroadcastChannel` (`homelab-appearance`). No app empacotado as duas janelas têm a mesma origem (`app://front`) e a troca nas Configurações vale na hora no app principal. No modo dev (portas 5173 e 5174, origens diferentes) a janela principal atualiza ao voltar ao foco.
+- **Uma janela só:** as Configurações são uma rota do app, então trocar tema ou cor vale na hora, sem sincronizar entre janelas (o `BroadcastChannel` `homelab-appearance` continua, sem efeito prático).
 - **Pré-visualizar uma cor:** qualquer elemento com `data-accent="x"` e a classe `dark` recebe `bg-primary` naquela cor (os hexágonos das Configurações usam isso).
 
 ## Tela de abertura (loading de colmeia)
@@ -35,7 +35,7 @@ Enquanto o app abre, aparece a **mesma colmeia carregando** (`hex-loader`, na co
 | `hexPath` | caminho SVG de um hexágono |
 
 ## Mesma UI nas duas janelas
-A janela de Configurações usa os **mesmos componentes e transições** do app: menu = `Sidebar` da UI (item ativo colorido com transição), seção que entra com `animate-enter-fade`, cards com `animate-enter` em cascata, `ProviderCard` (recolhível), `Snackbar`, `SetupGuide` e `ExternalLink`, todos em `renderer/src/components`. **Fonte única:** `renderer/src/ui` e `renderer/src/components`; antes de criar algo, procure ali (ver `CLAUDE.md`).
+A tela de Configurações usa os **mesmos componentes e transições** do app: menu = `Sidebar` da UI (item ativo colorido com transição), seção que entra com `animate-enter-fade`, cards com `animate-enter` em cascata, `ProviderCard` (recolhível), `Snackbar`, `SetupGuide` e `ExternalLink`, todos em `renderer/src/components`. **Fonte única:** `renderer/src/ui` e `renderer/src/components`; antes de criar algo, procure ali (ver `CLAUDE.md`).
 
 ## Passo a passo de configuração (`SetupGuide`)
 Serviços externos têm um guia numerado (ex.: como criar a chave do Gemini, com link para o AI Studio) que aparece enquanto o serviço **não** está configurado e se recolhe com transição depois que a chave é salva. Para um serviço novo, acrescente uma entrada em `EXTERNAL_PROVIDER_GUIDES` (`renderer/settings/src/strings.ts`) e, se houver painel de consumo, em `lib/provider-consoles.ts`.

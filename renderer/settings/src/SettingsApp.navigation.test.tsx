@@ -1,71 +1,52 @@
 import { describe, expect, it } from 'vitest';
-import { act, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 
 import { AppearanceProvider } from '#components/AppearanceProvider';
 import { IpcChannels } from '#shared/channels';
-import { IpcEvents } from '#shared/events';
 import { setupStatus } from '#test/components-fixtures';
 import { renderWithQuery } from '#test/utils';
+import { SidebarProvider } from '#ui/sidebar';
 
 import { SettingsApp } from './SettingsApp';
-import { emitEvent, mockApi, ok } from './testing';
+import { mockApi, ok } from './testing';
 
-const base = (pendingSection: string | null) => ({
+const handlers = {
   [IpcChannels.settings.get]: () => ok({ libraryDir: 'D:/lib' }),
   [IpcChannels.components.status]: () => ok(setupStatus()),
-  [IpcChannels.app.settingsSection]: () => ok(pendingSection),
-});
+};
+
+const renderApp = (initialSection?: string | null) =>
+  renderWithQuery(
+    <AppearanceProvider>
+      <SidebarProvider>
+        <SettingsApp initialSection={initialSection} />
+      </SidebarProvider>
+    </AppearanceProvider>,
+  );
 
 describe('SettingsApp navigation to a requested section', () => {
-  it('when the main process has a pending section, should open on it', async () => {
-    mockApi(base('components'));
+  it('when a section is requested, should open on it', async () => {
+    mockApi(handlers);
 
-    renderWithQuery(
-      <AppearanceProvider>
-        <SettingsApp />
-      </AppearanceProvider>,
-    );
+    renderApp('components');
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Componentes' })).toBeVisible();
     expect(await screen.findByText('Seu computador')).toBeInTheDocument();
   });
 
-  it('when there is no pending section, should stay on the first section (appearance)', async () => {
-    mockApi(base(null));
+  it('when there is no requested section, should stay on the first section (appearance)', async () => {
+    mockApi(handlers);
 
-    renderWithQuery(
-      <AppearanceProvider>
-        <SettingsApp />
-      </AppearanceProvider>,
-    );
+    renderApp(null);
 
     expect(screen.getByRole('heading', { level: 2, name: 'Aparência' })).toBeVisible();
     expect(await screen.findByRole('radiogroup', { name: 'Tema' })).toBeVisible();
   });
 
-  it('when the window is already open and the main asks for a section, should navigate to it', async () => {
-    mockApi(base(null));
-
-    renderWithQuery(
-      <AppearanceProvider>
-        <SettingsApp />
-      </AppearanceProvider>,
-    );
-    await screen.findByRole('radiogroup', { name: 'Tema' });
-
-    act(() => emitEvent(IpcEvents.settingsNavigate, { section: 'components' }));
-
-    expect(await screen.findByRole('heading', { level: 2, name: 'Componentes' })).toBeVisible();
-  });
-
   it('when the requested section does not exist, should ignore it', async () => {
-    mockApi(base('inexistente'));
+    mockApi(handlers);
 
-    renderWithQuery(
-      <AppearanceProvider>
-        <SettingsApp />
-      </AppearanceProvider>,
-    );
+    renderApp('inexistente');
 
     expect(await screen.findByRole('radiogroup', { name: 'Tema' })).toBeVisible();
     expect(screen.getByRole('heading', { level: 2, name: 'Aparência' })).toBeVisible();

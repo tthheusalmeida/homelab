@@ -135,20 +135,26 @@ test.describe('app com configuração existente', () => {
   });
 });
 
-test('when a new user opens the app, should open the settings window without a gemini key', async () => {
+test('when a new user opens the app, should land on the settings without a gemini key', async () => {
   const app = await launch(makeUserData(false));
 
   try {
-    // A janelinha de abertura (splash) some sozinha; ficam a principal e as Configurações.
-    const urls = () => app.windows().map((window) => window.url());
-
+    // A janelinha de abertura (splash) some sozinha; fica só a janela principal, já nas Configurações.
     await expect
-      .poll(() => urls().filter((url) => !url.includes('splash.html')).length, { timeout: 20_000 })
-      .toBe(2);
-    await expect.poll(() => app.windows().length, { timeout: 20_000 }).toBe(2);
+      .poll(
+        () =>
+          app
+            .windows()
+            .map((window) => window.url())
+            .filter((url) => !url.includes('splash.html')).length,
+        { timeout: 20_000 },
+      )
+      .toBe(1);
 
-    expect(urls().some((url) => url.includes('/settings/'))).toBe(true);
-    expect(urls().some((url) => !url.includes('/settings/'))).toBe(true);
+    const page = app.windows().find((window) => !window.url().includes('splash.html'))!;
+
+    await expect(page).toHaveURL(/\/settings\?section=external/, { timeout: 20_000 });
+    await expect(page.getByRole('heading', { level: 2, name: 'IAs externas' })).toBeVisible();
   } finally {
     await app.close();
   }

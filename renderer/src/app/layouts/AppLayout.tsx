@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { Outlet, useLocation } from "react-router";
+import { useCallback, useEffect, useState } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router";
 import { Search } from "lucide-react";
 
 import { SidebarProvider, SidebarTrigger } from "#ui/sidebar";
@@ -10,10 +10,15 @@ import { CommandPalette } from "#components/CommandPalette";
 import { InstallAssistant } from "#components/InstallAssistant";
 import { NoticeCenter } from "#components/NoticeCenter";
 import { useAppShortcuts } from "#hooks/use-app-shortcuts";
+import { useIpcEvent } from "#hooks/use-ipc-event";
+import { ipc } from "#lib/ipc";
+import { settingsUrl } from "#lib/settings-route";
+import { IpcChannels } from "#shared/channels";
+import { IpcEvents } from "#shared/events";
 import { ScrollArea } from "#ui/scroll-area";
 
 /** Telas que ocupam a área útil inteira e cuidam da própria rolagem (a conversa, como no ChatGPT). */
-const FILL_ROUTES = ["/ai/chat"];
+const FILL_ROUTES = ["/ai/chat", "/settings"];
 
 export function AppLayout() {
   const { pathname } = useLocation();
@@ -22,6 +27,25 @@ export function AppLayout() {
   const openPalette = useCallback(() => setPaletteOpen(true), []);
 
   useAppShortcuts(openPalette);
+
+  const navigate = useNavigate();
+
+  // O main pede as Configurações (Ctrl+, ou atalho de outra tela) e, na primeira execução, deixa a
+  // seção guardada até a tela abrir.
+  useIpcEvent(IpcEvents.settingsNavigate, ({ section }) => void navigate(settingsUrl(section)));
+
+  useEffect(() => {
+    ipc
+      .invoke(IpcChannels.app.settingsSection)
+      .then((section) => {
+        if (section) {
+          void navigate(settingsUrl(section));
+        }
+      })
+      .catch(() => undefined);
+    // só na abertura do app
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <SidebarProvider>

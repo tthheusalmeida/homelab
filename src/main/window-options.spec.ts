@@ -1,9 +1,5 @@
 import { windowBackground } from './constants';
-import {
-  createSettingsWindowOptions,
-  createSplashWindowOptions,
-  createWindowOptions,
-} from './window-options';
+import { createSplashWindowOptions, createWindowOptions } from './window-options';
 
 describe('createWindowOptions', () => {
   const options = createWindowOptions('/app/preload.js');
@@ -25,27 +21,6 @@ describe('createWindowOptions', () => {
   });
 });
 
-describe('createSettingsWindowOptions', () => {
-  const options = createSettingsWindowOptions('/app/preload.js');
-
-  it('when creating the settings window, should apply the same security flags', () => {
-    expect(options.webPreferences).toMatchObject({
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-      preload: '/app/preload.js',
-    });
-  });
-
-  it('when creating the settings window, should be titled Configurações and start hidden with the dark background', () => {
-    expect(options).toMatchObject({
-      title: 'Configurações',
-      show: false,
-      backgroundColor: '#1b1b1b',
-    });
-  });
-});
-
 describe('windowBackground', () => {
   it('when the system theme is dark, should use the charcoal background', () => {
     expect(windowBackground(true)).toBe('#1b1b1b');
@@ -55,9 +30,8 @@ describe('windowBackground', () => {
     expect(windowBackground(false)).toBe('#f1f1f1');
   });
 
-  it('when a background is given, should paint the main and settings windows with it', () => {
+  it('when a background is given, should paint the main window with it', () => {
     expect(createWindowOptions('/p.js', '#f1f1f1').backgroundColor).toBe('#f1f1f1');
-    expect(createSettingsWindowOptions('/p.js', '#f1f1f1').backgroundColor).toBe('#f1f1f1');
   });
 });
 

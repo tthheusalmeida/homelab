@@ -16,6 +16,8 @@ import { EditDocumentPage } from "../pages/library/EditDocumentPage";
 import { BooksPage } from "../pages/library/books/BooksPage";
 import { BookPage } from "../pages/library/books/BookPage";
 
+import { SettingsPage } from "../pages/settings/SettingsPage";
+
 import { CreatePage } from "../pages/jobs/create/CreatePage";
 import { TrackPage } from "../pages/jobs/track/TrackPage";
 
@@ -74,6 +76,10 @@ export const router = createBrowserRouter([
             element: <UsagePage />,
           },
         ],
+      },
+      {
+        path: "settings",
+        element: <SettingsPage />,
       },
       {
         path: "jobs",
