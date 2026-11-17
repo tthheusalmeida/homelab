@@ -5,11 +5,8 @@ import { formatDate } from "#lib/format";
 
 import { BookProgress } from "./BookProgress";
 
-/**
- * Compacto e com altura mínima igual nos dois estados (progresso e conclusão),
- * para o painel não se mexer ao concluir ou zerar o progresso.
- */
-const CARD_CLASS = "min-h-24 gap-2 py-3";
+/** Compacto: o quadro de progresso ocupa pouco do painel lateral. */
+const CARD_CLASS = "sidebar-card gap-2 py-3";
 
 interface BookProgressCardProps {
   read: number;
@@ -21,8 +18,8 @@ interface BookProgressCardProps {
 /**
  * Quadro do painel fixo, no mesmo padrão e com a altura baixa do "Sumário do
  * livro". Enquanto o livro não termina mostra o "Progresso" (barra e capítulos
- * lidos); depois de concluído deixa o progresso de lado e mostra só quando foi
- * concluído. Fica no painel para o leitor ver mesmo com o topo fora da tela.
+ * lidos); depois de concluído vira uma linha só, com "Conclusão" e, na frente,
+ * quando foi concluído. Fica no painel para o leitor ver mesmo com o topo fora da tela.
  */
 export function BookProgressCard({
   read,
@@ -34,14 +31,13 @@ export function BookProgressCard({
   }
 
   if (completedAt) {
+    // Concluído: uma linha só, com o status na frente do título, para o quadro ficar baixo.
     return (
-      <Card className={CARD_CLASS}>
-        <CardHeader>
+      <Card className="sidebar-card gap-0 py-2.5">
+        <CardContent className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
           <CardTitle className="text-sm">Conclusão</CardTitle>
-        </CardHeader>
 
-        <CardContent>
-          <p className="flex items-center gap-2 text-sm font-semibold text-amber-500">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
             <Trophy className="size-4 shrink-0" />
             Concluído em {formatDate(completedAt)}
           </p>

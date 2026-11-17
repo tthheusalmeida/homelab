@@ -1,11 +1,11 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { AppearanceProvider } from '#components/AppearanceProvider';
 import { IpcChannels } from '#shared/channels';
 import { DEFAULT_APPEARANCE } from '#shared/contracts/appearance';
-import { DEFAULT_READING } from '#shared/contracts/reading';
+import { DEFAULT_READING, READING_SHADES_LIST } from '#shared/contracts/reading';
 import { failure, mockApi, ok, payloadsOf } from '#test/api-mock';
 
 import { ReadingSettings } from './ReadingSettings';
@@ -128,21 +128,22 @@ describe('ReadingSettings', () => {
     );
   });
 
-  it('when a color is picked, should then offer its intensity and save the one chosen', async () => {
-    const user = userEvent.setup();
+  it('when a color is picked, should then offer its intensity as a slider and save the one chosen', async () => {
     const invoke = mockSaved({ background: 'sky' });
     renderSettings();
 
-    const shades = () =>
-      within(screen.getByRole('radiogroup', { name: 'Intensidade: Cor de fundo' }));
+    const slider = await screen.findByRole('slider', { name: 'Intensidade: Cor de fundo' });
 
-    await waitFor(() => expect(shades().getByRole('radio', { name: '50' })).toBeChecked());
-    await user.click(shades().getByRole('radio', { name: '800' }));
+    expect(slider).toHaveAttribute('aria-valuetext', '50');
 
-    expect(payloadsOf(invoke, IpcChannels.appearance.update)).toEqual([
-      { reading: { backgroundShade: 800 } },
-    ]);
-    expect(shades().getByRole('radio', { name: '800' })).toBeChecked();
+    fireEvent.change(slider, { target: { value: String(READING_SHADES_LIST.indexOf(800)) } });
+
+    await waitFor(() =>
+      expect(payloadsOf(invoke, IpcChannels.appearance.update)).toEqual([
+        { reading: { backgroundShade: 800 } },
+      ]),
+    );
+    expect(slider).toHaveAttribute('aria-valuetext', '800');
   });
 
   it('when the colors are the default, should not offer an intensity', () => {
@@ -150,31 +151,90 @@ describe('ReadingSettings', () => {
 
     renderSettings();
 
-    expect(screen.queryByRole('radiogroup', { name: /Intensidade/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
   });
 
   it('when the text and background intensities are chosen, should keep them apart', async () => {
-    const user = userEvent.setup();
     const invoke = mockSaved({ background: 'stone', text: 'stone' });
     renderSettings();
-    await screen.findByRole('radiogroup', { name: 'Intensidade: Cor do texto' });
 
-    await user.click(
-      within(screen.getByRole('radiogroup', { name: 'Intensidade: Cor do texto' })).getByRole(
-        'radio',
-        { name: '700' },
-      ),
+    const text = await screen.findByRole('slider', { name: 'Intensidade: Cor do texto' });
+
+    fireEvent.change(text, { target: { value: String(READING_SHADES_LIST.indexOf(700)) } });
+
+    await waitFor(() =>
+      expect(payloadsOf(invoke, IpcChannels.appearance.update)).toEqual([
+        { reading: { textShade: 700 } },
+      ]),
     );
+    expect(screen.getByRole('slider', { name: 'Intensidade: Cor de fundo' })).toHaveAttribute(
+      'aria-valuetext',
+      '50',
+    );
+  });
 
-    expect(payloadsOf(invoke, IpcChannels.appearance.update)).toEqual([
-      { reading: { textShade: 700 } },
-    ]);
+  it('when opened, should offer a separator color picker beside the background and text ones', () => {
+    mockSaved();
+
+    renderSettings();
+
+    expect(screen.getByRole('radiogroup', { name: 'Cor dos separadores' })).toBeInTheDocument();
+  });
+
+  it('when a separator color is picked, should save it with its intensity apart from the others', async () => {
+    const user = userEvent.setup();
+    const invoke = mockSaved();
+    renderSettings();
+
+    await user.click(group('Cor dos separadores').getByRole('radio', { name: 'Âmbar' }));
+
+    const slider = await screen.findByRole('slider', { name: 'Intensidade: Cor dos separadores' });
+
+    expect(slider).toHaveAttribute('aria-valuetext', '500');
+
+    fireEvent.change(slider, { target: { value: String(READING_SHADES_LIST.indexOf(300)) } });
+
+    await waitFor(() =>
+      expect(payloadsOf(invoke, IpcChannels.appearance.update)).toEqual([
+        { reading: { separator: 'amber' } },
+        { reading: { separatorShade: 300 } },
+      ]),
+    );
+  });
+
+  it('when opened, should show the subtitle of the reading group', () => {
+    mockSaved();
+
+    renderSettings();
+
     expect(
-      within(screen.getByRole('radiogroup', { name: 'Intensidade: Cor de fundo' })).getByRole(
-        'radio',
-        { name: '50' },
-      ),
-    ).toBeChecked();
+      screen.getByText('Como o texto aparece nas páginas e nos livros, inclusive no modo leitura.'),
+    ).toBeInTheDocument();
+  });
+
+  it('when the color options are listed, should order them from the warmest to the coldest with the default first and the neutral last', () => {
+    mockSaved();
+
+    renderSettings();
+
+    const labels = within(screen.getByRole('radiogroup', { name: 'Cor de fundo' }))
+      .getAllByRole('radio')
+      .map((radio) => radio.getAttribute('aria-label'));
+
+    expect(labels[0]).toBe('Padrão');
+    expect(labels.slice(1, 4)).toEqual(['Rosé', 'Vermelho', 'Laranja']);
+    expect(labels[labels.length - 2]).toBe('Violeta');
+    expect(labels[labels.length - 1]).toBe('Pedra');
+  });
+
+  it('when the color options are listed, should offer only 15 colors beside the default', () => {
+    mockSaved();
+
+    renderSettings();
+
+    expect(
+      within(screen.getByRole('radiogroup', { name: 'Cor de fundo' })).getAllByRole('radio'),
+    ).toHaveLength(16);
   });
 
   it('when the zoom grows, should grow the letter in the preview too, like a pdf', async () => {
@@ -197,9 +257,7 @@ describe('ReadingSettings', () => {
 
     renderSettings();
 
-    expect(
-      screen.getByRole('checkbox', { name: 'Sempre visível no modo leitura' }),
-    ).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Sempre visível na leitura' })).not.toBeChecked();
     expect(document.querySelector('[data-slot=preview-hover-area]')).toBeInTheDocument();
   });
 
@@ -208,12 +266,12 @@ describe('ReadingSettings', () => {
     const invoke = mockSaved();
     renderSettings();
 
-    await user.click(screen.getByRole('checkbox', { name: 'Sempre visível no modo leitura' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Sempre visível na leitura' }));
 
     expect(payloadsOf(invoke, IpcChannels.appearance.update)).toEqual([
       { reading: { pinSidebar: true } },
     ]);
-    expect(screen.getByRole('checkbox', { name: 'Sempre visível no modo leitura' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Sempre visível na leitura' })).toBeChecked();
     expect(document.querySelector('[data-slot=preview-side-panel]')).toBeInTheDocument();
     expect(document.querySelector('[data-slot=preview-hover-area]')).toBeNull();
   });
@@ -222,7 +280,7 @@ describe('ReadingSettings', () => {
     const user = userEvent.setup();
     mockSaved({ pinSidebar: true });
     renderSettings();
-    const box = screen.getByRole('checkbox', { name: 'Sempre visível no modo leitura' });
+    const box = screen.getByRole('checkbox', { name: 'Sempre visível na leitura' });
     await waitFor(() => expect(box).toBeChecked());
 
     await user.click(box);

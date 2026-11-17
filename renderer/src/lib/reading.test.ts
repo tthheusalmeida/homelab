@@ -11,6 +11,8 @@ import {
 
 import {
   fontSizeRem,
+  inkOn,
+  isLightColor,
   readingColor,
   readingColorLabels,
   readingFontFamilies,
@@ -168,5 +170,109 @@ describe('readingStyle', () => {
     expect(style.fontFamily).toBe(readingFontFamilies.lora);
     expect(style['--reading-bg']).toBe(READING_SHADES.amber[200]);
     expect(style['--reading-fg']).toBe(READING_SHADES.stone[700]);
+  });
+});
+
+describe('isLightColor', () => {
+  it('when the color is very light, should be light', () => {
+    expect(isLightColor(READING_SHADES.amber[50])).toBe(true);
+    expect(isLightColor(READING_SHADES.yellow[500])).toBe(true);
+  });
+
+  it('when the color is dark, should not be light', () => {
+    expect(isLightColor(READING_SHADES.stone[900])).toBe(false);
+    expect(isLightColor(READING_SHADES.indigo[950])).toBe(false);
+  });
+});
+
+describe('inkOn', () => {
+  it('when the background is light, should give a dark ink', () => {
+    expect(inkOn(READING_SHADES.sky[100])).toBe('oklch(0.22 0 0)');
+  });
+
+  it('when the background is dark, should give a light ink', () => {
+    expect(inkOn(READING_SHADES.sky[900])).toBe('oklch(0.97 0 0)');
+  });
+});
+
+describe('readingStyle contrast', () => {
+  it('when the background is custom and the text is the default, should write with the ink that reads on that background (not the theme)', () => {
+    const light = readingStyle({
+      ...DEFAULT_READING,
+      background: 'amber',
+      backgroundShade: 100,
+    }) as Record<string, unknown>;
+    const dark = readingStyle({
+      ...DEFAULT_READING,
+      background: 'amber',
+      backgroundShade: 950,
+    }) as Record<string, unknown>;
+
+    expect(light['--reading-fg']).toBe('oklch(0.22 0 0)');
+    expect(dark['--reading-fg']).toBe('oklch(0.97 0 0)');
+  });
+
+  it('when the text color is chosen, should keep exactly the chosen color', () => {
+    const style = readingStyle({
+      ...DEFAULT_READING,
+      background: 'amber',
+      backgroundShade: 100,
+      text: 'indigo',
+      textShade: 800,
+    }) as Record<string, unknown>;
+
+    expect(style['--reading-fg']).toBe(READING_SHADES.indigo[800]);
+  });
+
+  it('when the background is custom, should invert the side tab against it', () => {
+    const style = readingStyle({
+      ...DEFAULT_READING,
+      background: 'amber',
+      backgroundShade: 100,
+    }) as Record<string, unknown>;
+
+    expect(style['--reading-tab-bg']).toBe('oklch(0.22 0 0)');
+    expect(style['--reading-tab-fg']).toBe(READING_SHADES.amber[100]);
+  });
+
+  it('when the background is the default, should leave the tab to the theme', () => {
+    const style = readingStyle(DEFAULT_READING) as Record<string, unknown>;
+
+    expect(style['--reading-tab-bg']).toBeUndefined();
+    expect(style['--reading-tab-fg']).toBeUndefined();
+    expect(style['--reading-fg']).toBeUndefined();
+  });
+
+  it('when a separator color is chosen, should expose it; otherwise should leave it to the text color', () => {
+    const chosen = readingStyle({
+      ...DEFAULT_READING,
+      separator: 'teal',
+      separatorShade: 300,
+    }) as Record<string, unknown>;
+
+    expect(chosen['--reading-sep']).toBe(READING_SHADES.teal[300]);
+    expect(
+      (readingStyle(DEFAULT_READING) as Record<string, unknown>)['--reading-sep'],
+    ).toBeUndefined();
+  });
+
+  it('when the background is custom, should set the native color scheme from it (light background, light scheme)', () => {
+    const light = readingStyle({
+      ...DEFAULT_READING,
+      background: 'amber',
+      backgroundShade: 100,
+    }) as Record<string, unknown>;
+    const dark = readingStyle({
+      ...DEFAULT_READING,
+      background: 'stone',
+      backgroundShade: 950,
+    }) as Record<string, unknown>;
+
+    expect(light.colorScheme).toBe('light');
+    expect(dark.colorScheme).toBe('dark');
+  });
+
+  it('when the background is the default, should not force a color scheme', () => {
+    expect((readingStyle(DEFAULT_READING) as Record<string, unknown>).colorScheme).toBeUndefined();
   });
 });

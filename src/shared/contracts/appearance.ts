@@ -4,15 +4,23 @@ import { DEFAULT_READING, type ReadingPreferences } from './reading';
 export const THEME_MODES = ['system', 'light', 'dark'] as const;
 export type ThemeMode = (typeof THEME_MODES)[number];
 
-/** Cores de destaque disponíveis (paleta do Tailwind). A cor padrão é a do ícone (ciano). */
+/** As 15 cores de destaque (paleta do Tailwind), da mais quente à mais fria. A padrão é a do ícone (ciano). */
 export const ACCENT_IDS = [
+  'pink',
+  'rose',
+  'red',
+  'orange',
+  'amber',
+  'yellow',
+  'lime',
+  'green',
+  'emerald',
+  'teal',
   'cyan',
+  'sky',
   'blue',
   'indigo',
   'violet',
-  'emerald',
-  'rose',
-  'orange',
 ] as const;
 export type AccentId = (typeof ACCENT_IDS)[number];
 

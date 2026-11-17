@@ -63,10 +63,48 @@ describe('parseReading side panel', () => {
   });
 });
 
+describe('parseReading separators', () => {
+  it('when an old copy has no separator, should use the default (derived from the text)', () => {
+    const { separator, separatorShade, ...old } = DEFAULT_READING;
+
+    expect(separator).toBe('default');
+    expect(separatorShade).toBe(500);
+    expect(parseReading(old)).toEqual(DEFAULT_READING);
+  });
+
+  it('when the separator has a color and intensity, should keep them', () => {
+    const reading = { ...DEFAULT_READING, separator: 'teal', separatorShade: 300 };
+
+    expect(parseReading(reading)).toEqual(reading);
+  });
+
+  it.each(['brown', 1, null])('when the separator color is %j, should return null', (value) => {
+    expect(parseReading({ ...DEFAULT_READING, separator: value })).toBeNull();
+  });
+
+  it.each([0, 55, '500', null])(
+    'when the separator intensity is %j, should return null',
+    (value) => {
+      expect(parseReading({ ...DEFAULT_READING, separatorShade: value })).toBeNull();
+    },
+  );
+});
+
+describe('reading color order', () => {
+  it('when listing the colors, should go from the warmest to the coldest with the neutral last', () => {
+    expect(READING_COLOR_NAMES[0]).toBe('rose');
+    expect(READING_COLOR_NAMES.indexOf('orange')).toBeLessThan(
+      READING_COLOR_NAMES.indexOf('green'),
+    );
+    expect(READING_COLOR_NAMES.indexOf('green')).toBeLessThan(READING_COLOR_NAMES.indexOf('blue'));
+    expect(READING_COLOR_NAMES[READING_COLOR_NAMES.length - 1]).toBe('stone');
+  });
+});
+
 describe('reading colors', () => {
-  it('when listing the options, should offer the default plus the 22 tailwind colors', () => {
-    expect(READING_COLOR_NAMES).toHaveLength(22);
-    expect(READING_COLOR_IDS).toHaveLength(23);
+  it('when listing the options, should offer the default plus at most 15 tailwind colors', () => {
+    expect(READING_COLOR_NAMES).toHaveLength(15);
+    expect(READING_COLOR_IDS).toHaveLength(16);
     expect(READING_COLOR_IDS[0]).toBe('default');
   });
 });

@@ -1,133 +1,194 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { ReadingSidePanel } from './ReadingSidePanel';
 
-const handle = () => screen.getByRole('button', { name: 'Mostrar painel lateral' });
+const tab = () => screen.getByRole('button', { name: 'Mostrar painel lateral' });
 const panel = () => screen.queryByRole('complementary', { name: 'Sumário da leitura' });
 
-describe('ReadingSidePanel', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
+const setup = () => {
+  render(
+    <div>
+      <p>texto fora do painel</p>
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('when idle, should show only the hover area and keep the panel hidden', () => {
-    render(
       <ReadingSidePanel>
         <p>itens do sumário</p>
-      </ReadingSidePanel>,
-    );
+      </ReadingSidePanel>
+    </div>,
+  );
 
-    expect(handle()).toHaveAttribute('aria-expanded', 'false');
+  return userEvent.setup();
+};
+
+describe('ReadingSidePanel', () => {
+  it('when idle, should show only the hexagonal tab and keep the panel hidden', () => {
+    setup();
+
+    expect(tab()).toHaveAttribute('aria-expanded', 'false');
+    expect(tab().querySelector('svg')).toBeInTheDocument();
     expect(panel()).not.toBeInTheDocument();
     expect(screen.queryByText('itens do sumário')).not.toBeInTheDocument();
   });
 
-  it('when the mouse enters the hover area, should open the panel', () => {
-    render(
-      <ReadingSidePanel>
-        <p>itens do sumário</p>
-      </ReadingSidePanel>,
-    );
+  it('when the tab is placed, should leave the scrollbar free on the right edge', () => {
+    setup();
 
-    fireEvent.mouseEnter(handle());
+    expect(tab()).toHaveClass('right-5');
+    expect(tab()).toHaveAttribute('title', 'Clique para abrir o painel');
+  });
+
+  it('when only hovering the tab, should not open the panel (it opens by click)', async () => {
+    const user = setup();
+
+    await user.hover(tab());
+
+    expect(panel()).not.toBeInTheDocument();
+  });
+
+  it('when the tab is clicked, should open the panel and keep it open', async () => {
+    const user = setup();
+
+    await user.click(tab());
 
     expect(panel()).toBeInTheDocument();
     expect(screen.getByText('itens do sumário')).toBeInTheDocument();
-    expect(handle()).toHaveAttribute('aria-expanded', 'true');
-  });
+    expect(tab()).toHaveAttribute('aria-expanded', 'true');
 
-  it('when the mouse leaves the hover area, should close the panel after a short delay', () => {
-    render(<ReadingSidePanel>conteúdo</ReadingSidePanel>);
-
-    fireEvent.mouseEnter(handle());
-    fireEvent.mouseLeave(handle());
-
-    expect(panel()).toBeInTheDocument();
-
-    act(() => {
-      vi.advanceTimersByTime(300);
-    });
-
-    expect(panel()).not.toBeInTheDocument();
-  });
-
-  it('when the mouse goes from the hover area into the panel, should keep it open', () => {
-    render(<ReadingSidePanel>conteúdo</ReadingSidePanel>);
-
-    fireEvent.mouseEnter(handle());
-    fireEvent.mouseLeave(handle());
-    fireEvent.mouseEnter(panel()!);
-
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
+    await user.unhover(tab());
 
     expect(panel()).toBeInTheDocument();
   });
 
-  it('when the mouse leaves the panel, should close it', () => {
-    render(<ReadingSidePanel>conteúdo</ReadingSidePanel>);
+  it('when the panel is open and the mouse leaves it, should keep it open', async () => {
+    const user = setup();
 
-    fireEvent.mouseEnter(handle());
-    fireEvent.mouseEnter(panel()!);
-    fireEvent.mouseLeave(panel()!);
-
-    act(() => {
-      vi.advanceTimersByTime(300);
-    });
-
-    expect(panel()).not.toBeInTheDocument();
-  });
-
-  it('when the hover area gets keyboard focus, should open the panel', () => {
-    render(<ReadingSidePanel>conteúdo</ReadingSidePanel>);
-
-    act(() => handle().focus());
+    await user.click(tab());
+    await user.hover(screen.getByText('texto fora do painel'));
 
     expect(panel()).toBeInTheDocument();
   });
 
-  it('when focus leaves the panel, should close it', () => {
-    render(
-      <ReadingSidePanel>
-        <button type="button">dentro</button>
-      </ReadingSidePanel>,
-    );
+  it('when the tab is clicked again, should close the panel', async () => {
+    const user = setup();
 
-    fireEvent.mouseEnter(handle());
-    act(() => screen.getByRole('button', { name: 'dentro' }).focus());
-    act(() => screen.getByRole('button', { name: 'dentro' }).blur());
+    await user.click(tab());
+    await user.click(tab());
 
-    act(() => {
-      vi.advanceTimersByTime(300);
-    });
-
-    expect(panel()).not.toBeInTheDocument();
+    await waitFor(() => expect(panel()).not.toBeInTheDocument());
   });
 
-  it('when the hover area is clicked, should open the panel too', async () => {
-    vi.useRealTimers();
-    const user = userEvent.setup();
-    render(<ReadingSidePanel>conteúdo</ReadingSidePanel>);
+  it('when the close button is clicked, should close the panel', async () => {
+    const user = setup();
 
-    await user.click(handle());
+    await user.click(tab());
+    await user.click(screen.getByRole('button', { name: /Fechar painel/ }));
+
+    await waitFor(() => expect(panel()).not.toBeInTheDocument());
+  });
+
+  it('when clicking outside the panel, should close it', async () => {
+    const user = setup();
+
+    await user.click(tab());
+    await user.click(screen.getByText('texto fora do painel'));
+
+    await waitFor(() => expect(panel()).not.toBeInTheDocument());
+  });
+
+  it('when clicking inside the panel, should keep it open', async () => {
+    const user = setup();
+
+    await user.click(tab());
+    await user.click(screen.getByText('itens do sumário'));
 
     expect(panel()).toBeInTheDocument();
   });
 
-  it('when unmounted while closing, should not leave a pending timer', () => {
-    const { unmount } = render(<ReadingSidePanel>conteúdo</ReadingSidePanel>);
+  it('when the panel is open, should leave the scrollbar free too', async () => {
+    const user = setup();
 
-    fireEvent.mouseEnter(handle());
-    fireEvent.mouseLeave(handle());
-    unmount();
+    await user.click(tab());
 
-    expect(vi.getTimerCount()).toBe(0);
+    expect(panel()).toHaveClass('right-3');
+  });
+
+  it('when closed after being open, should stop listening to outside clicks', async () => {
+    const user = setup();
+
+    await user.click(tab());
+    await user.click(tab());
+    await user.click(screen.getByText('texto fora do painel'));
+
+    await waitFor(() => expect(panel()).not.toBeInTheDocument());
+  });
+
+  it('when the panel opens, should enter with the entrance transition', async () => {
+    const user = setup();
+
+    await user.click(tab());
+
+    expect(panel()).toHaveClass('animate-enter-right');
+    expect(panel()).toHaveAttribute('data-state', 'open');
+  });
+
+  it('when the close button is clicked, should keep the panel on screen while it leaves with the exit transition', async () => {
+    const user = setup();
+
+    await user.click(tab());
+    await user.click(screen.getByRole('button', { name: /Fechar painel/ }));
+
+    expect(panel()).toBeInTheDocument();
+    expect(panel()).toHaveClass('animate-exit-right', 'pointer-events-none');
+    expect(panel()).not.toHaveClass('animate-enter-right');
+    expect(panel()).toHaveAttribute('data-state', 'closing');
+    expect(tab()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('when the animation event never comes, should still remove the panel after the exit time', async () => {
+    const user = setup();
+
+    await user.click(tab());
+    await user.click(screen.getByRole('button', { name: /Fechar painel/ }));
+
+    await waitFor(() => expect(panel()).not.toBeInTheDocument(), { timeout: 1000 });
+  });
+
+  it('when the tab is clicked while the panel is leaving, should open it again', async () => {
+    const user = setup();
+
+    await user.click(tab());
+    await user.click(screen.getByRole('button', { name: /Fechar painel/ }));
+    await user.click(tab());
+
+    expect(panel()).toHaveAttribute('data-state', 'open');
+    expect(panel()).toHaveClass('animate-enter-right');
+  });
+
+  it('when rendered, should use the soft chrome colors, less emphasized than the text', async () => {
+    const user = setup();
+
+    await user.click(tab());
+
+    expect(panel()).toHaveClass('reading-chrome');
+  });
+
+  it('when the panel is open, should move the tab to the panel edge so it never hides under it', async () => {
+    const user = setup();
+
+    expect(tab()).toHaveClass('right-5');
+
+    await user.click(tab());
+
+    expect(tab()).toHaveClass('right-[21.25rem]');
+    expect(tab()).not.toHaveClass('right-5');
+  });
+
+  it('when idle, should place the tab at the top, right below the header, not in the middle', () => {
+    setup();
+
+    expect(tab()).toHaveClass('top-[4.5rem]');
+    expect(tab().className).not.toContain('top-1/2');
+    expect(tab().className).not.toContain('-translate-y-1/2');
   });
 });

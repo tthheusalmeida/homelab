@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { AppearanceProvider } from '#components/AppearanceProvider';
 import { IpcChannels } from '#shared/channels';
 import { setupStatus } from '#test/components-fixtures';
 import { renderWithQuery } from '#test/utils';
@@ -25,15 +26,22 @@ describe('SECTION_GROUPS', () => {
   });
 });
 
+/** Só o menu lateral: o tema "Sistema" também aparece no conteúdo da Aparência. */
+const menu = () => within(screen.getByLabelText('Seções de configuração'));
+
 describe('SettingsApp menu groups', () => {
   beforeEach(() => window.localStorage.clear());
 
   it('when opened, should show the groups in order with their sections', () => {
     mockApi(handlers);
 
-    renderWithQuery(<SettingsApp />);
+    renderWithQuery(
+      <AppearanceProvider>
+        <SettingsApp />
+      </AppearanceProvider>,
+    );
 
-    const labels = ['Geral', 'IA', 'Sistema'].map((label) => screen.getByText(label));
+    const labels = ['Geral', 'IA', 'Sistema'].map((label) => menu().getByText(label));
 
     labels.slice(1).forEach((element, index) => {
       expect(
@@ -61,8 +69,12 @@ describe('SettingsApp menu groups', () => {
   it('when a group is collapsed, should hide its sections and remember it', async () => {
     mockApi(handlers);
 
-    renderWithQuery(<SettingsApp />);
-    await userEvent.click(screen.getByText('Sistema'));
+    renderWithQuery(
+      <AppearanceProvider>
+        <SettingsApp />
+      </AppearanceProvider>,
+    );
+    await userEvent.click(menu().getByText('Sistema'));
 
     expect(screen.queryByRole('button', { name: 'Backup' })).not.toBeInTheDocument();
     expect(JSON.parse(window.localStorage.getItem(SETTINGS_COLLAPSED_KEY) ?? '[]')).toEqual([
@@ -73,8 +85,12 @@ describe('SettingsApp menu groups', () => {
   it('when the group of the current section is collapsed, should show the highlight dot', async () => {
     mockApi(handlers);
 
-    renderWithQuery(<SettingsApp />);
-    await userEvent.click(screen.getByText('Geral'));
+    renderWithQuery(
+      <AppearanceProvider>
+        <SettingsApp />
+      </AppearanceProvider>,
+    );
+    await userEvent.click(menu().getByText('Geral'));
 
     expect(screen.getByLabelText('Seção atual em Geral')).toBeInTheDocument();
   });
@@ -83,7 +99,11 @@ describe('SettingsApp menu groups', () => {
     window.localStorage.setItem(SETTINGS_COLLAPSED_KEY, JSON.stringify(['IA']));
     mockApi(handlers);
 
-    renderWithQuery(<SettingsApp />);
+    renderWithQuery(
+      <AppearanceProvider>
+        <SettingsApp />
+      </AppearanceProvider>,
+    );
 
     expect(screen.queryByRole('button', { name: 'IAs externas' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Biblioteca' })).toBeInTheDocument();
@@ -92,7 +112,11 @@ describe('SettingsApp menu groups', () => {
   it('when another section is chosen, should switch the page', async () => {
     mockApi(handlers);
 
-    renderWithQuery(<SettingsApp />);
+    renderWithQuery(
+      <AppearanceProvider>
+        <SettingsApp />
+      </AppearanceProvider>,
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Backup' }));
 
     expect(screen.getByRole('heading', { level: 2, name: 'Backup' })).toBeVisible();

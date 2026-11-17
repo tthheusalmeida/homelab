@@ -53,7 +53,7 @@ export function BookContent({
                 className={cn(
                   position > 1 &&
                     !(module.chapters[0] === chapter && module.title) &&
-                    "border-t border-border/60 pt-14",
+                    "reading-sep-border border-t pt-14",
                 )}
               >
                 <ReadingSection

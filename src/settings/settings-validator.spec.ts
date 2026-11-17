@@ -48,7 +48,7 @@ describe('validateSettings', () => {
   });
 
   it('when the accent is unknown, should reject', () => {
-    expectValidation((s) => (s.appearance.accent = 'pink' as never), /cores de destaque/);
+    expectValidation((s) => (s.appearance.accent = 'brown' as never), /cores de destaque/);
   });
 
   it('when the reading font is unknown, should reject', () => {
@@ -100,6 +100,25 @@ describe('validateSettings', () => {
   it('when the side panel is pinned, should accept', () => {
     const settings = testDefaults();
     settings.appearance.reading.pinSidebar = true;
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
+  it('when the separator color is unknown, should reject', () => {
+    expectValidation(
+      (s) => (s.appearance.reading.separator = 'brown' as never),
+      /cores de leitura/,
+    );
+  });
+
+  it('when the separator intensity is invalid, should reject', () => {
+    expectValidation((s) => (s.appearance.reading.separatorShade = 55 as never), /intensidades/);
+  });
+
+  it('when the separator has a color and an intensity, should accept', () => {
+    const settings = testDefaults();
+    settings.appearance.reading.separator = 'amber';
+    settings.appearance.reading.separatorShade = 300;
 
     expect(() => validateSettings(settings)).not.toThrow();
   });

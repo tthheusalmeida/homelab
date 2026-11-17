@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 
 import { renderWithQuery } from '#test/utils';
 
+import { AppearanceProvider } from '#components/AppearanceProvider';
 import { IpcChannels } from '#shared/channels';
 
 import { SettingsApp } from './SettingsApp';
@@ -37,8 +38,20 @@ const handlers = (restartRequired: boolean) => {
   };
 };
 
+const renderApp = () =>
+  renderWithQuery(
+    <AppearanceProvider>
+      <SettingsApp />
+    </AppearanceProvider>,
+  );
+
+/** A janela abre em Aparência: vai para a Biblioteca pelo menu. */
+const openLibrary = (user: ReturnType<typeof userEvent.setup>) =>
+  user.click(screen.getByRole('button', { name: /^Biblioteca/ }));
+
 /** Troca a pasta da biblioteca pelo fluxo real: edita, salva e confirma o diálogo. */
 async function changeLibrary(user: ReturnType<typeof userEvent.setup>, value: string) {
+  await openLibrary(user);
   const field = await screen.findByLabelText('Biblioteca');
 
   await user.clear(field);
@@ -48,21 +61,39 @@ async function changeLibrary(user: ReturnType<typeof userEvent.setup>, value: st
 }
 
 describe('SettingsApp', () => {
-  it('when opened, should start on the library section', async () => {
+  it('when opened, should start on the appearance section, the first of the menu', async () => {
     mockApi(handlers(true));
 
-    renderWithQuery(<SettingsApp />);
+    renderApp();
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Aparência' })).toBeVisible();
+    expect(screen.getByRole('button', { name: /^Aparência/ })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(await screen.findByRole('radiogroup', { name: 'Cor de destaque' })).toBeVisible();
+  });
+
+  it('when the library item is chosen, should show the library section', async () => {
+    const user = userEvent.setup();
+    mockApi(handlers(true));
+
+    renderApp();
+    await openLibrary(user);
 
     expect(screen.getByRole('heading', { level: 2, name: 'Biblioteca' })).toBeVisible();
     expect(await screen.findByLabelText('Biblioteca')).toBeVisible();
-    expect(screen.getByRole('button', { name: /^Biblioteca/ })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('button', { name: /^Biblioteca/ })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
   });
 
   it('when navigating, should switch the section content and the active item', async () => {
     const user = userEvent.setup();
     mockApi(handlers(true));
 
-    renderWithQuery(<SettingsApp />);
+    renderApp();
 
     await user.click(screen.getByRole('button', { name: /IAs externas/ }));
     expect(screen.getByRole('heading', { level: 2, name: 'IAs externas' })).toBeVisible();
@@ -77,9 +108,11 @@ describe('SettingsApp', () => {
   });
 
   it('when nothing was saved, should not show the restart notice', async () => {
+    const user = userEvent.setup();
     mockApi(handlers(true));
 
-    renderWithQuery(<SettingsApp />);
+    renderApp();
+    await openLibrary(user);
 
     await screen.findByLabelText('Biblioteca');
     expect(screen.queryByText(/depois de reiniciar/)).not.toBeInTheDocument();
@@ -89,7 +122,7 @@ describe('SettingsApp', () => {
     const user = userEvent.setup();
     const invoke = mockApi(handlers(true));
 
-    renderWithQuery(<SettingsApp />);
+    renderApp();
 
     await changeLibrary(user, 'D:/outra');
 
@@ -104,7 +137,7 @@ describe('SettingsApp', () => {
     const user = userEvent.setup();
     mockApi(handlers(true));
 
-    renderWithQuery(<SettingsApp />);
+    renderApp();
 
     await changeLibrary(user, 'D:/outra');
 
@@ -115,7 +148,7 @@ describe('SettingsApp', () => {
     const user = userEvent.setup();
     mockApi(handlers(false));
 
-    renderWithQuery(<SettingsApp />);
+    renderApp();
 
     await changeLibrary(user, 'D:/outra');
 

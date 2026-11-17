@@ -131,4 +131,16 @@ describe('ReadingQuickControls', () => {
 
     expect(screen.getByRole('status', { name: 'Letra' })).toHaveTextContent('16');
   });
+
+  it('when shown, should use the intense sidebar card style and tight 8px spacing between the options', () => {
+    render(<ReadingQuickControls />);
+
+    const card = screen.getByLabelText('Ajustes de leitura');
+    const content = card.querySelector('[data-slot=card-content]') as HTMLElement;
+
+    expect(card).toHaveClass('sidebar-card');
+    expect(content).toHaveClass('gap-2');
+    expect(content.className).not.toContain('gap-3');
+    expect(content.className).not.toContain('space-y');
+  });
 });

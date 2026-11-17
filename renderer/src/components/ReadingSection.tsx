@@ -42,7 +42,7 @@ export function ReadingSection({
     >
       <header className="space-y-2 text-center">
         {label && (
-          <p className="flex items-center justify-center gap-1.5 text-[0.75em] font-semibold uppercase leading-[1.35] tracking-widest text-primary">
+          <p className="flex items-center justify-center gap-1.5 reading-sep-label text-[0.75em] font-semibold uppercase leading-[1.35] tracking-widest">
             {label}
           </p>
         )}

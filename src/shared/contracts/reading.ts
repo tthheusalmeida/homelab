@@ -8,8 +8,9 @@ export const READING_FONT_IDS = [
 ] as const;
 export type ReadingFontId = (typeof READING_FONT_IDS)[number];
 
-/** Cores do Tailwind que podem ser usadas no fundo e no texto da leitura. */
+/** As 15 cores do Tailwind que podem ser usadas no fundo e no texto da leitura (poucas, para escolher sem se perder), da mais quente à mais fria; a pedra, neutra, fica por último. */
 export const READING_COLOR_NAMES = [
+  'rose',
   'red',
   'orange',
   'amber',
@@ -23,14 +24,6 @@ export const READING_COLOR_NAMES = [
   'blue',
   'indigo',
   'violet',
-  'purple',
-  'fuchsia',
-  'pink',
-  'rose',
-  'slate',
-  'gray',
-  'zinc',
-  'neutral',
   'stone',
 ] as const;
 export type ReadingColorName = (typeof READING_COLOR_NAMES)[number];
@@ -46,6 +39,8 @@ export type ReadingColorId = (typeof READING_COLOR_IDS)[number];
 /** Fundo claro e texto escuro: o ponto de partida de quem escolhe uma cor. */
 export const DEFAULT_BACKGROUND_SHADE: ReadingShade = 50;
 export const DEFAULT_TEXT_SHADE: ReadingShade = 900;
+/** Separadores (divisor de módulo, filetes entre capítulos, rótulo): um tom médio que lê em qualquer fundo. */
+export const DEFAULT_SEPARATOR_SHADE: ReadingShade = 500;
 
 /** Tamanho do texto em passos de 2 (8 a 32), valendo `size / 16` rem. 16 = 1 rem. */
 export const READING_FONT_SIZE = { min: 8, max: 32, step: 2, default: 16 } as const;
@@ -61,6 +56,9 @@ export interface ReadingPreferences {
   backgroundShade: ReadingShade;
   text: ReadingColorId;
   textShade: ReadingShade;
+  /** Cor dos separadores (divisor de módulo, filetes entre capítulos e rótulo "Capítulo N"). `default` deriva da cor do texto. */
+  separator: ReadingColorId;
+  separatorShade: ReadingShade;
   /** Modo leitura: `true` deixa o painel lateral sempre visível; `false` (padrão) só abre ao passar o mouse na borda. */
   pinSidebar: boolean;
 }
@@ -73,6 +71,8 @@ export const DEFAULT_READING: ReadingPreferences = {
   backgroundShade: DEFAULT_BACKGROUND_SHADE,
   text: 'default',
   textShade: DEFAULT_TEXT_SHADE,
+  separator: 'default',
+  separatorShade: DEFAULT_SEPARATOR_SHADE,
   pinSidebar: false,
 };
 
@@ -96,7 +96,7 @@ export const isReadingShade = (value: unknown): value is ReadingShade =>
 
 /**
  * Aceita só preferências válidas; qualquer outra coisa vira `null`. Cópias antigas sem as
- * intensidades (`backgroundShade`, `textShade`) ou sem `pinSidebar` ficam com o padrão.
+ * intensidades (`backgroundShade`, `textShade`), sem separadores ou sem `pinSidebar` ficam com o padrão.
  */
 export function parseReading(value: unknown): ReadingPreferences | null {
   const candidate = value as Partial<ReadingPreferences> | null;
@@ -112,6 +112,9 @@ export function parseReading(value: unknown): ReadingPreferences | null {
         ? DEFAULT_BACKGROUND_SHADE
         : candidate.backgroundShade,
     textShade: candidate.textShade === undefined ? DEFAULT_TEXT_SHADE : candidate.textShade,
+    separator: candidate.separator === undefined ? DEFAULT_READING.separator : candidate.separator,
+    separatorShade:
+      candidate.separatorShade === undefined ? DEFAULT_SEPARATOR_SHADE : candidate.separatorShade,
     pinSidebar:
       candidate.pinSidebar === undefined ? DEFAULT_READING.pinSidebar : candidate.pinSidebar,
   };
@@ -124,6 +127,8 @@ export function parseReading(value: unknown): ReadingPreferences | null {
     READING_COLOR_IDS.includes(reading.text as ReadingColorId) &&
     isReadingShade(reading.backgroundShade) &&
     isReadingShade(reading.textShade) &&
+    READING_COLOR_IDS.includes(reading.separator) &&
+    isReadingShade(reading.separatorShade) &&
     typeof reading.pinSidebar === 'boolean'
   ) {
     return reading as ReadingPreferences;

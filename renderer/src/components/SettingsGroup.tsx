@@ -46,3 +46,25 @@ export function SettingsPanel({
     />
   );
 }
+
+/**
+ * Linha de um ajuste, compacta: rótulo curto à esquerda e o controle à direita (empilha em janela
+ * estreita). A dica vai no `title` para não ocupar espaço.
+ */
+export function SettingsRow({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div title={hint} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+      <p className="text-xs font-medium text-muted-foreground sm:w-24 sm:shrink-0">{label}</p>
+
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}

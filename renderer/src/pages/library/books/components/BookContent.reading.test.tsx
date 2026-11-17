@@ -110,7 +110,7 @@ describe("BookContent — reading look (page and reading mode)", () => {
       expect(title).toHaveClass(
         "text-xs",
         "uppercase",
-        "text-muted-foreground",
+        "reading-sep-text",
       );
       expect(title.parentElement?.children).toHaveLength(3);
       expect(title.parentElement?.className).not.toMatch(
@@ -131,7 +131,7 @@ describe("BookContent — reading look (page and reading mode)", () => {
 
       expect(section("Redes").parentElement).toHaveClass(
         "border-t",
-        "border-border/60",
+        "reading-sep-border",
       );
       expect(section("Kubernetes").parentElement).toHaveClass("border-t");
     });

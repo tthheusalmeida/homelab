@@ -25,12 +25,12 @@ export function ReadingQuickControls() {
   };
 
   return (
-    <Card aria-label="Ajustes de leitura" className="gap-2 py-3">
+    <Card aria-label="Ajustes de leitura" className="sidebar-card gap-2 py-3">
       <CardHeader>
         <CardTitle className="text-sm">Leitura</CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-2">
+      <CardContent className="gap-2">
         <ValueStepper
           label="Letra"
           value={`${reading.fontSize}`}

@@ -61,7 +61,7 @@
 /*
  * Identidade "Colmeia": neutros cinza puros, suaves (escuro = grafite, claro = off-white; sem tom de cor) e uma cor de destaque trocável.
  * Tema: a classe `dark` no <html> (ver lib/appearance.ts). Cor de destaque: `data-accent` no
- * <html>, ou em qualquer elemento para pré-visualizar (ex.: as bolinhas de cor das
+ * <html>, ou em qualquer elemento para pré-visualizar (ex.: os hexágonos de cor das
  * Configurações). Tudo que é clicável ou ação usa `primary`; `brand` pinta a marca
  * (logo, hexágonos de carregamento). Sem atributo vale o ciano do ícone.
  */
@@ -313,6 +313,206 @@
   --chart-1: #fb923c;
 }
 
+[data-accent="pink"] {
+  --primary: #be185d;
+  --primary-foreground: #ffffff;
+  --ring: #ec4899;
+  --brand: #ec4899;
+  --brand-text: #be185d;
+  --sidebar-primary: #be185d;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-ring: #ec4899;
+  --chart-1: #ec4899;
+}
+
+.dark[data-accent="pink"],
+.dark [data-accent="pink"] {
+  --primary: #f472b6;
+  --primary-foreground: #121212;
+  --ring: #f472b6;
+  --brand: #f472b6;
+  --brand-text: #f472b6;
+  --sidebar-primary: #f472b6;
+  --sidebar-primary-foreground: #121212;
+  --sidebar-ring: #f472b6;
+  --chart-1: #f472b6;
+}
+
+[data-accent="red"] {
+  --primary: #b91c1c;
+  --primary-foreground: #ffffff;
+  --ring: #ef4444;
+  --brand: #ef4444;
+  --brand-text: #b91c1c;
+  --sidebar-primary: #b91c1c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-ring: #ef4444;
+  --chart-1: #ef4444;
+}
+
+.dark[data-accent="red"],
+.dark [data-accent="red"] {
+  --primary: #f87171;
+  --primary-foreground: #121212;
+  --ring: #f87171;
+  --brand: #f87171;
+  --brand-text: #f87171;
+  --sidebar-primary: #f87171;
+  --sidebar-primary-foreground: #121212;
+  --sidebar-ring: #f87171;
+  --chart-1: #f87171;
+}
+
+[data-accent="amber"] {
+  --primary: #b45309;
+  --primary-foreground: #ffffff;
+  --ring: #f59e0b;
+  --brand: #f59e0b;
+  --brand-text: #b45309;
+  --sidebar-primary: #b45309;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-ring: #f59e0b;
+  --chart-1: #f59e0b;
+}
+
+.dark[data-accent="amber"],
+.dark [data-accent="amber"] {
+  --primary: #fbbf24;
+  --primary-foreground: #121212;
+  --ring: #fbbf24;
+  --brand: #fbbf24;
+  --brand-text: #fbbf24;
+  --sidebar-primary: #fbbf24;
+  --sidebar-primary-foreground: #121212;
+  --sidebar-ring: #fbbf24;
+  --chart-1: #fbbf24;
+}
+
+[data-accent="yellow"] {
+  --primary: #a16207;
+  --primary-foreground: #ffffff;
+  --ring: #eab308;
+  --brand: #eab308;
+  --brand-text: #a16207;
+  --sidebar-primary: #a16207;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-ring: #eab308;
+  --chart-1: #eab308;
+}
+
+.dark[data-accent="yellow"],
+.dark [data-accent="yellow"] {
+  --primary: #facc15;
+  --primary-foreground: #121212;
+  --ring: #facc15;
+  --brand: #facc15;
+  --brand-text: #facc15;
+  --sidebar-primary: #facc15;
+  --sidebar-primary-foreground: #121212;
+  --sidebar-ring: #facc15;
+  --chart-1: #facc15;
+}
+
+[data-accent="lime"] {
+  --primary: #4d7c0f;
+  --primary-foreground: #ffffff;
+  --ring: #84cc16;
+  --brand: #84cc16;
+  --brand-text: #4d7c0f;
+  --sidebar-primary: #4d7c0f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-ring: #84cc16;
+  --chart-1: #84cc16;
+}
+
+.dark[data-accent="lime"],
+.dark [data-accent="lime"] {
+  --primary: #a3e635;
+  --primary-foreground: #121212;
+  --ring: #a3e635;
+  --brand: #a3e635;
+  --brand-text: #a3e635;
+  --sidebar-primary: #a3e635;
+  --sidebar-primary-foreground: #121212;
+  --sidebar-ring: #a3e635;
+  --chart-1: #a3e635;
+}
+
+[data-accent="green"] {
+  --primary: #15803d;
+  --primary-foreground: #ffffff;
+  --ring: #22c55e;
+  --brand: #22c55e;
+  --brand-text: #15803d;
+  --sidebar-primary: #15803d;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-ring: #22c55e;
+  --chart-1: #22c55e;
+}
+
+.dark[data-accent="green"],
+.dark [data-accent="green"] {
+  --primary: #4ade80;
+  --primary-foreground: #121212;
+  --ring: #4ade80;
+  --brand: #4ade80;
+  --brand-text: #4ade80;
+  --sidebar-primary: #4ade80;
+  --sidebar-primary-foreground: #121212;
+  --sidebar-ring: #4ade80;
+  --chart-1: #4ade80;
+}
+
+[data-accent="teal"] {
+  --primary: #0f766e;
+  --primary-foreground: #ffffff;
+  --ring: #14b8a6;
+  --brand: #14b8a6;
+  --brand-text: #0f766e;
+  --sidebar-primary: #0f766e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-ring: #14b8a6;
+  --chart-1: #14b8a6;
+}
+
+.dark[data-accent="teal"],
+.dark [data-accent="teal"] {
+  --primary: #2dd4bf;
+  --primary-foreground: #121212;
+  --ring: #2dd4bf;
+  --brand: #2dd4bf;
+  --brand-text: #2dd4bf;
+  --sidebar-primary: #2dd4bf;
+  --sidebar-primary-foreground: #121212;
+  --sidebar-ring: #2dd4bf;
+  --chart-1: #2dd4bf;
+}
+
+[data-accent="sky"] {
+  --primary: #0369a1;
+  --primary-foreground: #ffffff;
+  --ring: #0ea5e9;
+  --brand: #0ea5e9;
+  --brand-text: #0369a1;
+  --sidebar-primary: #0369a1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-ring: #0ea5e9;
+  --chart-1: #0ea5e9;
+}
+
+.dark[data-accent="sky"],
+.dark [data-accent="sky"] {
+  --primary: #38bdf8;
+  --primary-foreground: #121212;
+  --ring: #38bdf8;
+  --brand: #38bdf8;
+  --brand-text: #38bdf8;
+  --sidebar-primary: #38bdf8;
+  --sidebar-primary-foreground: #121212;
+  --sidebar-ring: #38bdf8;
+  --chart-1: #38bdf8;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -561,6 +761,17 @@
   }
 }
 
+@keyframes hl-exit-right {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+
 @keyframes hl-enter-left {
   from {
     opacity: 0;
@@ -631,6 +842,10 @@
 
 @utility animate-enter-right {
   animation: hl-enter-right var(--duration-enter) var(--ease-out-soft) both;
+}
+
+@utility animate-exit-right {
+  animation: hl-exit-right var(--duration-exit) var(--ease-in-soft) both;
 }
 
 @utility animate-exit-down {
@@ -824,6 +1039,81 @@
   margin-inline: auto;
 }
 
+/*
+ * Ambiente imersivo: dentro da leitura, os tokens do tema são redefinidos a partir do fundo e do
+ * texto escolhidos. Assim tudo o que está lá (painel lateral, sumário, cartões, botões, campo de
+ * busca, bordas e a barra do topo) segue a paleta da leitura e contrasta com ela, não com o tema.
+ * Sem cor escolhida nada muda (vale o tema).
+ */
+.reading-surface[data-custom-fg] {
+  --foreground: var(--reading-fg);
+  --card-foreground: var(--reading-fg);
+  --popover-foreground: var(--reading-fg);
+  --secondary-foreground: var(--reading-fg);
+  --accent-foreground: var(--reading-fg);
+  --muted-foreground: color-mix(in oklab, var(--reading-fg) 75%, transparent);
+}
+
+.reading-surface[data-custom-bg] {
+  --background: var(--reading-bg);
+  --card: color-mix(in oklab, var(--reading-bg), var(--reading-fg) 6%);
+  --popover: color-mix(in oklab, var(--reading-bg), var(--reading-fg) 8%);
+  --secondary: color-mix(in oklab, var(--reading-bg), var(--reading-fg) 10%);
+  --muted: color-mix(in oklab, var(--reading-bg), var(--reading-fg) 9%);
+  --accent: color-mix(in oklab, var(--reading-bg), var(--reading-fg) 13%);
+  --border: color-mix(in oklab, var(--reading-fg) 22%, transparent);
+  --input: color-mix(in oklab, var(--reading-fg) 28%, transparent);
+}
+
+/*
+ * Moldura da leitura (cabeçalho e painel lateral): fica com menos ênfase que o texto. O fundo é o da
+ * página levemente deslocado na direção do texto (um pouco mais escuro em fundo claro, um pouco mais
+ * claro em fundo escuro) e as letras são esmaecidas, para o foco ficar no que se lê. Funciona com o
+ * tema ou com as cores escolhidas, pois só usa `--background` e `--foreground` do escopo.
+ */
+.reading-chrome {
+  --chrome-bg: color-mix(in oklab, var(--background), var(--foreground) 7%);
+  background-color: var(--chrome-bg);
+  color: color-mix(in oklab, var(--foreground) 74%, transparent);
+  border-color: color-mix(in oklab, var(--foreground) 12%, transparent);
+  --card: color-mix(in oklab, var(--chrome-bg), var(--foreground) 9%);
+  --card-foreground: color-mix(in oklab, var(--foreground) 80%, transparent);
+  --muted: color-mix(in oklab, var(--chrome-bg), var(--foreground) 8%);
+  --muted-foreground: color-mix(in oklab, var(--foreground) 72%, transparent);
+  --border: color-mix(in oklab, var(--foreground) 14%, transparent);
+}
+
+/*
+ * Quadros do painel lateral (progresso, conclusão, leitura, sumário, resultados): mais intensos que
+ * o fundo, para se destacarem bem. O fundo é o da moldura (ou da página) deslocado 10% na direção
+ * do texto, com um contorno fino na mesma lógica. Vale na página e no modo leitura.
+ */
+.sidebar-card {
+  background-color: color-mix(in oklab, var(--chrome-bg, var(--background)), var(--foreground) 10%);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 22%, transparent);
+}
+
+/*
+ * Separadores da leitura (divisor de módulo, filetes entre capítulos e rótulo "Capítulo N").
+ * Com uma cor de separador escolhida valem exatamente ela; sem escolha derivam da cor do texto
+ * (ou, no rótulo, da cor de destaque), então combinam com qualquer fundo.
+ */
+.reading-sep-text {
+  color: var(--reading-sep, color-mix(in oklab, currentColor 60%, transparent));
+}
+
+.reading-sep-line {
+  background-color: color-mix(in oklab, var(--reading-sep, currentColor) 35%, transparent);
+}
+
+.reading-sep-border {
+  border-color: color-mix(in oklab, var(--reading-sep, currentColor) 35%, transparent);
+}
+
+.reading-sep-label {
+  color: var(--reading-sep, var(--primary));
+}
+
 /* O texto (prose) segue a cor escolhida em tudo: títulos, links, citações, bordas e código. */
 .reading-surface .prose {
   --tw-prose-body: currentColor;
@@ -845,3 +1135,37 @@
   --tw-prose-td-borders: color-mix(in oklab, currentColor 15%, transparent);
 }
 
+
+/* Controle de intensidade da leitura (ShadeSlider): trilha em degraus da cor e marcador hexagonal. */
+.shade-slider {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.shade-slider::-webkit-slider-runnable-track {
+  height: 0.75rem;
+  border-radius: 9999px;
+  background: var(--shade-bands);
+  border: 1px solid color-mix(in oklab, var(--foreground) 20%, transparent);
+}
+
+.shade-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.1rem;
+  height: 1.3rem;
+  margin-top: -0.3rem;
+  border: 0;
+  background: var(--foreground);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  transition: background-color 150ms;
+}
+
+.shade-slider:hover::-webkit-slider-thumb,
+.shade-slider:focus-visible::-webkit-slider-thumb {
+  background: var(--primary);
+}
+
+.shade-slider:focus-visible {
+  outline: none;
+}

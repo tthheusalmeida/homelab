@@ -33,7 +33,6 @@ import { EmptyState } from "#components/EmptyState";
 import { ErrorState } from "#components/ErrorState";
 import { LoadingState } from "#components/LoadingState";
 import { ReadingMode } from "#components/ReadingMode";
-import { ReadingQuickControls } from "#components/ReadingQuickControls";
 import { ReadingSurface } from "#components/ReadingSurface";
 import { useActiveSection } from "#hooks/use-active-section";
 import { useDebouncedValue } from "#hooks/use-debounced-value";
@@ -46,9 +45,7 @@ import { BookDetailsDialog } from "./components/BookDetailsDialog";
 import { BookFindBar } from "./components/BookFindBar";
 import { BookFormDialog } from "./components/BookFormDialog";
 import { BookOrganizerDialog } from "./components/BookOrganizerDialog";
-import { BookOutline } from "./components/BookOutline";
 import { BookPrintView } from "./components/BookPrintView";
-import { BookProgressCard } from "./components/BookProgressCard";
 import { BookSidebar } from "./components/BookSidebar";
 import {
   useBook,
@@ -339,23 +336,19 @@ export function BookPage() {
           onExit={() => setReader(false)}
           actions={findBar}
           toc={
-            <div className="space-y-4">
-              <BookProgressCard
-                read={readCount}
-                total={totalChapters}
-                completedAt={book.completedAt}
-              />
-
-              <ReadingQuickControls />
-
-              <BookOutline
-                modules={modules}
-                activeChapterId={activeChapterId}
-                readIds={readIds}
-                className="max-h-[60dvh]"
-                onSelectChapter={goToChapter}
-              />
-            </div>
+            <BookSidebar
+              embedded
+              modules={modules}
+              activeChapterId={activeChapterId}
+              readIds={readIds}
+              readCount={readCount}
+              completedAt={book.completedAt}
+              query={search}
+              hits={results.data}
+              isSearching={results.isFetching}
+              onSelectChapter={goToChapter}
+              onSelectHit={handleHit}
+            />
           }
         >
           <div ref={setContainer} className="reading-column">

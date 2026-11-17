@@ -53,14 +53,7 @@ export const readingColorLabels: Record<ReadingColorId, string> = {
   blue: 'Azul',
   indigo: 'Índigo',
   violet: 'Violeta',
-  purple: 'Roxo',
-  fuchsia: 'Fúcsia',
-  pink: 'Rosa',
   rose: 'Rosé',
-  slate: 'Ardósia',
-  gray: 'Cinza',
-  zinc: 'Zinco',
-  neutral: 'Neutro',
   stone: 'Pedra',
 };
 
@@ -103,10 +96,31 @@ export const fontSizeRem = (size: number) => `${size / 16}rem`;
 export const zoomedFontSizeRem = (size: number, zoom: number) =>
   `${Math.round(((size * zoom) / 1600) * 10000) / 10000}rem`;
 
-/** Variáveis de CSS e fonte da superfície de leitura (ver `.reading-surface` em `global.css`). */
+/** Tinta escura e clara para escrever sobre o fundo escolhido (neutras, sem tom de cor). */
+const DARK_INK = 'oklch(0.22 0 0)';
+const LIGHT_INK = 'oklch(0.97 0 0)';
+
+/** Se a cor (`oklch(L% ...)`) é clara o bastante para pedir tinta escura por cima. */
+export function isLightColor(color: string): boolean {
+  const lightness = Number.parseFloat(color.replace(/^oklch\(/, ''));
+
+  return lightness / 100 >= 0.6;
+}
+
+/** A tinta que se lê sobre esse fundo: escura em fundo claro e clara em fundo escuro. */
+export const inkOn = (background: string) => (isLightColor(background) ? DARK_INK : LIGHT_INK);
+
+/**
+ * Variáveis de CSS e fonte da superfície de leitura (ver `.reading-surface` em `global.css`).
+ * Com fundo escolhido, o contraste vem **do fundo atual, não do tema**: o texto "padrão" vira a
+ * tinta legível sobre ele e a aba do painel lateral fica invertida (tinta como fundo da aba e o
+ * fundo como cor do ícone).
+ */
 export function readingStyle(preferences: ReadingPreferences): CSSProperties {
   const background = readingColor(preferences.background, preferences.backgroundShade);
-  const text = readingColor(preferences.text, preferences.textShade);
+  const ink = background ? inkOn(background) : null;
+  const text = readingColor(preferences.text, preferences.textShade) ?? ink;
+  const separator = readingColor(preferences.separator, preferences.separatorShade);
 
   return {
     fontFamily: readingFontFamilies[preferences.font],
@@ -114,5 +128,14 @@ export function readingStyle(preferences: ReadingPreferences): CSSProperties {
     '--reading-zoom': preferences.zoom / 100,
     ...(background ? { '--reading-bg': background } : {}),
     ...(text ? { '--reading-fg': text } : {}),
+    ...(separator ? { '--reading-sep': separator } : {}),
+    ...(background && ink
+      ? {
+          '--reading-tab-bg': ink,
+          '--reading-tab-fg': background,
+          // Controles nativos (campos, rolagem) no esquema do fundo escolhido, não do tema.
+          colorScheme: isLightColor(background) ? 'light' : 'dark',
+        }
+      : {}),
   } as CSSProperties;
 }

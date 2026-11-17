@@ -60,7 +60,7 @@ describe("BookOutline — aligned read marks", () => {
 
     expect(slots).toHaveLength(2);
     for (const slot of slots) {
-      expect(slot).toHaveClass("size-4", "shrink-0");
+      expect(slot).toHaveClass("h-5", "w-6", "shrink-0", "justify-center");
     }
   });
 

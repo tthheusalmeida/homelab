@@ -61,7 +61,7 @@ describe('SettingsService', () => {
   it('when the accent is invalid, should reject and keep the previous appearance', () => {
     const service = create();
 
-    expect(() => service.updateAppearance({ accent: 'pink' as never })).toThrow(
+    expect(() => service.updateAppearance({ accent: 'brown' as never })).toThrow(
       /cores de destaque/,
     );
     expect(service.getAppearance().accent).toBe('cyan');

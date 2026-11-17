@@ -21,12 +21,17 @@ interface BookSidebarProps {
   /** Texto digitado na busca (decide se os resultados aparecem). */
   query: string;
   /** Campo de busca (com próxima/anterior); vem de fora porque o modo leitura usa o mesmo. */
-  findBar: ReactNode;
+  findBar?: ReactNode;
   /** `undefined` enquanto a pesquisa não rodou (consulta curta). */
   hits?: BookSearchHit[];
   isSearching?: boolean;
   onSelectChapter: (documentId: string) => void;
   onSelectHit: (hit: BookSearchHit) => void;
+  /**
+   * Dentro do painel do modo leitura: o mesmo conteúdo (progresso, ajustes de leitura, resultados e
+   * sumário), sem fixar no topo e sem repetir o marco de navegação. A busca fica na barra do topo.
+   */
+  embedded?: boolean;
 }
 
 /**
@@ -45,7 +50,10 @@ export function BookSidebar({
   isSearching,
   onSelectChapter,
   onSelectHit,
+  embedded = false,
 }: BookSidebarProps) {
+  const Root = embedded ? "div" : "aside";
+
   const searching = query.trim().length >= 2;
   const totalChapters = modules.reduce(
     (sum, module) => sum + module.chapters.length,
@@ -53,9 +61,11 @@ export function BookSidebar({
   );
 
   return (
-    <aside
-      aria-label="Painel do livro"
-      className="space-y-4 lg:sticky lg:top-4 lg:self-start"
+    <Root
+      {...(embedded ? {} : { "aria-label": "Painel do livro" })}
+      className={
+        embedded ? "space-y-2" : "space-y-4 lg:sticky lg:top-4 lg:self-start"
+      }
     >
       {findBar}
 
@@ -68,7 +78,7 @@ export function BookSidebar({
       <ReadingQuickControls />
 
       {searching && (
-        <Card>
+        <Card className="sidebar-card">
           <CardHeader>
             <CardTitle className="text-sm">
               {isSearching || !hits
@@ -116,7 +126,7 @@ export function BookSidebar({
         </Card>
       )}
 
-      <Card>
+      <Card className="sidebar-card">
         <CardHeader>
           <CardTitle className="text-sm">Sumário do livro</CardTitle>
         </CardHeader>
@@ -131,6 +141,6 @@ export function BookSidebar({
           />
         </CardContent>
       </Card>
-    </aside>
+    </Root>
   );
 }

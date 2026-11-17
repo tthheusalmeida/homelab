@@ -20,13 +20,21 @@ export const themeLabels: Record<ThemeMode, string> = {
 };
 
 export const accentLabels: Record<AccentId, string> = {
+  pink: "Rosa",
+  rose: "Rosé",
+  red: "Vermelho",
+  orange: "Laranja",
+  amber: "Âmbar",
+  yellow: "Amarelo",
+  lime: "Lima",
+  green: "Verde",
+  emerald: "Esmeralda",
+  teal: "Azul-petróleo",
   cyan: "Ciano",
+  sky: "Céu",
   blue: "Azul",
   indigo: "Índigo",
   violet: "Violeta",
-  emerald: "Esmeralda",
-  rose: "Rosa",
-  orange: "Laranja",
 };
 
 export function resolveMode(

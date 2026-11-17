@@ -73,12 +73,17 @@ export function validateSettings(settings: SettingsData): void {
 
   if (
     !READING_COLOR_IDS.includes(reading.background) ||
-    !READING_COLOR_IDS.includes(reading.text)
+    !READING_COLOR_IDS.includes(reading.text) ||
+    !READING_COLOR_IDS.includes(reading.separator)
   ) {
     fail(SettingsMessages.readingColorInvalid);
   }
 
-  if (!isReadingShade(reading.backgroundShade) || !isReadingShade(reading.textShade)) {
+  if (
+    !isReadingShade(reading.backgroundShade) ||
+    !isReadingShade(reading.textShade) ||
+    !isReadingShade(reading.separatorShade)
+  ) {
     fail(SettingsMessages.readingShadeInvalid);
   }
 

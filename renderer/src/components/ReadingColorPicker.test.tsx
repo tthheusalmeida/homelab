@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -19,11 +19,13 @@ const setup = (color: ReadingColorId = 'default', shade: ReadingShade = 50, onCh
   return { onChange, user: userEvent.setup() };
 };
 
+/** O preenchimento hexagonal é o último elemento dentro do botão. */
+const fillOf = (swatch: HTMLElement) => swatch.lastElementChild as HTMLElement;
 const colors = () => within(screen.getByRole('radiogroup', { name: 'Cor de fundo' }));
-const shades = () => within(screen.getByRole('radiogroup', { name: 'Intensidade: Cor de fundo' }));
+const slider = () => screen.getByRole('slider', { name: 'Intensidade: Cor de fundo' });
 
 describe('ReadingColorPicker', () => {
-  it('when shown, should offer the default plus the 22 tailwind colors', () => {
+  it('when shown, should offer the default plus the 15 tailwind colors', () => {
     setup();
 
     expect(colors().getAllByRole('radio')).toHaveLength(READING_COLOR_NAMES.length + 1);
@@ -44,13 +46,18 @@ describe('ReadingColorPicker', () => {
     expect(screen.queryByRole('radiogroup', { name: /Intensidade/ })).not.toBeInTheDocument();
   });
 
-  it('when a color is selected, should offer the 11 intensities from 50 to 950 and mark the current one', () => {
+  it('when a color is selected, should offer the intensity as a slider on the current step', () => {
     setup('sky', 300);
 
-    expect(shades().getAllByRole('radio')).toHaveLength(READING_SHADES_LIST.length);
-    expect(shades().getByRole('radio', { name: '300' })).toBeChecked();
-    expect(shades().getByRole('radio', { name: '50' })).not.toBeChecked();
-    expect(shades().getByRole('radio', { name: '950' })).not.toBeChecked();
+    expect(slider()).toHaveValue(String(READING_SHADES_LIST.indexOf(300)));
+    expect(slider()).toHaveAttribute('aria-valuetext', '300');
+    expect(screen.queryByRole('radiogroup', { name: /Intensidade/ })).not.toBeInTheDocument();
+  });
+
+  it('when the default is selected, should not offer the slider', () => {
+    setup('default');
+
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
   });
 
   it('when a color is clicked, should report only the color', async () => {
@@ -69,29 +76,32 @@ describe('ReadingColorPicker', () => {
     expect(onChange).toHaveBeenCalledWith({ color: 'default' });
   });
 
-  it('when an intensity is clicked, should report only the intensity', async () => {
-    const { onChange, user } = setup('sky', 50);
+  it('when the slider moves, should report only the intensity', () => {
+    const { onChange } = setup('sky', 50);
 
-    await user.click(shades().getByRole('radio', { name: '800' }));
+    fireEvent.change(slider(), { target: { value: String(READING_SHADES_LIST.indexOf(800)) } });
 
     expect(onChange).toHaveBeenCalledWith({ shade: 800 });
-  });
-
-  it('when intensities are shown, should paint each one with that shade of the chosen color', () => {
-    setup('red', 50);
-
-    const light = shades().getByRole('radio', { name: '50' });
-    const dark = shades().getByRole('radio', { name: '950' });
-
-    expect(light.style.backgroundColor).toContain('oklch');
-    expect(light.style.backgroundColor).not.toBe(dark.style.backgroundColor);
   });
 
   it('when a color is shown, should paint its swatch with the tailwind color', () => {
     setup();
 
-    expect(colors().getByRole('radio', { name: 'Vermelho' }).style.backgroundColor).toContain(
-      'oklch',
-    );
+    expect(
+      fillOf(colors().getByRole('radio', { name: 'Vermelho' })).style.backgroundColor,
+    ).toContain('oklch');
+  });
+
+  it('when listing colors, should draw every one as a hexagon', () => {
+    setup('sky', 300);
+
+    const swatches = document.querySelectorAll('[data-slot=hex-swatch]');
+
+    expect(swatches).toHaveLength(READING_COLOR_NAMES.length + 1);
+    for (const swatch of swatches) {
+      expect((swatch.lastElementChild as HTMLElement).className).toContain(
+        'clip-path:polygon(50%_0',
+      );
+    }
   });
 });

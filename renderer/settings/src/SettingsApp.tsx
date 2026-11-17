@@ -61,7 +61,7 @@ const SECTION_ICONS: Record<SectionId, LucideIcon> = {
  * `Sidebar` da UI (item ativo colorido com transição) e cada seção entra com fade.
  */
 export function SettingsApp() {
-  const [sectionId, setSectionId] = useState<SectionId>('paths');
+  const [sectionId, setSectionId] = useState<SectionId>('appearance');
   const [restartPending, setRestartPending] = useState(false);
   const [collapsed, toggleGroup] = useCollapsedGroups(SETTINGS_COLLAPSED_KEY);
 

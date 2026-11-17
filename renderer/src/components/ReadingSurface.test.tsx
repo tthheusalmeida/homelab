@@ -108,4 +108,58 @@ describe('ReadingSurface', () => {
 
     expect(screen.getByRole('region', { name: 'Leitura' })).toHaveClass('reading-surface', 'extra');
   });
+
+  it('when only the background is chosen, should write with the ink that reads on it even in the dark theme', async () => {
+    saved({ background: 'amber', backgroundShade: 100 }, 'dark');
+
+    withProvider(<ReadingSurface>texto</ReadingSurface>);
+
+    const surface = screen.getByText('texto');
+
+    await waitFor(() => expect(surface).toHaveAttribute('data-custom-bg'));
+    expect(surface.style.getPropertyValue('--reading-fg')).toBe('oklch(0.22 0 0)');
+    expect(surface.style.getPropertyValue('--reading-tab-bg')).toBe('oklch(0.22 0 0)');
+  });
+
+  it('when a separator color is chosen, should expose it for the dividers', async () => {
+    saved({ separator: 'teal', separatorShade: 300 });
+
+    withProvider(<ReadingSurface>texto</ReadingSurface>);
+
+    const surface = screen.getByText('texto');
+
+    await waitFor(() =>
+      expect(surface.style.getPropertyValue('--reading-sep')).toBe(READING_SHADES.teal[300]),
+    );
+  });
+
+  it('when nothing is customized, should leave the theme tokens alone', () => {
+    render(<ReadingSurface>texto</ReadingSurface>);
+
+    expect(screen.getByText('texto')).not.toHaveAttribute('data-custom-fg');
+    expect(screen.getByText('texto')).not.toHaveAttribute('data-custom-bg');
+  });
+
+  it('when only the text color is chosen, should override the foreground tokens but not the background', async () => {
+    saved({ text: 'indigo', textShade: 800 });
+
+    withProvider(<ReadingSurface>texto</ReadingSurface>);
+
+    const surface = screen.getByText('texto');
+
+    await waitFor(() => expect(surface).toHaveAttribute('data-custom-fg'));
+    expect(surface).not.toHaveAttribute('data-custom-bg');
+  });
+
+  it('when the background is chosen, should override both background and foreground tokens', async () => {
+    saved({ background: 'amber', backgroundShade: 100 });
+
+    withProvider(<ReadingSurface>texto</ReadingSurface>);
+
+    const surface = screen.getByText('texto');
+
+    await waitFor(() => expect(surface).toHaveAttribute('data-custom-bg'));
+    expect(surface).toHaveAttribute('data-custom-fg');
+    expect(surface.style.colorScheme).toBe('light');
+  });
 });

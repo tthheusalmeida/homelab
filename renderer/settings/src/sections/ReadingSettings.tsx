@@ -5,7 +5,7 @@ import { Button } from '#ui/button';
 import { Label } from '#ui/label';
 import { ReadingColorPicker } from '#components/ReadingColorPicker';
 import { ReadingPreview } from '#components/ReadingPreview';
-import { SettingsGroup, SettingsPanel } from '#components/SettingsGroup';
+import { SettingsGroup, SettingsPanel, SettingsRow } from '#components/SettingsGroup';
 import { ValueStepper } from '#components/ValueStepper';
 import { useAppearance } from '#hooks/use-appearance';
 import {
@@ -15,7 +15,6 @@ import {
   stepFontSize,
   stepZoom,
 } from '#lib/reading';
-import { cn } from '#lib/utils';
 import {
   DEFAULT_READING,
   READING_FONT_IDS,
@@ -28,31 +27,10 @@ import { Strings } from '../strings';
 
 const text = Strings.appearance.reading;
 
-/** Linha de um ajuste: rótulo curto à esquerda, controle à direita (empilha em janela estreita). */
-function Row({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
-      <div className="sm:w-28 sm:shrink-0">
-        <p className="text-sm font-medium">{label}</p>
-        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-      </div>
-
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
-  );
-}
-
 /**
- * Preferências de leitura (fonte, tamanho da letra, zoom, cores) com o preview ao vivo no topo.
- * Como o resto da Aparência, cada escolha vale na hora e é gravada em seguida.
+ * Preferências de leitura (fonte, tamanho da letra, zoom, cores e painel lateral) com o preview ao
+ * vivo no topo. Minimalista: uma linha por ajuste, sem textos de ajuda soltos. Como o resto da
+ * Aparência, cada escolha vale na hora e é gravada em seguida.
  */
 export function ReadingSettings() {
   const { appearance, updateReading, resetReading } = useAppearance();
@@ -72,11 +50,11 @@ export function ReadingSettings() {
 
   return (
     <SettingsGroup title={text.title} hint={text.hint}>
-      <SettingsPanel>
+      <SettingsPanel className="gap-2.5 p-3">
         <ReadingPreview />
 
-        <Row label={text.font}>
-          <div role="radiogroup" aria-label={text.font} className="flex flex-wrap gap-1.5">
+        <SettingsRow label={text.font}>
+          <div role="radiogroup" aria-label={text.font} className="flex flex-wrap gap-1">
             {READING_FONT_IDS.map((font) => (
               <Button
                 key={font}
@@ -85,7 +63,7 @@ export function ReadingSettings() {
                 aria-checked={reading.font === font}
                 title={readingFontHints[font]}
                 variant={reading.font === font ? 'default' : 'outline'}
-                size="sm"
+                size="xs"
                 style={{ fontFamily: readingFontFamilies[font] }}
                 onClick={() => change({ font })}
               >
@@ -93,10 +71,10 @@ export function ReadingSettings() {
               </Button>
             ))}
           </div>
-        </Row>
+        </SettingsRow>
 
-        <Row label={text.fontSize}>
-          <div className="max-w-52">
+        <SettingsRow label={text.size}>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
             <ValueStepper
               label={text.fontSize}
               value={`${reading.fontSize}`}
@@ -108,30 +86,26 @@ export function ReadingSettings() {
               increaseIcon={<Plus />}
               onDecrease={() => change({ fontSize: stepFontSize(reading.fontSize, -1) })}
               onIncrease={() => change({ fontSize: stepFontSize(reading.fontSize, 1) })}
-              hideLabel
             />
-          </div>
-        </Row>
 
-        <Row label={text.zoom} hint={text.zoomHint}>
-          <div className="max-w-52">
-            <ValueStepper
-              label={text.zoom}
-              value={`${reading.zoom}%`}
-              decreaseLabel="Diminuir o zoom"
-              increaseLabel="Aumentar o zoom"
-              canDecrease={reading.zoom > READING_ZOOM.min}
-              canIncrease={reading.zoom < READING_ZOOM.max}
-              decreaseIcon={<ZoomOut />}
-              increaseIcon={<ZoomIn />}
-              onDecrease={() => change({ zoom: stepZoom(reading.zoom, -1) })}
-              onIncrease={() => change({ zoom: stepZoom(reading.zoom, 1) })}
-              hideLabel
-            />
+            <span title={text.zoomHint}>
+              <ValueStepper
+                label={text.zoom}
+                value={`${reading.zoom}%`}
+                decreaseLabel="Diminuir o zoom"
+                increaseLabel="Aumentar o zoom"
+                canDecrease={reading.zoom > READING_ZOOM.min}
+                canIncrease={reading.zoom < READING_ZOOM.max}
+                decreaseIcon={<ZoomOut />}
+                increaseIcon={<ZoomIn />}
+                onDecrease={() => change({ zoom: stepZoom(reading.zoom, -1) })}
+                onIncrease={() => change({ zoom: stepZoom(reading.zoom, 1) })}
+              />
+            </span>
           </div>
-        </Row>
+        </SettingsRow>
 
-        <Row label={text.background}>
+        <SettingsRow label={text.background}>
           <ReadingColorPicker
             label={text.background}
             color={reading.background}
@@ -143,9 +117,9 @@ export function ReadingSettings() {
               })
             }
           />
-        </Row>
+        </SettingsRow>
 
-        <Row label={text.text}>
+        <SettingsRow label={text.text}>
           <ReadingColorPicker
             label={text.text}
             color={reading.text}
@@ -157,41 +131,55 @@ export function ReadingSettings() {
               })
             }
           />
-        </Row>
+        </SettingsRow>
 
-        <Row label={text.sidePanel} hint={text.sidePanelHint}>
-          <div className="flex items-center gap-2">
-            <input
-              id="reading-pin-sidebar"
-              type="checkbox"
-              className="size-4 shrink-0 cursor-pointer accent-primary"
-              checked={reading.pinSidebar}
-              onChange={(event) => change({ pinSidebar: event.target.checked })}
-            />
+        <SettingsRow label={text.separator}>
+          <ReadingColorPicker
+            label={text.separator}
+            color={reading.separator}
+            shade={reading.separatorShade}
+            onChange={({ color, shade }) =>
+              change({
+                ...(color && { separator: color }),
+                ...(shade && { separatorShade: shade }),
+              })
+            }
+          />
+        </SettingsRow>
 
-            <Label htmlFor="reading-pin-sidebar" className="cursor-pointer text-sm font-normal">
-              {text.sidePanelOption}
-            </Label>
+        <SettingsRow label={text.sidePanel} hint={text.sidePanelHint}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <input
+                id="reading-pin-sidebar"
+                type="checkbox"
+                className="size-4 shrink-0 cursor-pointer accent-primary"
+                checked={reading.pinSidebar}
+                onChange={(event) => change({ pinSidebar: event.target.checked })}
+              />
+
+              <Label htmlFor="reading-pin-sidebar" className="cursor-pointer text-sm font-normal">
+                {text.sidePanelOption}
+              </Label>
+            </div>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              disabled={isDefault}
+              onClick={() => run(resetReading())}
+            >
+              <RotateCcw /> {text.restore}
+            </Button>
           </div>
-        </Row>
+        </SettingsRow>
 
         {error && (
-          <p role="alert" className={cn('animate-enter-fade text-sm text-destructive')}>
+          <p role="alert" className="animate-enter-fade text-sm text-destructive">
             {error}
           </p>
         )}
-
-        <div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={isDefault}
-            onClick={() => run(resetReading())}
-          >
-            <RotateCcw /> {text.restore}
-          </Button>
-        </div>
       </SettingsPanel>
     </SettingsGroup>
   );

@@ -368,7 +368,7 @@ describe("BookPage", () => {
       within(region).queryByRole("navigation", { name: "Sumário do livro" }),
     ).not.toBeInTheDocument();
 
-    await user.hover(
+    await user.click(
       screen.getByRole("button", { name: "Mostrar painel lateral" }),
     );
 
