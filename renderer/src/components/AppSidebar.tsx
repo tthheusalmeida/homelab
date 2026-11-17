@@ -33,8 +33,7 @@ import { SidebarSetupProgress } from '#components/SidebarSetupProgress';
 import { useCollapsedGroups } from '#hooks/use-collapsed-groups';
 import { useActiveJobsCount } from '../pages/jobs/track/hooks/useActiveJobsCount';
 import { useInboxCount } from '../pages/library/hooks/useLibrary';
-import { IpcChannels } from '#shared/channels';
-import { ipc } from '#lib/ipc';
+import { SETTINGS_PATH } from '#lib/settings-route';
 
 /** Tela dos jobs: o item do menu mostra quantos estão em andamento. */
 const JOBS_URL = '/jobs/track';
@@ -94,6 +93,7 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const activeUrl = findActiveUrl(location.pathname, navigationUrls);
+  const onSettings = location.pathname === SETTINGS_PATH;
   const [collapsed, toggleGroup] = useCollapsedGroups();
   const activeJobs = useActiveJobsCount();
   const inboxCount = useInboxCount();
@@ -171,14 +171,16 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarRestartNotice />
+        {/* Nas Configurações o aviso já aparece no rodapé da tela. */}
+        {!onSettings && <SidebarRestartNotice />}
 
         <SidebarSetupProgress />
 
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={() => void ipc.invoke(IpcChannels.app.openSettings)}
+              isActive={onSettings}
+              onClick={() => void navigate(SETTINGS_PATH)}
               className="select-none text-[13px] [&_svg]:size-[15px]"
             >
               <Settings />

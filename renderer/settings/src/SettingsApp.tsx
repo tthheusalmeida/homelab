@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import {
   Archive,
   Cloud,
@@ -19,18 +19,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarProvider,
 } from '#ui/sidebar';
 
 import { RestartBanner } from './components/RestartBanner';
 import { SidebarSection } from '#components/SidebarSection';
 import { SnackbarProvider } from '#components/Snackbar';
 import { useCollapsedGroups } from '#hooks/use-collapsed-groups';
-import { useIpcEvent } from '#hooks/use-ipc-event';
 import { useMarkRestartPending, useRestartPending } from '#hooks/use-restart-pending';
-import { ipc } from '#lib/ipc';
-import { IpcChannels } from '#shared/channels';
-import { IpcEvents } from '#shared/events';
 import { relaunchApp } from '#lib/restart';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { BackupSection } from './sections/BackupSection';
@@ -57,12 +52,18 @@ const SECTION_ICONS: Record<SectionId, LucideIcon> = {
   backup: Archive,
 };
 
+const isSectionId = (value: string | null | undefined): value is SectionId =>
+  SECTIONS.some(({ id }) => id === value);
+
 /**
- * Janela de Configurações. Usa os mesmos componentes e as mesmas transições do app: o menu é o
- * `Sidebar` da UI (item ativo colorido com transição) e cada seção entra com fade.
+ * Tela de Configurações (rota `/settings` do app). Usa os mesmos componentes e as mesmas transições
+ * do app: o menu é o `Sidebar` da UI (item ativo colorido com transição) e cada seção entra com fade.
+ * `initialSection` vem do endereço (`?section=`); seção desconhecida cai em Aparência.
  */
-export function SettingsApp() {
-  const [sectionId, setSectionId] = useState<SectionId>('appearance');
+export function SettingsApp({ initialSection }: { initialSection?: string | null }) {
+  const [sectionId, setSectionId] = useState<SectionId>(
+    isSectionId(initialSection) ? initialSection : 'appearance',
+  );
   // O estado vive no main: sobrevive a fechar as Configurações e aparece na barra lateral do app.
   const restartPending = useRestartPending();
   const markRestartPending = useMarkRestartPending();
@@ -74,33 +75,12 @@ export function SettingsApp() {
     }
   };
 
-  const goTo = (requested: string | null | undefined) => {
-    const found = SECTIONS.find(({ id }) => id === requested);
-
-    if (found) {
-      setSectionId(found.id);
-    }
-  };
-
-  // Aberta pelo atalho "ver detalhes da instalação": o main guarda a seção pedida até a janela perguntar.
-  useEffect(() => {
-    ipc
-      .invoke(IpcChannels.app.settingsSection)
-      .then(goTo)
-      .catch(() => undefined);
-    // só na abertura
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Janela já aberta: o main avisa a seção pedida.
-  useIpcEvent(IpcEvents.settingsNavigate, ({ section: requested }) => goTo(requested));
-
   const section = SECTIONS.find(({ id }) => id === sectionId) ?? SECTIONS[0];
 
   return (
     <SnackbarProvider raised={restartPending}>
-      <SidebarProvider
-        className="h-svh min-h-0 bg-background text-foreground"
+      <div
+        className="flex h-full min-h-0 overflow-hidden rounded-lg border bg-background text-foreground"
         style={{ '--sidebar-width': '15rem' } as CSSProperties}
       >
         <Sidebar collapsible="none" aria-label="Seções de configuração" className="border-r">
@@ -178,7 +158,7 @@ export function SettingsApp() {
 
           {restartPending && <RestartBanner onRestart={() => void relaunchApp()} />}
         </div>
-      </SidebarProvider>
+      </div>
     </SnackbarProvider>
   );
 }

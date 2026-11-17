@@ -5,16 +5,14 @@ export const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
 export const APP_ENTRY_URL = `${APP_ORIGIN}/`;
 export const INDEX_FILE = 'index.html';
 
-/** Janela de Configurações: no build vive em app://front/settings/; em dev, no servidor do Vite dela. */
-export const SETTINGS_BUILD_PATH = '/settings/index.html';
-export const DEFAULT_SETTINGS_DEV_URL = 'http://localhost:5174';
+/** Seção das Configurações aberta sozinha na primeira execução sem chave do Gemini. */
+export const FIRST_RUN_SETTINGS_SECTION = 'external';
 
 /** Variáveis de ambiente lidas pelo main (todas opcionais, exceto onde dito). */
 export const MainEnv = {
   FRONT_URL: 'HOMELAB_FRONT_URL',
   FRONT_DIST_DIR: 'HOMELAB_FRONT_DIST_DIR',
   USER_DATA_DIR: 'HOMELAB_USER_DATA_DIR',
-  SETTINGS_URL: 'HOMELAB_SETTINGS_URL',
   /** Troca a raiz dos dados (só desenvolvimento e testes): evita escrever em Documentos/HomeLab. */
   DATA_ROOT_DIR: 'HOMELAB_DATA_ROOT_DIR',
 } as const;
@@ -42,14 +40,6 @@ export const SPLASH_WINDOW = {
   width: 340,
   height: 240,
   title: 'HomeLab',
-} as const;
-
-export const SETTINGS_WINDOW = {
-  width: 1000,
-  height: 740,
-  minWidth: 780,
-  minHeight: 560,
-  title: 'Configurações',
 } as const;
 
 export const WINDOW = {

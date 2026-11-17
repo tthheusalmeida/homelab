@@ -58,7 +58,6 @@ async function mainWindow(app: ElectronApplication): Promise<Page> {
   await app.firstWindow();
   const isMain = (window: Page) =>
     !window.url().includes('splash.html') &&
-    !window.url().includes('/settings/') &&
     window.url() !== '';
 
   await expect
@@ -390,29 +389,27 @@ test('when a backup is created and restored in a clean computer, should bring th
   }
 });
 
-test('when the settings window opens, should offer the library and backup sections without the old folder fields', async () => {
+test('when the settings screen opens, should offer the library and backup sections without the old folder fields', async () => {
   test.setTimeout(90_000);
   const app = await launch(sandbox());
 
   try {
     const page = await mainWindow(app);
 
-    await invoke(page, 'app:open-settings');
-    await expect
-      .poll(() => app.windows().some((window) => window.url().includes('/settings/')), {
-        timeout: 20_000,
-      })
-      .toBe(true);
+    await page.getByRole('button', { name: 'Configurações', exact: true }).click();
+    await expect(page).toHaveURL(/\/settings/);
 
-    const settings = app.windows().find((window) => window.url().includes('/settings/'))!;
+    // Menu das seções (o app também tem um grupo "Biblioteca" na barra lateral).
+    const settings = page;
+    const menu = page.getByLabel('Seções de configuração');
 
-    await expect(settings.getByRole('button', { name: /^Biblioteca/ })).toBeVisible();
-    await expect(settings.getByRole('button', { name: /^Backup/ })).toBeVisible();
+    await expect(menu.getByRole('button', { name: /^Biblioteca/ })).toBeVisible();
+    await expect(menu.getByRole('button', { name: /^Backup/ })).toBeVisible();
     await expect(settings.getByRole('textbox', { name: 'Biblioteca' })).toBeVisible();
     await expect(settings.getByLabel('Entrada')).toHaveCount(0);
     await expect(settings.getByLabel('Vídeos temporários')).toHaveCount(0);
 
-    await settings.getByRole('button', { name: /^Backup/ }).click();
+    await menu.getByRole('button', { name: /^Backup/ }).click();
     await expect(settings.getByText('O que NÃO entra no backup')).toBeVisible();
     await expect(settings.getByText('Chaves de API', { exact: false })).toBeVisible();
   } finally {

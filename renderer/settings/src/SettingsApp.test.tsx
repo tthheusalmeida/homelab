@@ -7,6 +7,8 @@ import { renderWithQuery } from '#test/utils';
 import { AppearanceProvider } from '#components/AppearanceProvider';
 import { IpcChannels } from '#shared/channels';
 
+import { SidebarProvider } from '#ui/sidebar';
+
 import { SettingsApp } from './SettingsApp';
 import { mockApi, ok, payloadsOf } from './testing';
 
@@ -43,7 +45,7 @@ const handlers = (restartRequired: boolean, restartAlreadyPending = false) => {
 const renderApp = () =>
   renderWithQuery(
     <AppearanceProvider>
-      <SettingsApp />
+      <SidebarProvider><SettingsApp /></SidebarProvider>
     </AppearanceProvider>,
   );
 

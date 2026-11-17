@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, useLocation } from 'react-router';
@@ -9,7 +9,7 @@ import { createTestQueryClient } from '../test/utils';
 import { SidebarProvider } from '#ui/sidebar';
 
 import { IpcChannels } from '#shared/channels';
-import { mockApi, ok, payloadsOf } from '#test/api-mock';
+import { mockApi, ok } from '#test/api-mock';
 
 import { COLLAPSED_GROUPS_KEY } from '#hooks/use-collapsed-groups';
 
@@ -140,15 +140,32 @@ describe('AppSidebar', () => {
     ).toBeTruthy();
   });
 
-  it('when Configurações is clicked, should ask the app to open the settings window without navigating', async () => {
+  it('when Configurações is clicked, should navigate to the settings route', async () => {
     const user = userEvent.setup();
-    const invoke = mockApi({ [IpcChannels.app.openSettings]: () => ok(undefined) });
+    mockApi({});
 
     renderSidebar();
     await user.click(screen.getByText('Configurações'));
 
-    await waitFor(() => expect(payloadsOf(invoke, IpcChannels.app.openSettings)).toHaveLength(1));
-    expect(screen.getByTestId('where')).toHaveTextContent('/');
+    expect(screen.getByTestId('where')).toHaveTextContent('/settings');
+  });
+
+  it('when on the settings route, should mark Configurações as the current item', () => {
+    mockApi({});
+
+    renderSidebar('/settings');
+
+    expect(screen.getByRole('button', { name: 'Configurações' })).toHaveAttribute('data-active');
+  });
+
+  it('when on the settings route with a restart pending, should hide the sidebar notice (the screen has its own)', async () => {
+    mockApi({ [IpcChannels.app.restartPending]: () => ok(true) });
+
+    renderSidebar('/settings');
+    await act(async () => undefined);
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Reiniciar agora/ })).not.toBeInTheDocument();
   });
 });
 

@@ -9,22 +9,7 @@ describe('resolveFrontTarget', () => {
       url: 'http://localhost:5173/',
       origin: 'http://localhost:5173',
       splashUrl: 'http://localhost:5173/splash.html',
-      settingsUrl: 'http://localhost:5174',
-      settingsOrigin: 'http://localhost:5174',
     });
-  });
-
-  it('when HOMELAB_SETTINGS_URL is set in dev, should use it for the settings window', () => {
-    const target = resolveFrontTarget(
-      {
-        HOMELAB_FRONT_URL: 'http://localhost:5173/',
-        HOMELAB_SETTINGS_URL: 'http://localhost:6000/x',
-      },
-      'app://front',
-    );
-
-    expect(target.settingsUrl).toBe('http://localhost:6000/x');
-    expect(target.settingsOrigin).toBe('http://localhost:6000');
   });
 
   it('when HOMELAB_FRONT_URL is not set, should target the built front through the app protocol', () => {
@@ -33,8 +18,6 @@ describe('resolveFrontTarget', () => {
       url: 'app://front/',
       origin: 'app://front',
       splashUrl: 'app://front/splash.html',
-      settingsUrl: 'app://front/settings/index.html',
-      settingsOrigin: 'app://front',
     });
   });
 

@@ -22,7 +22,8 @@ export interface IpcEventPayloads {
   [IpcEvents.libraryMoveProgress]: ProgressEventPayload;
   [IpcEvents.notice]: AppNotice;
   [IpcEvents.componentsProgress]: ComponentsStatus;
-  [IpcEvents.settingsNavigate]: { section: string };
+  /** Abre as Configurações (rota do app), numa seção quando informada. */
+  [IpcEvents.settingsNavigate]: { section?: string };
   /** Há alteração que só vale depois de reiniciar (sempre `true`: o estado zera ao reiniciar). */
   [IpcEvents.restartPending]: boolean;
 }

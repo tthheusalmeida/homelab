@@ -34,9 +34,9 @@ Estado: app instalável e em uso (versão `0.1.x`). Falta o que está em `docs/m
 Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/regras/back/` e `docs/regras/front/` (ver `docs/regras-de-negocio.md`). Leia a regra antes de mexer em `src/back`.
 
 ## Comandos
-- `npm run dev` — compila o main e sobe: Vite do app principal (5173), Vite das Configurações (5174) e o Electron
+- `npm run dev` — compila o main e sobe: Vite do app (5173) e o Electron
 - `npm start` — build completo (renderer e main) e abre o app com os arquivos estáticos (`dist-renderer`)
-- `npm run build` / `build:renderer` (`:main`, `:settings`) / `build:main`
+- `npm run build` / `build:renderer` (`:main`) / `build:main`
 - `npm test` (Jest, `src/**/*.spec.ts`, inclui os testes de `src/back`) / `npm run test:watch` / `npm run test:cov`
 - `npm run test:renderer` (Vitest, `renderer/**/*.test.{ts,tsx}`) / `npm run typecheck:renderer`
 - `npm run test:e2e` — smoke E2E com Playwright (build + app real com `userData` temporário)
@@ -49,8 +49,8 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/r
 - `src/storage/` — `json-file.ts` (JSON atômico com `.bak`) e `tree.ts` (cópia conferida de pastas, escaneamento, progresso)
 - `src/backup/` — backup e restauração em `.zip` (`zip.ts`, `manifest.ts`, `backup.service.ts`)
 - `src/preload/` — `bridge.ts` (ponte com lista de canais permitidos) e `index.ts` (`contextBridge` expõe `window.api`); empacotado com esbuild
-- `renderer/` — UI do desktop, **fora do `src/`**: `src/` (o front: `app`, `pages/<rota>`, `components`, `ui`, `lib` com `ipc.ts`, `hooks`, `test` com `api-mock.ts`), `settings/` (janela de Configurações), `index.html`, `public`, `vite-aliases.mts`, `tsconfig.json`
-- `vite.renderer.main.config.mts`, `vite.renderer.settings.config.mts`, `vitest.renderer.config.mts`, `tsconfig.renderer.json` — build, testes e tipos do renderer (dependências próprias; instalar com `npm install --legacy-peer-deps`)
+- `renderer/` — UI do desktop, **fora do `src/`**: `src/` (o front: `app`, `pages/<rota>`, `components`, `ui`, `lib` com `ipc.ts`, `hooks`, `test` com `api-mock.ts`), `settings/` (tela de Configurações, rota `/settings`), `index.html`, `public`, `vite-aliases.mts`, `tsconfig.json`
+- `vite.renderer.main.config.mts`, `vitest.renderer.config.mts`, `tsconfig.renderer.json` — build, testes e tipos do renderer (dependências próprias; instalar com `npm install --legacy-peer-deps`)
 - `dist-renderer/` — saída do build do renderer (não versionada)
 - `src/shared/` — **contratos usados por main, preload e front**: `channels.ts` (`IpcChannels`), `errors.ts` (`IpcErrorCode`, `IpcError`), `result.ts` (`IpcResult`), `contracts/` (request/response por canal), `renderer-api.ts`, `ipc-client.ts` (cliente do front)
 - `src/ipc/` — `IpcHandler` (base, `routes()`), `IpcRegistrar`, `IpcErrorMapper`, `IpcMainLike`, `handlers/*.handler.ts` + `handlers/index.ts` (`createHandlers`), `testing/FakeIpcMain`
@@ -73,7 +73,7 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/r
 - **Não há HTTP**: o front fala com o main só por `window.api` (IPC) e o back é só contêiner de DI. Ninguém abre porta; a CSP não libera `localhost`.
 - Código em `src/back` mantém a estrutura de módulos do back original (Nest com decorators) e imports relativos; o `BackConfig` é a única entrada de configuração dele (nada de `process.env`).
 - Imports relativos dentro de `desktop/src` (compilação com `tsc` puro, sem reescrita de alias).
-- **Fonte única de UI (OBRIGATÓRIO):** `renderer/src/ui` (primitivos) e `renderer/src/components` (baseComponentes) são a **única fonte** de componentes, nas duas janelas (app e Configurações). **Antes de criar qualquer coisa, procure o que já existe** (`ui/`, `components/`, `docs/identidade.md`, `docs/movimento.md`) e reutilize; se faltar uma variante, estenda o componente existente; se for novo e reaproveitável, crie em `components/` (ou `ui/`) e passe a usar nos lugares. Nada de HTML/Tailwind específico reimplementando o que um componente já faz, e as Configurações recebem as mesmas transições e o mesmo visual do app.
+- **Fonte única de UI (OBRIGATÓRIO):** `renderer/src/ui` (primitivos) e `renderer/src/components` (baseComponentes) são a **única fonte** de componentes, em todas as telas (inclusive Configurações). **Antes de criar qualquer coisa, procure o que já existe** (`ui/`, `components/`, `docs/identidade.md`, `docs/movimento.md`) e reutilize; se faltar uma variante, estenda o componente existente; se for novo e reaproveitável, crie em `components/` (ou `ui/`) e passe a usar nos lugares. Nada de HTML/Tailwind específico reimplementando o que um componente já faz, e as Configurações recebem as mesmas transições e o mesmo visual do app.
 - **UI do desktop (`renderer/`)**: reaproveite os componentes por alias (`#ui/*`, `#components/*`, `#lib/*`, `#hooks/*`, `#shared/*`, `#test/*`); não duplique HTML/Tailwind solto. Componentes por rota ficam em `pages/<rota>/components`; a base própria em `components`, construída sobre `ui`.
 - **Cores e marca:** nada de cor de destaque fixa (`cyan-*`, `blue-*`) em componente: ação = `primary`, marca = `brand` (ver `docs/identidade.md`); carregando = `LoadingState`/`HexLoader`, status = `HexDot`. Tema e cor são configuráveis em Configurações > Aparência.
 - **Movimento:** o que entra ou sai da tela anima (`animate-enter`, `animate-exit-down`, collapsible); use as utilities e réguas de `docs/movimento.md`, sem keyframes soltos. `prefers-reduced-motion` já é tratado globalmente.

@@ -7,6 +7,8 @@ import { IpcChannels } from '#shared/channels';
 import { setupStatus } from '#test/components-fixtures';
 import { renderWithQuery } from '#test/utils';
 
+import { SidebarProvider } from '#ui/sidebar';
+
 import { SettingsApp } from './SettingsApp';
 import { SECTION_GROUPS, SECTIONS, SETTINGS_COLLAPSED_KEY } from './strings';
 import { mockApi, ok } from './testing';
@@ -14,7 +16,6 @@ import { mockApi, ok } from './testing';
 const handlers = {
   [IpcChannels.settings.get]: () => ok({ libraryDir: 'D:/lib' }),
   [IpcChannels.components.status]: () => ok(setupStatus()),
-  [IpcChannels.app.settingsSection]: () => ok(null),
 };
 
 describe('SECTION_GROUPS', () => {
@@ -37,7 +38,7 @@ describe('SettingsApp menu groups', () => {
 
     renderWithQuery(
       <AppearanceProvider>
-        <SettingsApp />
+        <SidebarProvider><SettingsApp /></SidebarProvider>
       </AppearanceProvider>,
     );
 
@@ -71,7 +72,7 @@ describe('SettingsApp menu groups', () => {
 
     renderWithQuery(
       <AppearanceProvider>
-        <SettingsApp />
+        <SidebarProvider><SettingsApp /></SidebarProvider>
       </AppearanceProvider>,
     );
     await userEvent.click(menu().getByText('Sistema'));
@@ -87,7 +88,7 @@ describe('SettingsApp menu groups', () => {
 
     renderWithQuery(
       <AppearanceProvider>
-        <SettingsApp />
+        <SidebarProvider><SettingsApp /></SidebarProvider>
       </AppearanceProvider>,
     );
     await userEvent.click(menu().getByText('Geral'));
@@ -101,7 +102,7 @@ describe('SettingsApp menu groups', () => {
 
     renderWithQuery(
       <AppearanceProvider>
-        <SettingsApp />
+        <SidebarProvider><SettingsApp /></SidebarProvider>
       </AppearanceProvider>,
     );
 
@@ -114,7 +115,7 @@ describe('SettingsApp menu groups', () => {
 
     renderWithQuery(
       <AppearanceProvider>
-        <SettingsApp />
+        <SidebarProvider><SettingsApp /></SidebarProvider>
       </AppearanceProvider>,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Backup' }));

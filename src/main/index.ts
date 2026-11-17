@@ -36,6 +36,7 @@ import { applyCspHeader, buildContentSecurityPolicy, CSP_HEADER } from './conten
 import {
   APP_ORIGIN,
   APP_SCHEME,
+  FIRST_RUN_SETTINGS_SECTION,
   INDEX_FILE,
   MainEnv,
   Messages,
@@ -66,14 +67,9 @@ import { resolveFfmpegPath } from '../providers/ffmpeg-binary-resolver';
 import { resolveYtDlpPath } from '../providers/ytdlp-binary-resolver';
 import { resolveBinDir, resolveDataRoot, resolveFrontDist, resolveResourcesDir } from './paths';
 import { isSettingsShortcut } from './shortcuts';
-import { SingleWindowController } from './single-window';
 import { SystemNotifier } from './system-notifier';
 import { resolveStaticFile } from './static-files';
-import {
-  createSettingsWindowOptions,
-  createSplashWindowOptions,
-  createWindowOptions,
-} from './window-options';
+import { createSplashWindowOptions, createWindowOptions } from './window-options';
 
 const run = promisify(execFile);
 
@@ -102,10 +98,25 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 let mainWindow: BrowserWindow | null = null;
-let settingsWindow: SingleWindowController<BrowserWindow> | null = null;
 let splashWindow: BrowserWindow | null = null;
-/** Seção pedida para a janela de Configurações que ainda vai abrir (lida uma vez por ela). */
+/** Seção das Configurações pedida antes da tela carregar (primeira execução); a tela a lê uma vez. */
 let pendingSettingsSection: string | null = null;
+/** Eventos para as janelas (uma só hoje: a principal). */
+const events = new WindowEventPublisher(() => BrowserWindow.getAllWindows());
+
+/** Leva a janela principal às Configurações (uma rota do app), já numa seção quando informada. */
+function showSettings(section?: string): void {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+
+  mainWindow.focus();
+  events.publish(IpcEvents.settingsNavigate, { section });
+}
 
 /** Fundo das janelas antes da primeira pintura: o do tema do sistema (a página aplica o escolhido). */
 const backgroundNow = () => windowBackground(nativeTheme.shouldUseDarkColors);
@@ -134,7 +145,7 @@ function registerAppProtocol(distDir: string, policy: string): void {
 /** No dev as páginas vêm dos servidores do Vite: a política entra pelos cabeçalhos da resposta. */
 function applyDevPolicy(target: FrontTarget, policy: string): void {
   session.defaultSession.webRequest.onHeadersReceived(
-    { urls: [`${target.origin}/*`, `${target.settingsOrigin}/*`] },
+    { urls: [`${target.origin}/*`] },
     (details, callback) => {
       callback({ responseHeaders: applyCspHeader(details.responseHeaders ?? {}, policy) });
     },
@@ -168,7 +179,7 @@ function guardWindow(window: BrowserWindow, allowedOrigins: string[]): void {
   window.webContents.on('before-input-event', (event, input) => {
     if (isSettingsShortcut(input)) {
       event.preventDefault();
-      settingsWindow?.open();
+      showSettings();
     }
   });
 }
@@ -203,23 +214,13 @@ function createMainWindow(target: FrontTarget): void {
     mainWindow = null;
   });
 
-  guardWindow(window, [target.origin, target.settingsOrigin]);
+  guardWindow(window, [target.origin]);
 
   if (target.kind === 'dev') {
     window.webContents.openDevTools({ mode: 'detach' });
   }
 
   void window.loadURL(target.url);
-}
-
-function createSettingsWindow(target: FrontTarget): BrowserWindow {
-  const window = new BrowserWindow(createSettingsWindowOptions(preloadPath, backgroundNow()));
-
-  window.once('ready-to-show', () => window.show());
-  guardWindow(window, [target.origin, target.settingsOrigin]);
-  void window.loadURL(target.settingsUrl);
-
-  return window;
 }
 
 /** Pergunta, com um diálogo nativo, o que fazer com os dados da versão anterior. */
@@ -263,7 +264,6 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
   await migrateLegacyData();
 
   const localStateGuard = new LocalStateGuard({ userDataDir: app.getPath('userData') });
-  const events = new WindowEventPublisher(() => BrowserWindow.getAllWindows());
   // Reinício pendente: vale para todas as janelas e sobrevive a fechar as Configurações.
   const restartState = new RestartState((pending) =>
     events.publish(IpcEvents.restartPending, pending),
@@ -430,14 +430,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
           }
           app.exit(0);
         },
-        openSettings: (section) => {
-          pendingSettingsSection = section ?? null;
-          settingsWindow?.open();
-
-          if (section) {
-            events.publish(IpcEvents.settingsNavigate, { section });
-          }
-        },
+        openSettings: (section) => showSettings(section),
         restartPending: () => restartState.isPending(),
         markRestartPending: () => restartState.mark(),
         takeSettingsSection: () => {
@@ -475,7 +468,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     }),
   );
 
-  // Primeira execução sem chave do Gemini: leva o usuário direto às Configurações.
+  // Primeira execução sem chave do Gemini: leva o usuário direto às Configurações (IAs externas).
   return { needsSetup: needsInitialSetup(firstRun, services.secrets.has('gemini.apiKey')) };
 }
 
@@ -501,11 +494,9 @@ async function bootstrap(): Promise<void> {
   try {
     const target = resolveFrontTarget(process.env, APP_ORIGIN);
 
-    settingsWindow = new SingleWindowController(() => createSettingsWindow(target));
-
     const policy = buildContentSecurityPolicy({
       mode: target.kind,
-      devOrigins: target.kind === 'dev' ? [target.origin, target.settingsOrigin] : [],
+      devOrigins: target.kind === 'dev' ? [target.origin] : [],
     });
 
     if (target.kind === 'build') {
@@ -527,7 +518,8 @@ async function bootstrap(): Promise<void> {
     createMainWindow(target);
 
     if (needsSetup) {
-      settingsWindow.open();
+      // A tela lê o pedido ao abrir e vai direto à chave do Gemini.
+      pendingSettingsSection = FIRST_RUN_SETTINGS_SECTION;
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
