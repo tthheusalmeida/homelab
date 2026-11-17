@@ -65,6 +65,23 @@ async function changeLibrary(user: ReturnType<typeof userEvent.setup>, value: st
 }
 
 describe('SettingsApp', () => {
+  it('when opened, should follow the page pattern: prompt, title and description, with the command of the current section', async () => {
+    mockApi(handlers(true));
+
+    const user = userEvent.setup();
+
+    renderApp();
+
+    expect(screen.getByText('root@homelab:~$')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Configurações' })).toBeVisible();
+    expect(screen.getByText('Biblioteca, aparência e serviços usados pelo HomeLab')).toBeVisible();
+    expect(screen.getByText('settings --appearance')).toBeInTheDocument();
+
+    await openLibrary(user);
+
+    expect(screen.getByText('settings --paths')).toBeInTheDocument();
+  });
+
   it('when opened, should start on the appearance section, the first of the menu', async () => {
     mockApi(handlers(true));
 

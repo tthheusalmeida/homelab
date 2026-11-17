@@ -9,6 +9,7 @@ import { ClockAndTime } from "#components/ClockAndTime";
 import { CommandPalette } from "#components/CommandPalette";
 import { InstallAssistant } from "#components/InstallAssistant";
 import { NoticeCenter } from "#components/NoticeCenter";
+import { PageHeaderSlotContext } from "#components/PageHeaderSlot";
 import { useAppShortcuts } from "#hooks/use-app-shortcuts";
 import { useIpcEvent } from "#hooks/use-ipc-event";
 import { ipc } from "#lib/ipc";
@@ -24,6 +25,8 @@ export function AppLayout() {
   const { pathname } = useLocation();
   const fill = FILL_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Onde o `PageHeader` da tela se desenha: fora da área que rola, então o cabeçalho é fixo.
+  const [headerSlot, setHeaderSlot] = useState<HTMLDivElement | null>(null);
   const openPalette = useCallback(() => setPaletteOpen(true), []);
 
   useAppShortcuts(openPalette);
@@ -51,6 +54,7 @@ export function AppLayout() {
     <SidebarProvider>
       <AppSidebar />
 
+      <PageHeaderSlotContext.Provider value={headerSlot}>
       <main className="flex h-svh min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-50 flex h-14 items-center border-b bg-background px-4">
           <SidebarTrigger />
@@ -66,6 +70,8 @@ export function AppLayout() {
           </button>
           <ClockAndTime />
         </header>
+
+        <div ref={setHeaderSlot} data-slot="page-header-slot" className="shrink-0" />
 
         {fill ? (
           <div
@@ -86,6 +92,7 @@ export function AppLayout() {
         </ScrollArea>
         )}
       </main>
+      </PageHeaderSlotContext.Provider>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
 

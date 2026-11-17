@@ -9,6 +9,7 @@ import {
 } from "#shared/tokens";
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { ErrorState } from "#components/ErrorState";
+import { PageHeader } from "#components/PageHeader";
 
 import type { AiMessage, ChatStatus } from "./types/chat";
 
@@ -254,7 +255,14 @@ export function ChatPage() {
   // O AppLayout não rola nesta rota: a raiz ocupa a área útil e só a lista de conversas e o
   // conteúdo da conversa rolam; o campo de mensagem fica sempre à vista.
   return (
-    <div className="flex min-h-0 flex-1 gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <PageHeader
+        title="Conversa"
+        command="ai --chat"
+        description="Converse com a IA; cada conversa fica salva e pode ser retomada depois."
+      />
+
+      <div className="flex min-h-0 flex-1 gap-4">
       <ChatList
         chats={chatsQuery.data}
         isLoading={chatsQuery.isLoading}
@@ -333,6 +341,7 @@ export function ChatPage() {
         errorMessage={deleteChat.isError ? deleteChat.error.message : undefined}
         onConfirm={confirmDelete}
       />
+      </div>
     </div>
   );
 }

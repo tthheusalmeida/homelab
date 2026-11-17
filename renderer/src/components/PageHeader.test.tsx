@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import { PageHeader } from "./PageHeader";
+import { PageHeaderSlotContext } from "./PageHeaderSlot";
 
 describe("PageHeader", () => {
   it("when rendered, should show the title as the page heading and the terminal command", () => {
@@ -32,5 +33,53 @@ describe("PageHeader", () => {
     const { container } = render(<PageHeader title="Início" command="home" />);
 
     expect(container.querySelectorAll("p")).toHaveLength(0);
+  });
+
+  it('when there is a header slot (inside the app layout), should draw the header there, outside the scroll area', () => {
+    const slot = document.createElement('div');
+    document.body.appendChild(slot);
+
+    render(
+      <PageHeaderSlotContext.Provider value={slot}>
+        <div data-testid="content">
+          <PageHeader title="Início" command="home" />
+        </div>
+      </PageHeaderSlotContext.Provider>,
+    );
+
+    expect(slot).toContainElement(screen.getByRole('banner'));
+    expect(screen.getByTestId('content')).not.toContainElement(screen.getByRole('banner'));
+    expect(screen.getByRole('banner').className).not.toContain('sticky');
+
+    slot.remove();
+  });
+
+  it('when there is no header slot, should render the header where it was written', () => {
+    render(
+      <div data-testid="content">
+        <PageHeader title="Início" command="home" />
+      </div>,
+    );
+
+    expect(screen.getByTestId('content')).toContainElement(screen.getByRole('banner'));
+  });
+
+  it('when a toolbar is given, should render the filters inside the pinned header, below the description', () => {
+    render(
+      <PageHeader
+        title="Páginas"
+        command="library --pages"
+        description="Filtre."
+        toolbar={<input aria-label="Buscar" />}
+      />,
+    );
+
+    const header = screen.getByRole('banner');
+
+    expect(header).toContainElement(screen.getByLabelText('Buscar'));
+    expect(
+      screen.getByText('Filtre.').compareDocumentPosition(screen.getByLabelText('Buscar')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });
