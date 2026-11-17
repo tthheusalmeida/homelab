@@ -108,6 +108,14 @@ describe('VideoService', () => {
         'Erro durante o download',
       );
     });
+
+    it('when the output file cannot be opened, should reject instead of crashing', async () => {
+      fs.mkdirSync(path.join(tmp, 'x.mp4'));
+
+      await expect(service.download(`${baseUrl}/video`, 'x.mp4', tmp)).rejects.toThrow(
+        'Erro ao salvar o vídeo',
+      );
+    });
   });
 
   describe('download from platforms', () => {

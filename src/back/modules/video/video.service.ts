@@ -83,10 +83,23 @@ export class VideoService {
       const fileStream = fs.createWriteStream(outputPath);
 
       // Remove o arquivo parcialmente baixado quando ocorre algum erro.
+      // Só apaga depois de fechar: se a conexão falhar antes de o arquivo abrir,
+      // apagar antes deixaria um arquivo vazio para trás.
       const cleanup = () => {
-        fileStream.close();
-        fs.unlink(outputPath, () => {});
+        fileStream.close(() => fs.unlink(outputPath, () => {}));
       };
+
+      // Escuta o erro de escrita desde a criação: ele pode ocorrer antes da resposta
+      // (pasta removida, sem permissão) e, sem ouvinte, derrubaria o processo.
+      fileStream.on('error', (error) => {
+        cleanup();
+
+        reject(
+          new Error(`Erro ao salvar o vídeo: ${error.message}`, {
+            cause: error,
+          }),
+        );
+      });
 
       const parsedUrl = new URL(url);
       const client = parsedUrl.protocol === 'https:' ? https : http;
@@ -124,16 +137,6 @@ export class VideoService {
         fileStream.on('finish', () => {
           fileStream.close();
           resolve(outputPath);
-        });
-
-        fileStream.on('error', (error) => {
-          cleanup();
-
-          reject(
-            new Error(`Erro ao salvar o vídeo: ${error.message}`, {
-              cause: error,
-            }),
-          );
         });
       });
 
