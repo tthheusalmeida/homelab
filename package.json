@@ -28,7 +28,10 @@
     "dist:linux": "npm run build && electron-builder --linux AppImage --x64",
     "dist:mac": "npm run build && electron-builder --mac dmg --arm64",
     "prepare": "husky",
-    "test:commitlint": "node --test scripts/commitlint.test.mjs"
+    "test:commitlint": "node --test scripts/commitlint.test.mjs",
+    "test:release": "node --test scripts/release/release.test.mjs scripts/bin-utils.test.mjs",
+    "bin:pack": "node scripts/bin-pack.mjs",
+    "bin:fetch": "node scripts/bin-fetch.mjs"
   },
   "jest": {
     "moduleFileExtensions": [

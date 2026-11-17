@@ -1,45 +1,34 @@
-# Fase 12 — CI de build e release automatizado
+# Fase 12 — Release automático (CI de build e publicação)
 
-Status: pendente (planejada; depende da fase 11)
+Status: **aguardando validação**. Entregue: `.github/workflows/release.yml`, `scripts/release/` (versão e changelog), `scripts/bin-*.mjs` (binários do Windows na CI) e o bloco `publish` do `electron-builder.yml`. Falta, no GitHub e na sua máquina: os "Passos manuais" de `docs/empacotamento.md` (pacote `bin-v1`, permissões do Actions, proteção da `main`).
 
-## Objetivo
-Juntar vários merge requests num release só e publicar tudo sem passos manuais: a versão, o changelog, a tag, o Release no GitHub e o instalador `.exe` anexado.
+## Decisão de projeto
+Não há PR de release nem passo manual (a ideia inicial era o `release-please`, descartada): **todo merge na `main` que traz `feat`, `fix` ou quebra de compatibilidade publica uma versão nova**; os outros tipos (`docs`, `chore`, `ci`, `test`, `refactor`, `perf`, `build`, `style`) esperam e entram no changelog do próximo release. Não há commit de volta na `main` (compatível com a proteção da branch): a versão é injetada só no build e o changelog vai nas notas do Release.
 
-## Como funciona (ferramenta escolhida: `release-please`)
-1. Cada MR entra na `main` com título em Conventional Commits (fase 11).
-2. O `release-please` lê os commits novos e mantém **um MR de release aberto**, que é a "coleção" das mudanças: ele calcula a próxima versão pelo SemVer (`feat` → MINOR, `fix` → PATCH, `!` → quebra), atualiza `package.json`, `package-lock.json` e o `CHANGELOG.md` (agrupado por tipo).
-3. Quando o usuário **aprova e faz merge desse MR de release**, o `release-please` cria a tag `v<versão>` e o Release no GitHub com as notas.
-4. A criação do Release dispara o workflow de build, que gera o instalador e o anexa ao próprio Release.
-
-Alternativas descartadas: `semantic-release` (publica a cada merge, sem o MR de revisão da coleção) e `changesets` (pede um arquivo manual por mudança).
-
-## Escopo
-- **`.github/workflows/release-please.yml`**: roda no push para a `main`; `release-type: node`; `release-please-config.json` e `.release-please-manifest.json` (começam na versão atual do `package.json`). Regra pré-1.0: quebra sobe o MINOR (`bump-minor-pre-major`).
-- **`.github/workflows/build.yml`** (gatilho `release: published`): matriz com `windows-latest` agora (Linux e macOS entram quando houver binários, ver pendências):
-  1. `npm ci --legacy-peer-deps`, testes, `npm run dist:win`;
-  2. anexa ao Release `HomeLab-Setup-<versão>.exe`, o `.blockmap` e o `latest.yml` (os dois últimos são o que a fase 13 usa);
-  3. nunca assina (sem certificado) e nunca publica fora do Release.
-- **Binários nativos na CI:** `resources/bin` não é versionado. O workflow precisa de uma etapa que baixe o Whisper e o ffmpeg de um Release de componentes do repositório (ex.: `bin-v1`, com SHA-256 conferido), igual ao que o app faz com o CUDA e os modelos. Sem isso o build da CI sai sem Whisper e sem ffmpeg.
-- **Cache** do `node_modules` e do cache do `electron-builder`.
-- **Segredos:** só o `GITHUB_TOKEN` padrão; nenhum segredo do usuário (chave do Gemini, e-mail) entra na CI.
-- **Documentação:** `docs/empacotamento.md` (como a CI gera o instalador e como gerar na mão) e `docs/versionamento.md` (passo 6 deixa de ser manual).
-- Fora do escopo: assinatura de código (certificado pago), builds de Linux e macOS (precisam dos binários deles), publicação em lojas.
+## Como funciona
+1. Push na `main` dispara `release.yml`.
+2. **Calcular versão** (`scripts/release/plan.mjs`): lê os commits desde a última tag `vX.Y.Z` (ignora `components-vN` e `bin-vN`), calcula a versão (`feat` MINOR, `fix` PATCH, quebra MINOR em `0.x` e MAJOR depois) e gera as notas agrupadas (quebras, novidades, correções, desempenho e "outras mudanças" recolhidas). Sem `feat`/`fix`/quebra: termina sem publicar.
+3. **Lint, tipos e testes** (Jest, Vitest, `test:release`): um commit ruim na `main` não vira release.
+4. **Instalador Windows** (`windows-latest`): `npm version` só no build, baixa o pacote `bin-v1` (Whisper e ffmpeg, SHA-256 conferido) e roda `dist:win --publish never`; gera `HomeLab-Setup-<versão>.exe`, `.blockmap` e `latest.yml`.
+5. **AppImage Linux** (`ubuntu-22.04`): `dist:linux --publish never`; gera `HomeLab-<versão>.AppImage` e `latest-linux.yml`. O Whisper, o ffmpeg e o yt-dlp do Linux são baixados pelo assistente do app.
+6. **Publicar**: só se os dois builds passaram, cria a tag e o Release `vX.Y.Z` (com `--latest`) com as notas e todos os arquivos.
+- Rodar à mão: Actions > release > Run workflow com `dry_run` ligado mostra a versão e o changelog que sairiam, sem buildar.
+- Só usa o `GITHUB_TOKEN` padrão; nenhum segredo do usuário entra na CI. Nunca assina o instalador.
 
 ## Testes
-- `release-please` em modo de teste (`--dry-run`) numa branch: mostra a versão e o changelog esperados para os commits de exemplo.
-- Workflow de build rodado manualmente (`workflow_dispatch`) numa tag de teste, em repositório de teste ou num Release em rascunho.
-- Conferir que o `.exe` gerado pela CI abre, mostra a versão certa e acha o Whisper e o ffmpeg embutidos.
+- `npm run test:release` (21 testes: parse de commit, escolha da última tag, regra de bump, notas, SHA-256 e exclusões do pacote de binários). Roda no `pr.yml` e antes de cada release.
+- `node scripts/release/plan.mjs` na sua máquina mostra o release que sairia agora.
+- O build das duas plataformas só roda na CI; a validação real é o primeiro release (abaixo).
 
 ## O que testar
-1. Mergear um MR `fix: ...` e um `feat: ...`: aparece um MR de release com a versão MINOR esperada e o changelog dos dois.
-2. Mergear o MR de release: surge a tag `v<versão>` e o Release com as notas.
-3. Em poucos minutos o Release recebe o `.exe`, o `.blockmap` e o `latest.yml`.
-4. Instalar o `.exe` do Release numa máquina limpa e abrir.
+1. Fazer os "Passos manuais no GitHub" (`docs/empacotamento.md`).
+2. Actions > release > Run workflow (`dry_run` ligado): o resumo traz `v0.3.0` e o changelog dos commits desde `v0.2.0`.
+3. Mergear um PR `docs:`: o workflow roda e termina sem release.
+4. Mergear um PR `fix:`: em poucos minutos surge o Release com tag, notas, `.exe`, `.blockmap`, `latest.yml`, `.AppImage` e `latest-linux.yml`.
+5. Instalar o `.exe` numa máquina limpa: abre, mostra a versão do Release em Configurações e acha Transcrição e Processamento de áudio embutidos.
+6. No Linux, `chmod +x` no AppImage e abrir.
 
-## Critério de aceite
-Um release completo (versão, changelog, tag, Release e instalador) sai só de mergear um MR, sem rodar comando na máquina do usuário.
-
-## Riscos e decisões a tomar
-- Onde guardar os binários que a CI baixa (Release `bin-vN` do próprio repositório é o plano); tamanho do cache e tempo do build (CUDA é pesado: o instalador já não o leva).
-- O repositório precisa continuar público (o app e a CI baixam sem token).
-- Sem assinatura, o SmartScreen continua avisando.
+## Riscos
+- Sem assinatura, o SmartScreen avisa no Windows.
+- O primeiro build pode pedir ajuste fino (a validação local não roda o `electron-builder` completo do Windows com NSIS nem o do Linux).
+- O repositório precisa continuar público.

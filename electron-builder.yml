@@ -12,6 +12,14 @@ files:
   - dist-renderer/**
   - package.json
 asar: true
+# Repositório dos Releases: o `electron-builder` gera `latest.yml`/`latest-linux.yml` e os `.blockmap`
+# (lidos pelo atualizador do app) e embute o `app-update.yml`. Nunca publica sozinho: a CI usa
+# `--publish never` e anexa os arquivos ao Release (.github/workflows/release.yml).
+publish:
+  provider: github
+  owner: tthheusalmeida
+  repo: homelab
+  releaseType: release
 # Binários nativos ficam fora do asar (precisam ser executados): <app>/resources/bin/<plataforma>-<arch>.
 # O instalador é pequeno: modelos do Whisper (*.bin) e o pacote CUDA (DLLs de GPU NVIDIA, ~1 GB) não
 # entram; o assistente de instalação do app baixa depois (o instalador NSIS não passa de ~2 GB).

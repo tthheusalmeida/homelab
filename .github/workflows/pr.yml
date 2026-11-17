@@ -70,6 +70,9 @@ jobs:
       - name: Validar a config do commitlint
         run: npm run test:commitlint
 
+      - name: Validar o cálculo de versão e changelog do release
+        run: npm run test:release
+
       - name: Lint
         run: npm run lint
 

@@ -1,0 +1,176 @@
+# Release automático (docs/empacotamento.md): a cada push na main, lê os commits desde a última tag
+# `vX.Y.Z`. Se houver `feat`, `fix` ou quebra de compatibilidade, calcula a versão (SemVer), gera o
+# changelog, builda o instalador do Windows e o AppImage do Linux e publica o Release `vX.Y.Z`.
+# Os demais tipos (docs, chore, ci, test, refactor, perf...) esperam e entram no próximo release.
+# Nada é commitado de volta na main: a versão é injetada só no build e o changelog vai nas notas.
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Só calcular e mostrar a versão e o changelog (não builda nem publica)
+        type: boolean
+        default: true
+
+# Um release por vez; o seguinte espera e recalcula a partir da tag nova.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: '0'
+
+jobs:
+  plan:
+    name: Calcular versão
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.plan.outputs.release }}
+      version: ${{ steps.plan.outputs.version }}
+      tag: ${{ steps.plan.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # histórico e tags inteiros
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Planejar o release
+        id: plan
+        run: node scripts/release/plan.mjs --notes release-notes.md
+
+      - name: Resumo
+        run: |
+          if [ "${{ steps.plan.outputs.release }}" = "true" ]; then
+            { echo "### Release ${{ steps.plan.outputs.tag }}"; echo; cat release-notes.md; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Sem release: só commits que esperam o próximo feat ou fix." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: steps.plan.outputs.release == 'true'
+        with:
+          name: release-notes
+          path: release-notes.md
+
+  verify:
+    name: Lint, tipos e testes
+    needs: plan
+    if: needs.plan.outputs.release == 'true' && !inputs.dry_run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - run: npm run lint
+      - run: npm run typecheck:renderer
+      - run: npm test
+      - run: npm run test:renderer
+      - run: npm run test:release
+
+  build-windows:
+    name: Instalador Windows
+    needs: [plan, verify]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\electron-builder\Cache
+          key: electron-builder-win-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-builder-win-
+      - run: npm ci --legacy-peer-deps
+      - name: Versão do release (só no build; não é commitada)
+        run: npm version "${{ needs.plan.outputs.version }}" --no-git-tag-version --allow-same-version
+        shell: bash
+      - name: Baixar Whisper e ffmpeg embutidos
+        run: node scripts/bin-fetch.mjs
+      - name: Gerar o instalador
+        run: npm run dist:win -- --publish never
+      - name: Conferir o que foi gerado
+        shell: bash
+        run: |
+          ls -la release
+          test -f "release/HomeLab-Setup-${{ needs.plan.outputs.version }}.exe"
+          test -f release/latest.yml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          if-no-files-found: error
+          path: |
+            release/HomeLab-Setup-*.exe
+            release/HomeLab-Setup-*.exe.blockmap
+            release/latest.yml
+
+  build-linux:
+    name: AppImage Linux
+    needs: [plan, verify]
+    runs-on: ubuntu-22.04 # glibc mais antiga: roda em mais distribuições
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/electron-builder
+          key: electron-builder-linux-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-builder-linux-
+      - run: npm ci --legacy-peer-deps
+      - name: Versão do release (só no build; não é commitada)
+        run: npm version "${{ needs.plan.outputs.version }}" --no-git-tag-version --allow-same-version
+      - name: Gerar o AppImage
+        run: npm run dist:linux -- --publish never
+      - name: Conferir o que foi gerado
+        run: |
+          ls -la release
+          test -f "release/HomeLab-${{ needs.plan.outputs.version }}.AppImage"
+          test -f release/latest-linux.yml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          if-no-files-found: error
+          path: |
+            release/HomeLab-*.AppImage
+            release/latest-linux.yml
+
+  publish:
+    name: Publicar o Release
+    needs: [plan, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # criar a tag e o Release
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          path: assets
+
+      - name: Criar o Release com os instaladores
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.plan.outputs.tag }}
+        run: |
+          find assets -type f | sort
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "HomeLab $TAG" \
+            --notes-file assets/release-notes/release-notes.md \
+            --latest \
+            assets/windows/* assets/linux/*
