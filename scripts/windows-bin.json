@@ -1,0 +1,5 @@
+{
+  "_comment": "Pacote com os binários do Windows (whisper-cli.exe, DLLs de CPU, ffmpeg.exe) que a CI embute no instalador. Gerado por `npm run bin:pack` e publicado no Release bin-v1 (docs/empacotamento.md). Preencha url e sha256 com o resultado.",
+  "url": "",
+  "sha256": ""
+}
