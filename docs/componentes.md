@@ -48,4 +48,3 @@ Canais `components:status|install|cancel|remove|set-active-model`, evento `compo
 ## Pendente
 - Publicar o `.zip` do CUDA no Release `components-v1`; sem ele o item CUDA falha com 404.
 - **Transcrição no Linux:** o `whisper-cli` (estático, CPU) é compilado pelo workflow `.github/workflows/whisper-linux.yml` (Actions > Run workflow, roda `scripts/build-whisper-linux.sh`) e publicado como `whisper-cli-linux-x64` no Release `components-v1`. Ao mudar a versão do `whisper.cpp`, rode o workflow de novo e atualize tamanho e SHA-256 da variante `linux-x64`. O pacote CUDA para Linux fica para depois.
-- macOS: sem variantes ainda.

@@ -35,7 +35,7 @@ Se a página não tem vídeo: "Não encontrei nenhum vídeo nesta página". Play
 - Login do **Google** costuma recusar navegador embutido; portais de faculdade (Moodle, Canvas, Blackboard) funcionam bem.
 - Login com segundo fator: o usuário faz tudo na janela, mas a sessão pode expirar e pedir de novo.
 - Os logins guardados ficam cifrados em `secrets.json` (chave `platform.cookies`). Para esquecê-los: **Configurações > Acessos > Esquecer logins** (canal `platform:forget-logins`; apaga o cofre e a sessão aberta). Se o sistema não tiver criptografia disponível, o login não é guardado e o app avisa o erro (o `secrets.json` nunca recebe texto puro).
-- Windows (`yt-dlp.exe`) e Linux (`yt-dlp_linux`, com permissão de execução dada pelo app depois do download) já estão no catálogo; o macOS terá o `yt-dlp_macos`. O nome mostrado ao usuário é só "Download de vídeos".
+- Windows (`yt-dlp.exe`) e Linux (`yt-dlp_linux`, com permissão de execução dada pelo app depois do download) já estão no catálogo. O nome mostrado ao usuário é só "Download de vídeos".
 
 ## Onde está o código
 - `src/shared/media-url.ts`: `isDirectMediaUrl`, `isHttpUrl`.

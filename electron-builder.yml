@@ -1,5 +1,5 @@
 # Empacotamento do HomeLab. Cada sistema tem o seu instalador, com só os binários do seu sistema,
-# e é gerado no próprio sistema (ver docs/empacotamento.md). Hoje só o Windows x64 está pronto;
+# e é gerado no próprio sistema (ver docs/empacotamento.md). Windows x64 (NSIS) e Linux x64 (AppImage);
 # sem assinatura de código.
 appId: homelab
 productName: HomeLab
@@ -49,7 +49,6 @@ nsis:
   shortcutName: HomeLab
 # Linux: nada vai embutido. Os programas (ffmpeg, yt-dlp...) são baixados pelo assistente do app para
 # a pasta de dados do usuário, porque o AppImage é somente leitura. Gere no próprio Linux.
-# macOS: configuração pronta, mas ainda sem binários (resources/bin/darwin-arm64).
 linux:
   target:
     - target: AppImage
@@ -57,16 +56,3 @@ linux:
         - x64
   category: Utility
   artifactName: HomeLab-${version}.${ext}
-mac:
-  target:
-    - target: dmg
-      arch:
-        - arm64
-  category: public.app-category.productivity
-  artifactName: HomeLab-${version}-${arch}.${ext}
-  extraResources:
-    - from: resources/bin/darwin-arm64
-      to: bin/darwin-arm64
-      filter:
-        - '**/*'
-        - '!**/*.bin'
