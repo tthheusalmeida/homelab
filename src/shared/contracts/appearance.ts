@@ -1,3 +1,5 @@
+import { DEFAULT_READING, type ReadingPreferences } from './reading';
+
 /** Modos de tema: `system` acompanha o tema do sistema operacional. */
 export const THEME_MODES = ['system', 'light', 'dark'] as const;
 export type ThemeMode = (typeof THEME_MODES)[number];
@@ -18,6 +20,17 @@ export type AccentId = (typeof ACCENT_IDS)[number];
 export interface Appearance {
   theme: ThemeMode;
   accent: AccentId;
+  /** Como o texto aparece nas páginas e nos livros (fonte, tamanho, largura e cores). */
+  reading: ReadingPreferences;
 }
 
-export const DEFAULT_APPEARANCE: Appearance = { theme: 'system', accent: 'cyan' };
+/** Parte da aparência: `reading` também pode vir parcial (só o que mudou). */
+export type AppearancePatch = Partial<Omit<Appearance, 'reading'>> & {
+  reading?: Partial<ReadingPreferences>;
+};
+
+export const DEFAULT_APPEARANCE: Appearance = {
+  theme: 'system',
+  accent: 'cyan',
+  reading: DEFAULT_READING,
+};

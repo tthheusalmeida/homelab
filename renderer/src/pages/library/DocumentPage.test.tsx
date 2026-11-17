@@ -368,22 +368,44 @@ describe("DocumentPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("when loaded, should put title and text on a sheet of paper with margins", () => {
+  it("when loaded, should show title and text in the reading layout, without a paper sheet", () => {
     const { container } = renderPage();
 
-    const page = container.querySelector(
-      "[data-slot=paper-page]",
+    const surface = container.querySelector(
+      "[data-slot=reading-surface]",
     ) as HTMLElement;
 
-    expect(page).toHaveAttribute("data-variant", "sheet");
-    expect(page).toHaveClass("max-w-[48rem]", "font-serif");
+    expect(container.querySelector("[data-slot=paper-page]")).toBeNull();
+    expect(surface.querySelector(".reading-column")).toBeInTheDocument();
     expect(
-      within(page).getByRole("heading", {
+      within(surface).getByRole("heading", {
         name: "Práticas da Primeira Maneira",
+        level: 1,
       }),
     ).toBeInTheDocument();
     expect(
-      within(page).getByRole("heading", { name: "Introdução" }),
+      within(surface).getByRole("heading", { name: "Introdução" }),
+    ).toBeInTheDocument();
+  });
+
+  it("when loaded, should label the title with the page type", () => {
+    renderPage();
+
+    const header = screen
+      .getByRole("heading", { name: "Práticas da Primeira Maneira" })
+      .closest("header");
+
+    expect(header).toHaveTextContent("Resumo");
+  });
+
+  it("when loaded, should offer the quick reading controls beside the summary", () => {
+    renderPage();
+
+    expect(
+      screen.getByRole("button", { name: "Aumentar a letra" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Diminuir o zoom" }),
     ).toBeInTheDocument();
   });
 

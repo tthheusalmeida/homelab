@@ -24,6 +24,17 @@ export const Strings = {
     accent: 'Cor de destaque',
     accentHint: 'Botões, links, item ativo do menu, foco, progresso e o carregamento.',
     restore: 'Restaurar padrão',
+    reading: {
+      title: 'Leitura',
+      hint: 'Como o texto aparece nas páginas e nos livros, inclusive no modo leitura.',
+      font: 'Fonte',
+      fontSize: 'Letra',
+      zoom: 'Zoom',
+      zoomHint: 'Alarga ou estreita a coluna do texto, sem mudar a letra.',
+      background: 'Cor de fundo',
+      text: 'Cor do texto',
+      restore: 'Restaurar leitura',
+    },
   },
   library: {
     groupTitle: 'Pasta de documentos',

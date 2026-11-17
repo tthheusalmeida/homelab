@@ -15,8 +15,11 @@ interface MarkdownMessageProps {
    * repetir id (ex.: capítulos de um livro). Só vale com `headingIds`.
    */
   idPrefix?: string;
-  /** Tamanho do texto: `sm` (padrão, chat) ou `base` (leitura em página). */
-  size?: "sm" | "base";
+  /**
+   * Tamanho do texto: `sm` (padrão, chat), `base` (leitura em página) ou `inherit` (o tamanho
+   * escolhido pelo usuário, herdado do `ReadingSurface`; os títulos seguem em `em`).
+   */
+  size?: "sm" | "base" | "inherit";
   /** `paper`: tinta escura sobre folha clara, mesmo no tema escuro (ver `PaperPage variant="sheet"`). */
   tone?: "theme" | "paper";
   /** Classes extras no texto (ex.: tipografia de página). */
@@ -105,9 +108,10 @@ export function MarkdownMessage({
       className={cn(
         "prose max-w-none",
         tone === "paper" ? "prose-stone" : "dark:prose-invert",
-        size === "base" ? "prose-base" : "prose-sm",
+        size === "sm" ? "prose-sm" : "prose-base",
         className,
       )}
+      style={size === "inherit" ? { fontSize: "inherit" } : undefined}
     >
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={mapping}>
         {content}

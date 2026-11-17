@@ -6,6 +6,7 @@ import { scrollToId } from "#lib/scroll";
 import type { Heading } from "#lib/markdown";
 
 import { OutlineNav } from "#components/OutlineNav";
+import { ReadingQuickControls } from "#components/ReadingQuickControls";
 
 interface DocumentSidebarProps {
   /** Títulos do texto, para o "Sumário". */
@@ -20,7 +21,7 @@ interface DocumentSidebarProps {
 
 /**
  * Painel fixo ao lado do texto: "Sumário" dos títulos (com o trecho em leitura
- * em destaque), o botão do modo leitura e o botão que abre a janela "Sobre a
+ * em destaque), os ajustes rápidos de leitura (letra e zoom), o botão do modo leitura e o botão que abre a janela "Sobre a
  * página". Fica visível enquanto o texto rola (em telas largas).
  */
 export function DocumentSidebar({
@@ -55,6 +56,8 @@ export function DocumentSidebar({
           </CardContent>
         </Card>
       )}
+
+      <ReadingQuickControls />
 
       <Button
         type="button"

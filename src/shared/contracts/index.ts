@@ -83,7 +83,7 @@ import type {
   LocalProviderTestRequest,
   ProviderTestResult,
 } from './providers';
-import type { Appearance } from './appearance';
+import type { Appearance, AppearancePatch } from './appearance';
 import type {
   LibraryFolderInfo,
   MoveLibraryRequest,
@@ -112,7 +112,7 @@ export interface IpcContracts {
   };
 
   [IpcChannels.appearance.get]: { request: void; response: Appearance };
-  [IpcChannels.appearance.update]: { request: Partial<Appearance>; response: Appearance };
+  [IpcChannels.appearance.update]: { request: AppearancePatch; response: Appearance };
 
   /** Abre o seletor de pasta do sistema; `null` se o usuário cancelar. */
   [IpcChannels.settings.pickFolder]: {

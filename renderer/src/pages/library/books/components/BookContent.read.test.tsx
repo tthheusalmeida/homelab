@@ -82,8 +82,8 @@ describe("BookContent — read marks", () => {
     expect(onToggleRead).toHaveBeenCalledWith("d1", false);
   });
 
-  it("when in reading mode, should still allow marking chapters", () => {
-    renderContent({ reading: true, onToggleRead: () => {} });
+  it("when the toggle handler is given, should allow marking every chapter", () => {
+    renderContent({ onToggleRead: () => {} });
 
     expect(
       screen.getAllByRole("button", { name: /Marcar como lido/ }),

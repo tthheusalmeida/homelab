@@ -1,10 +1,9 @@
-import { Link } from "react-router";
 import { ArrowRight, Check } from "lucide-react";
 
 import { Button } from "#ui/button";
 
 import { MarkdownMessage } from "#components/MarkdownMessage";
-import { PaperPage } from "#components/PaperPage";
+import { ModuleDivider } from "#components/ModuleDivider";
 import { ReadingSection } from "#components/ReadingSection";
 import { cn } from "#lib/utils";
 
@@ -13,10 +12,6 @@ import type { BookReading } from "../types";
 
 interface BookContentProps {
   modules: BookReading["modules"];
-  /** Modo leitura: texto maior e sem o link para abrir a página. */
-  reading?: boolean;
-  /** `frames` (padrão): quadros com cabeçalho e rodapé. `pages`: cada capítulo numa folha de papel. */
-  layout?: "frames" | "pages";
   /** Capítulos já lidos (id do documento). */
   readIds?: string[];
   /** Sem esta função o botão de marcar como lido não aparece. */
@@ -24,32 +19,13 @@ interface BookContentProps {
   onGoToChapter: (documentId: string) => void;
 }
 
-/** Divisor sutil de módulo no modo leitura: título pequeno entre dois filetes. */
-function ModuleDivider({ title }: { title: string }) {
-  return (
-    <div className="flex items-center gap-4">
-      <span aria-hidden className="h-px flex-1 bg-border" />
-
-      <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
-        {title}
-      </h2>
-
-      <span aria-hidden className="h-px flex-1 bg-border" />
-    </div>
-  );
-}
-
 /**
- * Os capítulos do livro em sequência. Cada um é um quadro com cabeçalho (onde
- * começa) e rodapé (onde termina, com o botão para o próximo); o módulo vira
- * um banner acima dos seus capítulos. No modo leitura (`reading`) o desenho é o
- * mesmo da página: sem moldura, no fundo da plataforma (`ReadingSection`), com
- * filetes sutis entre capítulos e módulos e a marcação de lido discreta.
+ * Os capítulos do livro em sequência, no mesmo desenho da página e do modo leitura: sem moldura,
+ * direto no fundo (`ReadingSection`), com filetes sutis entre capítulos e módulos e a marcação de
+ * lido discreta. Fonte, tamanho e cores vêm do `ReadingSurface` ao redor.
  */
 export function BookContent({
   modules,
-  reading = false,
-  layout = "frames",
   readIds = [],
   onToggleRead,
   onGoToChapter,
@@ -58,180 +34,11 @@ export function BookContent({
   const order = modules.flatMap((module) => module.chapters);
   let number = 0;
 
-  if (reading) {
-    return (
-      <div className="space-y-14">
-        {modules.map((module) => (
-          <div key={module.id} className="space-y-14">
-            {module.title && <ModuleDivider title={module.title} />}
-
-            {module.chapters.map((chapter) => {
-              number += 1;
-              const position = number;
-              const next = order[position];
-              const read = readIds.includes(chapter.documentId);
-
-              return (
-                <div
-                  key={chapter.documentId}
-                  // Separação sutil: um filete entre capítulos (não antes do primeiro).
-                  className={cn(
-                    position > 1 &&
-                      !(module.chapters[0] === chapter && module.title) &&
-                      "border-t border-border/60 pt-14",
-                  )}
-                >
-                  <ReadingSection
-                    id={chapterElementId(chapter.documentId)}
-                    headingLevel={2}
-                    title={chapter.title}
-                    label={
-                      <>
-                        Capítulo {position}
-                        {read && (
-                          <Check
-                            aria-hidden
-                            className="size-3.5 text-emerald-500"
-                          />
-                        )}
-                      </>
-                    }
-                    footer={
-                      <>
-                        {onToggleRead && (
-                          <Button
-                            variant="ghost"
-                            size="xs"
-                            aria-pressed={read}
-                            className={cn(
-                              read
-                                ? "text-emerald-500 hover:text-emerald-500"
-                                : "text-muted-foreground",
-                            )}
-                            onClick={() =>
-                              onToggleRead(chapter.documentId, !read)
-                            }
-                          >
-                            <Check /> {read ? "Lido" : "Marcar como lido"}
-                          </Button>
-                        )}
-
-                        {next && (
-                          <Button
-                            variant="ghost"
-                            size="xs"
-                            className="text-muted-foreground"
-                            onClick={() => onGoToChapter(next.documentId)}
-                          >
-                            Próximo: {next.title} <ArrowRight />
-                          </Button>
-                        )}
-                      </>
-                    }
-                  >
-                    <MarkdownMessage
-                      content={chapter.content}
-                      headingIds
-                      idPrefix={chapter.documentId}
-                      size="base"
-                    />
-                  </ReadingSection>
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (layout === "pages") {
-    return (
-      <div className="space-y-14 py-2">
-        {modules.map((module) => (
-          <div key={module.id} className="space-y-14">
-            {module.title && <ModuleDivider title={module.title} />}
-
-            {module.chapters.map((chapter) => {
-              number += 1;
-              const position = number;
-              const next = order[position];
-              const read = readIds.includes(chapter.documentId);
-
-              return (
-                <section
-                  key={chapter.documentId}
-                  id={chapterElementId(chapter.documentId)}
-                  aria-label={chapter.title}
-                  className="scroll-mt-20 space-y-5"
-                >
-                  <PaperPage variant="sheet" pageNumber={`Capítulo ${position}`}>
-                    <header className="mb-10 space-y-3 text-center">
-                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500">
-                        Capítulo {position}
-                      </p>
-
-                      <h2 className="font-serif text-3xl font-semibold tracking-tight text-stone-900">
-                        {chapter.title}
-                      </h2>
-
-                      <span aria-hidden className="mx-auto block h-px w-16 bg-stone-300" />
-                    </header>
-
-                    <MarkdownMessage
-                      content={chapter.content}
-                      headingIds
-                      idPrefix={chapter.documentId}
-                      size="base"
-                      tone="paper"
-                      className="prose-headings:font-serif prose-p:text-justify prose-p:leading-8"
-                    />
-                  </PaperPage>
-
-                  <div className="mx-auto flex max-w-[48rem] flex-wrap items-center justify-between gap-2">
-                    {onToggleRead ? (
-                      <Button
-                        variant={read ? "default" : "outline"}
-                        size="xs"
-                        aria-pressed={read}
-                        onClick={() => onToggleRead(chapter.documentId, !read)}
-                      >
-                        <Check /> {read ? "Lido" : "Marcar como lido"}
-                      </Button>
-                    ) : (
-                      <span />
-                    )}
-
-                    {next && (
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => onGoToChapter(next.documentId)}
-                      >
-                        Próximo: {next.title} <ArrowRight />
-                      </Button>
-                    )}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-16">
+    <div className="space-y-14">
       {modules.map((module) => (
-        <section key={module.id} className="space-y-10">
-          {module.title && (
-            <div className="rounded-xl bg-primary/10 px-6 py-5">
-              <h2 className="text-2xl font-semibold tracking-tight">
-                {module.title}
-              </h2>
-            </div>
-          )}
+        <div key={module.id} className="space-y-14">
+          {module.title && <ModuleDivider title={module.title} />}
 
           {module.chapters.map((chapter) => {
             number += 1;
@@ -240,70 +47,74 @@ export function BookContent({
             const read = readIds.includes(chapter.documentId);
 
             return (
-              <section
+              <div
                 key={chapter.documentId}
-                id={chapterElementId(chapter.documentId)}
-                aria-label={chapter.title}
-                className="scroll-mt-20 overflow-hidden rounded-xl border-2 bg-card shadow-sm"
+                // Separação sutil: um filete entre capítulos (não antes do primeiro).
+                className={cn(
+                  position > 1 &&
+                    !(module.chapters[0] === chapter && module.title) &&
+                    "border-t border-border/60 pt-14",
+                )}
               >
-                <header className="flex flex-wrap items-center justify-between gap-2 border-b-2 bg-muted px-6 py-4">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+                <ReadingSection
+                  id={chapterElementId(chapter.documentId)}
+                  headingLevel={2}
+                  title={chapter.title}
+                  label={
+                    <>
                       Capítulo {position}
-                    </p>
+                      {read && (
+                        <Check
+                          aria-hidden
+                          className="size-3.5 text-emerald-500"
+                        />
+                      )}
+                    </>
+                  }
+                  footer={
+                    <>
+                      {onToggleRead && (
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          aria-pressed={read}
+                          className={cn(
+                            read
+                              ? "text-emerald-500 hover:text-emerald-500"
+                              : "text-muted-foreground",
+                          )}
+                          onClick={() =>
+                            onToggleRead(chapter.documentId, !read)
+                          }
+                        >
+                          <Check /> {read ? "Lido" : "Marcar como lido"}
+                        </Button>
+                      )}
 
-                    <p className="truncate text-lg font-semibold">
-                      {chapter.title}
-                    </p>
-                  </div>
-
-                  <Link
-                    to={`/library/${chapter.documentId}`}
-                    className="text-xs text-muted-foreground hover:underline"
-                  >
-                    Abrir página
-                  </Link>
-                </header>
-
-                <PaperPage className="max-w-none rounded-none border-0 bg-transparent shadow-none">
+                      {next && (
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          className="text-muted-foreground"
+                          onClick={() => onGoToChapter(next.documentId)}
+                        >
+                          Próximo: {next.title} <ArrowRight />
+                        </Button>
+                      )}
+                    </>
+                  }
+                >
                   <MarkdownMessage
                     content={chapter.content}
                     headingIds
                     idPrefix={chapter.documentId}
-                    size="sm"
+                    size="inherit"
                   />
-                </PaperPage>
-
-                <footer className="flex flex-wrap items-center justify-between gap-2 border-t-2 bg-muted px-6 py-3 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-3">
-                    <span>Fim do capítulo {position}</span>
-
-                    {onToggleRead && (
-                      <Button
-                        variant={read ? "default" : "outline"}
-                        size="xs"
-                        aria-pressed={read}
-                        onClick={() => onToggleRead(chapter.documentId, !read)}
-                      >
-                        <Check /> {read ? "Lido" : "Marcar como lido"}
-                      </Button>
-                    )}
-                  </div>
-
-                  {next && (
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => onGoToChapter(next.documentId)}
-                    >
-                      Próximo: {next.title} <ArrowRight />
-                    </Button>
-                  )}
-                </footer>
-              </section>
+                </ReadingSection>
+              </div>
             );
           })}
-        </section>
+        </div>
       ))}
     </div>
   );

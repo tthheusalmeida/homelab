@@ -99,3 +99,34 @@ describe("ReadingMode", () => {
     expect(onExit).not.toHaveBeenCalled();
   });
 });
+
+describe("ReadingMode — reading preferences", () => {
+  it("when open, should use the reading surface so font, size and colors follow the preferences", () => {
+    setup();
+
+    const region = screen.getByRole("region", { name: "Modo leitura" });
+
+    expect(region).toHaveClass("reading-surface");
+    expect(region).toHaveAttribute("data-slot", "reading-surface");
+    expect(region.style.fontSize).toBe("1rem");
+  });
+
+  it("when open, should not wrap the whole screen in a padded panel", () => {
+    setup();
+
+    expect(
+      screen.getByRole("region", { name: "Modo leitura" }),
+    ).not.toHaveAttribute("data-framed");
+  });
+
+  it("when open, should keep the top bar and the summary in the interface font", () => {
+    setup();
+
+    const region = screen.getByRole("region", { name: "Modo leitura" });
+
+    expect(within(region).getByText("Pós em DevOps").parentElement).toHaveClass("font-sans");
+    expect(
+      within(region).getByRole("complementary", { name: "Sumário da leitura" }),
+    ).toHaveClass("font-sans");
+  });
+});

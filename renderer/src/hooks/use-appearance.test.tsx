@@ -6,9 +6,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppearanceProvider } from "#components/AppearanceProvider";
 import { APPEARANCE_CACHE_KEY } from "#lib/appearance";
 import { IpcChannels } from "#shared/channels";
+import { DEFAULT_APPEARANCE } from "#shared/contracts/appearance";
+import { DEFAULT_READING } from "#shared/contracts/reading";
 import { failure, mockApi, ok } from "#test/api-mock";
 
-import { useAppearance } from "./use-appearance";
+import { useAppearance, useReadingPreferences } from "./use-appearance";
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <AppearanceProvider>{children}</AppearanceProvider>
@@ -79,7 +81,7 @@ describe("useAppearance", () => {
     const { result } = renderHook(() => useAppearance(), { wrapper });
 
     await waitFor(() => expect(document.documentElement.dataset.accent).toBe("cyan"));
-    expect(result.current.appearance).toEqual({ theme: "system", accent: "cyan" });
+    expect(result.current.appearance).toEqual({ theme: "system", accent: "cyan", reading: DEFAULT_READING });
     expect(document.documentElement).not.toHaveClass("dark");
   });
 
@@ -93,6 +95,7 @@ describe("useAppearance", () => {
     expect(JSON.parse(localStorage.getItem(APPEARANCE_CACHE_KEY)!)).toEqual({
       theme: "dark",
       accent: "violet",
+      reading: DEFAULT_READING,
     });
   });
 
@@ -122,7 +125,7 @@ describe("useAppearance", () => {
 
     expect(document.documentElement.dataset.accent).toBe("rose");
     expect(invoke).toHaveBeenCalledWith(IpcChannels.appearance.update, { accent: "rose" });
-    expect(FakeChannel.posted).toEqual([{ theme: "system", accent: "rose" }]);
+    expect(FakeChannel.posted).toEqual([{ theme: "system", accent: "rose", reading: DEFAULT_READING }]);
   });
 
   it("when the save fails, should go back to the previous appearance and reject", async () => {
@@ -137,7 +140,7 @@ describe("useAppearance", () => {
       await expect(result.current.update({ accent: "orange" })).rejects.toThrow(/cor válida/);
     });
 
-    expect(result.current.appearance).toEqual({ theme: "light", accent: "blue" });
+    expect(result.current.appearance).toEqual({ theme: "light", accent: "blue", reading: DEFAULT_READING });
     expect(document.documentElement.dataset.accent).toBe("blue");
   });
 
@@ -150,7 +153,7 @@ describe("useAppearance", () => {
       FakeChannel.instances[0].onmessage?.({ data: { theme: "dark", accent: "emerald" } });
     });
 
-    expect(result.current.appearance).toEqual({ theme: "dark", accent: "emerald" });
+    expect(result.current.appearance).toEqual({ theme: "dark", accent: "emerald", reading: DEFAULT_READING });
     expect(document.documentElement).toHaveClass("dark");
   });
 
@@ -192,10 +195,142 @@ describe("useAppearance", () => {
       await result.current.reset();
     });
 
-    expect(invoke).toHaveBeenCalledWith(IpcChannels.appearance.update, {
-      theme: "system",
-      accent: "cyan",
+    expect(invoke).toHaveBeenCalledWith(
+      IpcChannels.appearance.update,
+      DEFAULT_APPEARANCE,
+    );
+    expect(result.current.appearance).toEqual(DEFAULT_APPEARANCE);
+  });
+
+  it("when only part of the reading preferences is updated, should keep the others and send just the change", async () => {
+    const invoke = mockApi({
+      [IpcChannels.appearance.get]: () =>
+        ok({ ...DEFAULT_APPEARANCE, reading: { ...DEFAULT_READING, font: "lora" } }),
+      [IpcChannels.appearance.update]: () =>
+        ok({
+          ...DEFAULT_APPEARANCE,
+          reading: { ...DEFAULT_READING, font: "lora", fontSize: 18 },
+        }),
     });
-    expect(result.current.appearance).toEqual({ theme: "system", accent: "cyan" });
+    const { result } = renderHook(() => useAppearance(), { wrapper });
+    await waitFor(() => expect(result.current.appearance.reading.font).toBe("lora"));
+
+    await act(async () => {
+      await result.current.updateReading({ fontSize: 18 });
+    });
+
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.appearance.update, {
+      reading: { fontSize: 18 },
+    });
+    expect(result.current.appearance.reading).toEqual({
+      ...DEFAULT_READING,
+      font: "lora",
+      fontSize: 18,
+    });
+  });
+
+  it("when a reading update is applied before the answer, should show it right away", async () => {
+    let answer: (value: unknown) => void = () => undefined;
+    mockApi({
+      [IpcChannels.appearance.get]: () => ok(DEFAULT_APPEARANCE),
+      [IpcChannels.appearance.update]: () =>
+        new Promise((resolve) => {
+          answer = resolve;
+        }),
+    });
+    const { result } = renderHook(() => useAppearance(), { wrapper });
+    await waitFor(() => expect(result.current.appearance.reading.zoom).toBe(100));
+
+    let pending: Promise<void> = Promise.resolve();
+    act(() => {
+      pending = result.current.updateReading({ zoom: 120 });
+    });
+
+    expect(result.current.appearance.reading.zoom).toBe(120);
+
+    await act(async () => {
+      answer(ok({ ...DEFAULT_APPEARANCE, reading: { ...DEFAULT_READING, zoom: 120 } }));
+      await pending;
+    });
+  });
+
+  it("when a reading update fails, should go back to the previous preferences and report the error", async () => {
+    mockApi({
+      [IpcChannels.appearance.get]: () => ok(DEFAULT_APPEARANCE),
+      [IpcChannels.appearance.update]: () => failure("VALIDATION", "Tamanho inválido."),
+    });
+    const { result } = renderHook(() => useAppearance(), { wrapper });
+    await waitFor(() => expect(result.current.appearance.reading.fontSize).toBe(16));
+
+    await act(async () => {
+      await expect(result.current.updateReading({ fontSize: 18 })).rejects.toThrow(
+        "Tamanho inválido.",
+      );
+    });
+
+    expect(result.current.appearance.reading.fontSize).toBe(16);
+  });
+
+  it("when resetting the reading, should save the default reading and keep theme and accent", async () => {
+    const invoke = mockApi({
+      [IpcChannels.appearance.get]: () =>
+        ok({
+          theme: "dark",
+          accent: "rose",
+          reading: { ...DEFAULT_READING, background: "amber" },
+        }),
+      [IpcChannels.appearance.update]: () =>
+        ok({ theme: "dark", accent: "rose", reading: DEFAULT_READING }),
+    });
+    const { result } = renderHook(() => useAppearance(), { wrapper });
+    await waitFor(() => expect(result.current.appearance.reading.background).toBe("amber"));
+
+    await act(async () => {
+      await result.current.resetReading();
+    });
+
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.appearance.update, {
+      reading: DEFAULT_READING,
+    });
+    expect(result.current.appearance).toEqual({
+      theme: "dark",
+      accent: "rose",
+      reading: DEFAULT_READING,
+    });
+  });
+});
+
+describe("useReadingPreferences", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("when used outside the provider, should answer the defaults and no way to save", () => {
+    const { result } = renderHook(() => useReadingPreferences());
+
+    expect(result.current.reading).toEqual(DEFAULT_READING);
+    expect(result.current.updateReading).toBeNull();
+  });
+
+  it("when the saved theme is dark, should tell it is dark", async () => {
+    mockApi({
+      [IpcChannels.appearance.get]: () => ok({ ...DEFAULT_APPEARANCE, theme: "dark" }),
+    });
+
+    const { result } = renderHook(() => useReadingPreferences(), { wrapper });
+
+    await waitFor(() => expect(result.current.dark).toBe(true));
+  });
+
+  it("when the theme is system and the system turns dark, should follow it", async () => {
+    const system = stubSystemTheme(false);
+    mockApi({ [IpcChannels.appearance.get]: () => ok(DEFAULT_APPEARANCE) });
+
+    const { result } = renderHook(() => useReadingPreferences(), { wrapper });
+    expect(result.current.dark).toBe(false);
+
+    act(() => system.change(true));
+
+    await waitFor(() => expect(result.current.dark).toBe(true));
   });
 });

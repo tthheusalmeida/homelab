@@ -6,6 +6,7 @@ import {
   type Appearance,
   type ThemeMode,
 } from "#shared/contracts/appearance";
+import { DEFAULT_READING, parseReading } from "#shared/contracts/reading";
 
 /** Cópia local da aparência: o tema certo aparece antes do primeiro quadro (ver public/theme-init.js). */
 export const APPEARANCE_CACHE_KEY = "homelab.appearance";
@@ -60,6 +61,8 @@ export function parseAppearance(value: unknown): Appearance | null {
     return {
       theme: candidate.theme as ThemeMode,
       accent: candidate.accent as AccentId,
+      // Cópias antigas não têm `reading`: vale o padrão.
+      reading: parseReading(candidate.reading) ?? DEFAULT_READING,
     };
   }
 

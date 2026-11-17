@@ -5,6 +5,8 @@ import { X } from "lucide-react";
 
 import { Button } from "#ui/button";
 
+import { ReadingSurface } from "./ReadingSurface";
+
 interface ReadingModeProps {
   /** Título mostrado na barra de cima (o que está sendo lido). */
   title: string;
@@ -19,7 +21,8 @@ interface ReadingModeProps {
 
 /**
  * Modo leitura: cobre a tela com só o texto e o sumário na lateral (sem
- * botões de ação nem cabeçalhos da página). Esc sai. O texto é desenhado só
+ * botões de ação nem cabeçalhos da página). Esc sai. Usa fonte, tamanho,
+ * zoom e cores das preferências de leitura. O texto é desenhado só
  * aqui, nunca junto com a página normal, para não repetir ids de título.
  */
 export function ReadingMode({
@@ -42,12 +45,13 @@ export function ReadingMode({
   }, [onExit]);
 
   return createPortal(
-    <div
+    <ReadingSurface
+      framed={false}
       role="region"
       aria-label="Modo leitura"
       className="fixed inset-0 z-50 animate-enter-fade overflow-y-auto bg-background"
     >
-      <div className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b bg-background px-4">
+      <div className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b bg-[var(--reading-bg,var(--background))] px-4 font-sans">
         <p className="min-w-0 flex-1 truncate text-sm font-medium">{title}</p>
 
         {actions && <div className="w-full max-w-sm">{actions}</div>}
@@ -57,17 +61,17 @@ export function ReadingMode({
         </Button>
       </div>
 
-      <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <div className="mx-auto grid w-full max-w-[calc(24rem+48rem*var(--reading-zoom,1))] gap-10 px-4 py-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="min-w-0">{children}</div>
 
         <aside
           aria-label="Sumário da leitura"
-          className="lg:sticky lg:top-24 lg:self-start"
+          className="font-sans lg:sticky lg:top-24 lg:self-start"
         >
           {toc}
         </aside>
       </div>
-    </div>,
+    </ReadingSurface>,
     document.body,
   );
 }

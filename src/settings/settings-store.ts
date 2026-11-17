@@ -73,7 +73,11 @@ export class SettingsStore {
     return {
       // Só as chaves conhecidas: valores antigos (pastas, Whisper) que sobraram no arquivo são ignorados.
       paths: { libraryDir: patch.paths?.libraryDir ?? base.paths.libraryDir },
-      appearance: { ...base.appearance, ...patch.appearance },
+      appearance: {
+        ...base.appearance,
+        ...patch.appearance,
+        reading: { ...base.appearance.reading, ...patch.appearance?.reading },
+      },
       local: {
         ollama: { url: patch.local?.ollama?.url ?? base.local.ollama.url },
       },

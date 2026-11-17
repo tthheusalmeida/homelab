@@ -1,4 +1,4 @@
-import type { Appearance } from './appearance';
+import type { Appearance, AppearancePatch } from './appearance';
 
 /**
  * Única pasta que o usuário escolhe: onde ficam as páginas e os livros. Inbox, temporários e dados
@@ -30,7 +30,7 @@ export interface SettingsData {
 
 export type SettingsPatch = {
   paths?: Partial<SettingsPaths>;
-  appearance?: Partial<Appearance>;
+  appearance?: AppearancePatch;
   local?: {
     ollama?: Partial<OllamaConfig>;
   };

@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { ACCENT_IDS, DEFAULT_APPEARANCE } from "#shared/contracts/appearance";
+import { DEFAULT_READING } from "#shared/contracts/reading";
 
 import {
   accentLabels,
@@ -42,7 +43,7 @@ describe("applyAppearance", () => {
   it("when the theme resolves to dark, should add the dark class and the dark color scheme", () => {
     applyAppearance(
       document.documentElement,
-      { theme: "dark", accent: "cyan" },
+      { theme: "dark", accent: "cyan", reading: DEFAULT_READING },
       false,
     );
 
@@ -55,7 +56,7 @@ describe("applyAppearance", () => {
 
     applyAppearance(
       document.documentElement,
-      { theme: "system", accent: "cyan" },
+      { theme: "system", accent: "cyan", reading: DEFAULT_READING },
       false,
     );
 
@@ -66,7 +67,7 @@ describe("applyAppearance", () => {
   it("when an accent is chosen, should expose it in data-accent", () => {
     applyAppearance(
       document.documentElement,
-      { theme: "light", accent: "violet" },
+      { theme: "light", accent: "violet", reading: DEFAULT_READING },
       true,
     );
 
@@ -76,9 +77,10 @@ describe("applyAppearance", () => {
 
 describe("parseAppearance", () => {
   it("when the value is valid, should return it", () => {
-    expect(parseAppearance({ theme: "dark", accent: "rose" })).toEqual({
+    expect(parseAppearance({ theme: "dark", accent: "rose", reading: DEFAULT_READING })).toEqual({
       theme: "dark",
       accent: "rose",
+      reading: DEFAULT_READING,
     });
   });
 
@@ -87,10 +89,36 @@ describe("parseAppearance", () => {
     undefined,
     "dark",
     {},
-    { theme: "sepia", accent: "cyan" },
-    { theme: "dark", accent: "pink" },
+    { theme: "sepia", accent: "cyan", reading: DEFAULT_READING },
+    { theme: "dark", accent: "pink", reading: DEFAULT_READING },
   ])("when the value is %j, should return null", (value) => {
     expect(parseAppearance(value)).toBeNull();
+  });
+});
+
+describe("parseAppearance reading", () => {
+  it("when an old copy has no reading preferences, should fill them with the defaults", () => {
+    expect(parseAppearance({ theme: "dark", accent: "rose" })).toEqual({
+      theme: "dark",
+      accent: "rose",
+      reading: DEFAULT_READING,
+    });
+  });
+
+  it("when the reading preferences are valid, should keep them", () => {
+    const reading = { ...DEFAULT_READING, font: "lora", fontSize: 22 };
+
+    expect(
+      parseAppearance({ theme: "dark", accent: "rose", reading })?.reading,
+    ).toEqual(reading);
+  });
+
+  it("when the reading preferences are invalid, should fall back to the defaults", () => {
+    const reading = { ...DEFAULT_READING, fontSize: 15 };
+
+    expect(
+      parseAppearance({ theme: "dark", accent: "rose", reading })?.reading,
+    ).toEqual(DEFAULT_READING);
   });
 });
 
@@ -124,12 +152,13 @@ describe("cached appearance", () => {
       setItem: (key: string, value: string) => void store.set(key, value),
     };
 
-    writeCachedAppearance({ theme: "light", accent: "orange" }, storage);
+    writeCachedAppearance({ theme: "light", accent: "orange", reading: DEFAULT_READING }, storage);
 
     expect(store.has(APPEARANCE_CACHE_KEY)).toBe(true);
     expect(readCachedAppearance(storage)).toEqual({
       theme: "light",
       accent: "orange",
+      reading: DEFAULT_READING,
     });
   });
 

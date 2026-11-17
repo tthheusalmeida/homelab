@@ -2,6 +2,12 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
+/* Fontes de leitura (Configurações > Aparência > Leitura); empacotadas, o app funciona offline. */
+@import "@fontsource-variable/literata";
+@import "@fontsource-variable/merriweather";
+@import "@fontsource-variable/lora";
+@import "@fontsource/atkinson-hyperlegible/400.css";
+@import "@fontsource/atkinson-hyperlegible/700.css";
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
@@ -770,3 +776,57 @@
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
+
+/* ------------------------------------------------------------------
+ * Leitura: superfície com fonte, tamanho, largura (zoom) e cores
+ * escolhidos pelo usuário. As variáveis vêm de `readingStyle`
+ * (lib/reading.ts); sem elas vale o visual do tema.
+ * ------------------------------------------------------------------ */
+.reading-surface {
+  color: var(--reading-fg, var(--foreground));
+}
+
+/* Cor de fundo escolhida: vira um painel com respiro; sem ela o texto fica direto no fundo do app. */
+.reading-surface[data-custom-bg] {
+  background-color: var(--reading-bg);
+}
+
+.reading-surface[data-custom-bg][data-framed] {
+  border-radius: var(--radius-xl);
+  padding: 2rem 1.5rem;
+}
+
+@media (min-width: 40rem) {
+  .reading-surface[data-custom-bg][data-framed] {
+    padding: 2.5rem 3rem;
+  }
+}
+
+/* Coluna do texto: 48 rem a 100%; o zoom só alarga ou estreita a coluna, a letra não muda. */
+.reading-column {
+  width: 100%;
+  max-width: calc(48rem * var(--reading-zoom, 1));
+  margin-inline: auto;
+}
+
+/* O texto (prose) segue a cor escolhida em tudo: títulos, links, citações, bordas e código. */
+.reading-surface .prose {
+  --tw-prose-body: currentColor;
+  --tw-prose-headings: currentColor;
+  --tw-prose-lead: currentColor;
+  --tw-prose-bold: currentColor;
+  --tw-prose-links: currentColor;
+  --tw-prose-counters: color-mix(in oklab, currentColor 65%, transparent);
+  --tw-prose-bullets: color-mix(in oklab, currentColor 55%, transparent);
+  --tw-prose-hr: color-mix(in oklab, currentColor 20%, transparent);
+  --tw-prose-quotes: currentColor;
+  --tw-prose-quote-borders: color-mix(in oklab, currentColor 25%, transparent);
+  --tw-prose-captions: color-mix(in oklab, currentColor 65%, transparent);
+  --tw-prose-kbd: currentColor;
+  --tw-prose-code: currentColor;
+  --tw-prose-pre-code: currentColor;
+  --tw-prose-pre-bg: color-mix(in oklab, currentColor 8%, transparent);
+  --tw-prose-th-borders: color-mix(in oklab, currentColor 25%, transparent);
+  --tw-prose-td-borders: color-mix(in oklab, currentColor 15%, transparent);
+}
+

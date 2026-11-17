@@ -14,13 +14,14 @@ import {
 } from '#shared/contracts/appearance';
 
 import { Strings } from '../strings';
+import { ReadingSettings } from './ReadingSettings';
 
 /**
  * Tema e cor de destaque. Diferente das outras seções, vale na hora e não pede reinício:
  * cada escolha já troca o app inteiro (as duas janelas) e é gravada em seguida.
  */
 export function AppearanceSection() {
-  const { appearance, update, reset } = useAppearance();
+  const { appearance, update } = useAppearance();
   const [error, setError] = useState<string | null>(null);
 
   const change = (patch: Partial<Appearance>) => {
@@ -92,6 +93,8 @@ export function AppearanceSection() {
         </SettingsPanel>
       </SettingsGroup>
 
+      <ReadingSettings />
+
       {error && (
         <p role="alert" className="animate-enter-fade text-sm text-destructive">
           {error}
@@ -106,7 +109,9 @@ export function AppearanceSection() {
           disabled={isDefault}
           onClick={() => {
             setError(null);
-            reset().catch((failure: Error) => setError(failure.message));
+            update({ theme: DEFAULT_APPEARANCE.theme, accent: DEFAULT_APPEARANCE.accent }).catch(
+              (failure: Error) => setError(failure.message),
+            );
           }}
         >
           <RotateCcw /> {Strings.appearance.restore}

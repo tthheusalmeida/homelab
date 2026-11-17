@@ -13,7 +13,7 @@ export interface DefaultSettingsOptions {
 export function createDefaultSettings({ libraryDir }: DefaultSettingsOptions): SettingsData {
   return {
     paths: { libraryDir },
-    appearance: { ...DEFAULT_APPEARANCE },
+    appearance: structuredClone(DEFAULT_APPEARANCE),
     local: {
       ollama: { url: DEFAULT_OLLAMA_URL },
     },

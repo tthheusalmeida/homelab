@@ -51,6 +51,48 @@ describe('validateSettings', () => {
     expectValidation((s) => (s.appearance.accent = 'pink' as never), /cores de destaque/);
   });
 
+  it('when the reading font is unknown, should reject', () => {
+    expectValidation((s) => (s.appearance.reading.font = 'comic' as never), /fontes de leitura/);
+  });
+
+  it.each([7, 9, 34, 16.5, '16'])('when the reading font size is %s, should reject', (size) => {
+    expectValidation((s) => (s.appearance.reading.fontSize = size as never), /tamanho da letra/);
+  });
+
+  it.each([8, 16, 32])('when the reading font size is %s, should accept', (size) => {
+    const settings = testDefaults();
+    settings.appearance.reading.fontSize = size;
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
+  it.each([60, 105, 210])('when the reading zoom is %s, should reject', (zoom) => {
+    expectValidation((s) => (s.appearance.reading.zoom = zoom), /zoom/);
+  });
+
+  it.each([70, 100, 200])('when the reading zoom is %s, should accept', (zoom) => {
+    const settings = testDefaults();
+    settings.appearance.reading.zoom = zoom;
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
+  it('when a reading color is unknown, should reject', () => {
+    expectValidation(
+      (s) => (s.appearance.reading.background = 'brown' as never),
+      /cores de leitura/,
+    );
+    expectValidation((s) => (s.appearance.reading.text = 'brown' as never), /cores de leitura/);
+  });
+
+  it('when the reading colors are tailwind colors, should accept', () => {
+    const settings = testDefaults();
+    settings.appearance.reading.background = 'amber';
+    settings.appearance.reading.text = 'stone';
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
   it.each(['system', 'light', 'dark'] as const)('when the theme is %s, should accept', (theme) => {
     const settings = testDefaults();
     settings.appearance.theme = theme;

@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "#ui/card";
 
+import { ReadingQuickControls } from "#components/ReadingQuickControls";
+
 import type { BookReading, BookSearchHit } from "../types";
 import { BookOutline } from "./BookOutline";
 import { BookProgressCard } from "./BookProgressCard";
@@ -62,6 +64,8 @@ export function BookSidebar({
         total={totalChapters}
         completedAt={completedAt}
       />
+
+      <ReadingQuickControls />
 
       {searching && (
         <Card>

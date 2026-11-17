@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -12,6 +12,9 @@ import { AppearanceSection } from './AppearanceSection';
 
 const renderSection = (ui: ReactNode = <AppearanceSection />) =>
   render(<AppearanceProvider>{ui}</AppearanceProvider>);
+
+/** As cores de destaque e as de leitura têm nomes parecidos: sempre procure dentro do grupo. */
+const accents = () => within(screen.getByRole('radiogroup', { name: 'Cor de destaque' }));
 
 describe('AppearanceSection', () => {
   beforeEach(() => {
@@ -33,9 +36,9 @@ describe('AppearanceSection', () => {
 
     renderSection();
 
-    await waitFor(() => expect(screen.getByRole('radio', { name: 'Violeta' })).toBeChecked());
+    await waitFor(() => expect(accents().getByRole('radio', { name: 'Violeta' })).toBeChecked());
     for (const name of ['Ciano', 'Azul', 'Índigo', 'Esmeralda', 'Rosa', 'Laranja']) {
-      expect(screen.getByRole('radio', { name })).not.toBeChecked();
+      expect(accents().getByRole('radio', { name })).not.toBeChecked();
     }
   });
 
@@ -61,7 +64,7 @@ describe('AppearanceSection', () => {
     });
     renderSection();
 
-    await user.click(screen.getByRole('radio', { name: 'Rosa' }));
+    await user.click(accents().getByRole('radio', { name: 'Rosa' }));
 
     expect(invoke).toHaveBeenCalledWith(IpcChannels.appearance.update, { accent: 'rose' });
     await waitFor(() => expect(document.documentElement.dataset.accent).toBe('rose'));
@@ -75,10 +78,10 @@ describe('AppearanceSection', () => {
     });
     renderSection();
 
-    await user.click(screen.getByRole('radio', { name: 'Laranja' }));
+    await user.click(accents().getByRole('radio', { name: 'Laranja' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Escolha uma cor válida.');
-    expect(screen.getByRole('radio', { name: 'Ciano' })).toBeChecked();
+    expect(accents().getByRole('radio', { name: 'Ciano' })).toBeChecked();
   });
 
   it('when the default is already in use, should disable restoring it', async () => {
