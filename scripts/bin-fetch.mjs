@@ -6,7 +6,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { downloadVerified } from './bin-utils.mjs';
+import { downloadVerified, zipTar } from './bin-utils.mjs';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lock = JSON.parse(fs.readFileSync(path.join(root, 'scripts', 'windows-bin.json'), 'utf8'));
@@ -24,7 +24,7 @@ await downloadVerified(lock.url, lock.sha256, zip);
 fs.rmSync(target, { recursive: true, force: true });
 fs.mkdirSync(target, { recursive: true });
 // `tar` (bsdtar) vem no Windows 10+ e no runner windows-latest e lê .zip.
-execFileSync('tar', ['-xf', zip, '-C', target], { stdio: 'inherit' });
+execFileSync(zipTar(), ['-xf', zip, '-C', target], { stdio: 'inherit' });
 for (const required of ['whisper-cli.exe', 'ffmpeg.exe']) {
   if (!fs.existsSync(path.join(target, required))) {
     console.error(`O pacote não trouxe ${required}.`);

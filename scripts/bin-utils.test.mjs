@@ -22,6 +22,10 @@ test('when the file is a model or CUDA runtime, should be excluded from the pack
   }
 });
 
+test('when the file is yt-dlp, should be excluded because the app downloads it', () => {
+  assert.equal(isExcludedFromPack('yt-dlp.exe'), true);
+});
+
 test('when the file is the CPU runtime, should be kept in the pack', () => {
   for (const name of ['whisper-cli.exe', 'whisper.dll', 'ggml-cpu.dll', 'ffmpeg.exe', 'LICENSE']) {
     assert.equal(isExcludedFromPack(name), false, name);

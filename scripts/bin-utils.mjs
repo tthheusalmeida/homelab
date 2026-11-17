@@ -1,6 +1,7 @@
 // Funções de empacotamento dos binários embutidos, usadas por `bin-fetch.mjs` e `bin-pack.mjs`.
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 /** Arquivos que NÃO entram no pacote (iguais aos excluídos do instalador em electron-builder.yml). */
 export function isExcludedFromPack(name) {
@@ -8,8 +9,20 @@ export function isExcludedFromPack(name) {
   return (
     lower.endsWith('.bin') ||
     /^(cublas|cudart|nvblas|nvrtc)/.test(lower) ||
-    lower === 'ggml-cuda.dll'
+    lower === 'ggml-cuda.dll' ||
+    // O app baixa e atualiza o yt-dlp pelo assistente (muda toda semana): não vai no instalador.
+    lower === 'yt-dlp.exe'
   );
+}
+
+/**
+ * `tar` que sabe ler e criar .zip (bsdtar). No Windows é o do sistema, pelo caminho completo: o
+ * `tar` do Git Bash é o GNU tar, que não abre zip.
+ */
+export function zipTar() {
+  return process.platform === 'win32'
+    ? path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe')
+    : 'tar';
 }
 
 export function sha256OfFile(file) {

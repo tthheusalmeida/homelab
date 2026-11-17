@@ -5,7 +5,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { isExcludedFromPack, sha256OfFile } from './bin-utils.mjs';
+import { isExcludedFromPack, sha256OfFile, zipTar } from './bin-utils.mjs';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'resources', 'bin', 'win32-x64');
@@ -20,7 +20,7 @@ fs.mkdirSync(out, { recursive: true });
 const zip = path.join(out, 'win32-x64.zip');
 fs.rmSync(zip, { force: true });
 // bsdtar monta o zip (`-a` escolhe o formato pela extensão).
-execFileSync('tar', ['-a', '-cf', zip, '-C', source, ...files.map((f) => f.name)], { stdio: 'inherit' });
+execFileSync(zipTar(), ['-a', '-cf', zip, '-C', source, ...files.map((f) => f.name)], { stdio: 'inherit' });
 
 console.log(`\nPacote: ${zip} (${(fs.statSync(zip).size / 1e6).toFixed(1)} MB, ${files.length} arquivos)`);
 console.log(`SHA-256: ${sha256OfFile(zip)}`);
