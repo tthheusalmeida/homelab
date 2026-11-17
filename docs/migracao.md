@@ -18,7 +18,7 @@ O HomeLab (front React + back Nest) virou um **app desktop Electron com IPC**, i
 |---|---|---|
 | 11 | Validação do padrão de commits (commitlint, ganchos, CI) e proteção da `main` | pendente |
 | 12 | CI de build e release automatizado (release-please, `.exe` no Release) | pendente |
-| 13 | Atualização automática no app (aviso e download só da diferença) | pendente |
+| 13 | Atualização automática no app (aviso e download só da diferença) | parcial: aviso, seção e instalação entregues (`atualizacoes.md`); falta a atualização diferencial e o `autoCheck` |
 
 Cada fase tem um arquivo em `docs/fases/` com escopo, testes e checklist. Status: `pendente`, `em andamento`, `aguardando validação` (entregue, esperando o "ok") ou `concluída`. **Fase concluída tem o arquivo apagado**: o que ela deixou vira documentação de uso (`docs/*.md`) e o Git guarda o resto.
 

@@ -28,6 +28,7 @@ import {
   type LibraryWriter,
 } from './library.handler';
 import { LocalProvidersHandler } from './local-providers.handler';
+import { UpdatesHandler, type UpdatesPort } from './updates.handler';
 import { SettingsHandler, type FolderPicker, type LibraryFolderPort } from './settings.handler';
 
 /** Services do back (Nest) usados pelos handlers de leitura. */
@@ -55,6 +56,7 @@ export interface HandlerDeps {
   backup: BackupPort;
   notices: PendingNotices;
   components: ComponentsPort;
+  updates: UpdatesPort;
   /** Janela de login dos sites de vídeo (acesso a vídeos que exigem entrar). */
   platformLogin: PlatformLogin;
   platformLogins: PlatformLoginsPort;
@@ -79,6 +81,7 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
     new BackupHandler(deps.backup),
     new NoticeHandler(deps.notices),
     new ComponentsHandler(deps.components),
+    new UpdatesHandler(deps.updates),
     new PlatformHandler(deps.platformLogins),
     new JobHandler(
       deps.back.jobs.catalog,

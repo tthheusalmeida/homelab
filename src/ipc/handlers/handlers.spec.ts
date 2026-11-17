@@ -31,6 +31,7 @@ describe('createHandlers', () => {
           remove: jest.fn(),
           setActiveModel: jest.fn(),
         },
+        updates: { status: jest.fn(), check: jest.fn(), install: jest.fn() },
         backup: {
           preview: jest.fn(),
           create: jest.fn(),

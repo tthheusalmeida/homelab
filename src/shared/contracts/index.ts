@@ -25,6 +25,7 @@ import type {
   BookUpdateRequest,
 } from './books';
 import type { ComponentRequest, ComponentsInstallRequest, ComponentsStatus } from './components';
+import type { UpdateStatus } from './updates';
 import type {
   BackupCreateRequest,
   BackupCreateResult,
@@ -158,6 +159,13 @@ export interface IpcContracts {
     request: ComponentRequest;
     response: ComponentsStatus;
   };
+
+  /** Estado da atualização do app (versão instalada, nova versão, progresso, erro). */
+  [IpcChannels.updates.status]: { request: void; response: UpdateStatus };
+  /** Consulta o GitHub agora e devolve o estado. */
+  [IpcChannels.updates.check]: { request: void; response: UpdateStatus };
+  /** Baixa a versão nova (conferida por checksum) e a aplica; o progresso vai em `updates:changed`. */
+  [IpcChannels.updates.install]: { request: void; response: UpdateStatus };
 
   /** Mostra o que dá para incluir no backup, com tamanhos, e o que não entra. */
   [IpcChannels.backup.preview]: { request: void; response: BackupPreview };

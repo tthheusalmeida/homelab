@@ -7,6 +7,7 @@ import {
   Folder,
   KeyRound,
   Palette,
+  RefreshCw,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -29,6 +30,7 @@ import { useMarkRestartPending, useRestartPending } from '#hooks/use-restart-pen
 import { relaunchApp } from '#lib/restart';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { BackupSection } from './sections/BackupSection';
+import { UpdatesSection } from './sections/UpdatesSection';
 import { AccessSection } from './sections/AccessSection';
 import { ComponentsSection } from './sections/ComponentsSection';
 import { ExternalProvidersSection } from './sections/ExternalProvidersSection';
@@ -50,6 +52,7 @@ const SECTION_ICONS: Record<SectionId, LucideIcon> = {
   components: Download,
   access: KeyRound,
   backup: Archive,
+  updates: RefreshCw,
 };
 
 const isSectionId = (value: string | null | undefined): value is SectionId =>
@@ -153,6 +156,7 @@ export function SettingsApp({ initialSection }: { initialSection?: string | null
               {sectionId === 'components' && <ComponentsSection />}
               {sectionId === 'access' && <AccessSection />}
               {sectionId === 'backup' && <BackupSection onSaved={handleSaved} />}
+              {sectionId === 'updates' && <UpdatesSection />}
             </main>
           </ScrollArea>
 

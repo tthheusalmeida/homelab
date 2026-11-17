@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -40,6 +40,7 @@ import {
   INDEX_FILE,
   MainEnv,
   Messages,
+  UPDATES_OFF,
   windowBackground,
 } from './constants';
 import { electronCipher } from './electron-cipher';
@@ -67,7 +68,9 @@ import { resolveFfmpegPath } from '../providers/ffmpeg-binary-resolver';
 import { resolveYtDlpPath } from '../providers/ytdlp-binary-resolver';
 import { resolveBinDir, resolveDataRoot, resolveFrontDist, resolveResourcesDir } from './paths';
 import { isSettingsShortcut } from './shortcuts';
+import { createAppUpdater } from './app-updater-factory';
 import { SystemNotifier } from './system-notifier';
+import type { AppUpdater } from '../updates/app-updater';
 import { resolveStaticFile } from './static-files';
 import { createSplashWindowOptions, createWindowOptions } from './window-options';
 
@@ -101,6 +104,8 @@ let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
 /** Seção das Configurações pedida antes da tela carregar (primeira execução); a tela a lê uma vez. */
 let pendingSettingsSection: string | null = null;
+/** Verificação e aplicação de atualizações (criada em `startCore`, iniciada com a janela). */
+let appUpdater: AppUpdater | null = null;
 /** Eventos para as janelas (uma só hoje: a principal). */
 const events = new WindowEventPublisher(() => BrowserWindow.getAllWindows());
 
@@ -346,6 +351,23 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     },
   });
 
+  appUpdater = createAppUpdater({
+    currentVersion: app.getVersion(),
+    platform: process.platform,
+    userDataDir: app.getPath('userData'),
+    fetchFn: (url, init) => net.fetch(url, init),
+    spawnDetached: (file, args) => {
+      const child = spawn(file, [...args], { detached: true, stdio: 'ignore' });
+
+      child.on('error', () => undefined);
+      child.unref();
+    },
+    quit: () => app.quit(),
+    openExternal: (url) => void shell.openExternal(url),
+    publish: (status) => events.publish(IpcEvents.updatesChanged, status),
+    notify: (title, body) => void systemNotifier.notify({ title, body }),
+  });
+
   const container = await BackContainer.start({
     config: new SettingsBackConfig(
       services.settings,
@@ -461,6 +483,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       backup,
       notices,
       components: services.components,
+      updates: appUpdater,
       settings: services.settingsService,
       externalProviders: services.externalProviders,
       localProviders: services.localProviders,
@@ -516,6 +539,10 @@ async function bootstrap(): Promise<void> {
     const { needsSetup } = await startCore(target);
 
     createMainWindow(target);
+
+    if (process.env[MainEnv.UPDATES] !== UPDATES_OFF) {
+      appUpdater?.start();
+    }
 
     if (needsSetup) {
       // A tela lê o pedido ao abrir e vai direto à chave do Gemini.

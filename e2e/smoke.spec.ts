@@ -38,6 +38,8 @@ const dataRoot = (dir: string): string => path.join(dir, 'data-root');
 const isolatedEnv = (dir: string): NodeJS.ProcessEnv => ({
   ...process.env,
   HOMELAB_USER_DATA_DIR: dir,
+  // Os testes não consultam o GitHub atrás de versão nova.
+  HOMELAB_UPDATES: 'off',
   HOMELAB_DATA_ROOT_DIR: dataRoot(dir),
 });
 

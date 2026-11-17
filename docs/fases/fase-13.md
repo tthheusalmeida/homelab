@@ -1,6 +1,6 @@
 # Fase 13 — Atualização automática no app
 
-Status: pendente (planejada; depende da fase 12)
+Status: **parcialmente entregue** (aguardando validação). Já existe uma versão simples, descrita em `atualizacoes.md`: consulta aos Releases pela API do GitHub, cartão na barra lateral, seção Configurações > Atualizações, download do instalador inteiro com SHA-256 (do `digest` do GitHub) e instalação silenciosa. **Falta** o que está abaixo e que depende da fase 12: atualização diferencial (`electron-updater` com `latest.yml` e `.blockmap`), a opção de desligar a verificação automática (`updates.autoCheck`) e a notificação de "pronta para reiniciar".
 
 ## Objetivo
 Avisar o usuário quando sai uma versão nova e atualizar sem baixar tudo de novo: só a diferença, por baixo dos panos.
