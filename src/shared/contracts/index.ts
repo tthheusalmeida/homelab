@@ -25,7 +25,7 @@ import type {
   BookUpdateRequest,
 } from './books';
 import type { ComponentRequest, ComponentsInstallRequest, ComponentsStatus } from './components';
-import type { UpdateStatus } from './updates';
+import type { SetAutoCheckRequest, UpdateStatus } from './updates';
 import type {
   BackupCreateRequest,
   BackupCreateResult,
@@ -164,8 +164,13 @@ export interface IpcContracts {
   [IpcChannels.updates.status]: { request: void; response: UpdateStatus };
   /** Consulta o GitHub agora e devolve o estado. */
   [IpcChannels.updates.check]: { request: void; response: UpdateStatus };
-  /** Baixa a versão nova (conferida por checksum) e a aplica; o progresso vai em `updates:changed`. */
+  /**
+   * Com a versão nova pronta (`ready`), reinicia e instala. Se o download automático falhou
+   * (`available`), baixa só a diferença; o progresso vai em `updates:changed`.
+   */
   [IpcChannels.updates.install]: { request: void; response: UpdateStatus };
+  /** Liga ou desliga a verificação automática (a manual continua funcionando). */
+  [IpcChannels.updates.setAutoCheck]: { request: SetAutoCheckRequest; response: UpdateStatus };
 
   /** Mostra o que dá para incluir no backup, com tamanhos, e o que não entra. */
   [IpcChannels.backup.preview]: { request: void; response: BackupPreview };

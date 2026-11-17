@@ -1,6 +1,6 @@
 # Fase 11 — Validação do padrão de commits e do fluxo de branches
 
-Status: pendente (planejada; fazer depois)
+Status: **aguardando validação**. Entregue: `commitlint.config.cjs`, ganchos `.husky/commit-msg` e `pre-push`, `npm run test:commitlint`, `.github/workflows/pr.yml` e `.github/pull_request_template.md`. Falta, no GitHub (feito pelo usuário): proteção da `main` com os checks `Commits e título` e `Lint, tipos e testes` obrigatórios.
 
 ## Objetivo
 Garantir por automação o que `docs/versionamento.md` já pede: commits em Conventional Commits, nada direto na `main`, toda mudança por branch e merge request.

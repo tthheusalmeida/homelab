@@ -20,9 +20,16 @@ export interface OllamaConfig {
   url: string;
 }
 
+/** Atualização do app (`docs/atualizacoes.md`). */
+export interface UpdatesSettings {
+  /** Verificar sozinho ao abrir e a cada 6 horas. */
+  autoCheck: boolean;
+}
+
 export interface SettingsData {
   paths: SettingsPaths;
   appearance: Appearance;
+  updates: UpdatesSettings;
   local: {
     ollama: OllamaConfig;
   };
@@ -31,6 +38,7 @@ export interface SettingsData {
 export type SettingsPatch = {
   paths?: Partial<SettingsPaths>;
   appearance?: AppearancePatch;
+  updates?: Partial<UpdatesSettings>;
   local?: {
     ollama?: Partial<OllamaConfig>;
   };

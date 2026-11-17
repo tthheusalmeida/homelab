@@ -15,9 +15,10 @@ Origem: os 37 endpoints HTTP atuais (`/api/v1`) + os canais novos de app, settin
 ## updates (atualização do app; ver `atualizacoes.md`)
 | Canal | Payload | Retorno |
 |---|---|---|
-| `updates:status` | — | `UpdateStatus`: `{ state: idle|checking|available|downloading|installing, currentVersion, latest: { version, notes, url, publishedAt } | null, progress (0 a 100), error, checkedAt, canInstall }` |
+| `updates:status` | — | `UpdateStatus`: `{ state: idle|checking|available|downloading|ready|installing, currentVersion, latest: { version, notes, url, publishedAt } | null, progress (0 a 100), error, checkedAt, canInstall, autoCheck }` |
 | `updates:check` | — | o `UpdateStatus` depois de consultar o GitHub (falha de rede vira `error`, nunca exceção) |
-| `updates:install` | — | o `UpdateStatus`; baixa o instalador (SHA-256 conferido) e o aplica, fechando o app. Fora do Windows abre a página do Release. Sem versão nova, não faz nada |
+| `updates:install` | — | o `UpdateStatus`. Com a versão `ready`, reinicia e instala (`quitAndInstall`); com o download automático falho (`available`), baixa só a diferença de novo. Fora do Windows abre a página do Release. Sem versão nova, não faz nada |
+| `updates:set-auto-check` | `{ autoCheck: boolean }` | o `UpdateStatus` depois de gravar `updates.autoCheck` (valor que não é booleano: `VALIDATION`) |
 
 Evento `updates:changed` (main → renderer): o `UpdateStatus` a cada mudança (nova versão, progresso, erro).
 

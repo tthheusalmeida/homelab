@@ -86,8 +86,8 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/r
 Detalhes em `docs/versionamento.md`. Vale para toda mudança feita **depois** da adoção do SemVer:
 - **Nunca commitar direto na `main`.** Crie uma **branch** a partir da `main` atualizada (`feat/<assunto>`, `fix/<assunto>`, `docs/<assunto>`, `build/<assunto>`, `chore/<assunto>`), faça os commits nela e abra um **merge request** (pull request no GitHub) para a `main`, com o título também em Conventional Commits.
 - **Mensagem de commit:** `tipo(escopo opcional)!: descrição em inglês`, um assunto por commit. `feat` sobe o MINOR, `fix` o PATCH, `!` ou `BREAKING CHANGE` quebra compatibilidade (em `0.x` sobe o MINOR).
-- **Validação ao subir para o GitHub:** título do MR e commits no padrão, lint, Jest, Vitest e typecheck passando. Hoje é conferida à mão (checklist em `versionamento.md`); a fase 11 automatiza com commitlint, ganchos e CI.
-- A versão sai dos commits (`package.json`, tag `v<versão>`, Release); a fase 12 automatiza isso. Não escolher número de versão "no olho".
+- **Validação ao subir para o GitHub:** título do MR e commits no padrão, lint, Jest, Vitest e typecheck passando. É automatizada: `husky` + `commitlint` (ganchos `commit-msg` e `pre-push`) e `.github/workflows/pr.yml` (ver `versionamento.md`); `npm run test:commitlint` testa a config.
+- A versão sai dos commits e o release é **automático**: todo merge na `main` com `feat`, `fix` ou quebra publica tag `v<versão>` e Release com changelog, `.exe` e AppImage (`.github/workflows/release.yml`; ver `versionamento.md`). Não escolher número de versão "no olho" nem editar a versão à mão.
 - Commits e branches só quando o usuário pedir; **push e abertura do MR também só quando ele pedir**.
 
 ## Regra de entrega por fase (OBRIGATÓRIO)

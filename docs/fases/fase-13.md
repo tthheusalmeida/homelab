@@ -1,45 +1,19 @@
-# Fase 13 — Atualização automática no app
+# Fase 13 — Atualização automática no app (diferencial)
 
-Status: **parcialmente entregue** (aguardando validação). Já existe uma versão simples, descrita em `atualizacoes.md`: consulta aos Releases pela API do GitHub, cartão na barra lateral, seção Configurações > Atualizações, download do instalador inteiro com SHA-256 (do `digest` do GitHub) e instalação silenciosa. **Falta** o que está abaixo e que depende da fase 12: atualização diferencial (`electron-updater` com `latest.yml` e `.blockmap`), a opção de desligar a verificação automática (`updates.autoCheck`) e a notificação de "pronta para reiniciar".
+Status: **aguardando validação**. Entregue: `electron-updater` atrás da porta `NativeUpdater` (download só da diferença, em segundo plano, no Windows empacotado), estado `ready` com "Reiniciar e atualizar" no cartão da barra lateral e em Configurações > Sobre e atualizações, notificação de "pronta", `updates.autoCheck` com o canal `updates:set-auto-check`, bloco `publish` do `electron-builder.yml` (fase 12) e remoção do instalador inteiro (`windows-installer.ts`). O comportamento está em `docs/atualizacoes.md`.
 
-## Objetivo
-Avisar o usuário quando sai uma versão nova e atualizar sem baixar tudo de novo: só a diferença, por baixo dos panos.
+## O que testar (precisa do app instalado; não dá para validar remotamente)
+Pré-requisito: a CI da fase 12 já publicou pelo menos dois releases (`N` e `N+1`) com `.exe`, `.blockmap` e `latest.yml`. O primeiro release com o atualizador novo só atualiza quem já o tem; para testar o fluxo, instale o `N` e deixe o `N+1` sair.
+1. Instalar a versão `N` do Release. Abrir: em até ~15 s o cartão "Atualização N+1 disponível" aparece, o download avança sem travar o app e o cartão vira "Atualização N+1 pronta".
+2. Conferir que o tráfego é bem menor que o instalador inteiro (atualização diferencial). Se baixar o instalador todo, o app funciona do mesmo jeito (ver "Limites" em `atualizacoes.md`).
+3. Clicar em "Reiniciar e atualizar" e confirmar: o app reabre na versão `N+1`, com biblioteca, conversas, chave do Gemini e modelos intactos, sem o assistente de instalação reaparecer; Configurações > Sobre e atualizações mostra a versão nova.
+4. Repetir o 1 e, em vez de clicar, **fechar o app**: ao abri-lo de novo, já está na `N+1` (instalação ao fechar).
+5. Sem internet, abrir o app: nenhum erro na tela; "Verificar agora" mostra a falha com clareza.
+6. Desligar "Verificar atualizações automaticamente", fechar e reabrir: nada é consultado (o "Última verificação" fica em "Ainda não verificou nesta sessão"); "Verificar agora" continua funcionando.
+7. Com o download interrompido (desligar a rede no meio): volta a "disponível" com a mensagem e o botão "Baixar atualização" tenta de novo.
+8. Linux (AppImage): o app avisa da versão nova e o botão abre o Release no navegador.
 
-## Como funciona (`electron-updater`)
-- O `electron-builder` já publica, junto com o `.exe`, o `latest.yml` (versão, arquivo, SHA-512) e o `.blockmap` (blocos do instalador). A fase 12 anexa esses arquivos ao Release.
-- No app, o `electron-updater` consulta o Release mais recente do repositório (`provider: github`), compara com a versão instalada e, havendo versão nova, baixa **só os blocos que mudaram** (atualização diferencial do NSIS). O restante vem do instalador antigo.
-- Os dados do usuário (`userData`, biblioteca, modelos e pacote CUDA em `components/`) **não** são tocados: nada que o assistente de instalação baixou precisa ser baixado de novo.
-- Windows apenas, instalação NSIS (a atual). Instalação por usuário, então não pede administrador.
-
-## Escopo
-- **Main:** `src/main/updater.ts` com uma classe `AppUpdater` (sem importar o Electron; dependências injetadas, como `SystemNotifier`): verifica ao abrir (depois da janela pronta) e a cada 6 horas; `autoDownload` ligado; `autoInstallOnAppQuit` ligado. Estados: `idle`, `checking`, `available`, `downloading` (com progresso), `ready`, `error`. Falha de rede nunca atrapalha o app.
-- **IPC** (`docs/ipc-canais.md`): `updates:status`, `updates:check`, `updates:install` (reinicia e instala), evento `updates:progress` com o estado. O renderer só envia ids/comandos; URLs e versões ficam no main.
-- **Interface:**
-  - cartão na barra lateral, acima de Configurações (ao lado do de componentes): "Atualização 0.2.0 disponível", barra de progresso do download e botão "Reiniciar e atualizar" quando pronta (mesma linguagem do `SidebarSetupProgress`);
-  - Configurações > **Sobre e atualizações** (grupo Sistema): versão atual, "Verificar agora", notas da versão (o texto do Release) e a opção de verificar automaticamente (ligada);
-  - notificação do sistema quando a atualização está pronta e o app está em segundo plano (`SystemNotifier`).
-- **Segurança:** a integridade é conferida pelo SHA-512 do `latest.yml`; sem assinatura de código não há verificação de editor (o aviso do SmartScreen continua). Só aceita atualização do repositório configurado; nunca instala sem a ação do usuário ou o fechamento do app.
-- **Preferências:** `settings.json` ganha `updates.autoCheck` (padrão `true`); validação no `settings-validator`.
-- **Docs:** `docs/atualizacoes.md` novo, `empacotamento.md` (bloco `publish` do `electron-builder.yml`), `ipc-canais.md`, `configuracoes.md`.
-- Fora do escopo: canal beta, reversão de versão, atualização de Linux e macOS, assinatura de código.
-
-## Testes
-- `AppUpdater` com `electron-updater` falso: cada estado, progresso, erro de rede engolido, verificação periódica, `autoCheck` desligado não verifica, `install` só quando `ready`.
-- Handler com `FakeIpcMain`; validador de settings.
-- Renderer (Vitest): cartão da barra lateral em cada estado, seção Sobre e atualizações, ação "Reiniciar e atualizar".
-- Não chamar a rede nos testes.
-
-## O que testar
-1. Instalar a versão `N`, publicar a `N+1` pelo fluxo da fase 12. Abrir a `N`: aparece o cartão de atualização e o download avança sem travar o app.
-2. Conferir no download que o tráfego é bem menor que o instalador inteiro (atualização diferencial).
-3. Clicar em "Reiniciar e atualizar": o app reabre na versão `N+1` com biblioteca, conversas, chave do Gemini e modelos intactos, sem o assistente de instalação reaparecer.
-4. Sem internet, abrir o app: nenhum erro na tela; "Verificar agora" mostra a falha com clareza.
-5. Desligar a verificação automática e reabrir: nada é consultado.
-
-## Critério de aceite
-Uma versão publicada chega a quem já instalou, com aviso na tela, baixando só a diferença e sem perder nada.
-
-## Riscos e decisões a tomar
-- Sem assinatura de código, o SmartScreen pode avisar de novo após a atualização.
-- Na primeira versão com o atualizador, quem está em versão anterior precisa instalar na mão uma vez.
-- Releases de componentes (`components-vN`) e de binários (`bin-vN`) não podem ser tratados como "último Release" do app: o atualizador deve filtrar por tags `v*` (ou marcá-los como pré-lançamento, como já é feito com `components-v1`).
+## Riscos
+- O download diferencial e a instalação silenciosa só foram exercitados com o `electron-updater` falso nos testes; o fluxo real (NSIS + `latest.yml` + `.blockmap`) só se confirma com dois releases reais.
+- Sem assinatura de código, o SmartScreen pode avisar de novo depois da atualização.
+- Releases de componentes e de binários nunca contam como "último Release do app": a versão vem de `GitHubReleaseSource` (só tags `v<x.y.z>`) e o feed do atualizador é fixado na pasta de download dessa tag.

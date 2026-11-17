@@ -139,4 +139,18 @@ describe('validateSettings', () => {
 
     expect(() => validateSettings(settings)).not.toThrow();
   });
+
+  it('when the automatic update check is not a boolean, should reject', () => {
+    expectValidation(
+      (s) => ((s.updates as { autoCheck: unknown }).autoCheck = 'sim'),
+      /verificação automática/,
+    );
+  });
+
+  it.each([true, false])('when the automatic update check is %s, should accept', (autoCheck) => {
+    const settings = testDefaults();
+    settings.updates.autoCheck = autoCheck;
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
 });

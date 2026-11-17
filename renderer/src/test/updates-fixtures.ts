@@ -8,6 +8,7 @@ export const updateStatus = (overrides: Partial<UpdateStatus> = {}): UpdateStatu
   error: null,
   checkedAt: null,
   canInstall: true,
+  autoCheck: true,
   ...overrides,
 });
 
