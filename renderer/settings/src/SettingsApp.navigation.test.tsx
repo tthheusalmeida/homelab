@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { act, screen } from '@testing-library/react';
 
+import { AppearanceProvider } from '#components/AppearanceProvider';
 import { IpcChannels } from '#shared/channels';
 import { IpcEvents } from '#shared/events';
 import { setupStatus } from '#test/components-fixtures';
@@ -19,26 +20,38 @@ describe('SettingsApp navigation to a requested section', () => {
   it('when the main process has a pending section, should open on it', async () => {
     mockApi(base('components'));
 
-    renderWithQuery(<SettingsApp />);
+    renderWithQuery(
+      <AppearanceProvider>
+        <SettingsApp />
+      </AppearanceProvider>,
+    );
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Componentes' })).toBeVisible();
     expect(await screen.findByText('Seu computador')).toBeInTheDocument();
   });
 
-  it('when there is no pending section, should stay on the library section', async () => {
+  it('when there is no pending section, should stay on the first section (appearance)', async () => {
     mockApi(base(null));
 
-    renderWithQuery(<SettingsApp />);
+    renderWithQuery(
+      <AppearanceProvider>
+        <SettingsApp />
+      </AppearanceProvider>,
+    );
 
-    expect(screen.getByRole('heading', { level: 2, name: 'Biblioteca' })).toBeVisible();
-    expect(await screen.findByLabelText('Biblioteca')).toBeVisible();
+    expect(screen.getByRole('heading', { level: 2, name: 'Aparência' })).toBeVisible();
+    expect(await screen.findByRole('radiogroup', { name: 'Tema' })).toBeVisible();
   });
 
   it('when the window is already open and the main asks for a section, should navigate to it', async () => {
     mockApi(base(null));
 
-    renderWithQuery(<SettingsApp />);
-    await screen.findByLabelText('Biblioteca');
+    renderWithQuery(
+      <AppearanceProvider>
+        <SettingsApp />
+      </AppearanceProvider>,
+    );
+    await screen.findByRole('radiogroup', { name: 'Tema' });
 
     act(() => emitEvent(IpcEvents.settingsNavigate, { section: 'components' }));
 
@@ -48,9 +61,13 @@ describe('SettingsApp navigation to a requested section', () => {
   it('when the requested section does not exist, should ignore it', async () => {
     mockApi(base('inexistente'));
 
-    renderWithQuery(<SettingsApp />);
+    renderWithQuery(
+      <AppearanceProvider>
+        <SettingsApp />
+      </AppearanceProvider>,
+    );
 
-    expect(await screen.findByLabelText('Biblioteca')).toBeVisible();
-    expect(screen.getByRole('heading', { level: 2, name: 'Biblioteca' })).toBeVisible();
+    expect(await screen.findByRole('radiogroup', { name: 'Tema' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 2, name: 'Aparência' })).toBeVisible();
   });
 });

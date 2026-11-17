@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { DEFAULT_READING } from '../shared/contracts/reading';
 import type { SettingsPatch } from '../shared/contracts/settings';
 import { IpcError } from '../shared/errors';
 
@@ -120,7 +121,11 @@ describe('SettingsStore', () => {
   });
 
   it('when there is no saved appearance, should default to the system theme with the cyan accent', () => {
-    expect(create().get().appearance).toEqual({ theme: 'system', accent: 'cyan' });
+    expect(create().get().appearance).toEqual({
+      theme: 'system',
+      accent: 'cyan',
+      reading: DEFAULT_READING,
+    });
   });
 
   it('when the appearance changes, should save only what changed and survive a reload', () => {
@@ -128,13 +133,44 @@ describe('SettingsStore', () => {
 
     store.update({ appearance: { accent: 'violet' } });
 
-    expect(create().get().appearance).toEqual({ theme: 'system', accent: 'violet' });
+    expect(create().get().appearance).toEqual({
+      theme: 'system',
+      accent: 'violet',
+      reading: DEFAULT_READING,
+    });
+  });
+
+  it('when only part of the reading preferences changes, should keep the rest and survive a reload', () => {
+    const store = create();
+
+    store.update({ appearance: { reading: { fontSize: 20 } } });
+    store.update({ appearance: { reading: { font: 'lora' } } });
+
+    expect(create().get().appearance.reading).toEqual({
+      ...DEFAULT_READING,
+      fontSize: 20,
+      font: 'lora',
+    });
+  });
+
+  it('when an old file has an appearance without reading, should fill the reading with the defaults', () => {
+    fs.writeFileSync(target, JSON.stringify({ appearance: { theme: 'dark', accent: 'rose' } }));
+
+    expect(create().get().appearance).toEqual({
+      theme: 'dark',
+      accent: 'rose',
+      reading: DEFAULT_READING,
+    });
   });
 
   it('when an old file has no appearance, should fill it with the defaults', () => {
     fs.writeFileSync(target, JSON.stringify({ paths: { libraryDir: path.resolve('/x') } }));
 
-    expect(create().get().appearance).toEqual({ theme: 'system', accent: 'cyan' });
+    expect(create().get().appearance).toEqual({
+      theme: 'system',
+      accent: 'cyan',
+      reading: DEFAULT_READING,
+    });
   });
 
   it('when the main file is corrupt but the backup is good, should load the backup and flag it as recovered', () => {

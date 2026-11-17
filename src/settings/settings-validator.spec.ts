@@ -48,7 +48,89 @@ describe('validateSettings', () => {
   });
 
   it('when the accent is unknown, should reject', () => {
-    expectValidation((s) => (s.appearance.accent = 'pink' as never), /cores de destaque/);
+    expectValidation((s) => (s.appearance.accent = 'brown' as never), /cores de destaque/);
+  });
+
+  it('when the reading font is unknown, should reject', () => {
+    expectValidation((s) => (s.appearance.reading.font = 'comic' as never), /fontes de leitura/);
+  });
+
+  it.each([7, 9, 34, 16.5, '16'])('when the reading font size is %s, should reject', (size) => {
+    expectValidation((s) => (s.appearance.reading.fontSize = size as never), /tamanho da letra/);
+  });
+
+  it.each([8, 16, 32])('when the reading font size is %s, should accept', (size) => {
+    const settings = testDefaults();
+    settings.appearance.reading.fontSize = size;
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
+  it.each([60, 105, 210])('when the reading zoom is %s, should reject', (zoom) => {
+    expectValidation((s) => (s.appearance.reading.zoom = zoom), /zoom/);
+  });
+
+  it.each([70, 100, 200])('when the reading zoom is %s, should accept', (zoom) => {
+    const settings = testDefaults();
+    settings.appearance.reading.zoom = zoom;
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
+  it('when a reading color is unknown, should reject', () => {
+    expectValidation(
+      (s) => (s.appearance.reading.background = 'brown' as never),
+      /cores de leitura/,
+    );
+    expectValidation((s) => (s.appearance.reading.text = 'brown' as never), /cores de leitura/);
+  });
+
+  it.each([0, 55, 1000])('when a reading intensity is %s, should reject', (shade) => {
+    expectValidation(
+      (s) => (s.appearance.reading.backgroundShade = shade as never),
+      /intensidades/,
+    );
+    expectValidation((s) => (s.appearance.reading.textShade = shade as never), /intensidades/);
+  });
+
+  it.each(['yes', 1, null])('when the side panel option is %j, should reject', (value) => {
+    expectValidation((s) => (s.appearance.reading.pinSidebar = value as never), /painel lateral/);
+  });
+
+  it('when the side panel is pinned, should accept', () => {
+    const settings = testDefaults();
+    settings.appearance.reading.pinSidebar = true;
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
+  it('when the separator color is unknown, should reject', () => {
+    expectValidation(
+      (s) => (s.appearance.reading.separator = 'brown' as never),
+      /cores de leitura/,
+    );
+  });
+
+  it('when the separator intensity is invalid, should reject', () => {
+    expectValidation((s) => (s.appearance.reading.separatorShade = 55 as never), /intensidades/);
+  });
+
+  it('when the separator has a color and an intensity, should accept', () => {
+    const settings = testDefaults();
+    settings.appearance.reading.separator = 'amber';
+    settings.appearance.reading.separatorShade = 300;
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
+  it('when the reading colors are tailwind colors, should accept', () => {
+    const settings = testDefaults();
+    settings.appearance.reading.background = 'amber';
+    settings.appearance.reading.text = 'stone';
+    settings.appearance.reading.backgroundShade = 200;
+    settings.appearance.reading.textShade = 800;
+
+    expect(() => validateSettings(settings)).not.toThrow();
   });
 
   it.each(['system', 'light', 'dark'] as const)('when the theme is %s, should accept', (theme) => {

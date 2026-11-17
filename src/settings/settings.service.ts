@@ -1,4 +1,4 @@
-import type { Appearance } from '../shared/contracts/appearance';
+import type { Appearance, AppearancePatch } from '../shared/contracts/appearance';
 import type { SaveResult, SettingsPaths } from '../shared/contracts/settings';
 
 import type { SettingsStore } from './settings-store';
@@ -21,8 +21,8 @@ export class SettingsService {
     return this.store.get().appearance;
   }
 
-  /** Tema e cor valem na hora, sem reiniciar. */
-  updateAppearance(patch: Partial<Appearance>): Appearance {
+  /** Tema, cor e leitura valem na hora, sem reiniciar. */
+  updateAppearance(patch: AppearancePatch): Appearance {
     return this.store.update({ appearance: patch }).settings.appearance;
   }
 }

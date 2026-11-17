@@ -11,21 +11,20 @@ import { ConfirmDialog } from "#components/ConfirmDialog";
 import { ErrorState } from "#components/ErrorState";
 import { LoadingState } from "#components/LoadingState";
 import { MarkdownMessage } from "#components/MarkdownMessage";
-import { OutlineNav } from "#components/OutlineNav";
-import { PaperPage } from "#components/PaperPage";
 import { ReadingMode } from "#components/ReadingMode";
 import { ReadingSection } from "#components/ReadingSection";
+import { ReadingSurface } from "#components/ReadingSurface";
 import { useActiveSection } from "#hooks/use-active-section";
 import { extractHeadings } from "#lib/markdown";
 import { scrollToId } from "#lib/scroll";
 
 import { CategoryBreadcrumb } from "./components/CategoryBreadcrumb";
-import { DocumentTypeBadge } from "./components/DocumentBadges";
 import { DocumentAboutDialog } from "./components/DocumentAboutDialog";
 import { DocumentSidebar } from "./components/DocumentSidebar";
 import { EditDocumentDialog } from "./components/EditDocumentDialog";
 import { AddToBookDialog } from "./books/components/AddToBookDialog";
 import { useArchiveDocument, useDocument } from "./hooks/useLibrary";
+import { documentTypeLabels } from "./types/library.types";
 import { useSnackbar } from "#components/Snackbar";
 
 type Modal = "about" | "edit" | "remove" | "book" | null;
@@ -88,82 +87,9 @@ export function DocumentPage() {
     });
   }
 
-  if (reading) {
-    return (
-      <ReadingMode
-        title={meta.title}
-        onExit={() => setReading(false)}
-        toc={
-          headings.length > 0 ? (
-            <OutlineNav
-              ariaLabel="Sumário"
-              className="max-h-[70dvh]"
-              items={headings.map((heading) => ({
-                id: heading.id,
-                label: heading.text,
-                level: heading.level,
-              }))}
-              activeId={activeId}
-              onSelect={scrollToId}
-            />
-          ) : null
-        }
-      >
-        <div ref={setContainer} className="mx-auto max-w-3xl">
-          <ReadingSection title={meta.title}>
-            <MarkdownMessage content={content} headingIds size="base" />
-          </ReadingSection>
-
-          <BackToTopButton container={container} />
-        </div>
-      </ReadingMode>
-    );
-  }
-
-  return (
-    <article className="animate-enter-fade space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft /> Voltar
-        </Button>
-
-        <CategoryBreadcrumb category={meta.category} />
-      </div>
-
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_26rem]">
-        <div ref={setContainer} className="min-w-0 space-y-6">
-          <PaperPage variant="sheet">
-            <header className="space-y-4 border-b border-stone-300 pb-8 text-center">
-              <h1 className="font-serif text-3xl font-semibold tracking-tight text-stone-900">
-                {meta.title}
-              </h1>
-
-              <div className="flex justify-center">
-                <DocumentTypeBadge type={meta.type} />
-              </div>
-            </header>
-
-            <div className="pt-8">
-              <MarkdownMessage
-                content={content}
-                headingIds
-                tone="paper"
-                className="prose-headings:font-serif prose-p:leading-8"
-              />
-            </div>
-          </PaperPage>
-
-          <BackToTopButton container={container} />
-        </div>
-
-        <DocumentSidebar
-          headings={headings}
-          activeId={activeId}
-          onOpenAbout={() => setModal("about")}
-          onStartReading={() => setReading(true)}
-        />
-      </div>
-
+  // As janelas da página (Sobre, Editar, Remover, Adicionar ao livro) valem também no modo leitura.
+  const dialogs = (
+    <>
       <DocumentAboutDialog
         open={modal === "about"}
         onOpenChange={(open) => setModal(open ? "about" : null)}
@@ -200,6 +126,75 @@ export function DocumentPage() {
         }
         onConfirm={handleArchive}
       />
+    </>
+  );
+
+  // O mesmo desenho na página e no modo leitura (só muda o que cerca o texto).
+  const article = (
+    <ReadingSection
+      label={documentTypeLabels[meta.type]}
+      title={meta.title}
+    >
+      <MarkdownMessage content={content} headingIds size="inherit" />
+    </ReadingSection>
+  );
+
+  if (reading) {
+    return (
+      <>
+        <ReadingMode
+          title={meta.title}
+          onExit={() => setReading(false)}
+          toc={
+            <DocumentSidebar
+              embedded
+              headings={headings}
+              activeId={activeId}
+              onOpenAbout={() => setModal("about")}
+              onStartReading={() => undefined}
+            />
+          }
+        >
+          <div ref={setContainer} className="reading-column">
+            {article}
+
+            <BackToTopButton container={container} />
+          </div>
+        </ReadingMode>
+
+        {dialogs}
+      </>
+    );
+  }
+
+  return (
+    <article className="animate-enter-fade space-y-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <ArrowLeft /> Voltar
+        </Button>
+
+        <CategoryBreadcrumb category={meta.category} />
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_26rem]">
+        <div ref={setContainer} className="min-w-0 space-y-6">
+          <ReadingSurface>
+            <div className="reading-column">{article}</div>
+          </ReadingSurface>
+
+          <BackToTopButton container={container} />
+        </div>
+
+        <DocumentSidebar
+          headings={headings}
+          activeId={activeId}
+          onOpenAbout={() => setModal("about")}
+          onStartReading={() => setReading(true)}
+        />
+      </div>
+
+      {dialogs}
     </article>
   );
 }

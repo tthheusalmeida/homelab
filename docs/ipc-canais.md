@@ -17,8 +17,8 @@ Origem: os 37 endpoints HTTP atuais (`/api/v1`) + os canais novos de app, settin
 | `settings:update` | `{ libraryDir? }` | `{ value, restartRequired }`; pasta inválida → `VALIDATION` (a tela usa `settings:move-library`) |
 | `settings:inspect-library` | `{ path }` | `{ path, exists, empty, fileCount }` (o que há na pasta candidata) |
 | `settings:move-library` | `{ to, mode: move|use, deleteOrigin? }` | `{ libraryDir, filesCopied, bytesCopied, originRemoved, originRemoveError?, restartRequired }`; progresso em `library-move:progress`; falha de cópia → `PERSIST_FAILED` (nada troca) |
-| `appearance:get` | — | `{ theme: system|light|dark, accent: cyan|blue|indigo|violet|emerald|rose|orange }` |
-| `appearance:update` | parte da aparência (`Partial`) | a aparência completa; tema ou cor desconhecidos → `VALIDATION`; não pede reinício |
+| `appearance:get` | — | `{ theme: system|light|dark, accent: cyan|blue|indigo|violet|emerald|rose|orange, reading: { font, fontSize, zoom, background, backgroundShade, text, textShade, separator, separatorShade, pinSidebar } }` (`reading`: ver `identidade.md`) |
+| `appearance:update` | parte da aparência (`Partial`; `reading` também pode vir parcial, só o que mudou) | a aparência completa; tema, cor, fonte, tamanho (8 a 32, de 2 em 2), zoom (70 a 200, de 10 em 10), cor (fundo, texto ou separadores), intensidade (50 a 950) ou painel lateral (booleano) de leitura inválidos → `VALIDATION`; não pede reinício |
 | `settings:pick-folder` | `{ defaultPath? }` | pasta escolhida no seletor do sistema, ou `null` se cancelar |
 
 ## providers externos (fase 03a, novos)

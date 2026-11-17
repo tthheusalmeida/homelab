@@ -100,7 +100,7 @@ describe("DocumentSidebar", () => {
       const second = screen.getByRole("button", { name: "Detalhes" });
 
       expect(first.closest("li")).toHaveStyle({ paddingLeft: "0rem" });
-      expect(second.closest("li")).toHaveStyle({ paddingLeft: "0.75rem" });
+      expect(second.closest("li")).toHaveStyle({ paddingLeft: "0.875rem" });
     });
   });
 
@@ -199,7 +199,8 @@ describe("DocumentSidebar — reading", () => {
       "location",
     );
     expect(screen.getByRole("button", { name: "Detalhes" })).toHaveClass(
-      "text-primary",
+      "text-foreground",
+      "bg-foreground/12",
     );
     expect(
       screen.getByRole("button", { name: "Introdução" }),

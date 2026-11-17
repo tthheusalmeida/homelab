@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { ACCENT_IDS, DEFAULT_APPEARANCE } from "#shared/contracts/appearance";
+import { DEFAULT_READING } from "#shared/contracts/reading";
 
 import {
   accentLabels,
@@ -42,7 +43,7 @@ describe("applyAppearance", () => {
   it("when the theme resolves to dark, should add the dark class and the dark color scheme", () => {
     applyAppearance(
       document.documentElement,
-      { theme: "dark", accent: "cyan" },
+      { theme: "dark", accent: "cyan", reading: DEFAULT_READING },
       false,
     );
 
@@ -55,7 +56,7 @@ describe("applyAppearance", () => {
 
     applyAppearance(
       document.documentElement,
-      { theme: "system", accent: "cyan" },
+      { theme: "system", accent: "cyan", reading: DEFAULT_READING },
       false,
     );
 
@@ -66,7 +67,7 @@ describe("applyAppearance", () => {
   it("when an accent is chosen, should expose it in data-accent", () => {
     applyAppearance(
       document.documentElement,
-      { theme: "light", accent: "violet" },
+      { theme: "light", accent: "violet", reading: DEFAULT_READING },
       true,
     );
 
@@ -76,9 +77,10 @@ describe("applyAppearance", () => {
 
 describe("parseAppearance", () => {
   it("when the value is valid, should return it", () => {
-    expect(parseAppearance({ theme: "dark", accent: "rose" })).toEqual({
+    expect(parseAppearance({ theme: "dark", accent: "rose", reading: DEFAULT_READING })).toEqual({
       theme: "dark",
       accent: "rose",
+      reading: DEFAULT_READING,
     });
   });
 
@@ -87,10 +89,36 @@ describe("parseAppearance", () => {
     undefined,
     "dark",
     {},
-    { theme: "sepia", accent: "cyan" },
-    { theme: "dark", accent: "pink" },
+    { theme: "sepia", accent: "cyan", reading: DEFAULT_READING },
+    { theme: "dark", accent: "brown", reading: DEFAULT_READING },
   ])("when the value is %j, should return null", (value) => {
     expect(parseAppearance(value)).toBeNull();
+  });
+});
+
+describe("parseAppearance reading", () => {
+  it("when an old copy has no reading preferences, should fill them with the defaults", () => {
+    expect(parseAppearance({ theme: "dark", accent: "rose" })).toEqual({
+      theme: "dark",
+      accent: "rose",
+      reading: DEFAULT_READING,
+    });
+  });
+
+  it("when the reading preferences are valid, should keep them", () => {
+    const reading = { ...DEFAULT_READING, font: "lora", fontSize: 22 };
+
+    expect(
+      parseAppearance({ theme: "dark", accent: "rose", reading })?.reading,
+    ).toEqual(reading);
+  });
+
+  it("when the reading preferences are invalid, should fall back to the defaults", () => {
+    const reading = { ...DEFAULT_READING, fontSize: 15 };
+
+    expect(
+      parseAppearance({ theme: "dark", accent: "rose", reading })?.reading,
+    ).toEqual(DEFAULT_READING);
   });
 });
 
@@ -124,12 +152,13 @@ describe("cached appearance", () => {
       setItem: (key: string, value: string) => void store.set(key, value),
     };
 
-    writeCachedAppearance({ theme: "light", accent: "orange" }, storage);
+    writeCachedAppearance({ theme: "light", accent: "orange", reading: DEFAULT_READING }, storage);
 
     expect(store.has(APPEARANCE_CACHE_KEY)).toBe(true);
     expect(readCachedAppearance(storage)).toEqual({
       theme: "light",
       accent: "orange",
+      reading: DEFAULT_READING,
     });
   });
 
@@ -143,6 +172,16 @@ describe("cached appearance", () => {
     expect(() =>
       writeCachedAppearance(DEFAULT_APPEARANCE, storage),
     ).not.toThrow();
+  });
+});
+
+describe("accent order", () => {
+  it("when listing the accents, should offer 15 from the warmest to the coldest", () => {
+    expect(ACCENT_IDS).toHaveLength(15);
+    expect(ACCENT_IDS[0]).toBe("pink");
+    expect(ACCENT_IDS[ACCENT_IDS.length - 1]).toBe("violet");
+    expect(ACCENT_IDS.indexOf("orange")).toBeLessThan(ACCENT_IDS.indexOf("green"));
+    expect(ACCENT_IDS.indexOf("green")).toBeLessThan(ACCENT_IDS.indexOf("blue"));
   });
 });
 
@@ -174,5 +213,81 @@ describe("labels and tokens", () => {
     );
 
     expect(script).toContain(APPEARANCE_CACHE_KEY);
+  });
+});
+
+describe("reading surface tokens", () => {
+  it("when a reading color is chosen, should redefine the theme tokens inside the surface so the whole reading mode follows the palette", () => {
+    const block = css.slice(css.indexOf("Ambiente imersivo"));
+    const bg = block.slice(block.indexOf(".reading-surface[data-custom-bg] {"));
+    const fg = block.slice(block.indexOf(".reading-surface[data-custom-fg] {"));
+
+    for (const token of ["--background", "--card", "--popover", "--muted", "--accent", "--border", "--input"]) {
+      expect(bg.slice(0, bg.indexOf("}"))).toContain(`${token}:`);
+    }
+    for (const token of ["--foreground", "--card-foreground", "--muted-foreground"]) {
+      expect(fg.slice(0, fg.indexOf("}"))).toContain(`${token}:`);
+    }
+  });
+
+  it("when a reading color is chosen, should derive the borders from the text color so they contrast with the chosen background", () => {
+    const block = css.slice(css.indexOf("Ambiente imersivo"));
+    const bg = block.slice(block.indexOf(".reading-surface[data-custom-bg] {"));
+
+    expect(bg.slice(0, bg.indexOf("}"))).toMatch(/--border: color-mix\(in oklab, var\(--reading-fg\)/);
+  });
+});
+
+describe("reading chrome", () => {
+  const chrome = () => {
+    const start = css.indexOf(".reading-chrome {");
+
+    return css.slice(start, css.indexOf("\n}", start));
+  };
+
+  it("when the reading mode draws its header and side panel, should shift the page tone toward the text so they stand out less", () => {
+    expect(chrome()).toMatch(/--chrome-bg: color-mix\(in oklab, var\(--background\), var\(--foreground\)/);
+    expect(chrome()).toContain("background-color: var(--chrome-bg)");
+  });
+
+  it("when the reading mode draws its header and side panel, should soften the letters and the borders", () => {
+    expect(chrome()).toMatch(/\n  color: color-mix\(in oklab, var\(--foreground\) \d+%, transparent\)/);
+    expect(chrome()).toMatch(/border-color: color-mix/);
+  });
+
+  it("when cards sit inside the chrome, should keep them one step apart from its background", () => {
+    expect(chrome()).toMatch(/--card: color-mix\(in oklab, var\(--chrome-bg\)/);
+  });
+});
+
+describe("sidebar cards", () => {
+  const block = () => {
+    const start = css.indexOf(".sidebar-card {");
+
+    return css.slice(start, css.indexOf("\n}", start));
+  };
+
+  it("when the side panel shows its cards, should make them clearly stand out from the background", () => {
+    expect(block()).toMatch(/background-color: color-mix\(in oklab, var\(--chrome-bg, var\(--background\)\), var\(--foreground\) 10%\)/);
+  });
+
+  it("when the side panel shows its cards, should outline them with a fine line derived from the text", () => {
+    expect(block()).toMatch(/box-shadow: 0 0 0 1px color-mix\(in oklab, var\(--foreground\) 22%, transparent\)/);
+  });
+});
+
+describe("readable secondary text in the reading environment", () => {
+  const rule = (selector: string) => {
+    const start = css.indexOf(selector);
+
+    return css.slice(start, css.indexOf("\n}", start));
+  };
+
+  it("when the reading has chosen colors, should keep secondary text at 75% of the text color or more", () => {
+    expect(rule(".reading-surface[data-custom-fg] {")).toMatch(/--muted-foreground: color-mix\(in oklab, var\(--reading-fg\) (7[5-9]|[89]\d)%/);
+  });
+
+  it("when the chrome shows secondary text, should keep it at 70% of the text color or more", () => {
+    expect(rule(".reading-chrome {")).toMatch(/--muted-foreground: color-mix\(in oklab, var\(--foreground\) (7\d|[89]\d)%/);
   });
 });

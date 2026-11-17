@@ -6,6 +6,7 @@ import {
   type Appearance,
   type ThemeMode,
 } from "#shared/contracts/appearance";
+import { DEFAULT_READING, parseReading } from "#shared/contracts/reading";
 
 /** Cópia local da aparência: o tema certo aparece antes do primeiro quadro (ver public/theme-init.js). */
 export const APPEARANCE_CACHE_KEY = "homelab.appearance";
@@ -19,13 +20,21 @@ export const themeLabels: Record<ThemeMode, string> = {
 };
 
 export const accentLabels: Record<AccentId, string> = {
+  pink: "Rosa",
+  rose: "Rosé",
+  red: "Vermelho",
+  orange: "Laranja",
+  amber: "Âmbar",
+  yellow: "Amarelo",
+  lime: "Lima",
+  green: "Verde",
+  emerald: "Esmeralda",
+  teal: "Azul-petróleo",
   cyan: "Ciano",
+  sky: "Céu",
   blue: "Azul",
   indigo: "Índigo",
   violet: "Violeta",
-  emerald: "Esmeralda",
-  rose: "Rosa",
-  orange: "Laranja",
 };
 
 export function resolveMode(
@@ -60,6 +69,8 @@ export function parseAppearance(value: unknown): Appearance | null {
     return {
       theme: candidate.theme as ThemeMode,
       accent: candidate.accent as AccentId,
+      // Cópias antigas não têm `reading`: vale o padrão.
+      reading: parseReading(candidate.reading) ?? DEFAULT_READING,
     };
   }
 

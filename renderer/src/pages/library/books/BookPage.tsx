@@ -15,7 +15,6 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { FileText, Rows3 } from "lucide-react";
 
 import { Button } from "#ui/button";
 import { Card, CardContent } from "#ui/card";
@@ -33,11 +32,10 @@ import { ConfirmDialog } from "#components/ConfirmDialog";
 import { EmptyState } from "#components/EmptyState";
 import { ErrorState } from "#components/ErrorState";
 import { LoadingState } from "#components/LoadingState";
-import { OptionToggle, type ToggleOption } from "#components/OptionToggle";
 import { ReadingMode } from "#components/ReadingMode";
+import { ReadingSurface } from "#components/ReadingSurface";
 import { useActiveSection } from "#hooks/use-active-section";
 import { useDebouncedValue } from "#hooks/use-debounced-value";
-import { useStoredState } from "#hooks/use-stored-state";
 import { useTextHighlight } from "#hooks/use-text-highlight";
 
 import { BookCompletedDialog } from "./components/BookCompletedDialog";
@@ -47,9 +45,7 @@ import { BookDetailsDialog } from "./components/BookDetailsDialog";
 import { BookFindBar } from "./components/BookFindBar";
 import { BookFormDialog } from "./components/BookFormDialog";
 import { BookOrganizerDialog } from "./components/BookOrganizerDialog";
-import { BookOutline } from "./components/BookOutline";
 import { BookPrintView } from "./components/BookPrintView";
-import { BookProgressCard } from "./components/BookProgressCard";
 import { BookSidebar } from "./components/BookSidebar";
 import {
   useBook,
@@ -75,22 +71,12 @@ type Modal = "organize" | "edit" | "delete" | "details" | "reset" | null;
 /** Tempo parado num ponto antes de guardá-lo como "onde parei". */
 const SAVE_POSITION_DELAY_MS = 1500;
 
-const layoutOptions: readonly ToggleOption<"frames" | "pages">[] = [
-  { id: "frames", label: "Quadros", icon: Rows3 },
-  { id: "pages", label: "Páginas", icon: FileText },
-];
-
 export function BookPage() {
   const { bookId } = useParams();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
 
   const reading = useBookReading(bookId);
-  // Como os capítulos aparecem: quadros ou folhas de papel (lembrado neste computador).
-  const [layout, setLayout] = useStoredState("homelab.book-layout", "frames", [
-    "frames",
-    "pages",
-  ] as const);
   const detail = useBook(bookId);
   const remove = useDeleteBook();
   const setRead = useSetChapterRead();
@@ -350,26 +336,23 @@ export function BookPage() {
           onExit={() => setReader(false)}
           actions={findBar}
           toc={
-            <div className="space-y-4">
-              <BookProgressCard
-                read={readCount}
-                total={totalChapters}
-                completedAt={book.completedAt}
-              />
-
-              <BookOutline
-                modules={modules}
-                activeChapterId={activeChapterId}
-                readIds={readIds}
-                className="max-h-[60dvh]"
-                onSelectChapter={goToChapter}
-              />
-            </div>
+            <BookSidebar
+              embedded
+              modules={modules}
+              activeChapterId={activeChapterId}
+              readIds={readIds}
+              readCount={readCount}
+              completedAt={book.completedAt}
+              query={search}
+              hits={results.data}
+              isSearching={results.isFetching}
+              onSelectChapter={goToChapter}
+              onSelectHit={handleHit}
+            />
           }
         >
-          <div ref={setContainer} className="mx-auto w-full max-w-3xl">
+          <div ref={setContainer} className="reading-column">
             <BookContent
-              reading
               modules={modules}
               readIds={readIds}
               onToggleRead={handleToggleRead}
@@ -498,26 +481,18 @@ export function BookPage() {
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
           <div
             ref={setContainer}
-            className="mx-auto w-full min-w-0 max-w-3xl px-4 sm:px-8"
+            className="min-w-0"
           >
-            <div className="mb-6 flex items-center justify-end gap-2 text-xs text-muted-foreground">
-              <span>Visualização</span>
-
-              <OptionToggle
-                label="Visualização do livro"
-                options={layoutOptions}
-                value={layout}
-                onChange={setLayout}
-              />
-            </div>
-
-            <BookContent
-              layout={layout}
-              modules={modules}
-              readIds={readIds}
-              onToggleRead={handleToggleRead}
-              onGoToChapter={goToChapter}
-            />
+            <ReadingSurface>
+              <div className="reading-column">
+                <BookContent
+                  modules={modules}
+                  readIds={readIds}
+                  onToggleRead={handleToggleRead}
+                  onGoToChapter={goToChapter}
+                />
+              </div>
+            </ReadingSurface>
 
             <BackToTopButton container={container} />
           </div>

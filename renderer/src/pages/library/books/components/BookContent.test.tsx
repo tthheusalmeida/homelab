@@ -36,24 +36,25 @@ const renderContent = (
   );
 
 describe("BookContent", () => {
-  it("when rendered, should frame each chapter with a header and a footer", () => {
+  it("when rendered, should label each chapter above its centered title and close it with a footer", () => {
     renderContent();
 
     const [first, second] = screen.getAllByRole("region");
 
     expect(first.querySelector("header")).toHaveTextContent("Capítulo 1");
-    expect(first.querySelector("footer")).toHaveTextContent(
-      "Fim do capítulo 1",
-    );
+    expect(first.querySelector("header")).toHaveClass("text-center");
     expect(second.querySelector("header")).toHaveTextContent("Capítulo 2");
+    expect(first.querySelector("footer")).toBeInTheDocument();
   });
 
-  it("when a module has a title, should show it as a banner", () => {
+  it("when a module has a title, should show it as a subtle divider, not a banner", () => {
     renderContent();
 
-    expect(
-      screen.getByRole("heading", { name: "Módulo 1", level: 2 }).parentElement,
-    ).toHaveClass("rounded-xl", "bg-primary/10");
+    const parent = screen.getByRole("heading", { name: "Módulo 1", level: 2 })
+      .parentElement;
+
+    expect(parent).toHaveClass("flex", "items-center");
+    expect(parent).not.toHaveClass("rounded-xl", "bg-primary/10");
   });
 
   it("when rendered, should give each chapter heading an id prefixed by its document", () => {
@@ -65,22 +66,16 @@ describe("BookContent", () => {
     );
   });
 
-  it("when not in reading mode, should link each chapter to its page and use the small text", () => {
+  it("when rendered, should not link each chapter to its page and should use the text size chosen by the reader", () => {
     const { container } = renderContent();
 
-    expect(screen.getAllByRole("link", { name: "Abrir página" })).toHaveLength(
-      2,
-    );
-    expect(container.querySelector(".prose")).toHaveClass("prose-sm");
-  });
-
-  it("when in reading mode, should hide the page links and use the base text size", () => {
-    const { container } = renderContent({ reading: true });
+    const prose = container.querySelector(".prose") as HTMLElement;
 
     expect(
       screen.queryByRole("link", { name: "Abrir página" }),
     ).not.toBeInTheDocument();
-    expect(container.querySelector(".prose")).toHaveClass("prose-base");
+    expect(prose).toHaveClass("prose-base");
+    expect(prose.style.fontSize).toBe("inherit");
   });
 
   it("when a chapter has a next one, should offer to go to it", async () => {
@@ -97,15 +92,5 @@ describe("BookContent", () => {
     renderContent();
 
     expect(screen.getAllByRole("button", { name: /Próximo:/ })).toHaveLength(1);
-  });
-
-  it("when the chapter body is shown, should sit on a transparent sheet inside the frame", () => {
-    const { container } = renderContent();
-
-    expect(container.querySelector("[data-slot=paper-page]")).toHaveClass(
-      "border-0",
-      "shadow-none",
-      "bg-transparent",
-    );
   });
 });

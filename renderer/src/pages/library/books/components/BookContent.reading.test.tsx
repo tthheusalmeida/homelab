@@ -33,7 +33,6 @@ const renderReading = (
   render(
     <MemoryRouter>
       <BookContent
-        reading
         modules={modules}
         onGoToChapter={() => {}}
         {...props}
@@ -43,7 +42,7 @@ const renderReading = (
 
 const section = (title: string) => screen.getByRole("region", { name: title });
 
-describe("BookContent — reading mode look", () => {
+describe("BookContent — reading look (page and reading mode)", () => {
   it("when reading, should not draw the chapter cards (no frame, no header and footer bands)", () => {
     renderReading();
 
@@ -66,7 +65,7 @@ describe("BookContent — reading mode look", () => {
     });
 
     expect(heading.parentElement).toHaveClass("text-center");
-    expect(heading).toHaveClass("text-3xl", "font-semibold");
+    expect(heading).toHaveClass("text-[1.875em]", "font-semibold");
   });
 
   it("when reading, should label each chapter with its number", () => {
@@ -89,10 +88,13 @@ describe("BookContent — reading mode look", () => {
     expect(section("Redes")).toHaveAttribute("id", "chapter-d2");
   });
 
-  it("when reading, should render the text in the base size with the heading ids prefixed by the chapter", () => {
+  it("when reading, should render the text at the size chosen by the reader with the heading ids prefixed by the chapter", () => {
     const { container } = renderReading();
 
-    expect(container.querySelector(".prose")).toHaveClass("prose-base");
+    const prose = container.querySelector(".prose") as HTMLElement;
+
+    expect(prose).toHaveClass("prose-base");
+    expect(prose.style.fontSize).toBe("inherit");
     expect(screen.getByRole("heading", { name: "Imagens" })).toHaveAttribute(
       "id",
       "d1-imagens",
@@ -108,7 +110,7 @@ describe("BookContent — reading mode look", () => {
       expect(title).toHaveClass(
         "text-xs",
         "uppercase",
-        "text-muted-foreground",
+        "reading-sep-text",
       );
       expect(title.parentElement?.children).toHaveLength(3);
       expect(title.parentElement?.className).not.toMatch(
@@ -129,7 +131,7 @@ describe("BookContent — reading mode look", () => {
 
       expect(section("Redes").parentElement).toHaveClass(
         "border-t",
-        "border-border/60",
+        "reading-sep-border",
       );
       expect(section("Kubernetes").parentElement).toHaveClass("border-t");
     });

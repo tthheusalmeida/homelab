@@ -368,22 +368,44 @@ describe("DocumentPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("when loaded, should put title and text on a sheet of paper with margins", () => {
+  it("when loaded, should show title and text in the reading layout, without a paper sheet", () => {
     const { container } = renderPage();
 
-    const page = container.querySelector(
-      "[data-slot=paper-page]",
+    const surface = container.querySelector(
+      "[data-slot=reading-surface]",
     ) as HTMLElement;
 
-    expect(page).toHaveAttribute("data-variant", "sheet");
-    expect(page).toHaveClass("max-w-[48rem]", "font-serif");
+    expect(container.querySelector("[data-slot=paper-page]")).toBeNull();
+    expect(surface.querySelector(".reading-column")).toBeInTheDocument();
     expect(
-      within(page).getByRole("heading", {
+      within(surface).getByRole("heading", {
         name: "Práticas da Primeira Maneira",
+        level: 1,
       }),
     ).toBeInTheDocument();
     expect(
-      within(page).getByRole("heading", { name: "Introdução" }),
+      within(surface).getByRole("heading", { name: "Introdução" }),
+    ).toBeInTheDocument();
+  });
+
+  it("when loaded, should label the title with the page type", () => {
+    renderPage();
+
+    const header = screen
+      .getByRole("heading", { name: "Práticas da Primeira Maneira" })
+      .closest("header");
+
+    expect(header).toHaveTextContent("Resumo");
+  });
+
+  it("when loaded, should offer the quick reading controls beside the summary", () => {
+    renderPage();
+
+    expect(
+      screen.getByRole("button", { name: "Aumentar a letra" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Diminuir o zoom" }),
     ).toBeInTheDocument();
   });
 
@@ -415,8 +437,34 @@ describe("DocumentPage — reading mode", () => {
     return user;
   };
 
+  it("when Modo leitura is clicked, should hide the side panel until the tab is clicked", async () => {
+    const user = await enterReading();
+
+    expect(
+      screen.queryByRole("navigation", { name: "Sumário" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Aumentar a letra" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Mostrar painel lateral" }),
+    );
+
+    expect(
+      screen.getByRole("navigation", { name: "Sumário" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Aumentar a letra" }),
+    ).toBeInTheDocument();
+  });
+
   it("when Modo leitura is clicked, should show only the title, the text and the summary", async () => {
-    await enterReading();
+    const user = await enterReading();
+
+    await user.click(
+      screen.getByRole("button", { name: "Mostrar painel lateral" }),
+    );
 
     const region = screen.getByRole("region", { name: "Modo leitura" });
 
@@ -432,11 +480,47 @@ describe("DocumentPage — reading mode", () => {
       within(region).getByRole("navigation", { name: "Sumário" }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /Sobre a página/ }),
+      screen.queryByRole("button", { name: /Modo leitura$/ }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /Voltar$/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it("when in reading mode, should show the same side panel as the page: summary, reading adjustments and about", async () => {
+    const user = await enterReading();
+
+    await user.click(
+      screen.getByRole("button", { name: "Mostrar painel lateral" }),
+    );
+
+    expect(
+      screen.getByRole("navigation", { name: "Sumário" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Aumentar a letra" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Sobre a página/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^Modo leitura$/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("when Sobre a página is clicked in reading mode, should open the about window over the reading", async () => {
+    const user = await enterReading();
+
+    await user.click(
+      screen.getByRole("button", { name: "Mostrar painel lateral" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: /Sobre a página/ }),
+    );
+
+    expect(
+      await screen.findByRole("dialog"),
+    ).toBeInTheDocument();
   });
 
   it("when in reading mode, should not repeat the heading ids of the text", async () => {
@@ -448,6 +532,10 @@ describe("DocumentPage — reading mode", () => {
   it("when a summary item is clicked in reading mode, should scroll to it", async () => {
     const user = await enterReading();
     const target = screen.getByRole("heading", { name: "Detalhes", level: 2 });
+    await user.click(
+      screen.getByRole("button", { name: "Mostrar painel lateral" }),
+    );
+
     target.scrollIntoView = vi.fn();
 
     await user.click(

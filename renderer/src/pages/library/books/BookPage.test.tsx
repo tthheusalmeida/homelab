@@ -177,48 +177,61 @@ describe("BookPage", () => {
       "id",
       "d1-imagens",
     );
-    expect(screen.getByRole("heading", { name: "Redes" })).toHaveAttribute(
-      "id",
-      "d2-redes",
-    );
+    expect(
+      screen.getByRole("heading", { name: "Redes", level: 1 }),
+    ).toHaveAttribute("id", "d2-redes");
   });
 
-  it("when a chapter is shown, should label it and link to the document", async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    expect(screen.getByText("Capítulo 1")).toBeInTheDocument();
-    expect(screen.getByText("Capítulo 2")).toBeInTheDocument();
-
-    await user.click(screen.getAllByRole("link", { name: "Abrir página" })[0]);
-
-    expect(screen.getByText("documento aberto")).toBeInTheDocument();
-  });
-
-  it("when a chapter is shown, should frame it with a header where it starts and a footer where it ends", () => {
+  it("when a chapter is shown, should label it above a centered title", () => {
     renderPage();
 
     const [first, second] = screen.getAllByRole("region");
 
     expect(first.querySelector("header")).toHaveTextContent("Capítulo 1");
     expect(first.querySelector("header")).toHaveTextContent("Docker");
-    expect(first.querySelector("footer")).toHaveTextContent(
-      "Fim do capítulo 1",
-    );
+    expect(first.querySelector("header")).toHaveClass("text-center");
     expect(second.querySelector("header")).toHaveTextContent("Capítulo 2");
-    expect(second.querySelector("footer")).toHaveTextContent(
-      "Fim do capítulo 2",
-    );
-    expect(first).toHaveClass("border-2", "rounded-xl");
   });
 
-  it("when a chapter is shown, should set its text on a paper page", () => {
+  it("when a chapter is shown, should keep the reading layout with its actions in the footer and no link to open the page", () => {
     renderPage();
 
     const [first] = screen.getAllByRole("region");
-    const page = first.querySelector("[data-slot=paper-page]");
 
-    expect(page).toBeInTheDocument();
+    expect(first.querySelector("footer")).toHaveTextContent(
+      "Marcar como lido",
+    );
+    expect(
+      screen.queryByRole("link", { name: "Abrir página" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("when a chapter is shown, should not frame it in a card or a paper page", () => {
+    const { container } = renderPage();
+
+    const [first] = screen.getAllByRole("region");
+
+    expect(container.querySelector("[data-slot=paper-page]")).toBeNull();
+    expect(first).not.toHaveClass("border-2", "rounded-xl");
+  });
+
+  it("when the book is open, should offer the quick reading controls under the progress", () => {
+    renderPage();
+
+    expect(
+      screen.getByRole("button", { name: "Aumentar a letra" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Aumentar o zoom" }),
+    ).toBeInTheDocument();
+  });
+
+  it("when the book is open, should no longer offer the quadros/páginas toggle", () => {
+    renderPage();
+
+    expect(
+      screen.queryByRole("group", { name: "Visualização do livro" }),
+    ).not.toBeInTheDocument();
   });
 
   it("when a chapter has a next one, should offer a button to go to it", async () => {
@@ -244,12 +257,13 @@ describe("BookPage", () => {
     expect(screen.getAllByRole("button", { name: /Próximo:/ })).toHaveLength(1);
   });
 
-  it("when the book has a module title, should show it as a banner above its chapters", () => {
+  it("when the book has a module title, should show it as a subtle divider above its chapters", () => {
     renderPage();
 
     const heading = screen.getByRole("heading", { name: "Módulo 1", level: 2 });
 
-    expect(heading.parentElement).toHaveClass("rounded-xl", "bg-primary/10");
+    expect(heading.parentElement).toHaveClass("flex", "items-center");
+    expect(heading.parentElement).not.toHaveClass("bg-primary/10");
   });
 
   it("when a summary item is clicked, should scroll to that chapter", async () => {
@@ -349,6 +363,14 @@ describe("BookPage", () => {
     await user.click(screen.getByRole("button", { name: /Modo leitura/ }));
 
     const region = screen.getByRole("region", { name: "Modo leitura" });
+
+    expect(
+      within(region).queryByRole("navigation", { name: "Sumário do livro" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Mostrar painel lateral" }),
+    );
 
     expect(within(region).getByText("Capítulo 1")).toBeInTheDocument();
     expect(

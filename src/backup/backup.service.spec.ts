@@ -1,3 +1,4 @@
+import { DEFAULT_READING } from '../shared/contracts/reading';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -720,7 +721,11 @@ describe('BackupService', () => {
 
       const result = await b.service.restore({ token, items: ['settings'], mode: 'merge' });
 
-      expect(b.settings.get().appearance).toEqual({ theme: 'system', accent: 'cyan' });
+      expect(b.settings.get().appearance).toEqual({
+        theme: 'system',
+        accent: 'cyan',
+        reading: DEFAULT_READING,
+      });
       expect(result.items).toEqual([{ id: 'settings', added: 0, skipped: 1 }]);
       expect(result.restartRequired).toBe(false);
     });
@@ -734,7 +739,11 @@ describe('BackupService', () => {
 
       const result = await b.service.restore({ token, items: ['settings'], mode: 'replace' });
 
-      expect(b.settings.get().appearance).toEqual({ theme: 'dark', accent: 'rose' });
+      expect(b.settings.get().appearance).toEqual({
+        theme: 'dark',
+        accent: 'rose',
+        reading: DEFAULT_READING,
+      });
       expect(b.settings.get().local.ollama.url).toBe('http://outro:1234');
       expect(b.settings.get().paths.libraryDir).toBe(b.library);
       expect(result.restartRequired).toBe(true);

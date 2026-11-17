@@ -19,11 +19,31 @@ export const Strings = {
     localOllamaHint: 'Modelos de linguagem no seu computador. O endereço pode ser alterado.',
   },
   appearance: {
+    group: 'Tema',
+    groupHint:
+      'Sistema acompanha o tema do Windows. A cor de destaque vale para botões, links, foco e progresso.',
     theme: 'Tema',
     themeHint: 'Sistema acompanha o tema do Windows.',
     accent: 'Cor de destaque',
     accentHint: 'Botões, links, item ativo do menu, foco, progresso e o carregamento.',
     restore: 'Restaurar padrão',
+    reading: {
+      title: 'Leitura',
+      hint: 'Como o texto aparece nas páginas e nos livros, inclusive no modo leitura.',
+      font: 'Fonte',
+      size: 'Tamanho',
+      fontSize: 'Letra',
+      zoom: 'Zoom',
+      zoomHint: 'Amplia a letra e a largura do texto juntas, como o zoom de um PDF.',
+      background: 'Cor de fundo',
+      separator: 'Cor dos separadores',
+      text: 'Cor do texto',
+      sidePanel: 'Painel lateral',
+      sidePanelOption: 'Sempre visível na leitura',
+      sidePanelHint:
+        'Desmarcado, o sumário e os ajustes só abrem ao clicar na aba da borda direita, e o texto fica sozinho no centro.',
+      restore: 'Restaurar leitura',
+    },
   },
   library: {
     groupTitle: 'Pasta de documentos',
@@ -55,13 +75,7 @@ export const Strings = {
 } as const;
 
 export type SectionId =
-  | 'paths'
-  | 'appearance'
-  | 'external'
-  | 'local'
-  | 'components'
-  | 'access'
-  | 'backup';
+  'paths' | 'appearance' | 'external' | 'local' | 'components' | 'access' | 'backup';
 
 /** Chave de `useCollapsedGroups` das Configurações (separada da barra do app). */
 export const SETTINGS_COLLAPSED_KEY = 'homelab.settings-collapsed';
@@ -89,7 +103,8 @@ export const SECTIONS: ReadonlyArray<SectionInfo> = [
   {
     id: 'appearance',
     label: 'Aparência',
-    description: 'Tema claro ou escuro e a cor de destaque do app. Vale na hora, sem reiniciar.',
+    description:
+      'Tema, cor de destaque e como o texto aparece na leitura. Vale na hora, sem reiniciar.',
   },
   {
     id: 'external',
@@ -99,7 +114,8 @@ export const SECTIONS: ReadonlyArray<SectionInfo> = [
   {
     id: 'local',
     label: 'Serviços locais',
-    description: 'Programas que rodam no seu computador: transcrição, processamento de áudio e Ollama.',
+    description:
+      'Programas que rodam no seu computador: transcrição, processamento de áudio e Ollama.',
   },
   {
     id: 'components',
@@ -136,7 +152,11 @@ export const LOCAL_FIELD_LABELS: Record<string, string> = {
 /** Passo a passo de cada serviço externo; aparece até a chave ser salva. Novo serviço = nova entrada aqui. */
 export const EXTERNAL_PROVIDER_GUIDES: Record<
   string,
-  { title: string; steps: ReadonlyArray<{ text: string; link?: { href: string; label: string } }>; note?: string }
+  {
+    title: string;
+    steps: ReadonlyArray<{ text: string; link?: { href: string; label: string } }>;
+    note?: string;
+  }
 > = {
   gemini: {
     title: 'Como criar a chave do Gemini',
@@ -146,7 +166,9 @@ export const EXTERNAL_PROVIDER_GUIDES: Record<
         link: { href: 'https://aistudio.google.com/apikey', label: 'Abrir o AI Studio' },
       },
       { text: 'Clique em "Criar chave de API" (Create API key).' },
-      { text: 'Escolha um projeto do Google Cloud ou deixe o AI Studio criar um novo, e confirme.' },
+      {
+        text: 'Escolha um projeto do Google Cloud ou deixe o AI Studio criar um novo, e confirme.',
+      },
       { text: 'Copie a chave gerada (ela começa com "AIza").' },
       { text: 'Cole a chave no campo "Chave da API" abaixo e clique em "Testar" para conferir.' },
       { text: 'Clique em "Salvar" e reinicie o HomeLab para a chave passar a valer.' },

@@ -20,7 +20,8 @@ interface ReadingSectionProps {
 /**
  * Uma seção de texto no modo leitura: sem moldura, direto no fundo da
  * plataforma, com título centralizado e o texto embaixo. É o mesmo desenho
- * para uma página e para cada capítulo de um livro.
+ * para uma página e para cada capítulo de um livro. Título e rótulo usam `em`:
+ * acompanham o tamanho da letra escolhido (ver `ReadingSurface`).
  */
 export function ReadingSection({
   id,
@@ -41,12 +42,12 @@ export function ReadingSection({
     >
       <header className="space-y-2 text-center">
         {label && (
-          <p className="flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-primary">
+          <p className="flex items-center justify-center gap-1.5 reading-sep-label text-[0.75em] font-semibold uppercase leading-[1.35] tracking-widest">
             {label}
           </p>
         )}
 
-        <Heading className="text-3xl font-semibold tracking-tight">
+        <Heading className="text-[1.875em] font-semibold leading-[1.2] tracking-tight">
           {title}
         </Heading>
       </header>

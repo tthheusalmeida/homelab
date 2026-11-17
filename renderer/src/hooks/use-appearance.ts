@@ -19,25 +19,48 @@ import { IpcChannels } from "#shared/channels";
 import {
   DEFAULT_APPEARANCE,
   type Appearance,
+  type AppearancePatch,
 } from "#shared/contracts/appearance";
+import {
+  DEFAULT_READING,
+  type ReadingPreferences,
+} from "#shared/contracts/reading";
 
 export interface AppearanceApi {
   appearance: Appearance;
   /** Troca já na tela, grava e avisa as outras janelas; se a gravação falhar, volta ao anterior. */
-  update(patch: Partial<Appearance>): Promise<void>;
+  update(patch: AppearancePatch): Promise<void>;
+  /** Muda só parte da leitura (fonte, tamanho, zoom, cores); o resto fica como está. */
+  updateReading(patch: Partial<ReadingPreferences>): Promise<void>;
   reset(): Promise<void>;
+  resetReading(): Promise<void>;
 }
 
 export const AppearanceContext = createContext<AppearanceApi | null>(null);
+
+function useSystemDark(): boolean {
+  const [dark, setDark] = useState(
+    () => matchMedia("(prefers-color-scheme: dark)").matches,
+  );
+
+  useEffect(() => {
+    const query = matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => setDark(query.matches);
+
+    query.addEventListener("change", onChange);
+
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  return dark;
+}
 
 /** Lógica do provedor de aparência (ver `components/AppearanceProvider`). */
 export function useAppearanceState(): AppearanceApi {
   const [appearance, setAppearance] = useState<Appearance>(() =>
     readCachedAppearance(),
   );
-  const [systemDark, setSystemDark] = useState(
-    () => matchMedia("(prefers-color-scheme: dark)").matches,
-  );
+  const systemDark = useSystemDark();
   const current = useRef(appearance);
   const channel = useRef<BroadcastChannel | null>(null);
 
@@ -45,16 +68,6 @@ export function useAppearanceState(): AppearanceApi {
     current.current = next;
     setAppearance(next);
     writeCachedAppearance(next);
-  }, []);
-
-  // Segue o tema do sistema enquanto o modo for "Sistema".
-  useEffect(() => {
-    const query = matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => setSystemDark(query.matches);
-
-    query.addEventListener("change", onChange);
-
-    return () => query.removeEventListener("change", onChange);
   }, []);
 
   useEffect(() => {
@@ -106,9 +119,13 @@ export function useAppearanceState(): AppearanceApi {
   }, [adopt]);
 
   const update = useCallback(
-    async (patch: Partial<Appearance>) => {
+    async (patch: AppearancePatch) => {
       const previous = current.current;
-      const next = { ...previous, ...patch };
+      const next: Appearance = {
+        ...previous,
+        ...patch,
+        reading: { ...previous.reading, ...patch.reading },
+      };
 
       adopt(next);
 
@@ -130,9 +147,35 @@ export function useAppearanceState(): AppearanceApi {
     [adopt],
   );
 
+  const updateReading = useCallback(
+    (patch: Partial<ReadingPreferences>) => update({ reading: patch }),
+    [update],
+  );
+
   const reset = useCallback(() => update(DEFAULT_APPEARANCE), [update]);
 
-  return { appearance, update, reset };
+  const resetReading = useCallback(
+    () => update({ reading: DEFAULT_READING }),
+    [update],
+  );
+
+  return { appearance, update, updateReading, reset, resetReading };
+}
+
+/**
+ * Preferências de leitura. Fora de um `AppearanceProvider` (ex.: testes de tela)
+ * vale o padrão, para a leitura nunca depender do provedor.
+ */
+export function useReadingPreferences(): {
+  reading: ReadingPreferences;
+  updateReading: AppearanceApi["updateReading"] | null;
+} {
+  const api = useContext(AppearanceContext);
+
+  return {
+    reading: api?.appearance.reading ?? DEFAULT_READING,
+    updateReading: api?.updateReading ?? null,
+  };
 }
 
 export function useAppearance(): AppearanceApi {

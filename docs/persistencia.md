@@ -20,8 +20,7 @@ Status: **implementado** (ver "Como ficou" no fim; o smoke E2E fica para o usuá
 | Inbox e temporários | `settings.paths.inboxDir`, `videoTempDir`, `audioTempDir` | Sim |
 | Configurações / segredos | `userData/settings.json`, `userData/secrets.json` | Sim |
 | Consumo de IA | `userData/ai-usage.json` (limite de 5.000 registros) | Sim |
-| Aparência | `localStorage` + `settings.json` (duplicada) | Sim |
-| Layout do livro (`homelab.book-layout`) | `localStorage` | Sim (preferência de tela) |
+| Aparência (tema, cor e leitura) | `localStorage` + `settings.json` (duplicada) | Sim |
 
 ## Estrutura nova
 
