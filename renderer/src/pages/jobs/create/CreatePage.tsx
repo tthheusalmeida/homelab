@@ -74,7 +74,7 @@ export function CreatePage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent bare className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {selectedJobType ? selectedJobType.label : ""}

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "#ui/button";
+import { DialogFooter, DialogForm } from "#ui/dialog";
 
 import { useAiModels } from "../../../ai/chat/hooks/useAiModels";
 import { useAiProviders } from "../../../ai/chat/hooks/useAiProviders";
@@ -97,7 +98,7 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <DialogForm onSubmit={handleSubmit}>
       <VideoUrlField value={url} onChange={setUrl} disabled={locked} />
 
       <div className="flex items-center gap-2">
@@ -175,7 +176,7 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
         </p>
       )}
 
-      <div className="flex justify-end">
+      <DialogFooter>
         <Button
           type="submit"
           disabled={
@@ -185,7 +186,7 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
           {createJob.isPending && <Loader2 className="animate-spin" />}
           Criar
         </Button>
-      </div>
-    </form>
+      </DialogFooter>
+    </DialogForm>
   );
 }

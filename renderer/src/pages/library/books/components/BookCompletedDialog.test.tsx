@@ -56,14 +56,15 @@ describe("BookCompletedDialog", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("when open, should keep header and footer sticky, since a relative position shifts them 20px and makes this small dialog scroll", () => {
+  it("when open, should keep header and footer outside the scrolling body, so this small dialog does not scroll", () => {
     renderDialog();
 
     const header = screen.getByText("Livro concluído!").parentElement;
     const footer = screen.getByRole("button", { name: "Continuar" }).parentElement;
 
     for (const part of [header, footer]) {
-      expect(part).toHaveClass("sticky");
+      expect(part).toHaveClass("shrink-0");
+      expect(part).not.toHaveClass("sticky");
       expect(part).not.toHaveClass("relative");
     }
   });
