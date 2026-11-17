@@ -5,6 +5,9 @@ import { X } from "lucide-react";
 
 import { Button } from "#ui/button";
 
+import { useReadingPreferences } from "#hooks/use-appearance";
+
+import { ReadingSidePanel } from "./ReadingSidePanel";
 import { ReadingSurface } from "./ReadingSurface";
 
 interface ReadingModeProps {
@@ -21,7 +24,9 @@ interface ReadingModeProps {
 
 /**
  * Modo leitura: cobre a tela com só o texto e o sumário na lateral (sem
- * botões de ação nem cabeçalhos da página). Esc sai. Usa fonte, tamanho,
+ * botões de ação nem cabeçalhos da página). O painel lateral (sumário e ajustes)
+ * fica escondido e abre ao passar o mouse na borda direita, a menos que o usuário
+ * o fixe em Configurações > Leitura. Esc sai. Usa fonte, tamanho,
  * zoom e cores das preferências de leitura. O texto é desenhado só
  * aqui, nunca junto com a página normal, para não repetir ids de título.
  */
@@ -32,6 +37,9 @@ export function ReadingMode({
   children,
   onExit,
 }: ReadingModeProps) {
+  const { reading } = useReadingPreferences();
+  const pinned = reading.pinSidebar;
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -61,16 +69,26 @@ export function ReadingMode({
         </Button>
       </div>
 
-      <div className="mx-auto grid w-full max-w-[calc(24rem+48rem*var(--reading-zoom,1))] gap-10 px-4 py-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="min-w-0">{children}</div>
+      {pinned ? (
+        <div className="mx-auto grid w-full max-w-[calc(24rem+48rem*var(--reading-zoom,1))] gap-10 px-4 py-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div className="min-w-0">{children}</div>
 
-        <aside
-          aria-label="Sumário da leitura"
-          className="font-sans lg:sticky lg:top-24 lg:self-start"
-        >
-          {toc}
-        </aside>
-      </div>
+          <aside
+            aria-label="Sumário da leitura"
+            className="font-sans lg:sticky lg:top-24 lg:self-start"
+          >
+            {toc}
+          </aside>
+        </div>
+      ) : (
+        <>
+          <div className="mx-auto w-full max-w-[calc(4rem+48rem*var(--reading-zoom,1))] px-4 py-10">
+            <div className="min-w-0">{children}</div>
+          </div>
+
+          <ReadingSidePanel>{toc}</ReadingSidePanel>
+        </>
+      )}
     </ReadingSurface>,
     document.body,
   );

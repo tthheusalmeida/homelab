@@ -147,6 +147,9 @@ describe("BookPage — progress, continue, find, export", () => {
       renderPage();
 
       await user.click(screen.getByRole("button", { name: /Modo leitura/ }));
+      await user.hover(
+        screen.getByRole("button", { name: "Mostrar painel lateral" }),
+      );
 
       const aside = screen.getByRole("complementary", {
         name: "Sumário da leitura",
@@ -210,6 +213,9 @@ describe("BookPage — progress, continue, find, export", () => {
       renderPage();
 
       await user.click(screen.getByRole("button", { name: /Modo leitura/ }));
+      await user.hover(
+        screen.getByRole("button", { name: "Mostrar painel lateral" }),
+      );
 
       const aside = screen.getByRole("complementary", {
         name: "Sumário da leitura",

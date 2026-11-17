@@ -85,10 +85,31 @@ describe('validateSettings', () => {
     expectValidation((s) => (s.appearance.reading.text = 'brown' as never), /cores de leitura/);
   });
 
+  it.each([0, 55, 1000])('when a reading intensity is %s, should reject', (shade) => {
+    expectValidation(
+      (s) => (s.appearance.reading.backgroundShade = shade as never),
+      /intensidades/,
+    );
+    expectValidation((s) => (s.appearance.reading.textShade = shade as never), /intensidades/);
+  });
+
+  it.each(['yes', 1, null])('when the side panel option is %j, should reject', (value) => {
+    expectValidation((s) => (s.appearance.reading.pinSidebar = value as never), /painel lateral/);
+  });
+
+  it('when the side panel is pinned, should accept', () => {
+    const settings = testDefaults();
+    settings.appearance.reading.pinSidebar = true;
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
   it('when the reading colors are tailwind colors, should accept', () => {
     const settings = testDefaults();
     settings.appearance.reading.background = 'amber';
     settings.appearance.reading.text = 'stone';
+    settings.appearance.reading.backgroundShade = 200;
+    settings.appearance.reading.textShade = 800;
 
     expect(() => validateSettings(settings)).not.toThrow();
   });

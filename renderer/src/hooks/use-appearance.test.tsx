@@ -311,26 +311,4 @@ describe("useReadingPreferences", () => {
     expect(result.current.reading).toEqual(DEFAULT_READING);
     expect(result.current.updateReading).toBeNull();
   });
-
-  it("when the saved theme is dark, should tell it is dark", async () => {
-    mockApi({
-      [IpcChannels.appearance.get]: () => ok({ ...DEFAULT_APPEARANCE, theme: "dark" }),
-    });
-
-    const { result } = renderHook(() => useReadingPreferences(), { wrapper });
-
-    await waitFor(() => expect(result.current.dark).toBe(true));
-  });
-
-  it("when the theme is system and the system turns dark, should follow it", async () => {
-    const system = stubSystemTheme(false);
-    mockApi({ [IpcChannels.appearance.get]: () => ok(DEFAULT_APPEARANCE) });
-
-    const { result } = renderHook(() => useReadingPreferences(), { wrapper });
-    expect(result.current.dark).toBe(false);
-
-    act(() => system.change(true));
-
-    await waitFor(() => expect(result.current.dark).toBe(true));
-  });
 });

@@ -13,6 +13,7 @@ Tudo que entra ou sai da tela se move de forma suave; nada aparece "de repente".
 | `animate-enter-fade` | só aparece (mensagens de erro, indicadores) |
 | `animate-enter-scale` | cresce de 96% a 100% |
 | `animate-enter-left` | entra pela esquerda |
+| `animate-enter-right` | entra pela direita (painel lateral do modo leitura) |
 | `animate-exit-down` | desce 14 px e some (saídas) |
 | `animate-collapse-down` / `-up` | abre e fecha a altura do painel (usam `--collapsible-panel-height` do base-ui) |
 

@@ -4,6 +4,7 @@ import { IpcError, IpcErrorCode } from '../shared/errors';
 import { ACCENT_IDS, THEME_MODES } from '../shared/contracts/appearance';
 import {
   isReadingFontSize,
+  isReadingShade,
   isReadingZoom,
   READING_COLOR_IDS,
   READING_FONT_IDS,
@@ -20,6 +21,8 @@ export const SettingsMessages = {
   readingFontSizeInvalid: 'O tamanho da letra deve ser de 8 a 32, de 2 em 2.',
   readingZoomInvalid: 'O zoom deve ser de 70% a 200%, de 10 em 10.',
   readingColorInvalid: 'Escolha uma das cores de leitura disponíveis.',
+  readingPinInvalid: 'A opção do painel lateral deve ser ligada ou desligada.',
+  readingShadeInvalid: 'Escolha uma das intensidades de cor disponíveis.',
 } as const;
 
 const LIBRARY_LABEL = 'a pasta da biblioteca';
@@ -73,6 +76,14 @@ export function validateSettings(settings: SettingsData): void {
     !READING_COLOR_IDS.includes(reading.text)
   ) {
     fail(SettingsMessages.readingColorInvalid);
+  }
+
+  if (!isReadingShade(reading.backgroundShade) || !isReadingShade(reading.textShade)) {
+    fail(SettingsMessages.readingShadeInvalid);
+  }
+
+  if (typeof reading.pinSidebar !== 'boolean') {
+    fail(SettingsMessages.readingPinInvalid);
   }
 
   const { ollama } = settings.local;

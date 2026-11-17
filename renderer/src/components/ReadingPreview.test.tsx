@@ -40,4 +40,32 @@ describe('ReadingPreview', () => {
     await waitFor(() => expect(preview.style.fontSize).toBe('1.5rem'));
     expect(preview).toHaveAttribute('data-custom-bg');
   });
+
+  it('when the side panel is not pinned (default), should show only the hover area on the right', () => {
+    const { container } = render(<ReadingPreview />);
+
+    expect(container.querySelector('[data-slot=preview-hover-area]')).toBeInTheDocument();
+    expect(container.querySelector('[data-slot=preview-side-panel]')).toBeNull();
+  });
+
+  it('when the side panel is pinned, should show a mini panel instead of the hover area', async () => {
+    mockApi({
+      [IpcChannels.appearance.get]: () =>
+        ok({
+          ...DEFAULT_APPEARANCE,
+          reading: { ...DEFAULT_READING, pinSidebar: true },
+        }),
+    });
+
+    const { container } = render(
+      <AppearanceProvider>
+        <ReadingPreview />
+      </AppearanceProvider>,
+    );
+
+    await waitFor(() =>
+      expect(container.querySelector('[data-slot=preview-side-panel]')).toBeInTheDocument(),
+    );
+    expect(container.querySelector('[data-slot=preview-hover-area]')).toBeNull();
+  });
 });

@@ -550,6 +550,17 @@
   }
 }
 
+@keyframes hl-enter-right {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes hl-enter-left {
   from {
     opacity: 0;
@@ -616,6 +627,10 @@
 @utility animate-enter-left {
   animation: hl-enter-left var(--duration-enter) var(--ease-out-soft) both;
   animation-delay: min(calc(var(--i, 0) * 70ms), 700ms);
+}
+
+@utility animate-enter-right {
+  animation: hl-enter-right var(--duration-enter) var(--ease-out-soft) both;
 }
 
 @utility animate-exit-down {
@@ -802,7 +817,7 @@
   }
 }
 
-/* Coluna do texto: 48 rem a 100%; o zoom só alarga ou estreita a coluna, a letra não muda. */
+/* Coluna do texto: 48 rem a 100%. O zoom escala a coluna junto com a letra (ver `readingStyle`). */
 .reading-column {
   width: 100%;
   max-width: calc(48rem * var(--reading-zoom, 1));

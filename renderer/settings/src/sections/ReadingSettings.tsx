@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Minus, Plus, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 
 import { Button } from '#ui/button';
+import { Label } from '#ui/label';
 import { ReadingColorPicker } from '#components/ReadingColorPicker';
 import { ReadingPreview } from '#components/ReadingPreview';
 import { SettingsGroup, SettingsPanel } from '#components/SettingsGroup';
@@ -133,17 +134,45 @@ export function ReadingSettings() {
         <Row label={text.background}>
           <ReadingColorPicker
             label={text.background}
-            value={reading.background}
-            onChange={(background) => change({ background })}
+            color={reading.background}
+            shade={reading.backgroundShade}
+            onChange={({ color, shade }) =>
+              change({
+                ...(color && { background: color }),
+                ...(shade && { backgroundShade: shade }),
+              })
+            }
           />
         </Row>
 
         <Row label={text.text}>
           <ReadingColorPicker
             label={text.text}
-            value={reading.text}
-            onChange={(color) => change({ text: color })}
+            color={reading.text}
+            shade={reading.textShade}
+            onChange={({ color, shade }) =>
+              change({
+                ...(color && { text: color }),
+                ...(shade && { textShade: shade }),
+              })
+            }
           />
+        </Row>
+
+        <Row label={text.sidePanel} hint={text.sidePanelHint}>
+          <div className="flex items-center gap-2">
+            <input
+              id="reading-pin-sidebar"
+              type="checkbox"
+              className="size-4 shrink-0 cursor-pointer accent-primary"
+              checked={reading.pinSidebar}
+              onChange={(event) => change({ pinSidebar: event.target.checked })}
+            />
+
+            <Label htmlFor="reading-pin-sidebar" className="cursor-pointer text-sm font-normal">
+              {text.sidePanelOption}
+            </Label>
+          </div>
         </Row>
 
         {error && (

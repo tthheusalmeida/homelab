@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { IpcChannels } from '#shared/channels';
 import { DEFAULT_APPEARANCE } from '#shared/contracts/appearance';
 import { DEFAULT_READING } from '#shared/contracts/reading';
+import { READING_SHADES } from '#lib/reading-shades';
 import { mockApi, ok } from '#test/api-mock';
 
 import { AppearanceProvider } from './AppearanceProvider';
@@ -41,8 +42,8 @@ describe('ReadingSurface', () => {
     expect(surface.style.getPropertyValue('--reading-bg')).toBe('');
   });
 
-  it('when the user chose font, size and zoom, should apply them to the area', async () => {
-    saved({ font: 'literata', fontSize: 22, zoom: 130 });
+  it('when the user chose font and size, should apply them to the area', async () => {
+    saved({ font: 'literata', fontSize: 22 });
 
     withProvider(<ReadingSurface>texto</ReadingSurface>);
 
@@ -50,30 +51,40 @@ describe('ReadingSurface', () => {
 
     await waitFor(() => expect(surface.style.fontSize).toBe('1.375rem'));
     expect(surface.style.fontFamily).toContain('Literata');
-    expect(surface.style.getPropertyValue('--reading-zoom')).toBe('1.3');
   });
 
-  it('when the user chose a background and text color in a light theme, should set light-background and dark-text variables', async () => {
-    saved({ background: 'amber', text: 'stone' }, 'light');
+  it('when the user zooms, should grow the letter and expose the zoom for the column', async () => {
+    saved({ fontSize: 16, zoom: 150 });
+
+    withProvider(<ReadingSurface>texto</ReadingSurface>);
+
+    const surface = screen.getByText('texto');
+
+    await waitFor(() => expect(surface.style.fontSize).toBe('1.5rem'));
+    expect(surface.style.getPropertyValue('--reading-zoom')).toBe('1.5');
+  });
+
+  it('when the user chose colors and intensities, should use exactly those shades', async () => {
+    saved({ background: 'amber', backgroundShade: 200, text: 'stone', textShade: 700 });
 
     withProvider(<ReadingSurface>texto</ReadingSurface>);
 
     const surface = screen.getByText('texto');
 
     await waitFor(() => expect(surface).toHaveAttribute('data-custom-bg'));
-    expect(surface.style.getPropertyValue('--reading-bg')).toContain('oklch(98.7%');
-    expect(surface.style.getPropertyValue('--reading-fg')).toContain('oklch(');
+    expect(surface.style.getPropertyValue('--reading-bg')).toBe(READING_SHADES.amber[200]);
+    expect(surface.style.getPropertyValue('--reading-fg')).toBe(READING_SHADES.stone[700]);
   });
 
-  it('when the theme is dark, should pick the dark shades for the same colors', async () => {
-    saved({ background: 'amber' }, 'dark');
+  it('when the theme is dark, should keep the colors the user chose', async () => {
+    saved({ background: 'amber', backgroundShade: 950 }, 'dark');
 
     withProvider(<ReadingSurface>texto</ReadingSurface>);
 
     const surface = screen.getByText('texto');
 
     await waitFor(() => expect(surface).toHaveAttribute('data-custom-bg'));
-    expect(surface.style.getPropertyValue('--reading-bg')).toContain('oklch(27.9%');
+    expect(surface.style.getPropertyValue('--reading-bg')).toBe(READING_SHADES.amber[950]);
   });
 
   it('when it is framed (default), should mark it so the chosen background becomes a padded panel', () => {

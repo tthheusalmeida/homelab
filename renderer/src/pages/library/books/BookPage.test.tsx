@@ -364,6 +364,14 @@ describe("BookPage", () => {
 
     const region = screen.getByRole("region", { name: "Modo leitura" });
 
+    expect(
+      within(region).queryByRole("navigation", { name: "Sumário do livro" }),
+    ).not.toBeInTheDocument();
+
+    await user.hover(
+      screen.getByRole("button", { name: "Mostrar painel lateral" }),
+    );
+
     expect(within(region).getByText("Capítulo 1")).toBeInTheDocument();
     expect(
       within(region).getByRole("navigation", { name: "Sumário do livro" }),

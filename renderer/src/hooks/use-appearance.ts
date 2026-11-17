@@ -12,7 +12,6 @@ import {
   APPEARANCE_CHANNEL,
   parseAppearance,
   readCachedAppearance,
-  resolveMode,
   writeCachedAppearance,
 } from "#lib/appearance";
 import { ipc } from "#lib/ipc";
@@ -164,21 +163,17 @@ export function useAppearanceState(): AppearanceApi {
 }
 
 /**
- * Preferências de leitura e o tema ativo. Fora de um `AppearanceProvider` (ex.: testes de tela)
+ * Preferências de leitura. Fora de um `AppearanceProvider` (ex.: testes de tela)
  * vale o padrão, para a leitura nunca depender do provedor.
  */
 export function useReadingPreferences(): {
   reading: ReadingPreferences;
-  dark: boolean;
   updateReading: AppearanceApi["updateReading"] | null;
 } {
   const api = useContext(AppearanceContext);
-  const mode = api?.appearance.theme ?? "system";
-  const systemDark = useSystemDark();
 
   return {
     reading: api?.appearance.reading ?? DEFAULT_READING,
-    dark: resolveMode(mode, systemDark) === "dark",
     updateReading: api?.updateReading ?? null,
   };
 }

@@ -2,6 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { IpcChannels } from "#shared/channels";
+import { DEFAULT_APPEARANCE } from "#shared/contracts/appearance";
+import { DEFAULT_READING } from "#shared/contracts/reading";
+import { mockApi, ok } from "#test/api-mock";
+
+import { AppearanceProvider } from "./AppearanceProvider";
 import { ReadingMode } from "./ReadingMode";
 
 const setup = (onExit = vi.fn()) => {
@@ -19,20 +25,60 @@ const setup = (onExit = vi.fn()) => {
 };
 
 describe("ReadingMode", () => {
-  it("when open, should show only the title, the text and the summary", () => {
+  it("when open, should show only the title and the text, with the side panel hidden", () => {
     setup();
 
     const region = screen.getByRole("region", { name: "Modo leitura" });
 
     expect(within(region).getByText("Pós em DevOps")).toBeInTheDocument();
     expect(within(region).getByText("texto para ler")).toBeInTheDocument();
+    expect(screen.queryByText("itens do sumário")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("complementary", { name: "Sumário da leitura" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Mostrar painel lateral" }),
+    ).toBeInTheDocument();
+  });
+
+  it("when the hover area is hovered, should open the side panel over the text", async () => {
+    const { user } = setup();
+
+    await user.hover(
+      screen.getByRole("button", { name: "Mostrar painel lateral" }),
+    );
+
     expect(
       within(
-        within(region).getByRole("complementary", {
-          name: "Sumário da leitura",
-        }),
+        screen.getByRole("complementary", { name: "Sumário da leitura" }),
       ).getByText("itens do sumário"),
     ).toBeInTheDocument();
+  });
+
+  it("when the side panel is pinned in the settings, should keep it always visible beside the text", async () => {
+    mockApi({
+      [IpcChannels.appearance.get]: () =>
+        ok({
+          ...DEFAULT_APPEARANCE,
+          reading: { ...DEFAULT_READING, pinSidebar: true },
+        }),
+    });
+
+    render(
+      <AppearanceProvider>
+        <ReadingMode title="Pós" toc={<p>itens do sumário</p>} onExit={vi.fn()}>
+          <p>texto para ler</p>
+        </ReadingMode>
+      </AppearanceProvider>,
+    );
+
+    expect(
+      await screen.findByRole("complementary", { name: "Sumário da leitura" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("itens do sumário")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Mostrar painel lateral" }),
+    ).not.toBeInTheDocument();
   });
 
   it("when open, should cover the whole screen on top of the app", () => {
@@ -119,8 +165,12 @@ describe("ReadingMode — reading preferences", () => {
     ).not.toHaveAttribute("data-framed");
   });
 
-  it("when open, should keep the top bar and the summary in the interface font", () => {
-    setup();
+  it("when open, should keep the top bar and the summary in the interface font", async () => {
+    const { user } = setup();
+
+    await user.hover(
+      screen.getByRole("button", { name: "Mostrar painel lateral" }),
+    );
 
     const region = screen.getByRole("region", { name: "Modo leitura" });
 

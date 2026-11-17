@@ -6,7 +6,8 @@ import { cn } from '#lib/utils';
 
 /**
  * Área de leitura com as preferências do usuário (Configurações > Aparência > Leitura): fonte,
- * tamanho da letra, cores de fundo e de texto, e a largura da coluna (zoom, em `.reading-column`).
+ * tamanho da letra, cores de fundo e de texto (cada uma com sua intensidade) e o zoom, que
+ * amplia a letra e a coluna (`.reading-column`) juntas.
  * É a única fonte desse visual: páginas, livros, modo leitura e o preview das Configurações usam
  * este componente. O que está dentro herda fonte, tamanho e cor.
  */
@@ -22,7 +23,7 @@ export function ReadingSurface({
    */
   framed?: boolean;
 }) {
-  const { reading, dark } = useReadingPreferences();
+  const { reading } = useReadingPreferences();
 
   return (
     <div
@@ -30,7 +31,7 @@ export function ReadingSurface({
       data-custom-bg={reading.background === 'default' ? undefined : ''}
       data-framed={framed ? '' : undefined}
       className={cn('reading-surface', className)}
-      style={{ ...readingStyle(reading, dark), ...style }}
+      style={{ ...readingStyle(reading), ...style }}
       {...props}
     />
   );

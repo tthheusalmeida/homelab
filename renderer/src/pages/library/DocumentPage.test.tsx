@@ -437,8 +437,34 @@ describe("DocumentPage — reading mode", () => {
     return user;
   };
 
+  it("when Modo leitura is clicked, should hide the side panel until the hover area is hovered", async () => {
+    const user = await enterReading();
+
+    expect(
+      screen.queryByRole("navigation", { name: "Sumário" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Aumentar a letra" }),
+    ).not.toBeInTheDocument();
+
+    await user.hover(
+      screen.getByRole("button", { name: "Mostrar painel lateral" }),
+    );
+
+    expect(
+      screen.getByRole("navigation", { name: "Sumário" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Aumentar a letra" }),
+    ).toBeInTheDocument();
+  });
+
   it("when Modo leitura is clicked, should show only the title, the text and the summary", async () => {
-    await enterReading();
+    const user = await enterReading();
+
+    await user.hover(
+      screen.getByRole("button", { name: "Mostrar painel lateral" }),
+    );
 
     const region = screen.getByRole("region", { name: "Modo leitura" });
 
@@ -470,6 +496,10 @@ describe("DocumentPage — reading mode", () => {
   it("when a summary item is clicked in reading mode, should scroll to it", async () => {
     const user = await enterReading();
     const target = screen.getByRole("heading", { name: "Detalhes", level: 2 });
+    await user.hover(
+      screen.getByRole("button", { name: "Mostrar painel lateral" }),
+    );
+
     target.scrollIntoView = vi.fn();
 
     await user.click(

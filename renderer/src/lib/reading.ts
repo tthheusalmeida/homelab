@@ -7,6 +7,7 @@ import {
   type ReadingColorName,
   type ReadingFontId,
   type ReadingPreferences,
+  type ReadingShade,
 } from '#shared/contracts/reading';
 
 import { READING_SHADES } from './reading-shades';
@@ -68,22 +69,14 @@ export function readingSwatch(color: ReadingColorName): string {
   return READING_SHADES[color][500];
 }
 
-/**
- * Intensidade automática: no tema claro o fundo é bem claro (50) e o texto escuro (900); no escuro
- * é o contrário (fundo 950, texto 100). O usuário só escolhe a cor.
- */
-export function readingColor(
-  color: ReadingColorId,
-  role: 'background' | 'text',
-  dark: boolean,
-): string | null {
-  if (color === 'default') {
-    return null;
-  }
-
-  const shade = role === 'background' ? (dark ? 950 : 50) : dark ? 100 : 900;
-
+/** Uma intensidade de uma cor (amostra do seletor de intensidade). */
+export function readingShadeSwatch(color: ReadingColorName, shade: ReadingShade): string {
   return READING_SHADES[color][shade];
+}
+
+/** A cor escolhida na intensidade escolhida, ou `null` para manter a do tema. */
+export function readingColor(color: ReadingColorId, shade: ReadingShade): string | null {
+  return color === 'default' ? null : READING_SHADES[color][shade];
 }
 
 /** Sobe ou desce um passo, sem sair dos limites. */
@@ -103,14 +96,21 @@ export const stepZoom = (value: number, direction: 1 | -1) => step(value, direct
 /** Tamanho do texto em rem (16 = 1 rem). */
 export const fontSizeRem = (size: number) => `${size / 16}rem`;
 
+/**
+ * Tamanho final da letra: o tamanho escolhido vezes o zoom, como num PDF (a coluna cresce junto,
+ * ver `.reading-column`). Arredondado para não gerar casas decimais longas.
+ */
+export const zoomedFontSizeRem = (size: number, zoom: number) =>
+  `${Math.round(((size * zoom) / 1600) * 10000) / 10000}rem`;
+
 /** Variáveis de CSS e fonte da superfície de leitura (ver `.reading-surface` em `global.css`). */
-export function readingStyle(preferences: ReadingPreferences, dark: boolean): CSSProperties {
-  const background = readingColor(preferences.background, 'background', dark);
-  const text = readingColor(preferences.text, 'text', dark);
+export function readingStyle(preferences: ReadingPreferences): CSSProperties {
+  const background = readingColor(preferences.background, preferences.backgroundShade);
+  const text = readingColor(preferences.text, preferences.textShade);
 
   return {
     fontFamily: readingFontFamilies[preferences.font],
-    fontSize: fontSizeRem(preferences.fontSize),
+    fontSize: zoomedFontSizeRem(preferences.fontSize, preferences.zoom),
     '--reading-zoom': preferences.zoom / 100,
     ...(background ? { '--reading-bg': background } : {}),
     ...(text ? { '--reading-fg': text } : {}),

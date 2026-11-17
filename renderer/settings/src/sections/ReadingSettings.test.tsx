@@ -128,6 +128,109 @@ describe('ReadingSettings', () => {
     );
   });
 
+  it('when a color is picked, should then offer its intensity and save the one chosen', async () => {
+    const user = userEvent.setup();
+    const invoke = mockSaved({ background: 'sky' });
+    renderSettings();
+
+    const shades = () =>
+      within(screen.getByRole('radiogroup', { name: 'Intensidade: Cor de fundo' }));
+
+    await waitFor(() => expect(shades().getByRole('radio', { name: '50' })).toBeChecked());
+    await user.click(shades().getByRole('radio', { name: '800' }));
+
+    expect(payloadsOf(invoke, IpcChannels.appearance.update)).toEqual([
+      { reading: { backgroundShade: 800 } },
+    ]);
+    expect(shades().getByRole('radio', { name: '800' })).toBeChecked();
+  });
+
+  it('when the colors are the default, should not offer an intensity', () => {
+    mockSaved();
+
+    renderSettings();
+
+    expect(screen.queryByRole('radiogroup', { name: /Intensidade/ })).not.toBeInTheDocument();
+  });
+
+  it('when the text and background intensities are chosen, should keep them apart', async () => {
+    const user = userEvent.setup();
+    const invoke = mockSaved({ background: 'stone', text: 'stone' });
+    renderSettings();
+    await screen.findByRole('radiogroup', { name: 'Intensidade: Cor do texto' });
+
+    await user.click(
+      within(screen.getByRole('radiogroup', { name: 'Intensidade: Cor do texto' })).getByRole(
+        'radio',
+        { name: '700' },
+      ),
+    );
+
+    expect(payloadsOf(invoke, IpcChannels.appearance.update)).toEqual([
+      { reading: { textShade: 700 } },
+    ]);
+    expect(
+      within(screen.getByRole('radiogroup', { name: 'Intensidade: Cor de fundo' })).getByRole(
+        'radio',
+        { name: '50' },
+      ),
+    ).toBeChecked();
+  });
+
+  it('when the zoom grows, should grow the letter in the preview too, like a pdf', async () => {
+    const user = userEvent.setup();
+    mockSaved();
+    renderSettings();
+
+    for (let i = 0; i < 5; i += 1) {
+      await user.click(screen.getByRole('button', { name: 'Aumentar o zoom' }));
+    }
+
+    expect(screen.getByRole('status', { name: 'Zoom' })).toHaveTextContent('150%');
+    expect(screen.getByRole('region', { name: 'Pré-visualização da leitura' }).style.fontSize).toBe(
+      '1.5rem',
+    );
+  });
+
+  it('when opened, should leave the side panel unpinned and show only the hover area in the preview', () => {
+    mockSaved();
+
+    renderSettings();
+
+    expect(
+      screen.getByRole('checkbox', { name: 'Sempre visível no modo leitura' }),
+    ).not.toBeChecked();
+    expect(document.querySelector('[data-slot=preview-hover-area]')).toBeInTheDocument();
+  });
+
+  it('when the side panel option is checked, should save it and show the pinned panel in the preview', async () => {
+    const user = userEvent.setup();
+    const invoke = mockSaved();
+    renderSettings();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Sempre visível no modo leitura' }));
+
+    expect(payloadsOf(invoke, IpcChannels.appearance.update)).toEqual([
+      { reading: { pinSidebar: true } },
+    ]);
+    expect(screen.getByRole('checkbox', { name: 'Sempre visível no modo leitura' })).toBeChecked();
+    expect(document.querySelector('[data-slot=preview-side-panel]')).toBeInTheDocument();
+    expect(document.querySelector('[data-slot=preview-hover-area]')).toBeNull();
+  });
+
+  it('when the side panel is pinned and unchecked again, should go back to the hover area', async () => {
+    const user = userEvent.setup();
+    mockSaved({ pinSidebar: true });
+    renderSettings();
+    const box = screen.getByRole('checkbox', { name: 'Sempre visível no modo leitura' });
+    await waitFor(() => expect(box).toBeChecked());
+
+    await user.click(box);
+
+    expect(box).not.toBeChecked();
+    expect(document.querySelector('[data-slot=preview-hover-area]')).toBeInTheDocument();
+  });
+
   it('when everything is the default, should disable restoring the reading', async () => {
     mockSaved();
 
