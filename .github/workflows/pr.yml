@@ -1,0 +1,83 @@
+# Validação de todo pull request para a main (docs/versionamento.md): título e commits em
+# Conventional Commits, lint, tipos e as suítes de teste. É o que a proteção da main exige.
+name: pr
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  commits:
+    name: Commits e título
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          types: |
+            feat
+            fix
+            perf
+            refactor
+            style
+            docs
+            test
+            build
+            ci
+            chore
+            revert
+          # A descrição começa em minúscula e não termina em ponto (mesmas regras do commitlint).
+          subjectPattern: ^[a-z0-9].*[^.]$
+          subjectPatternError: A descrição do título deve começar em minúscula e não terminar em ponto.
+
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --legacy-peer-deps --ignore-scripts
+
+      - name: Validar as mensagens dos commits
+        run: npx commitlint --from "${{ github.event.pull_request.base.sha }}" --to "${{ github.event.pull_request.head.sha }}" --verbose
+
+  checks:
+    name: Lint, tipos e testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --legacy-peer-deps --ignore-scripts
+
+      - name: Validar a config do commitlint
+        run: npm run test:commitlint
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tipos do renderer
+        run: npm run typecheck:renderer
+
+      - name: Testes do back e do main (Jest)
+        run: npm test
+
+      - name: Testes do renderer (Vitest)
+        run: npm run test:renderer

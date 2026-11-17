@@ -2,7 +2,7 @@
 
 Desde a versão `0.1.x` o projeto segue **SemVer** para versões e **Conventional Commits** para mensagens. A versão deixa de ser escolhida "no olho": ela sai dos commits.
 
-> Estado: a convenção já vale. A **validação automática** (hook local e CI) e o **release automatizado** estão planejados em `docs/fases/fase-11.md` e `fase-12.md`. Até lá, a validação é manual (quem comita confere a lista abaixo).
+> Estado: a convenção vale e é **validada por automação** (ganchos locais e CI, seção "Validação ao subir para o GitHub"). O **release automatizado** está em `docs/fases/fase-12.md`.
 
 ## SemVer (`MAJOR.MINOR.PATCH`)
 | Mudança | Sobe | Exemplo |
@@ -57,12 +57,15 @@ Regras:
 Exceções (podem ir direto na `main`): apenas a correção de um erro da própria `main` quebrada, e só com o ok do usuário.
 
 ## Validação ao subir para o GitHub
-Planejada na fase 11, em três camadas, para nenhuma mensagem fora do padrão chegar à `main`:
-- **Local** (`commit-msg`): `commitlint` recusa o commit se a mensagem não segue o padrão.
-- **Local** (`pre-push`): roda lint, tipos e testes rápidos antes de enviar.
-- **GitHub** (CI): job que valida o título do MR e as mensagens dos commits e roda a suíte completa; a `main` só aceita merge com esses checks verdes (proteção de branch).
+Três camadas, para nenhuma mensagem fora do padrão chegar à `main`:
+- **Local** (`.husky/commit-msg`): `commitlint` (`commitlint.config.cjs`) recusa o commit se a mensagem não segue o padrão. Os ganchos se instalam sozinhos no `npm install` (script `prepare`).
+- **Local** (`.husky/pre-push`): roda `lint`, `typecheck:renderer`, Jest e Vitest antes de enviar. Em emergência, `git push --no-verify` pula, mas a CI barra do mesmo jeito.
+- **GitHub** (`.github/workflows/pr.yml`, em todo PR para a `main`): o job **Commits e título** valida o título do PR (`amannn/action-semantic-pull-request`) e as mensagens dos commits (`commitlint --from base --to head`); o job **Lint, tipos e testes** roda `test:commitlint`, lint, typecheck, Jest e Vitest.
+- **Proteção da `main`** (configuração do repositório, ver `empacotamento.md` > "Passos manuais no GitHub"): exigir PR, exigir os dois jobs verdes, bloquear push direto e *force push*, só *squash* ou *rebase*.
 
-## Checklist manual (enquanto a automação não existe)
+Testar a config de mensagens: `npm run test:commitlint` (exemplos válidos e inválidos).
+
+## Checklist manual (o que a automação não cobre)
 - [ ] Estou numa branch `tipo/assunto`, não na `main`.
 - [ ] Cada commit tem `tipo: descrição` em inglês e um só assunto.
 - [ ] O título do MR também segue o padrão.
