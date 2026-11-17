@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { useQueryClient } from "@tanstack/react-query";
 
 vi.mock("../api/create", () => ({
   getJobTypes: vi.fn(),
@@ -72,4 +73,37 @@ describe("jobs create hooks", () => {
 
     expect(vi.mocked(createVideoToSummary).mock.calls[0][0]).toEqual(params);
   });
+
+  it.each([
+    ["transcript", () => useCreateVideoToTranscript(), createVideoToTranscript, { url: "http://x" }],
+    [
+      "summary",
+      () => useCreateVideoToSummary(),
+      createVideoToSummary,
+      {
+        url: "http://x",
+        providerId: "p",
+        modelId: "m",
+        thinking: "off",
+        detail: "detailed" as const,
+      },
+    ],
+  ])(
+    "when the %s job is created, should refresh the jobs list right away",
+    async (_name, useHook, api, params) => {
+      vi.mocked(api).mockResolvedValue({ id: "1", status: "pending" });
+      const wrapper = createWrapper();
+      const { result } = renderHook(
+        () => ({ create: useHook(), client: useQueryClient() }),
+        { wrapper },
+      );
+      const invalidate = vi.spyOn(result.current.client, "invalidateQueries");
+
+      await act(async () => {
+        await (result.current.create as { mutateAsync: (p: unknown) => Promise<unknown> }).mutateAsync(params);
+      });
+
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ["jobs"] });
+    },
+  );
 });

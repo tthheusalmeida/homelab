@@ -25,6 +25,7 @@ Estado: app instalável e em uso (versão `0.1.x`). Falta o que está em `docs/m
 | `docs/componentes.md` | Catálogo de componentes (Whisper, ffmpeg, CUDA, modelos), download com checksum, recomendação por hardware e assistente de instalação |
 | `docs/download-de-videos.md` | Download de YouTube e outras plataformas com yt-dlp, aviso ao usuário e login por janela do app (cookies temporários) |
 | `docs/atalhos.md` | Paleta de comandos (Ctrl K), atalhos "G e uma letra" e notificação do sistema quando um job termina |
+| `docs/desempenho.md` | Otimizações para PCs fracos (telas sob demanda, consultas mais calmas) e o que foi deixado de fora para não perder fluidez |
 | `docs/movimento.md` | Transições e animações: réguas de tempo, utilities `animate-*`, onde aplicar |
 | `docs/atualizacoes.md` | Atualização do app: consulta aos Releases do GitHub, cartão na barra lateral, seção em Configurações, download com checksum e instalação |
 | `docs/empacotamento.md` | Instalador Windows (`electron-builder`), binários, caminhos empacotados, ícone |
