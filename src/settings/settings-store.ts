@@ -78,6 +78,7 @@ export class SettingsStore {
         ...patch.appearance,
         reading: { ...base.appearance.reading, ...patch.appearance?.reading },
       },
+      updates: { autoCheck: patch.updates?.autoCheck ?? base.updates.autoCheck },
       local: {
         ollama: { url: patch.local?.ollama?.url ?? base.local.ollama.url },
       },

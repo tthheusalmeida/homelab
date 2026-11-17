@@ -39,7 +39,20 @@ export function useCheckForUpdates() {
   return useStatusMutation(() => ipc.invoke(IpcChannels.updates.check));
 }
 
-/** Baixa a versão nova e a aplica (o app fecha e reabre). */
+/**
+ * Com a versão pronta, reinicia e instala (o app fecha e reabre). Se o download automático tinha
+ * falhado, baixa de novo.
+ */
 export function useInstallUpdate() {
   return useStatusMutation(() => ipc.invoke(IpcChannels.updates.install));
+}
+
+/** Liga ou desliga a verificação automática (a manual continua funcionando). */
+export function useSetAutoCheck() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (autoCheck: boolean) => ipc.invoke(IpcChannels.updates.setAutoCheck, { autoCheck }),
+    onSuccess: (status) => queryClient.setQueryData(UpdatesQueryKey, status),
+  });
 }

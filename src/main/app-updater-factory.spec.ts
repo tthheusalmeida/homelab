@@ -1,11 +1,6 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import type { NativeUpdater } from '../updates/native-updater';
 
-import { makeTempDir, removeDir } from '../settings/settings.testing';
-
-import { createAppUpdater, UPDATES_FOLDER, type AppUpdaterWiring } from './app-updater-factory';
-
-const SHA = 'c'.repeat(64);
+import { createAppUpdater, type AppUpdaterWiring } from './app-updater-factory';
 
 const githubRelease = {
   tag_name: 'v0.3.0',
@@ -14,50 +9,40 @@ const githubRelease = {
   body: 'Notas',
   html_url: 'https://github.com/o/r/releases/tag/v0.3.0',
   published_at: '2026-11-01T00:00:00Z',
-  assets: [
-    {
-      name: 'HomeLab-Setup-0.3.0.exe',
-      browser_download_url:
-        'https://github.com/o/r/releases/download/v0.3.0/HomeLab-Setup-0.3.0.exe',
-      size: 3,
-      state: 'uploaded',
-      digest: `sha256:${SHA}`,
-    },
-  ],
 };
 
-let userData: string;
-
-beforeEach(() => {
-  userData = makeTempDir();
-});
-
-afterEach(() => removeDir(userData));
+function makeNative(): jest.Mocked<NativeUpdater> {
+  return {
+    prepare: jest.fn().mockResolvedValue(true),
+    download: jest.fn().mockResolvedValue(undefined),
+    quitAndInstall: jest.fn(),
+  };
+}
 
 function setup(overrides: Partial<AppUpdaterWiring> = {}) {
   /** Os mocks ficam à parte para os testes conferirem as chamadas. */
   const mocks = {
     fetchFn: jest.fn().mockResolvedValue(new Response(JSON.stringify([githubRelease]))),
-    spawnDetached: jest.fn(),
-    quit: jest.fn(),
+    getAutoCheck: jest.fn().mockReturnValue(true),
+    saveAutoCheck: jest.fn(),
     openExternal: jest.fn(),
     publish: jest.fn(),
     notify: jest.fn(),
   };
+  const native = makeNative();
   const updater = createAppUpdater({
     currentVersion: '0.2.0',
-    platform: 'win32',
-    userDataDir: userData,
+    native,
     ...mocks,
     ...overrides,
   });
 
-  return { mocks, updater };
+  return { mocks, native, updater };
 }
 
 describe('createAppUpdater', () => {
   it('when checking, should read the releases of the project from GitHub', async () => {
-    const { mocks, updater } = setup();
+    const { mocks, updater } = setup({ native: null });
 
     const status = await updater.check();
 
@@ -79,44 +64,32 @@ describe('createAppUpdater', () => {
     });
   });
 
-  it('when running on Windows, should be able to install by itself', () => {
-    expect(setup({ platform: 'win32' }).updater.status().canInstall).toBe(true);
+  it('when a native updater is given, should install by itself and download the difference', async () => {
+    const { native, updater } = setup();
+
+    const status = await updater.check();
+
+    expect(updater.status().canInstall).toBe(true);
+    expect(native.prepare).toHaveBeenCalledWith('0.3.0');
+    expect(status.state).toBe('ready');
   });
 
-  it.each(['linux', 'darwin'] as const)(
-    'when running on %s, should not install by itself and open the release page instead',
-    async (platform) => {
-      const { mocks, updater } = setup({ platform });
-
-      await updater.check();
-      await updater.install();
-
-      expect(updater.status().canInstall).toBe(false);
-      expect(mocks.openExternal).toHaveBeenCalledWith('https://github.com/o/r/releases/tag/v0.3.0');
-      expect(mocks.spawnDetached).not.toHaveBeenCalled();
-    },
-  );
-
-  it('when the update is installed, should download into the updates folder of userData', async () => {
-    const download = new Response(Buffer.from('abc'));
-    const fetchFn = jest
-      .fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify([githubRelease])))
-      .mockResolvedValueOnce(download);
-    const { updater } = setup({ fetchFn });
+  it('when there is no native updater, should not install by itself and open the release page instead', async () => {
+    const { mocks, updater } = setup({ native: null });
 
     await updater.check();
-    const status = await updater.install();
+    await updater.install();
 
-    // O arquivo falso não bate com o checksum: o download é recusado e nada é executado.
-    expect(status.error).toMatch(/corrompido/);
-    expect(fetchFn).toHaveBeenLastCalledWith(
-      'https://github.com/o/r/releases/download/v0.3.0/HomeLab-Setup-0.3.0.exe',
-      expect.anything(),
-    );
-    expect(UPDATES_FOLDER).toBe('updates');
-    expect(fs.existsSync(path.join(userData, UPDATES_FOLDER, 'HomeLab-Setup-0.3.0.exe'))).toBe(
-      false,
-    );
+    expect(updater.status().canInstall).toBe(false);
+    expect(mocks.openExternal).toHaveBeenCalledWith('https://github.com/o/r/releases/tag/v0.3.0');
+  });
+
+  it('when the preference is read and saved, should go through the given functions', () => {
+    const { mocks, updater } = setup();
+
+    expect(updater.status().autoCheck).toBe(true);
+    updater.setAutoCheck(false);
+
+    expect(mocks.saveAutoCheck).toHaveBeenCalledWith(false);
   });
 });

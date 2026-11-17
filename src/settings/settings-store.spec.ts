@@ -173,6 +173,31 @@ describe('SettingsStore', () => {
     });
   });
 
+  it('when there is no saved updates preference, should check for updates automatically', () => {
+    expect(create().get().updates).toEqual({ autoCheck: true });
+  });
+
+  it('when an old file has no updates section, should fill it with the defaults', () => {
+    fs.writeFileSync(target, JSON.stringify({ paths: { libraryDir: path.resolve('/x') } }));
+
+    expect(create().get().updates.autoCheck).toBe(true);
+  });
+
+  it('when the automatic check is turned off, should save it and survive a reload', () => {
+    create().update({ updates: { autoCheck: false } });
+
+    expect(create().get().updates.autoCheck).toBe(false);
+  });
+
+  it('when another section changes, should keep the automatic check as it was', () => {
+    const store = create();
+
+    store.update({ updates: { autoCheck: false } });
+    store.update({ appearance: { theme: 'dark' } });
+
+    expect(store.get().updates.autoCheck).toBe(false);
+  });
+
   it('when the main file is corrupt but the backup is good, should load the backup and flag it as recovered', () => {
     const first = create();
 

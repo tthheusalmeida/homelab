@@ -1,34 +1,29 @@
-import * as path from 'node:path';
-
 import type { FetchLike } from '../components/downloader';
 import type { UpdateStatus } from '../shared/contracts/updates';
 import { AppUpdater } from '../updates/app-updater';
+import type { NativeUpdater } from '../updates/native-updater';
 import { GitHubReleaseSource, UPDATE_REPOSITORY } from '../updates/release-source';
-import { downloadInstaller, launchInstaller } from '../updates/windows-installer';
-
-/** Pasta (dentro de `userData`) onde o instalador baixado espera a troca. */
-export const UPDATES_FOLDER = 'updates';
 
 /** Tempo máximo para o GitHub responder a lista de versões. */
 export const RELEASES_TIMEOUT_MS = 15_000;
 
 export interface AppUpdaterWiring {
   currentVersion: string;
-  platform: NodeJS.Platform;
-  userDataDir: string;
   /** `fetch` do Electron (`net.fetch`), que segue os redirecionamentos do GitHub. */
   fetchFn: FetchLike;
-  spawnDetached: (file: string, args: readonly string[]) => void;
-  quit: () => void;
+  /**
+   * Atualizador que baixa só a diferença e instala. `null` fora do Windows e fora do app
+   * empacotado: aí o botão leva ao Release no navegador.
+   */
+  native: NativeUpdater | null;
+  getAutoCheck: () => boolean;
+  saveAutoCheck: (autoCheck: boolean) => void;
   openExternal: (url: string) => void;
   publish: (status: UpdateStatus) => void;
   notify: (title: string, body: string) => void;
 }
 
-/**
- * Monta o `AppUpdater` com o que o Electron oferece. Só o Windows aplica a atualização sozinho (o
- * instalador NSIS); nos outros sistemas o botão leva ao Release no navegador.
- */
+/** Monta o `AppUpdater` com o que o Electron oferece. */
 export function createAppUpdater(wiring: AppUpdaterWiring): AppUpdater {
   const source = new GitHubReleaseSource(UPDATE_REPOSITORY, async (url) => {
     const response = await wiring.fetchFn(url, {
@@ -41,18 +36,15 @@ export function createAppUpdater(wiring: AppUpdaterWiring): AppUpdater {
 
     return response.json();
   });
-  const installerDir = path.join(wiring.userDataDir, UPDATES_FOLDER);
 
   return new AppUpdater({
     currentVersion: wiring.currentVersion,
-    canInstall: wiring.platform === 'win32',
+    native: wiring.native,
     source,
-    download: (asset, onProgress) =>
-      downloadInstaller({ fetchFn: wiring.fetchFn, dir: installerDir }, asset, onProgress),
-    launchInstaller: (file) =>
-      launchInstaller({ spawnDetached: wiring.spawnDetached, quit: wiring.quit }, file),
+    getAutoCheck: wiring.getAutoCheck,
+    saveAutoCheck: wiring.saveAutoCheck,
     publish: wiring.publish,
-    notifyAvailable: wiring.notify,
+    notify: wiring.notify,
     openExternal: wiring.openExternal,
     now: () => Date.now(),
   });

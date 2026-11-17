@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CircleArrowUp, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
+import { CircleArrowUp, Download, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
 
 import { ConfirmDialog } from '#components/ConfirmDialog';
 import { ErrorState } from '#components/ErrorState';
@@ -7,18 +7,28 @@ import { LoadingState } from '#components/LoadingState';
 import { MarkdownMessage } from '#components/MarkdownMessage';
 import { ProgressBar } from '#components/ProgressBar';
 import { SettingsGroup, SettingsPanel, SettingsRow } from '#components/SettingsGroup';
-import { useCheckForUpdates, useInstallUpdate, useUpdateStatus } from '#hooks/use-updates';
+import {
+  useCheckForUpdates,
+  useInstallUpdate,
+  useSetAutoCheck,
+  useUpdateStatus,
+} from '#hooks/use-updates';
 import { formatDateTime } from '#lib/format';
 import { UpdateStrings } from '#lib/update-text';
 import { Button } from '#ui/button';
+import { Label } from '#ui/label';
 
 import { Strings } from '../strings';
 
-/** Atualização do app: versão instalada, verificar agora, baixar e aplicar a versão nova. */
+/**
+ * Sobre e atualizações: versão instalada, verificar agora, verificação automática, e a versão nova
+ * (baixada sozinha, só a diferença; "Reiniciar e atualizar" quando pronta).
+ */
 export function UpdatesSection() {
   const { data: status, isPending, isError, refetch } = useUpdateStatus();
   const check = useCheckForUpdates();
   const install = useInstallUpdate();
+  const setAutoCheck = useSetAutoCheck();
   const [confirming, setConfirming] = useState(false);
 
   if (isPending) {
@@ -32,20 +42,11 @@ export function UpdatesSection() {
   const { latest } = status;
   const checking = status.state === 'checking' || check.isPending;
   const downloading = status.state === 'downloading';
+  const ready = status.state === 'ready';
   const busy = checking || downloading || status.state === 'installing' || install.isPending;
   const error =
-    status.error ?? (check.isError || install.isError ? UpdateStrings.requestFailed : null);
-
-  const startInstall = () => {
-    // Sem instalação automática (fora do Windows) abre a página da versão, sem confirmar nada.
-    if (!status.canInstall) {
-      install.mutate();
-
-      return;
-    }
-
-    setConfirming(true);
-  };
+    status.error ??
+    (check.isError || install.isError || setAutoCheck.isError ? UpdateStrings.requestFailed : null);
 
   return (
     <div className="flex flex-col gap-6">
@@ -69,7 +70,7 @@ export function UpdatesSection() {
             {latest ? (
               <>
                 <CircleArrowUp aria-hidden className="size-4 text-primary" />
-                {UpdateStrings.available(latest.version)}
+                {ready ? UpdateStrings.ready(latest.version) : UpdateStrings.available(latest.version)}
               </>
             ) : (
               status.checkedAt !== null && UpdateStrings.upToDate
@@ -102,10 +103,25 @@ export function UpdatesSection() {
           )}
 
           <div className="flex flex-wrap items-center gap-2">
-            {latest && (
-              <Button disabled={busy} onClick={startInstall}>
-                {status.canInstall ? <CircleArrowUp /> : <ExternalLink />}
-                {status.canInstall ? UpdateStrings.install : UpdateStrings.openPage}
+            {ready && (
+              <Button disabled={busy} onClick={() => setConfirming(true)}>
+                <CircleArrowUp />
+                {UpdateStrings.restart}
+              </Button>
+            )}
+
+            {/* Download automático que falhou: dá para tentar de novo. */}
+            {latest && status.canInstall && status.state === 'available' && (
+              <Button disabled={busy} onClick={() => install.mutate()}>
+                <Download />
+                {UpdateStrings.download}
+              </Button>
+            )}
+
+            {latest && !status.canInstall && (
+              <Button disabled={busy} onClick={() => install.mutate()}>
+                <ExternalLink />
+                {UpdateStrings.openPage}
               </Button>
             )}
 
@@ -118,6 +134,27 @@ export function UpdatesSection() {
           <p className="text-xs text-muted-foreground">
             {status.canInstall ? UpdateStrings.keepData : UpdateStrings.noAutoInstall}
           </p>
+        </SettingsPanel>
+      </SettingsGroup>
+
+      <SettingsGroup title="Verificação">
+        <SettingsPanel>
+          <SettingsRow label={UpdateStrings.autoCheck} hint={UpdateStrings.autoCheckHint}>
+            <div className="flex items-center gap-2">
+              <input
+                id="updates-auto-check"
+                type="checkbox"
+                className="size-4 shrink-0 cursor-pointer accent-primary"
+                checked={status.autoCheck}
+                disabled={setAutoCheck.isPending}
+                onChange={(event) => setAutoCheck.mutate(event.target.checked)}
+              />
+
+              <Label htmlFor="updates-auto-check" className="cursor-pointer text-sm font-normal">
+                {UpdateStrings.autoCheck}
+              </Label>
+            </div>
+          </SettingsRow>
         </SettingsPanel>
       </SettingsGroup>
 

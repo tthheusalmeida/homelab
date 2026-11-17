@@ -1,4 +1,4 @@
-import { execFile, spawn } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -69,8 +69,10 @@ import { resolveYtDlpPath } from '../providers/ytdlp-binary-resolver';
 import { resolveBinDir, resolveDataRoot, resolveFrontDist, resolveResourcesDir } from './paths';
 import { isSettingsShortcut } from './shortcuts';
 import { createAppUpdater } from './app-updater-factory';
+import { createElectronNativeUpdater } from './electron-native-updater';
 import { SystemNotifier } from './system-notifier';
 import type { AppUpdater } from '../updates/app-updater';
+import { UPDATE_REPOSITORY } from '../updates/release-source';
 import { resolveStaticFile } from './static-files';
 import { createSplashWindowOptions, createWindowOptions } from './window-options';
 
@@ -353,16 +355,14 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
 
   appUpdater = createAppUpdater({
     currentVersion: app.getVersion(),
-    platform: process.platform,
-    userDataDir: app.getPath('userData'),
     fetchFn: (url, init) => net.fetch(url, init),
-    spawnDetached: (file, args) => {
-      const child = spawn(file, [...args], { detached: true, stdio: 'ignore' });
-
-      child.on('error', () => undefined);
-      child.unref();
-    },
-    quit: () => app.quit(),
+    // Só o Windows empacotado atualiza sozinho (instalador NSIS); nos outros casos leva ao Release.
+    native:
+      process.platform === 'win32' && app.isPackaged
+        ? createElectronNativeUpdater(UPDATE_REPOSITORY)
+        : null,
+    getAutoCheck: () => services.settings.get().updates.autoCheck,
+    saveAutoCheck: (autoCheck) => void services.settings.update({ updates: { autoCheck } }),
     openExternal: (url) => void shell.openExternal(url),
     publish: (status) => events.publish(IpcEvents.updatesChanged, status),
     notify: (title, body) => void systemNotifier.notify({ title, body }),

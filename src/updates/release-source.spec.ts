@@ -1,15 +1,4 @@
-import { GitHubReleaseSource, WINDOWS_INSTALLER, type FetchJson } from './release-source';
-
-const SHA = 'a'.repeat(64);
-
-const installer = (version: string, overrides: Record<string, unknown> = {}) => ({
-  name: `HomeLab-Setup-${version}.exe`,
-  browser_download_url: `https://github.com/owner/repo/releases/download/v${version}/HomeLab-Setup-${version}.exe`,
-  size: 1234,
-  state: 'uploaded',
-  digest: `sha256:${SHA}`,
-  ...overrides,
-});
+import { GitHubReleaseSource, type FetchJson } from './release-source';
 
 const release = (tag: string, overrides: Record<string, unknown> = {}) => ({
   tag_name: tag,
@@ -18,7 +7,6 @@ const release = (tag: string, overrides: Record<string, unknown> = {}) => ({
   body: `Notas ${tag}`,
   html_url: `https://github.com/owner/repo/releases/tag/${tag}`,
   published_at: '2026-11-01T10:00:00Z',
-  assets: [installer(tag.replace(/^v/, ''))],
   ...overrides,
 });
 
@@ -76,58 +64,5 @@ describe('GitHubReleaseSource', () => {
     const { source } = sourceWith({ message: 'rate limited' });
 
     await expect(source.latest()).resolves.toBeNull();
-  });
-
-  it('when the release has the installer, should expose its address, size and sha256', async () => {
-    const { source } = sourceWith([release('v0.3.0')]);
-
-    await expect(source.latest()).resolves.toMatchObject({
-      installer: {
-        name: 'HomeLab-Setup-0.3.0.exe',
-        url: 'https://github.com/owner/repo/releases/download/v0.3.0/HomeLab-Setup-0.3.0.exe',
-        size: 1234,
-        sha256: SHA,
-      },
-    });
-  });
-
-  it('when the asset has no digest, should keep the installer with sha256 null', async () => {
-    const { source } = sourceWith([
-      release('v0.3.0', { assets: [installer('0.3.0', { digest: null })] }),
-    ]);
-
-    await expect(source.latest()).resolves.toMatchObject({ installer: { sha256: null } });
-  });
-
-  it('when the asset address is not https on github.com, should ignore the installer', async () => {
-    const { source } = sourceWith([
-      release('v0.3.0', {
-        assets: [installer('0.3.0', { browser_download_url: 'https://evil.example/x.exe' })],
-      }),
-      release('v0.2.0', {
-        assets: [installer('0.2.0', { browser_download_url: 'http://github.com/x.exe' })],
-      }),
-    ]);
-
-    await expect(source.latest()).resolves.toMatchObject({ version: '0.3.0', installer: null });
-  });
-
-  it('when the asset is not finished uploading or does not look like the installer, should ignore it', async () => {
-    const { source } = sourceWith([
-      release('v0.3.0', {
-        assets: [
-          installer('0.3.0', { state: 'starter' }),
-          installer('0.3.0', { name: 'latest.yml' }),
-          installer('0.3.0', { name: 'HomeLab-0.3.0.blockmap' }),
-        ],
-      }),
-    ]);
-
-    await expect(source.latest()).resolves.toMatchObject({ installer: null });
-  });
-
-  it('when checking the installer name, should accept only HomeLab-Setup executables', () => {
-    expect(WINDOWS_INSTALLER.test('HomeLab-Setup-0.3.0.exe')).toBe(true);
-    expect(WINDOWS_INSTALLER.test('HomeLab-Setup-0.3.0.exe.blockmap')).toBe(false);
   });
 });

@@ -23,6 +23,7 @@ export const SettingsMessages = {
   readingColorInvalid: 'Escolha uma das cores de leitura disponíveis.',
   readingPinInvalid: 'A opção do painel lateral deve ser ligada ou desligada.',
   readingShadeInvalid: 'Escolha uma das intensidades de cor disponíveis.',
+  updatesAutoCheckInvalid: 'A verificação automática de atualizações deve ser ligada ou desligada.',
 } as const;
 
 const LIBRARY_LABEL = 'a pasta da biblioteca';
@@ -55,6 +56,10 @@ export function validateSettings(settings: SettingsData): void {
 
   if (!ACCENT_IDS.includes(settings.appearance.accent)) {
     fail(SettingsMessages.accentInvalid);
+  }
+
+  if (typeof settings.updates.autoCheck !== 'boolean') {
+    fail(SettingsMessages.updatesAutoCheckInvalid);
   }
 
   const { reading } = settings.appearance;

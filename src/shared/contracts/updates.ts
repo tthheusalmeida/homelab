@@ -1,5 +1,9 @@
-/** Onde o app está no ciclo de atualização. */
-export type UpdateState = 'idle' | 'checking' | 'available' | 'downloading' | 'installing';
+/**
+ * Onde o app está no ciclo de atualização. `ready`: a versão nova já foi baixada (só a diferença) e
+ * será instalada ao reiniciar ou ao fechar o app.
+ */
+export type UpdateState =
+  'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'installing';
 
 /** Uma versão publicada no GitHub (o que o usuário vê; endereços de download ficam no main). */
 export interface UpdateRelease {
@@ -24,4 +28,11 @@ export interface UpdateStatus {
   checkedAt: number | null;
   /** Se o app consegue baixar e aplicar a atualização sozinho (hoje só no Windows). */
   canInstall: boolean;
+  /** Verificar sozinho ao abrir e a cada 6 horas (preferência `updates.autoCheck`). */
+  autoCheck: boolean;
+}
+
+/** Corpo de `updates:set-auto-check`. */
+export interface SetAutoCheckRequest {
+  autoCheck: boolean;
 }

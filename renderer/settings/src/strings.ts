@@ -135,9 +135,9 @@ export const SECTIONS: ReadonlyArray<SectionInfo> = [
   },
   {
     id: 'updates',
-    label: 'Atualizações',
+    label: 'Sobre e atualizações',
     description:
-      'Veja se há uma versão nova do HomeLab, leia as novidades e atualize sem perder nada.',
+      'Versão instalada, novidades e atualização do HomeLab (baixa só o que mudou, sem perder nada).',
   },
 ];
 

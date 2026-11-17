@@ -83,6 +83,39 @@ describe('SidebarUpdateNotice', () => {
     expect(await screen.findByText('Instalando a atualização')).toBeVisible();
   });
 
+  it('when the version is ready, should announce it and offer to restart', async () => {
+    mockApi({ [IpcChannels.updates.status]: () => ok(availableUpdate({ state: 'ready' })) });
+
+    renderNotice();
+
+    expect(await screen.findByText('Atualização 0.3.0 pronta')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Reiniciar e atualizar' })).toBeEnabled();
+  });
+
+  it('when Reiniciar e atualizar is clicked, should ask the main to install without leaving the page', async () => {
+    const user = userEvent.setup();
+    const invoke = mockApi({
+      [IpcChannels.updates.status]: () => ok(availableUpdate({ state: 'ready' })),
+      [IpcChannels.updates.install]: () => ok(availableUpdate({ state: 'installing' })),
+    });
+
+    renderNotice();
+    await user.click(await screen.findByRole('button', { name: 'Reiniciar e atualizar' }));
+
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith(IpcChannels.updates.install));
+    expect(screen.getByTestId('where')).toHaveTextContent('/');
+    expect(screen.getByTestId('where')).not.toHaveTextContent('settings');
+  });
+
+  it('when the version is not ready yet, should not offer to restart', async () => {
+    mockApi({ [IpcChannels.updates.status]: () => ok(availableUpdate({ state: 'downloading' })) });
+
+    renderNotice();
+    await screen.findByText(/Baixando a atualização/);
+
+    expect(screen.queryByRole('button', { name: 'Reiniciar e atualizar' })).not.toBeInTheDocument();
+  });
+
   it('when the main reports a new version later, should show the notice without reloading', async () => {
     mockApi({ [IpcChannels.updates.status]: () => ok(updateStatus()) });
 
