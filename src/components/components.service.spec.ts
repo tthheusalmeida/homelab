@@ -340,6 +340,13 @@ describe('ComponentsService', () => {
   describe('on Linux', () => {
     const PROGRAM = Buffer.from('programa ffmpeg '.repeat(50));
 
+    /** Bits de execução só existem em sistemas POSIX; o NTFS (testes rodando no Windows) não os tem. */
+    const expectExecutable = (file: string) => {
+      if (process.platform !== 'win32') {
+        expect(fs.statSync(file).mode & 0o111).not.toBe(0);
+      }
+    };
+
     beforeEach(() => {
       bodies.set('https://x/ffmpeg-linux', PROGRAM);
       catalog.push({
@@ -365,7 +372,7 @@ describe('ComponentsService', () => {
 
       expect((await infoOf(service, 'ffmpeg'))?.state).toBe('installed');
       expect(fs.readFileSync(file)).toEqual(PROGRAM);
-      expect(fs.statSync(file).mode & 0o111).not.toBe(0);
+      expectExecutable(file);
     });
 
     it('when installing a zip pack, should make the extracted programs executable', async () => {
@@ -392,7 +399,7 @@ describe('ComponentsService', () => {
       await service.install(['whisper-pack']);
       await service.whenIdle();
 
-      expect(fs.statSync(path.join(binDir, 'whisper-cli')).mode & 0o111).not.toBe(0);
+      expectExecutable(path.join(binDir, 'whisper-cli'));
     });
 
     it('when no catalog is given, should list only the components that exist for the system', async () => {
