@@ -12,7 +12,7 @@ import { mockApi, ok, payloadsOf } from './testing';
 
 const paths = { libraryDir: 'D:/lib' };
 
-const handlers = (restartRequired: boolean) => {
+const handlers = (restartRequired: boolean, restartAlreadyPending = false) => {
   let current = paths;
 
   return {
@@ -35,6 +35,8 @@ const handlers = (restartRequired: boolean) => {
     [IpcChannels.providers.local.list]: () =>
       ok([{ id: 'ffmpeg', label: 'Processamento de áudio', editable: false, config: {} }]),
     [IpcChannels.app.relaunch]: () => ok(undefined),
+    [IpcChannels.app.restartPending]: () => ok(restartAlreadyPending),
+    [IpcChannels.app.markRestartPending]: () => ok(undefined),
   };
 };
 
@@ -154,5 +156,38 @@ describe('SettingsApp', () => {
 
     expect(await screen.findByText('Biblioteca trocada')).toBeVisible();
     expect(screen.queryByText(/depois de reiniciar/)).not.toBeInTheDocument();
+  });
+
+  it('when a save requires restart, should also tell the main so the app sidebar keeps the notice after this window closes', async () => {
+    const user = userEvent.setup();
+    const invoke = mockApi(handlers(true));
+
+    renderApp();
+    await changeLibrary(user, 'D:/outra');
+
+    await screen.findByText(/depois de reiniciar/);
+    await waitFor(() =>
+      expect(payloadsOf(invoke, IpcChannels.app.markRestartPending)).toHaveLength(1),
+    );
+  });
+
+  it('when a save does not require restart, should not mark anything as pending', async () => {
+    const user = userEvent.setup();
+    const invoke = mockApi(handlers(false));
+
+    renderApp();
+    await changeLibrary(user, 'D:/outra');
+    await screen.findByText('Biblioteca trocada');
+
+    expect(payloadsOf(invoke, IpcChannels.app.markRestartPending)).toHaveLength(0);
+  });
+
+  it('when the window opens and the main already has a restart pending, should show the notice with the restart button', async () => {
+    mockApi(handlers(false, true));
+
+    renderApp();
+
+    expect(await screen.findByText(/depois de reiniciar/)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Reiniciar agora' })).toBeVisible();
   });
 });

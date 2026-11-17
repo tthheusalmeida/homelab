@@ -9,6 +9,10 @@ export interface AppInfo {
   openSettings(section?: string): void;
   /** Seção pedida ao abrir as Configurações; entregue uma vez só. */
   takeSettingsSection(): string | null;
+  /** Se há alteração salva que só vale depois de reiniciar. */
+  restartPending(): boolean;
+  /** Marca o reinício como pendente e avisa as janelas. */
+  markRestartPending(): void;
 }
 
 /** Canais `app:*`. */
@@ -26,6 +30,8 @@ export class AppHandler extends IpcHandler {
         this.appInfo.openSettings(request ? request.section : undefined),
       ),
       this.route(IpcChannels.app.settingsSection, () => this.appInfo.takeSettingsSection()),
+      this.route(IpcChannels.app.restartPending, () => this.appInfo.restartPending()),
+      this.route(IpcChannels.app.markRestartPending, () => this.appInfo.markRestartPending()),
     ];
   }
 }

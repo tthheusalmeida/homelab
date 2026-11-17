@@ -11,6 +11,8 @@ function setup() {
     relaunch: jest.fn(),
     openSettings: jest.fn(),
     takeSettingsSection: jest.fn().mockReturnValue('components'),
+    restartPending: jest.fn().mockReturnValue(false),
+    markRestartPending: jest.fn(),
   };
   new IpcRegistrar(ipc).register([new AppHandler(appInfo)]);
 
@@ -74,12 +76,43 @@ describe('AppHandler', () => {
       relaunch: jest.fn(),
       openSettings: jest.fn(),
       takeSettingsSection: jest.fn(),
+      restartPending: jest.fn(),
+      markRestartPending: jest.fn(),
     };
     new IpcRegistrar(ipc).register([new AppHandler(appInfo)]);
 
     await expect(ipc.invoke(IpcChannels.app.version)).resolves.toMatchObject({
       ok: false,
       error: { code: 'INTERNAL', message: 'sem versão' },
+    });
+  });
+
+  it('when app:restart-pending is called, should answer whether a restart is pending', async () => {
+    const { ipc, appInfo } = setup();
+    appInfo.restartPending.mockReturnValue(true);
+
+    await expect(ipc.invoke(IpcChannels.app.restartPending)).resolves.toEqual({
+      ok: true,
+      data: true,
+    });
+    expect(appInfo.restartPending).toHaveBeenCalledTimes(1);
+  });
+
+  it('when app:mark-restart-pending is called, should ask AppInfo to mark the restart as pending', async () => {
+    const { ipc, appInfo } = setup();
+
+    await expect(ipc.invoke(IpcChannels.app.markRestartPending)).resolves.toMatchObject({
+      ok: true,
+    });
+    expect(appInfo.markRestartPending).toHaveBeenCalledTimes(1);
+  });
+
+  it('when no restart is pending, should answer false', async () => {
+    const { ipc } = setup();
+
+    await expect(ipc.invoke(IpcChannels.app.restartPending)).resolves.toEqual({
+      ok: true,
+      data: false,
     });
   });
 });

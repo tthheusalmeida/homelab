@@ -1,3 +1,5 @@
+import { RestartStrings } from '#lib/restart';
+
 /** Textos repetidos da janela de Configurações (interface em português). */
 export const Strings = {
   title: 'Configurações',
@@ -68,10 +70,7 @@ export const Strings = {
     originKept: (reason: string) => `A pasta antiga não foi apagada: ${reason}`,
     cancel: 'Cancelar',
   },
-  restart: {
-    message: 'As alterações só valem depois de reiniciar o HomeLab.',
-    action: 'Reiniciar agora',
-  },
+  restart: RestartStrings,
 } as const;
 
 export type SectionId =

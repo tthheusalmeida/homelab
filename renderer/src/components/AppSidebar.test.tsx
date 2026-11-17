@@ -32,6 +32,30 @@ const renderSidebar = (path = '/') =>
   );
 
 describe('AppSidebar', () => {
+  it('when a restart is pending, should show the restart notice with its button above Configurações', async () => {
+    mockApi({ [IpcChannels.app.restartPending]: () => ok(true) });
+
+    renderSidebar();
+
+    const alert = await screen.findByRole('alert');
+    const settings = screen.getByRole('button', { name: 'Configurações' });
+
+    expect(alert).toHaveTextContent('Reinício pendente');
+    expect(screen.getByRole('button', { name: /Reiniciar agora/ })).toBeInTheDocument();
+    expect(
+      alert.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('when no restart is pending, should not show the restart notice', async () => {
+    const invoke = mockApi({ [IpcChannels.app.restartPending]: () => ok(false) });
+
+    renderSidebar();
+
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith(IpcChannels.app.restartPending));
+    expect(screen.queryByRole('button', { name: /Reiniciar agora/ })).not.toBeInTheDocument();
+  });
+
   it('when rendered, should show the sections and items in Portuguese', () => {
     mockApi({});
 

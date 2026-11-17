@@ -27,10 +27,11 @@ import { SidebarSection } from '#components/SidebarSection';
 import { SnackbarProvider } from '#components/Snackbar';
 import { useCollapsedGroups } from '#hooks/use-collapsed-groups';
 import { useIpcEvent } from '#hooks/use-ipc-event';
+import { useMarkRestartPending, useRestartPending } from '#hooks/use-restart-pending';
 import { ipc } from '#lib/ipc';
 import { IpcChannels } from '#shared/channels';
 import { IpcEvents } from '#shared/events';
-import { relaunchApp } from './hooks';
+import { relaunchApp } from '#lib/restart';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { BackupSection } from './sections/BackupSection';
 import { AccessSection } from './sections/AccessSection';
@@ -62,12 +63,14 @@ const SECTION_ICONS: Record<SectionId, LucideIcon> = {
  */
 export function SettingsApp() {
   const [sectionId, setSectionId] = useState<SectionId>('appearance');
-  const [restartPending, setRestartPending] = useState(false);
+  // O estado vive no main: sobrevive a fechar as Configurações e aparece na barra lateral do app.
+  const restartPending = useRestartPending();
+  const markRestartPending = useMarkRestartPending();
   const [collapsed, toggleGroup] = useCollapsedGroups(SETTINGS_COLLAPSED_KEY);
 
   const handleSaved = (restartRequired: boolean) => {
     if (restartRequired) {
-      setRestartPending(true);
+      markRestartPending();
     }
   };
 

@@ -99,10 +99,6 @@ export function useTestLocalProvider() {
   });
 }
 
-export function relaunchApp() {
-  return ipc.invoke(IpcChannels.app.relaunch);
-}
-
 /** O que dá para incluir no backup, com tamanhos; sempre recalculado ao abrir a seção. */
 export function useBackupPreview() {
   return useQuery({

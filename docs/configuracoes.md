@@ -4,13 +4,13 @@
 - O app abre **sem nenhuma configuração prévia** e tem **pouquíssimas opções**: só a **pasta da biblioteca** (páginas e livros), a aparência, a chave do Gemini e o endereço do Ollama são do usuário. Todo o resto (entrada, temporários, dados do app, Whisper) é padrão fixo, para reduzir atrito. Pastas e Ollama têm padrões; só a chave do Gemini é necessária para usar o Gemini, e sem ela o provider responde `NOT_CONFIGURED` com mensagem em português.
 - Nenhum caminho, URL ou chave fixos no código. Tudo vem do `SettingsStore` e do `SecretStore`.
 - **Não existe mais `.env`:** a importação única do `.env` do back (que existia só em desenvolvimento) acabou na fase 09a. Na primeira execução o usuário informa pastas e chave pela janela de Configurações, que abre sozinha.
-- **Mudar configuração exige reiniciar o app**: os services do back leem tudo uma vez, ao serem criados. Toda gravação responde `restartRequired` e o canal `app:relaunch` reinicia.
+- **Mudar configuração exige reiniciar o app**: os services do back leem tudo uma vez, ao serem criados. Toda gravação responde `restartRequired`, a janela de Configurações marca o reinício como pendente no main e o canal `app:relaunch` reinicia.
 
 ## Janela de Configurações
 - Abre pelo item **Configurações** no rodapé da barra lateral, por `Ctrl+,`/`Cmd+,` e sozinha na primeira execução sem chave do Gemini.
 - Seções: **Biblioteca** (a única pasta que o usuário escolhe; trocar pergunta se a biblioteca atual vai junto), **Aparência** (tema, cor de destaque e **Leitura**: fonte, tamanho da letra, zoom (letra e largura) e cores com intensidade, com preview; vale na hora, sem reiniciar; ver `identidade.md`), **IAs externas** (passo a passo para criar a chave enquanto não configurada, chave mascarada, Testar/Salvar, link para o consumo real no painel do provedor) e **Serviços locais** (Whisper e ffmpeg só testam; o Ollama tem o endereço) e **Backup** (criar e restaurar; ver `persistencia.md`).
 - Cada provider é um item **recolhível**: fechado mostra nome, selo de status e uma descrição; clicar abre os campos.
-- "Salvo" aparece como **snackbar** no canto inferior direito (some em 3 s, com barra de progresso). Mostra "Reiniciar agora" quando uma gravação exige reinício. Código em `renderer/settings`.
+- "Salvo" aparece como **snackbar** no canto inferior direito (some em 3 s, com barra de progresso). Quando uma gravação exige reinício, o aviso "Reiniciar agora" aparece no rodapé da janela **e fica fixado na barra lateral do app** (cartão "Reinício pendente" com o botão, acima de Configurações), mesmo depois de fechar as Configurações. O estado vive no main (`RestartState`, canais `app:restart-pending` e `app:mark-restart-pending`, evento `app:restart-needed`), então sobrevive a fechar e reabrir a janela e zera ao reiniciar. Código em `renderer/settings` e `SidebarRestartNotice`.
 
 ## Armazenamento
 Tudo o que é do usuário mora numa **raiz fixa**, `Documentos/HomeLab` (`HOMELAB_DATA_ROOT_DIR` troca a raiz em testes e desenvolvimento), segmentada por tipo, para o backup ser simples:
