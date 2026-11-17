@@ -32,7 +32,7 @@ export function ReadingSideToggle({
       ref={ref}
       type="button"
       aria-label="Mostrar painel lateral"
-      title="Clique para abrir o painel"
+      title={open ? 'Clique para fechar o painel' : 'Clique para abrir o painel'}
       aria-expanded={open}
       {...(preview ? { 'aria-hidden': true, tabIndex: -1 } : {})}
       className={cn(
@@ -42,7 +42,7 @@ export function ReadingSideToggle({
       )}
       onClick={onClick}
     >
-      <ReadingSideTab />
+      <ReadingSideTab open={open} />
     </button>
   );
 }

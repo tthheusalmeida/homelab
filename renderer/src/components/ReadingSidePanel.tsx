@@ -1,8 +1,4 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { X } from 'lucide-react';
-
-import { Button } from '#ui/button';
-
 import { ReadingSideToggle } from './ReadingSideToggle';
 
 /** Duração da saída (a mesma de `--duration-exit`): depois dela o painel sai da árvore. */
@@ -11,8 +7,8 @@ const EXIT_MS = 240;
 /**
  * Painel lateral do modo leitura quando ele não está fixo: só uma aba hexagonal com ícone de
  * painel fica à mostra, no topo da borda direita (logo abaixo do cabeçalho) mas à esquerda da barra de rolagem (não fica por cima
- * dela); com o painel aberto ela acompanha a borda dele, sem sumir por baixo. Clicar na aba abre o painel por cima do texto (`animate-enter-right`); ele fecha pelo
- * botão "Fechar painel", clicando fora ou clicando na aba de novo, sempre com a transição de saída
+ * dela); com o painel aberto ela acompanha a borda dele, sem sumir por baixo. Clicar na aba abre o painel por cima do texto (`animate-enter-right`); ele fecha
+ * clicando na aba de novo (a seta gira e indica "fechar") ou clicando fora, sempre com a transição de saída
  * (`animate-exit-right`). A barra de rolagem continua livre nos dois estados.
  */
 export function ReadingSidePanel({ children }: { children: ReactNode }) {
@@ -86,12 +82,6 @@ export function ReadingSidePanel({ children }: { children: ReactNode }) {
             }
           }}
         >
-          <div className="mb-2 flex justify-end">
-            <Button type="button" variant="ghost" size="xs" onClick={closePanel}>
-              <X /> Fechar painel
-            </Button>
-          </div>
-
           {children}
         </aside>
       )}
