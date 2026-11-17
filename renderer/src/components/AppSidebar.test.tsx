@@ -10,6 +10,7 @@ import { SidebarProvider } from '#ui/sidebar';
 
 import { IpcChannels } from '#shared/channels';
 import { mockApi, ok } from '#test/api-mock';
+import { availableUpdate } from '#test/updates-fixtures';
 
 import { COLLAPSED_GROUPS_KEY } from '#hooks/use-collapsed-groups';
 
@@ -156,6 +157,30 @@ describe('AppSidebar', () => {
     renderSidebar('/settings');
 
     expect(screen.getByRole('button', { name: 'Configurações' })).toHaveAttribute('data-active');
+  });
+
+  it('when a new version is available, should show the update notice above Configurações', async () => {
+    mockApi({ [IpcChannels.updates.status]: () => ok(availableUpdate()) });
+
+    renderSidebar();
+
+    const notice = await screen.findByRole('button', { name: 'Abrir atualização do app' });
+    const settings = screen.getByRole('button', { name: 'Configurações' });
+
+    expect(notice).toHaveTextContent('Atualização 0.3.0 disponível');
+    expect(
+      notice.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('when on the settings route with a new version, should hide the sidebar update notice', async () => {
+    const invoke = mockApi({ [IpcChannels.updates.status]: () => ok(availableUpdate()) });
+
+    renderSidebar('/settings');
+    await act(async () => undefined);
+
+    expect(invoke).not.toHaveBeenCalledWith(IpcChannels.updates.status);
+    expect(screen.queryByRole('button', { name: 'Abrir atualização do app' })).not.toBeInTheDocument();
   });
 
   it('when on the settings route with a restart pending, should hide the sidebar notice (the screen has its own)', async () => {

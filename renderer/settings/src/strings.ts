@@ -74,7 +74,7 @@ export const Strings = {
 } as const;
 
 export type SectionId =
-  'paths' | 'appearance' | 'external' | 'local' | 'components' | 'access' | 'backup';
+  'paths' | 'appearance' | 'external' | 'local' | 'components' | 'access' | 'backup' | 'updates';
 
 /** Chave de `useCollapsedGroups` das Configurações (separada da barra do app). */
 export const SETTINGS_COLLAPSED_KEY = 'homelab.settings-collapsed';
@@ -89,7 +89,7 @@ export interface SectionInfo {
 export const SECTION_GROUPS: ReadonlyArray<{ label: string; ids: readonly SectionId[] }> = [
   { label: 'Geral', ids: ['appearance', 'paths'] },
   { label: 'IA', ids: ['external', 'local'] },
-  { label: 'Sistema', ids: ['components', 'access', 'backup'] },
+  { label: 'Sistema', ids: ['components', 'access', 'backup', 'updates'] },
 ];
 
 export const SECTIONS: ReadonlyArray<SectionInfo> = [
@@ -132,6 +132,12 @@ export const SECTIONS: ReadonlyArray<SectionInfo> = [
     id: 'backup',
     label: 'Backup',
     description: 'Salve ou restaure páginas, livros, chats e histórico em um único arquivo .zip.',
+  },
+  {
+    id: 'updates',
+    label: 'Atualizações',
+    description:
+      'Veja se há uma versão nova do HomeLab, leia as novidades e atualize sem perder nada.',
   },
 ];
 

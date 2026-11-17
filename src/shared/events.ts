@@ -1,4 +1,5 @@
 import type { ComponentsStatus } from './contracts/components';
+import type { UpdateStatus } from './contracts/updates';
 import type { AppNotice, ProgressEventPayload } from './contracts/events';
 
 /**
@@ -11,6 +12,7 @@ export const IpcEvents = {
   notice: 'app:notice',
   componentsProgress: 'components:progress',
   settingsNavigate: 'settings:navigate',
+  updatesChanged: 'updates:changed',
   restartPending: 'app:restart-needed',
 } as const;
 
@@ -22,6 +24,8 @@ export interface IpcEventPayloads {
   [IpcEvents.libraryMoveProgress]: ProgressEventPayload;
   [IpcEvents.notice]: AppNotice;
   [IpcEvents.componentsProgress]: ComponentsStatus;
+  /** O estado da atualização mudou (nova versão, progresso do download, erro). */
+  [IpcEvents.updatesChanged]: UpdateStatus;
   /** Abre as Configurações (rota do app), numa seção quando informada. */
   [IpcEvents.settingsNavigate]: { section?: string };
   /** Há alteração que só vale depois de reiniciar (sempre `true`: o estado zera ao reiniciar). */

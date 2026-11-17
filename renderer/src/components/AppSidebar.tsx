@@ -29,6 +29,7 @@ import {
 import { Logo } from '#components/Hex';
 import { SidebarSection } from '#components/SidebarSection';
 import { SidebarRestartNotice } from '#components/SidebarRestartNotice';
+import { SidebarUpdateNotice } from '#components/SidebarUpdateNotice';
 import { SidebarSetupProgress } from '#components/SidebarSetupProgress';
 import { useCollapsedGroups } from '#hooks/use-collapsed-groups';
 import { useActiveJobsCount } from '../pages/jobs/track/hooks/useActiveJobsCount';
@@ -171,7 +172,9 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        {/* Nas Configurações o aviso já aparece no rodapé da tela. */}
+        {/* Nas Configurações os avisos já aparecem na própria tela. */}
+        {!onSettings && <SidebarUpdateNotice />}
+
         {!onSettings && <SidebarRestartNotice />}
 
         <SidebarSetupProgress />

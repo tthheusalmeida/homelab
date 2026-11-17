@@ -1,6 +1,6 @@
 # Empacotamento (Windows)
 
-O instalador é gerado pelo `electron-builder` (config em `electron-builder.yml`). Só Windows x64, NSIS, **sem assinatura de código** (o SmartScreen avisa) e sem auto-update. Linux e macOS ficam para depois.
+O instalador é gerado pelo `electron-builder` (config em `electron-builder.yml`). Só Windows x64, NSIS, **sem assinatura de código** (o SmartScreen avisa). A atualização dentro do app (baixar o instalador do Release e aplicar) está em `atualizacoes.md`. Linux e macOS ficam para depois.
 
 ## Comandos
 - `npm run icons`: gera `build/icon.png` e `build/icon.ico` (16 a 256 px) a partir de `build/icon.svg` (ícone escolhido: colmeia, fundo circular).

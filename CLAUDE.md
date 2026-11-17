@@ -26,6 +26,7 @@ Estado: app instalável e em uso (versão `0.1.x`). Falta o que está em `docs/m
 | `docs/download-de-videos.md` | Download de YouTube e outras plataformas com yt-dlp, aviso ao usuário e login por janela do app (cookies temporários) |
 | `docs/atalhos.md` | Paleta de comandos (Ctrl K), atalhos "G e uma letra" e notificação do sistema quando um job termina |
 | `docs/movimento.md` | Transições e animações: réguas de tempo, utilities `animate-*`, onde aplicar |
+| `docs/atualizacoes.md` | Atualização do app: consulta aos Releases do GitHub, cartão na barra lateral, seção em Configurações, download com checksum e instalação |
 | `docs/empacotamento.md` | Instalador Windows (`electron-builder`), binários, caminhos empacotados, ícone |
 | `docs/persistencia.md` | Jobs e chats em disco, pasta-raiz única para backup, exclusão de jobs, seção de Chats |
 | `docs/regras-de-negocio.md` | Onde ficam as regras que **não mudam** (`docs/regras/back`, `docs/regras/front`) |

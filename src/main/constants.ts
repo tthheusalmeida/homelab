@@ -13,9 +13,13 @@ export const MainEnv = {
   FRONT_URL: 'HOMELAB_FRONT_URL',
   FRONT_DIST_DIR: 'HOMELAB_FRONT_DIST_DIR',
   USER_DATA_DIR: 'HOMELAB_USER_DATA_DIR',
+  /** `off` desliga a verificação de atualizações (testes e desenvolvimento). */
+  UPDATES: 'HOMELAB_UPDATES',
   /** Troca a raiz dos dados (só desenvolvimento e testes): evita escrever em Documentos/HomeLab. */
   DATA_ROOT_DIR: 'HOMELAB_DATA_ROOT_DIR',
 } as const;
+
+export const UPDATES_OFF = 'off';
 
 /** Arquivos que ficam em userData (segredos cifrados com a chave do usuário do sistema: não portáveis). */
 export const DataFiles = {

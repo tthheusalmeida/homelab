@@ -52,6 +52,11 @@ export const IpcChannels = {
     remove: 'components:remove',
     setActiveModel: 'components:set-active-model',
   },
+  updates: {
+    status: 'updates:status',
+    check: 'updates:check',
+    install: 'updates:install',
+  },
   chat: {
     send: 'chat:send',
     cancel: 'chat:cancel',

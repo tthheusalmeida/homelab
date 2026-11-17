@@ -48,6 +48,8 @@ function launch(sandbox: Sandbox): Promise<ElectronApplication> {
     env: {
       ...process.env,
       HOMELAB_USER_DATA_DIR: sandbox.userData,
+      // Os testes não consultam o GitHub atrás de versão nova.
+      HOMELAB_UPDATES: 'off',
       HOMELAB_DATA_ROOT_DIR: sandbox.dataRoot,
     },
   });

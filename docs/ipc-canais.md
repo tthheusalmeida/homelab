@@ -12,6 +12,15 @@ Origem: os 37 endpoints HTTP atuais (`/api/v1`) + os canais novos de app, settin
 | `app:restart-pending` | — | `boolean`: há alteração salva que só vale depois de reiniciar (estado do main, vale para todas as janelas) |
 | `app:mark-restart-pending` | — | nada (marca o reinício como pendente e publica o evento `app:restart-needed` para todas as janelas) |
 
+## updates (atualização do app; ver `atualizacoes.md`)
+| Canal | Payload | Retorno |
+|---|---|---|
+| `updates:status` | — | `UpdateStatus`: `{ state: idle|checking|available|downloading|installing, currentVersion, latest: { version, notes, url, publishedAt } | null, progress (0 a 100), error, checkedAt, canInstall }` |
+| `updates:check` | — | o `UpdateStatus` depois de consultar o GitHub (falha de rede vira `error`, nunca exceção) |
+| `updates:install` | — | o `UpdateStatus`; baixa o instalador (SHA-256 conferido) e o aplica, fechando o app. Fora do Windows abre a página do Release. Sem versão nova, não faz nada |
+
+Evento `updates:changed` (main → renderer): o `UpdateStatus` a cada mudança (nova versão, progresso, erro).
+
 ## settings (fases 03a e 03b, novos)
 | Canal | Payload | Retorno |
 |---|---|---|

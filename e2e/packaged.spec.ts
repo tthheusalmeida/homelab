@@ -15,6 +15,8 @@ test('when running the packaged app, should open the home and find the bundled w
     env: {
       ...process.env,
       HOMELAB_USER_DATA_DIR: userData,
+      // Os testes não consultam o GitHub atrás de versão nova.
+      HOMELAB_UPDATES: 'off',
       HOMELAB_DATA_ROOT_DIR: path.join(userData, 'data-root'),
     },
   });
