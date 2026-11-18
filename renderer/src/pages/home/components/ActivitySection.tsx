@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { Link } from "react-router";
 
+import { InboxStrings } from "#lib/inbox-text";
 import { formatNumber } from "#lib/format";
 
 import { useAiUsage } from "../../ai/usage/hooks/useAiUsage";
@@ -30,7 +31,7 @@ const formatCost = (value: number) =>
   value.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
 /**
- * O que está acontecendo agora no homelab: tarefas rodando, páginas esperando na caixa de entrada
+ * O que está acontecendo agora no homelab: tarefas rodando, páginas esperando classificação
  * e o consumo de IA do dia. Cada cartão leva à tela correspondente.
  */
 export function ActivitySection() {
@@ -49,9 +50,9 @@ export function ActivitySection() {
     },
     {
       to: "/library/inbox",
-      label: "Caixa de entrada",
+      label: InboxStrings.name,
       value: pending,
-      description: pending === 1 ? "página aguardando decisão" : "páginas aguardando decisão",
+      description: pending === 1 ? "página para classificar" : "páginas para classificar",
     },
     {
       to: "/ai/usage",

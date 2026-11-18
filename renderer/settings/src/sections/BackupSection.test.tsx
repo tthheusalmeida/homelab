@@ -61,7 +61,7 @@ describe('BackupSection: criar backup', () => {
     render();
 
     await screen.findByTestId('backup-total');
-    for (const label of ['Biblioteca', 'Entrada', 'Jobs', 'Chats', 'Consumo de IA']) {
+    for (const label of ['Biblioteca', 'Classificação', 'Jobs', 'Chats', 'Consumo de IA']) {
       expect(itemBox(new RegExp(label))).toBeChecked();
     }
     expect(screen.getByText(/12 arquivos · 3,0 MB/)).toBeVisible();
@@ -96,7 +96,7 @@ describe('BackupSection: criar backup', () => {
     render();
     await screen.findByTestId('backup-total');
 
-    for (const label of ['Biblioteca', 'Entrada', 'Jobs', 'Chats', 'Consumo de IA', 'Aparência']) {
+    for (const label of ['Biblioteca', 'Classificação', 'Jobs', 'Chats', 'Consumo de IA', 'Aparência']) {
       await user.click(itemBox(new RegExp(label)));
     }
 
@@ -125,7 +125,7 @@ describe('BackupSection: criar backup', () => {
     });
 
     await screen.findByTestId('backup-total');
-    await user.click(itemBox(/Entrada/));
+    await user.click(itemBox(/Classificação/));
     await user.click(itemBox(/Consumo de IA/));
     await user.click(screen.getByRole('button', { name: /Criar backup…/ }));
 

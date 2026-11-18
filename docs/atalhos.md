@@ -12,7 +12,7 @@ Pressione `G` e, em até 1,2 s, a letra da tela. Só valem fora de campos de dig
 | `G H` | Início |
 | `G P` | Páginas |
 | `G L` | Livros |
-| `G I` | Caixa de entrada |
+| `G I` | Classificação |
 | `G N` | Nova página |
 | `G T` | Nova tarefa |
 | `G A` | Em andamento |

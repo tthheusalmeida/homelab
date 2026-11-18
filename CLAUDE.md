@@ -43,6 +43,7 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/r
 - `npm run test:e2e` — smoke E2E com Playwright (build + app real com `userData` temporário)
 - `npm run dist:dir` / `npm run dist` — app desempacotado / instalador Windows (ver `docs/empacotamento.md`); `npm run icons` gera o `.ico`
 - `npm run lint` / `npm run format`
+- `npm run check:changed` — verificação local rápida: lint e testes só dos arquivos alterados ou criados (é o que o gancho `pre-push` roda); `npm run check:all` roda tudo. A suíte completa roda na CI antes do merge (ver `docs/versionamento.md`).
 
 ## Mapa do código
 - `src/main/` — `index.ts` (bootstrap), `content-security-policy.ts`, `first-run.ts`, `local-state-guard.ts`, `shortcuts.ts`, `single-window.ts`, `constants.ts`, `paths.ts`, `front-target.ts`, `window-options.ts`, `navigation-guard.ts`, `static-files.ts` (protocolo `app://`), `back-container.ts` (Nest como contêiner de DI), `back-services.ts` (instâncias do back para os handlers), `composition.ts`, `electron-cipher.ts`
@@ -85,7 +86,7 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/r
 Detalhes em `docs/versionamento.md`. Vale para toda mudança feita **depois** da adoção do SemVer:
 - **Nunca commitar direto na `main`.** Crie uma **branch** a partir da `main` atualizada (`feat/<assunto>`, `fix/<assunto>`, `docs/<assunto>`, `build/<assunto>`, `chore/<assunto>`), faça os commits nela e abra um **merge request** (pull request no GitHub) para a `main`, com o título também em Conventional Commits.
 - **Mensagem de commit:** `tipo(escopo opcional)!: descrição em inglês`, um assunto por commit. `feat` sobe o MINOR, `fix` o PATCH, `!` ou `BREAKING CHANGE` quebra compatibilidade (em `0.x` sobe o MINOR).
-- **Validação ao subir para o GitHub:** título do MR e commits no padrão, lint, Jest, Vitest e typecheck passando. É automatizada: `husky` + `commitlint` (ganchos `commit-msg` e `pre-push`) e `.github/workflows/pr.yml` (ver `versionamento.md`); `npm run test:commitlint` testa a config.
+- **Validação ao subir para o GitHub:** título do MR e commits no padrão, lint, Jest, Vitest e typecheck passando. Localmente o `pre-push` testa **só o que foi alterado ou criado** (`npm run check:changed`); **tudo roda na CI antes do merge**. É automatizada: `husky` + `commitlint` (ganchos `commit-msg` e `pre-push`) e `.github/workflows/pr.yml` (ver `versionamento.md`); `npm run test:commitlint` testa a config.
 - A versão sai dos commits e o release é **automático**: todo merge na `main` com `feat`, `fix` ou quebra publica tag `v<versão>` e Release com changelog, `.exe` e AppImage (`.github/workflows/release.yml`; ver `versionamento.md`). Não escolher número de versão "no olho" nem editar a versão à mão.
 - Commits e branches só quando o usuário pedir; **push e abertura do MR também só quando ele pedir**.
 

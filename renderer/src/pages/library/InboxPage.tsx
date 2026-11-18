@@ -3,6 +3,7 @@ import { useState, type CSSProperties } from "react";
 import { Link } from "react-router";
 import { Inbox, Plus, RefreshCw, Trash2 } from "lucide-react";
 
+import { InboxStrings } from "#lib/inbox-text";
 import { Button, buttonVariants } from "#ui/button";
 import { Card, CardContent } from "#ui/card";
 
@@ -63,7 +64,7 @@ export function InboxPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Caixa de entrada"
+        title={InboxStrings.name}
         command="library --inbox"
         description="Resumos e transcrições gerados. Decida o que entra na biblioteca e o que é descartado."
         actions={

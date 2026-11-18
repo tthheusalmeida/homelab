@@ -205,3 +205,25 @@ describe('DialogBody', () => {
     expect(screen.getByTestId('miolo')).toHaveClass('overflow-y-auto', 'min-h-0', 'flex-1');
   });
 });
+
+describe('DialogBody (long content)', () => {
+  it('when the content has a very long unbreakable line, should keep a shrinkable column and hide horizontal overflow', () => {
+    render(
+      <Dialog open>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>T</DialogTitle>
+          </DialogHeader>
+
+          <p>{'https://exemplo.com/'.padEnd(500, 'a')}</p>
+        </DialogContent>
+      </Dialog>,
+    );
+
+    const body = document.querySelector('[data-slot="dialog-body"]');
+
+    expect(body).toHaveClass('grid-cols-[minmax(0,1fr)]');
+    expect(body).toHaveClass('overflow-x-hidden');
+    expect(body).toHaveClass('overflow-y-auto');
+  });
+});

@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
 
+import { InboxStrings } from "#lib/inbox-text";
 import { Button } from "#ui/button";
 import { Card, CardContent } from "#ui/card";
 
@@ -115,7 +116,7 @@ export function DocumentPage() {
         open={modal === "remove"}
         onOpenChange={(open) => setModal(open ? "remove" : "about")}
         title="Remover da biblioteca?"
-        description="A página deixa de aparecer na biblioteca, mas o arquivo é mantido e pode ser readicionado pela Entrada."
+        description={`A página deixa de aparecer na biblioteca, mas o arquivo é mantido e pode ser readicionado ${InboxStrings.via}.`}
         confirmLabel="Remover"
         destructive
         isPending={archive.isPending}

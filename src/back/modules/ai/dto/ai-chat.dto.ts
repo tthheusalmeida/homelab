@@ -1,4 +1,4 @@
-import type { AIChatTurn, AIProviderName } from '../ai.model';
+import type { AIChatTurn, AIProviderName, AIRetryInfo } from '../ai.model';
 
 export class AiChatDto {
   message!: string;
@@ -11,4 +11,7 @@ export class AiChatDto {
 
   /** Conversa inteira, com a mensagem nova por último; sem ela vale só `message`. */
   messages?: AIChatTurn[];
+
+  /** Chamado antes de cada nova tentativa automática do provedor. */
+  onRetry?: (info: AIRetryInfo) => void;
 }

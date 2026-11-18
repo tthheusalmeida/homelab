@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { IpcChannels } from '#shared/channels';
 import { IpcEvents } from '#shared/events';
 import { emitEvent, mockApi, ok, payloadsOf } from '#test/api-mock';
-import { setupStatus } from '#test/components-fixtures';
+import { component, setupStatus } from '#test/components-fixtures';
 import { renderWithQuery } from '#test/utils';
 
 import { SidebarSetupProgress } from './SidebarSetupProgress';
@@ -68,5 +68,58 @@ describe('SidebarSetupProgress', () => {
     );
 
     expect(payloadsOf(invoke, IpcChannels.app.openSettings)).toEqual([{ section: 'components' }]);
+  });
+});
+
+describe('SidebarSetupProgress (cause of the pending setup)', () => {
+  it('when a model is installed but an essential component is missing, should name that component instead of blaming the model', async () => {
+    const base = setupStatus();
+    mockApi(
+      handlers({
+        ...base,
+        components: [
+          ...base.components.map((item) =>
+            item.id === 'whisper-runtime' ? { ...item, state: 'missing' as const } : item,
+          ),
+          component({ id: 'model-extra', label: 'Modelo extra', state: 'installed' }),
+        ],
+      }),
+    );
+
+    renderWithQuery(<SidebarSetupProgress />);
+
+    expect(await screen.findByText(/Falta um componente essencial: Transcrição\./)).toBeInTheDocument();
+    expect(screen.queryByText('Falta baixar um modelo para transcrever.')).not.toBeInTheDocument();
+  });
+
+  it('when several essential components are missing, should list all of them', async () => {
+    const base = setupStatus();
+    mockApi(
+      handlers({
+        ...base,
+        components: [
+          ...base.components.map((item) =>
+            item.id === 'whisper-runtime' ? { ...item, state: 'missing' as const } : item,
+          ),
+          component({ id: 'ffmpeg', group: 'runtime', label: 'Processamento de áudio', required: true }),
+        ],
+      }),
+    );
+
+    renderWithQuery(<SidebarSetupProgress />);
+
+    expect(
+      await screen.findByText(/Transcrição, Processamento de áudio/),
+    ).toBeInTheDocument();
+  });
+
+  it('when only the model is missing, should keep asking to download a model', async () => {
+    mockApi(handlers());
+
+    renderWithQuery(<SidebarSetupProgress />);
+
+    expect(
+      await screen.findByText('Falta baixar um modelo para transcrever.'),
+    ).toBeInTheDocument();
   });
 });

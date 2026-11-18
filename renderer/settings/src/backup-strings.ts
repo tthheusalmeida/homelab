@@ -59,7 +59,7 @@ export const BackupStrings = {
 
 export const ITEM_LABELS: Record<BackupItemId, { label: string; hint: string }> = {
   library: { label: 'Biblioteca', hint: 'Páginas e livros' },
-  inbox: { label: 'Entrada', hint: 'Documentos pendentes dos jobs' },
+  inbox: { label: 'Classificação', hint: 'Páginas aguardando classificação' },
   jobs: { label: 'Jobs', hint: 'Histórico de processos' },
   chats: { label: 'Chats', hint: 'Todas as conversas' },
   usage: { label: 'Consumo de IA', hint: 'Histórico de tokens e custo' },

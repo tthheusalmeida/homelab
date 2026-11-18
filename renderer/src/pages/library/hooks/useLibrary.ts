@@ -26,7 +26,7 @@ import type {
   UpdateDocumentInput,
 } from "../types/library.types";
 
-const LIBRARY_KEY = ["library"] as const;
+export const LIBRARY_KEY = ["library"] as const;
 
 export function useDocuments(
   filters: LibraryFilters = {},
@@ -56,7 +56,7 @@ export function useInbox() {
   });
 }
 
-/** Quantas páginas aguardam decisão na caixa de entrada (o contador da barra lateral). Compartilha a consulta da tela. */
+/** Quantas páginas aguardam decisão na Classificação (o contador da barra lateral). Compartilha a consulta da tela. */
 export function useInboxCount(): number {
   const { data } = useInbox();
 

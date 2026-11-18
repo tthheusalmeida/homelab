@@ -71,8 +71,8 @@ import { VideoToTranscriptForm } from "./VideoToTranscriptForm";
 /** Faz o `mutate` de mentira responder com sucesso, como o servidor responderia. */
 const succeed = () =>
   mutate.mockImplementation(
-    (_params: unknown, options: { onSuccess: () => void }) =>
-      options.onSuccess(),
+    (_params: unknown, options: { onSuccess: (result: unknown) => void }) =>
+      options.onSuccess({ created: 1, failed: [] }),
   );
 
 async function chooseModel(user: ReturnType<typeof userEvent.setup>) {
@@ -95,7 +95,7 @@ describe("job forms — after the job is created", () => {
       const user = userEvent.setup();
       render(<VideoToTranscriptForm onCreated={onCreated} />);
 
-      await user.type(screen.getByLabelText("URL do vídeo"), "https://x.com/v");
+      await user.type(screen.getByLabelText("Links dos vídeos"), "https://x.com/v");
       await user.click(screen.getByRole("button", { name: /criar/i }));
 
       expect(onCreated).toHaveBeenCalledTimes(1);
@@ -107,11 +107,11 @@ describe("job forms — after the job is created", () => {
       const user = userEvent.setup();
       render(<VideoToTranscriptForm onCreated={onCreated} />);
 
-      await user.type(screen.getByLabelText("URL do vídeo"), "https://x.com/v");
+      await user.type(screen.getByLabelText("Links dos vídeos"), "https://x.com/v");
       await user.click(screen.getByRole("button", { name: /criar/i }));
 
       expect(onCreated).not.toHaveBeenCalled();
-      expect(screen.getByLabelText("URL do vídeo")).toBeEnabled();
+      expect(screen.getByLabelText("Links dos vídeos")).toBeEnabled();
       expect(screen.getByRole("button", { name: /criar/i })).toBeEnabled();
     });
 
@@ -120,10 +120,10 @@ describe("job forms — after the job is created", () => {
       const user = userEvent.setup();
       render(<VideoToTranscriptForm />);
 
-      await user.type(screen.getByLabelText("URL do vídeo"), "https://x.com/v");
+      await user.type(screen.getByLabelText("Links dos vídeos"), "https://x.com/v");
       await user.click(screen.getByRole("button", { name: /criar/i }));
 
-      expect(screen.getByLabelText("URL do vídeo")).toBeDisabled();
+      expect(screen.getByLabelText("Links dos vídeos")).toBeDisabled();
       expect(screen.getByRole("button", { name: /criar/i })).toBeDisabled();
       expect(screen.getByLabelText("Título")).toBeDisabled();
     });
@@ -132,7 +132,7 @@ describe("job forms — after the job is created", () => {
       succeed();
       const user = userEvent.setup();
       render(<VideoToTranscriptForm />);
-      const url = screen.getByLabelText("URL do vídeo");
+      const url = screen.getByLabelText("Links dos vídeos");
 
       await user.type(url, "https://x.com/v");
       await user.click(screen.getByRole("button", { name: /criar/i }));
@@ -147,7 +147,7 @@ describe("job forms — after the job is created", () => {
       render(<VideoToTranscriptForm />);
 
       (
-        screen.getByLabelText("URL do vídeo").closest("form") as HTMLFormElement
+        screen.getByLabelText("Links dos vídeos").closest("form") as HTMLFormElement
       ).requestSubmit();
 
       expect(mutate).not.toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe("job forms — after the job is created", () => {
       const user = userEvent.setup();
       render(<VideoToTranscriptForm />);
 
-      await user.type(screen.getByLabelText("URL do vídeo"), "https://x.com/v");
+      await user.type(screen.getByLabelText("Links dos vídeos"), "https://x.com/v");
       await user.click(screen.getByRole("button", { name: /criar/i }));
 
       expect(mutate).toHaveBeenCalledTimes(1);
@@ -172,12 +172,12 @@ describe("job forms — after the job is created", () => {
       const user = userEvent.setup();
       render(<VideoToSummaryForm onCreated={onCreated} />);
 
-      await user.type(screen.getByLabelText("URL do vídeo"), "https://x.com/v");
+      await user.type(screen.getByLabelText("Links dos vídeos"), "https://x.com/v");
       await chooseModel(user);
       await user.click(screen.getByRole("button", { name: /criar/i }));
 
       expect(onCreated).toHaveBeenCalledTimes(1);
-      expect(screen.getByLabelText("URL do vídeo")).toBeDisabled();
+      expect(screen.getByLabelText("Links dos vídeos")).toBeDisabled();
       expect(screen.getByRole("button", { name: /criar/i })).toBeDisabled();
       expect(screen.getByLabelText("Nível de detalhe")).toBeDisabled();
       expect(screen.getByLabelText("Modelo")).toBeDisabled();
@@ -188,11 +188,11 @@ describe("job forms — after the job is created", () => {
       const user = userEvent.setup();
       render(<VideoToSummaryForm />);
 
-      await user.type(screen.getByLabelText("URL do vídeo"), "https://x.com/v");
+      await user.type(screen.getByLabelText("Links dos vídeos"), "https://x.com/v");
       await chooseModel(user);
       await user.click(screen.getByRole("button", { name: /criar/i }));
       (
-        screen.getByLabelText("URL do vídeo").closest("form") as HTMLFormElement
+        screen.getByLabelText("Links dos vídeos").closest("form") as HTMLFormElement
       ).requestSubmit();
 
       expect(mutate).toHaveBeenCalledTimes(1);
@@ -204,19 +204,19 @@ describe("job forms — after the job is created", () => {
       const user = userEvent.setup();
       render(<VideoToSummaryForm onCreated={onCreated} />);
 
-      await user.type(screen.getByLabelText("URL do vídeo"), "https://x.com/v");
+      await user.type(screen.getByLabelText("Links dos vídeos"), "https://x.com/v");
       await chooseModel(user);
       await user.click(screen.getByRole("button", { name: /criar/i }));
 
       expect(onCreated).not.toHaveBeenCalled();
-      expect(screen.getByLabelText("URL do vídeo")).toBeEnabled();
+      expect(screen.getByLabelText("Links dos vídeos")).toBeEnabled();
     });
   });
 
   describe("JobForm", () => {
     it.each([
-      ["video-to-transcript", "URL do vídeo"],
-      ["video-to-summary", "URL do vídeo"],
+      ["video-to-transcript", "Links dos vídeos"],
+      ["video-to-summary", "Links dos vídeos"],
     ])(
       "when the type is %s, should pass onCreated to the form",
       async (type) => {
@@ -231,7 +231,7 @@ describe("job forms — after the job is created", () => {
         );
 
         await user.type(
-          screen.getByLabelText("URL do vídeo"),
+          screen.getByLabelText("Links dos vídeos"),
           "https://x.com/v",
         );
         if (type === "video-to-summary") {

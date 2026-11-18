@@ -22,8 +22,9 @@
 
 ## Chat
 - O `AIService.chat` converte o DTO (`message`, `modelId`, `providerId`, `thinking?`) em request do provider.
-- Gemini: sem texto na resposta é falha; qualquer falha vira "A requisição para o chat do Gemini falhou" e registra **uma** falha de uso.
-- Ollama: resposta sem `message.content` string é inválida e vira falha de chat.
+- Gemini: sem texto na resposta é falha. **O motivo aparece para o usuário** (`gemini-errors.ts`, `classifyGeminiError`), em português: limite de uso atingido (429), serviço sobrecarregado ou fora do ar (5xx), sem conexão, resposta vazia, chave recusada (401/403), modelo indisponível (404), pedido recusado (400). Erro desconhecido mantém "A requisição para o chat do Gemini falhou." O erro original fica em `cause` (e o `video.service` o escreve no console).
+- **Tentativas automáticas (Gemini):** erro passageiro (429, 5xx, rede, resposta vazia) repete sozinho, **até 3 tentativas** no total, com espera de 3 s e 8 s (`withRetry` em `utils/retry.ts`). Erro definitivo (401, 403, 404, 400, desconhecido) não repete. Antes de cada nova tentativa o provider chama `request.onRetry({ attempt, maxAttempts, delayMs, reason })`. Só a falha final registra **uma** falha de uso; tentativas intermediárias não registram nada.
+- Ollama: resposta sem `message.content` string é inválida e vira falha de chat. Falha de conexão, modelo não instalado, falta de memória e demora têm mensagem própria (`ollama-errors.ts`); o resto mantém "A requisição para o chat do Ollama falhou." Ollama local não tem tentativa automática.
 - Falhas registram uso com tokens e custo zerados e `success: false`.
 
 ## Custo

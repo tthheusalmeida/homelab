@@ -32,13 +32,15 @@ import { SidebarRestartNotice } from '#components/SidebarRestartNotice';
 import { SidebarUpdateNotice } from '#components/SidebarUpdateNotice';
 import { SidebarSetupProgress } from '#components/SidebarSetupProgress';
 import { useCollapsedGroups } from '#hooks/use-collapsed-groups';
+import { InboxStrings } from '#lib/inbox-text';
 import { useActiveJobsCount } from '../pages/jobs/track/hooks/useActiveJobsCount';
+import { useRefreshLibraryOnJobDone } from '../pages/jobs/track/hooks/useRefreshLibraryOnJobDone';
 import { useInboxCount } from '../pages/library/hooks/useLibrary';
 import { SETTINGS_PATH } from '#lib/settings-route';
 
 /** Tela dos jobs: o item do menu mostra quantos estão em andamento. */
 const JOBS_URL = '/jobs/track';
-/** Caixa de entrada: o item do menu mostra quantas páginas aguardam decisão. */
+/** Classificação (rota `/library/inbox`): o item do menu mostra quantas páginas aguardam decisão. */
 const INBOX_URL = '/library/inbox';
 
 /**
@@ -56,7 +58,7 @@ export const navigation = [
     items: [
       { title: 'Páginas', url: '/library', icon: Library },
       { title: 'Livros', url: '/library/books', icon: BookOpen },
-      { title: 'Caixa de entrada', url: INBOX_URL, icon: Inbox },
+      { title: InboxStrings.name, url: INBOX_URL, icon: Inbox },
       { title: 'Nova página', url: '/library/new', icon: FilePlus },
     ],
   },
@@ -97,10 +99,11 @@ export function AppSidebar() {
   const onSettings = location.pathname === SETTINGS_PATH;
   const [collapsed, toggleGroup] = useCollapsedGroups();
   const activeJobs = useActiveJobsCount();
+  useRefreshLibraryOnJobDone();
   const inboxCount = useInboxCount();
   const badges: Record<string, { count: number; label: string }> = {
     [JOBS_URL]: { count: activeJobs, label: `${activeJobs} em andamento` },
-    [INBOX_URL]: { count: inboxCount, label: `${inboxCount} na caixa de entrada` },
+    [INBOX_URL]: { count: inboxCount, label: InboxStrings.badge(inboxCount) },
   };
 
   return (

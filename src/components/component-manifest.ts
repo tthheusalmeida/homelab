@@ -56,6 +56,18 @@ export const YTDLP_ID = 'yt-dlp';
 const YTDLP_VERSION = '2026.10.26';
 const YTDLP_RELEASE = `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}`;
 
+/**
+ * Pacote do Windows (`whisper-cli.exe`, as DLLs de CPU e o `ffmpeg.exe`), o mesmo que a CI embute no
+ * instalador (`scripts/windows-bin.json`, Release `bin-v1`). O app o baixa quando os arquivos não
+ * estão na pasta de binários (ambiente de desenvolvimento, pasta apagada). Se o pacote mudar, atualize
+ * aqui e em `windows-bin.json` (o teste do catálogo confere os dois).
+ */
+export const WINDOWS_BIN_PACKAGE = {
+  url: 'https://github.com/tthheusalmeida/homelab/releases/download/bin-v1/win32-x64.zip',
+  sha256: '1b2b4cf8c31a8687e0600cf3550bda5961f7f756661da80d7ea9251e02d6a199',
+  sizeBytes: 44_378_682,
+} as const;
+
 /** Builds estáticos do ffmpeg (um arquivo só, sem instalador) usados fora do Windows. */
 const FFMPEG_STATIC = 'https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1';
 const FFMPEG_LINUX_X64_SHA256 = 'e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99';
@@ -92,7 +104,21 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
     description: 'Transforma o áudio das aulas em texto, direto no seu computador.',
     required: true,
     variants: {
-      'win32-x64': { kind: 'bundled', sizeBytes: 0, file: 'whisper-cli' },
+      // O pacote do Windows traz também o ffmpeg: ao instalar a Transcrição, o Processamento de
+      // áudio (`bundled`, só conferido) passa a existir.
+      'win32-x64': {
+        kind: 'zip',
+        sizeBytes: WINDOWS_BIN_PACKAGE.sizeBytes,
+        file: 'whisper-cli.exe',
+        download: { url: WINDOWS_BIN_PACKAGE.url, sha256: WINDOWS_BIN_PACKAGE.sha256 },
+        provides: [
+          'whisper-cli.exe',
+          'whisper.dll',
+          'ggml.dll',
+          'ggml-base.dll',
+          'ggml-cpu-x64.dll',
+        ],
+      },
       'linux-x64': {
         kind: 'binary',
         sizeBytes: 4_757_280,

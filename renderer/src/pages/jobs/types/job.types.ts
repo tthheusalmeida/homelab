@@ -44,6 +44,8 @@ export interface Job {
   cancelRequested?: boolean;
   /** Falhou e guarda os dados de criação: dá para tentar de novo. */
   retryable?: boolean;
+  /** Aviso da etapa em andamento, ex.: "Tentando de novo (tentativa 2 de 3): ...". */
+  note?: string;
   /** Falhou porque o vídeo exige login: a tela oferece "Entrar no site" e tenta de novo. */
   errorCode?: "ACCESS_REQUIRED";
   /** Endereço do vídeo que pediu login. */

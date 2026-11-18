@@ -5,23 +5,33 @@
 - Cada tipo vira um cartão (label, descrição e botão "Criar"). Clicar abre um diálogo com o formulário do tipo; fechar o diálogo limpa a seleção.
 - `JobForm` escolhe o formulário pelo `type`: `video-to-transcript` → transcrição; `video-to-summary` → resumo; tipo desconhecido → nada.
 
+### Links dos vídeos e lote (nos dois formulários)
+- O campo **Links dos vídeos** (`VideoUrlField`, obrigatório) é um campo de uma linha mais o botão **Adicionar**. **Cada link colado entra na lista logo abaixo** (colar vários de uma vez, separados por linha ou espaço, adiciona todos); digitado, entra com **Enter** ou **Adicionar**. Repetidos são ignorados ("Esse link já está na lista." / "N links repetidos foram ignorados."); o que não for `http://` ou `https://` fica no campo com "Informe um link que comece com http:// ou https://." e não entra. Um link válido que só está no campo (sem Enter) também conta ao clicar em criar.
+- **Lista de links** (`LinkList`): cada link é uma linha numerada com o **site em destaque** e o resto do endereço discreto (o link inteiro no `title`), com **Editar** (volta ao campo, com foco, para corrigir) e **Remover**. Mostra no máximo **5**; passando disso aparece um contador "+N links" com **Ver todos** / **Mostrar menos**, que abre o resto numa lista com rolagem (altura máxima), com a numeração seguindo. Abaixo, "N de 50 links" e **Limpar lista** (com mais de um link).
+- **Links compridos nunca criam rolagem horizontal:** a linha corta o endereço com reticências (o link inteiro fica no `title`) e o corpo dos diálogos (`DialogBody`) tem coluna que encolhe, vale para qualquer formulário.
+- Erros e avisos do campo (inválido, repetido, passou do limite, falha parcial) aparecem em `Callout` de destaque.
+- Limite de **50 links** por pedido (`MAX_BATCH_LINKS`): ao colar além do limite entram só 50 e o campo avisa "Muitos links: o máximo é 50 por vez.".
+- O botão mostra "Criar" com um link e "Criar N tarefas" com vários; fica desabilitado sem nenhum link, com texto inválido no campo, com links demais, ou enquanto cria. O estado fica em `useLinksField`.
+- **Sem canal IPC novo:** o renderer chama o canal de criação existente uma vez por link, **em ordem** (`createVideoToTranscriptBatch` / `createVideoToSummaryBatch` em `api/create.ts`); a fila do back já roda um job por vez. Todas as opções (modelo, nível de detalhe, categoria, tags) valem para todos os links.
+- **Título:** com vários links o título único não vale (o campo fica desabilitado, com a explicação **em destaque** num `Callout` âmbar: "Com vários links, cada documento usa o título padrão.") e não é enviado; cada documento recebe o título padrão do tipo. Com um link o título funciona como antes.
+- **Falha parcial:** um link que falha não impede os outros. Se **todos** falham, vale o erro de sempre ("Não foi possível criar o job. Tente novamente."). Se só **parte** falha, a janela **não fecha**: os jobs criados já aparecem na fila, a lista passa a conter só os links que falharam e um aviso diz "X de N tarefas foram criadas. Os links abaixo falharam; revise e tente de novo." Mexer no campo limpa o aviso.
+
 ### Transcrição
-- Campo URL do vídeo (obrigatório, tipo url). Botão "Criar" desabilitado com URL vazia ou só espaços, ou enquanto cria.
-- Envia `POST /jobs/video-to-transcript` com `{ url }`.
+- Envia `POST /jobs/video-to-transcript` com `{ url }` para cada link.
 - Erro: "Não foi possível criar o job. Tente novamente."
 
 ### Dados do documento (nos dois formulários)
-- Abaixo da URL há o bloco opcional "Dados do documento" (`JobDocumentFields` → `DocumentFields`): título, categoria (até 4 níveis, com as categorias já existentes como sugestão) e tags. Texto explica que o que for preenchido já vem pronto na Entrada e pode ser ajustado ao adicionar à biblioteca.
+- Abaixo dos links há o bloco opcional **"Dados da página (opcional)"**, **recolhido por padrão** (`JobDocumentFields`, com `#ui/collapsible`; o cabeçalho mostra "preenchido" se algo foi digitado, para o formulário não crescer com vários links). Dentro (`DocumentFields`): título, categoria (até 4 níveis, com as categorias já existentes como sugestão) e tags. Texto explica que o que for preenchido já vem pronto na Classificação e pode ser ajustado ao adicionar à biblioteca.
 - O título vazio mostra o padrão como dica ("Se vazio: Transcrição de vídeo" / "Se vazio: Resumo de vídeo").
 - O envio inclui `title`, `category` e `tags` **somente se preenchidos** (título aparado, níveis em branco descartados); vazios ficam de fora do corpo da requisição. Campos ficam desabilitados durante a criação.
 - O diálogo de criação tem altura máxima de 90% da tela e rola por dentro.
-- **Ao criar o job com sucesso, a janela fecha e o formulário é descartado**: a próxima abertura começa limpa (URL, título, categoria, tags e modelo vazios). Assim não há como criar dois jobs iguais reenviando o mesmo formulário. Antes de fechar, o formulário já fica travado (campos e botão desabilitados) e ignora novos envios; se a criação falhar, a janela continua aberta e editável, com o erro. Depois de fechar, a tela Criar mostra o aviso "Job criado: <tipo>" com o botão "Acompanhar" (vai para `/jobs/track`) e "Dispensar"; o aviso some ao abrir outro tipo.
+- **Ao criar o job com sucesso, a janela fecha e o formulário é descartado**: a próxima abertura começa limpa (links, título, categoria, tags e modelo vazios). Assim não há como criar dois jobs iguais reenviando o mesmo formulário. Antes de fechar, o formulário já fica travado (campos e botão desabilitados) e ignora novos envios; se a criação falhar, a janela continua aberta e editável, com o erro. Depois de fechar, a tela Criar mostra o aviso "Job criado: <tipo>" com o botão "Acompanhar" (vai para `/jobs/track`) e "Dispensar"; o aviso some ao abrir outro tipo.
 
 ### Resumo
-- Além da URL, exige provider, modelo e thinking (reaproveita os selects do chat). Sem os três escolhidos o botão fica desabilitado e nada é enviado.
+- Além dos links, exige provider, modelo e thinking (reaproveita os selects do chat). Sem os três escolhidos o botão fica desabilitado e nada é enviado.
 - Trocar provider limpa modelo e thinking; trocar modelo limpa thinking. **Aqui não há valor padrão**: o usuário precisa escolher.
 - **Nível de detalhe** (select, padrão **Detalhado**): Resumo curto, Detalhado (mantém conceitos, explicações, comandos e exemplos) e Estudo completo (material de consulta organizado; aulas longas são resumidas em partes). Uma frase abaixo do select descreve o nível escolhido.
-- Envia `POST /jobs/video-to-summary` com `{ url, providerId, modelId, thinking, detail }` (mais título, categoria e tags se preenchidos).
+- Envia `POST /jobs/video-to-summary` com `{ url, providerId, modelId, thinking, detail }` para cada link (mais título, categoria e tags se preenchidos; título só com um link).
 - Durante a criação, campos e botão ficam desabilitados.
 
 ## Em andamento (`/jobs/track`, antes "Acompanhar"; o item do menu mostra um contador com os jobs na fila ou rodando)

@@ -1,6 +1,6 @@
 # Binários nativos por plataforma
 
-Esta pasta não é versionada (exceto este README). Cada plataforma tem a sua subpasta:
+Esta pasta não é versionada (exceto este README). **Em desenvolvimento não precisa preencher: o app baixa o pacote do Windows (Whisper e ffmpeg) sozinho na primeira abertura** (ou rode `npm run bin:fetch`). Cada plataforma tem a sua subpasta:
 
 ```
 resources/bin/

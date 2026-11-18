@@ -49,6 +49,8 @@ export const ComponentStrings = {
   overall: (done: number, total: number) => `Instalando ${done} de ${total}`,
   sidebarPending: 'Concluir a instalação',
   sidebarPendingHint: 'Falta baixar um modelo para transcrever.',
+  sidebarMissingRequiredHint: (labels: string[]) =>
+    `Falta um componente essencial: ${labels.join(', ')}. Clique para instalar.`,
   sidebarOpen: 'Ver detalhes da instalação',
   removed: (label: string) => `${label} removido.`,
   activated: (label: string) => `${label} agora está em uso.`,
@@ -109,4 +111,20 @@ export function pendingBytes(components: ComponentInfo[], selected: ReadonlySet<
     (sum, component) => sum + component.sizeBytes,
     0,
   );
+}
+
+/**
+ * Por que o app ainda precisa de instalação, dito com a causa real: um componente essencial que
+ * não está no computador (vem junto do app) ou, estando eles ali, nenhum modelo baixado.
+ */
+export function setupHint(components: ComponentInfo[]): string {
+  const missingRequired = components
+    .filter((component) => component.required && component.state === 'missing')
+    .map((component) => component.label);
+
+  if (missingRequired.length > 0) {
+    return ComponentStrings.sidebarMissingRequiredHint(missingRequired);
+  }
+
+  return ComponentStrings.sidebarPendingHint;
 }

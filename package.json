@@ -28,7 +28,9 @@
     "dist:linux": "npm run build && electron-builder --linux AppImage --x64",
     "prepare": "husky",
     "test:commitlint": "node --test scripts/commitlint.test.mjs",
-    "test:release": "node --test scripts/release/release.test.mjs scripts/bin-utils.test.mjs",
+    "test:release": "node --test scripts/release/release.test.mjs scripts/bin-utils.test.mjs scripts/changed-checks.test.mjs",
+    "check:changed": "node scripts/changed-checks.mjs",
+    "check:all": "npm run lint && npm run typecheck:renderer && npm test && npm run test:renderer",
     "bin:pack": "node scripts/bin-pack.mjs",
     "bin:fetch": "node scripts/bin-fetch.mjs"
   },

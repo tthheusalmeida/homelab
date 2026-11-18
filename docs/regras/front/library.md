@@ -1,6 +1,6 @@
 # Biblioteca (`pages/library`)
 
-Menu: seção **Biblioteca**, logo depois da seção com "Início", com **Páginas** (`/library`), **Livros** (`/library/books`), **Entrada** (`/library/inbox`) e **Nova página** (`/library/new`). Uma página abre em `/library/:id`.
+Menu: seção **Biblioteca**, logo depois da seção com "Início", com **Páginas** (`/library`), **Livros** (`/library/books`), **Classificação** (`/library/inbox`) e **Nova página** (`/library/new`). Uma página abre em `/library/:id`.
 
 **Vocabulário:** na interface, o conteúdo da biblioteca (resumo, transcrição ou texto escrito) se chama **página**, porque as páginas são o que se junta para formar um **livro**. Nesta documentação, nos nomes de código e na API, o mesmo item continua sendo chamado de "documento".
 
@@ -17,17 +17,18 @@ Os dados vêm dos canais `library:*` do main (ver `../back/library.md`). Qualque
 - A página é lida numa **folha** (`PaperPage`) que usa as cores do tema (cartão sobre o fundo; sem cores fixas, para combinar com o tema claro e o escuro), com margens generosas, borda e sombra suaves e largura máxima de leitura (`max-w-3xl`). A fonte é a padrão do app.
 - "Limpar filtros" só aparece com algum filtro ativo e limpa pesquisa, categoria, tipo, origem e tags (a ordenação é mantida).
 - Enquanto uma nova pesquisa carrega, a lista anterior continua na tela.
-- Estados: carregando; erro (com "Tentar novamente"); **biblioteca vazia** (sem filtros: convida a ir à Entrada); **nenhum resultado** (com filtros: oferece limpar).
+- Estados: carregando; erro (com "Tentar novamente"); **biblioteca vazia** (sem filtros: convida a ir à Classificação); **nenhum resultado** (com filtros: oferece limpar).
 - Cada cartão mostra título (link), tipo, categoria, prévia, tags e data de criação.
 
 ## Documento (`/library/:id`)
 - Mostra título, categoria, tipo, status, tags, origem, datas de criação e atualização, link "Fonte original" (quando há URL de vídeo) e o conteúdo em Markdown.
 - Markdown: tabelas, links e imagens por URL aparecem prontos. Links abrem em nova aba; imagens nunca passam da largura do texto. HTML cru não é renderizado.
 - "Voltar" retorna à página anterior (resultados da pesquisa ou categoria).
-- **Remover da biblioteca:** só para documento publicado; pede confirmação e depois volta ao acervo. É remoção lógica: o arquivo é mantido e pode ser readicionado pela Entrada.
+- **Remover da biblioteca:** só para documento publicado; pede confirmação e depois volta ao acervo. É remoção lógica: o arquivo é mantido e pode ser readicionado pela Classificação.
 - Erro ou documento inexistente: mensagem com botão "Voltar à biblioteca".
 
-## Entrada (`/library/inbox`)
+## Classificação (`/library/inbox`; antes "Caixa de entrada" e "Entrada")
+- O nome da tela vem de `InboxStrings` (`renderer/src/lib/inbox-text.ts`): trocar o nome é editar só esse arquivo. A rota e os identificadores internos (`/library/inbox`, `useInbox`) continuam com o nome antigo. O item de backup das Configurações também se chama "Classificação".
 - Duas visões: **Pendentes** (resumos e transcrições gerados pelos jobs, aguardando decisão) e **Removidos** (tirados da biblioteca), cada uma com contador.
 - **Adicionar à biblioteca** (pendente) / **Readicionar** (removido): abre um diálogo com título (preenchido), categoria (até 4 níveis) e tags. Só habilita com título e pelo menos um nível de categoria. Ao concluir, o documento sai da Entrada e entra no Acervo.
 - **Descartar:** pede confirmação (cita o título) e apaga o arquivo de vez. Não há desfazer.
@@ -54,7 +55,7 @@ Os dados vêm dos canais `library:*` do main (ver `../back/library.md`). Qualque
   - Remover fecha a "Sobre" e abre a confirmação. Cancelar volta para a "Sobre". Confirmar arquiva e vai para a biblioteca **já filtrada pela categoria do documento** (o estado de navegação `{ category }` é lido pelo `LibraryPage`). Se falhar, a confirmação continua aberta com "Não foi possível remover. Tente novamente.".
 
 ## Pré-preenchimento vindo dos jobs
-- Título, categoria e tags informados ao criar um job de resumo ou transcrição (ver `doc/jobs.md`) ficam no documento pendente. Ao abrir "Adicionar à biblioteca" na Entrada o diálogo já vem com esses valores (o `PublishDialog` sempre parte do que está no documento) e o botão Adicionar já fica habilitado se houver categoria.
+- Título, categoria e tags informados ao criar um job de resumo ou transcrição (ver `doc/jobs.md`) ficam no documento pendente. Ao abrir "Adicionar à biblioteca" na Classificação o diálogo já vem com esses valores (o `PublishDialog` sempre parte do que está no documento) e o botão Adicionar já fica habilitado se houver categoria.
 
 ## Editar documento (janela no documento e página `EditDocumentPage`, `/library/:id/edit`)
 - O formulário é o `EditDocumentForm`, usado na janela de edição (caminho normal, a partir de "Sobre o documento") e na página `/library/:id/edit` (continua existindo; ao salvar ou cancelar volta ao documento).
@@ -91,10 +92,10 @@ Os dados vêm dos canais `library:*` do main (ver `../back/library.md`). Qualque
 
 ## Sincronização com as pastas (`LibraryLayout` + `useLibrarySync`)
 - Todas as rotas `/library/*` ficam dentro de `LibraryLayout`, que chama `POST library/reindex` ao entrar na Biblioteca e sempre que a janela volta ao foco (no mínimo 5 s entre uma e outra) e, depois, atualiza todas as listas, árvore e tags.
-- Serve para quando arquivos são movidos de pasta direto no disco: a categoria é a pasta (regra do back), então a mudança aparece sem reiniciar nada. Falha na sincronização é silenciosa; o botão Reindexar da Entrada continua existindo.
+- Serve para quando arquivos são movidos de pasta direto no disco: a categoria é a pasta (regra do back), então a mudança aparece sem reiniciar nada. Falha na sincronização é silenciosa; o botão Reindexar da Classificação continua existindo.
 
 ## Sugestão com IA (`SuggestionPanel`)
-- No topo do diálogo Adicionar/Readicionar da Entrada há o botão "Sugerir com IA" e um seletor de modelo do **Gemini** (lista de `ai/providers/gemini/models`). O padrão é "Mais barato (automático)", que não envia modelo e deixa o back escolher o de menor custo.
+- No topo do diálogo Adicionar/Readicionar da Classificação há o botão "Sugerir com IA" e um seletor de modelo do **Gemini** (lista de `ai/providers/gemini/models`). O padrão é "Mais barato (automático)", que não envia modelo e deixa o back escolher o de menor custo.
 - Ao receber a sugestão, **substitui** título, categoria e tags do formulário (inclusive o que já estava digitado) e mostra "Sugestão preenchida com <modelo>". Nada é salvo: o usuário revisa, ajusta e só então clica em Adicionar.
 - Enquanto pede, o botão e o seletor ficam desabilitados; erro mostra "Não foi possível obter a sugestão. Tente novamente." e mantém o formulário como estava.
 

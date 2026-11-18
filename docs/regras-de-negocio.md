@@ -21,7 +21,7 @@ O antigo `env.md` (variáveis de ambiente) **não foi copiado**: foi substituíd
 | `chat.md` | Chat com IA |
 | `usage.md` | Uso de IA |
 | `jobs.md` | Criar e acompanhar jobs |
-| `library.md` | Biblioteca, documento, edição, livros, entrada, novo artigo |
+| `library.md` | Biblioteca, documento, edição, livros, classificação (rota `inbox`), novo artigo |
 | `components.md` | Reuso de componentes base |
 | `lib.md` | Cliente IPC, formatadores, query client |
 | `testing.md` | Convenções de teste do front |

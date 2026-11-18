@@ -1,5 +1,9 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
 import {
   COMPONENT_TEMPLATES,
+  WINDOWS_BIN_PACKAGE,
   catalogFor,
   findComponent,
   modelSpecs,
@@ -67,10 +71,34 @@ describe('catalogFor', () => {
     expect(findComponent('ffmpeg', LINUX)?.kind).toBe('binary');
   });
 
-  it('when asking for the transcription, should be bundled on Windows and downloaded on Linux', () => {
-    expect(findComponent('whisper-runtime', WINDOWS)?.kind).toBe('bundled');
+  it('when asking for the transcription, should be a downloaded package on Windows and a program on Linux', () => {
+    expect(findComponent('whisper-runtime', WINDOWS)?.kind).toBe('zip');
     expect(findComponent('whisper-runtime', LINUX)?.kind).toBe('binary');
     expect(findComponent('whisper-runtime', LINUX)?.download?.url).toContain('/components-v1/');
+  });
+
+  it('when asking for the transcription on Windows, should be required and downloaded, not only checked', () => {
+    const spec = findComponent('whisper-runtime', WINDOWS);
+
+    expect(spec?.required).toBe(true);
+    expect(spec?.download?.url).toBe(WINDOWS_BIN_PACKAGE.url);
+    expect(spec?.provides).toEqual(expect.arrayContaining(['whisper-cli.exe', 'whisper.dll']));
+  });
+
+  it('when the Windows package is declared, should match the file the CI embeds (windows-bin.json)', () => {
+    const lock = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'windows-bin.json'), 'utf8'),
+    ) as { url: string; sha256: string };
+
+    expect(WINDOWS_BIN_PACKAGE.url).toBe(lock.url);
+    expect(WINDOWS_BIN_PACKAGE.sha256).toBe(lock.sha256);
+  });
+
+  it('when the Windows package is downloaded, should come from the project release, not a third party', () => {
+    expect(WINDOWS_BIN_PACKAGE.url).toMatch(
+      /^https:\/\/github\.com\/tthheusalmeida\/homelab\/releases\/download\/bin-v1\//,
+    );
+    expect(WINDOWS_BIN_PACKAGE.sha256).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('when looking up an unknown id, should return undefined', () => {

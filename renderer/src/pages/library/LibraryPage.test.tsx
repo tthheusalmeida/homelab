@@ -169,7 +169,7 @@ describe("LibraryPage", () => {
 
     expect(screen.getByText("A biblioteca está vazia")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Ir para a Entrada/ }),
+      screen.getByRole("link", { name: /Ir para a Classificação/ }),
     ).toHaveAttribute("href", "/library/inbox");
   });
 
