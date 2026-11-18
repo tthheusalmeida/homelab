@@ -35,6 +35,7 @@ Estado: app instalável e em uso (versão `0.1.x`). Todas as fases da migração
 Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/regras/back/` e `docs/regras/front/` (ver `docs/regras-de-negocio.md`). Leia a regra antes de mexer em `src/back`.
 
 ## Comandos
+- **Node:** o projeto usa o **Node 24**: a versão está em `.nvmrc` (24.14.0), a CI lê o mesmo arquivo (`node-version-file`) e o `engines` do `package.json` exige `>=24.14.0` (o npm avisa em outra versão); para subir de versão, mude o `.nvmrc` e o `engines`. O Electron traz o próprio Node, então isso vale só para as ferramentas (npm, Jest, Vite, build).
 - `npm run dev` — compila o main e sobe: Vite do app (5173) e o Electron
 - `npm start` — build completo (renderer e main) e abre o app com os arquivos estáticos (`dist-renderer`)
 - `npm run build` / `build:renderer` (`:main`) / `build:main`
