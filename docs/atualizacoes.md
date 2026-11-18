@@ -9,7 +9,9 @@ O app confere o GitHub por versão nova, avisa na barra lateral, **baixa só a d
 4. **Reiniciar e atualizar** (pede confirmação, porque tarefas em andamento são interrompidas) fecha o app, instala em modo silencioso e abre o HomeLab de novo. Se o usuário não clicar, a versão baixada é instalada **sozinha quando ele fechar o app**.
 5. Biblioteca, conversas, configurações, chaves e componentes baixados (modelos, pacote CUDA) ficam em `Documentos/HomeLab` e `userData`, fora da pasta de instalação: **nada é tocado**.
 
-Falha de rede nunca atrapalha o app: a seção mostra "Não foi possível verificar as atualizações" e o estado volta ao que era. Se o download falhar, volta a "disponível" com a mensagem e o botão **Baixar atualização** tenta de novo. **Linux e o app não empacotado** (dev) só avisam: o botão vira "Ver a versão no navegador" e abre o Release (o AppImage é baixado à mão).
+Falha de rede nunca atrapalha o app: a seção mostra "Não foi possível verificar as atualizações" e o estado volta ao que era. Se o download falhar, volta a "disponível" com a mensagem e o botão **Baixar atualização** tenta de novo. **No Linux** o app só avisa: o botão vira "Ver a versão no navegador" e abre o Release (o AppImage é baixado à mão).
+
+**App não empacotado (execução de desenvolvimento, `npm run dev` ou `npm start`): não verifica atualizações.** Não agenda a verificação de abertura nem a periódica, "Verificar agora" não consulta o GitHub e a barra lateral nunca mostra o cartão; assim quem roda o código local não recebe "atualização disponível" de uma versão que já superou. `UpdateStatus.enabled` vem de `app.isPackaged` (`main/index.ts` → `createAppUpdater`); em Configurações > Sobre e atualizações a seção mostra só a versão instalada e o aviso de que as atualizações são verificadas no app instalado, sem os botões de verificação nem a opção automática.
 
 ## Como funciona
 - **Quem decide a versão:** `GitHubReleaseSource` lista `releases?per_page=30` e escolhe a **maior versão pelo SemVer** entre os Releases que não são rascunho nem pré-lançamento e cuja tag é `v<major>.<minor>.<patch>`. Releases de componentes (`components-vN`) e de binários (`bin-vN`) não contam. Dele vêm também as notas (o texto do Release, em Markdown) e a página da versão.
@@ -20,11 +22,18 @@ Falha de rede nunca atrapalha o app: a seção mostra "Não foi possível verifi
 - **Verificação automática:** preferência `updates.autoCheck` (padrão ligada) no `settings.json` (`configuracoes.md`), alterada pelo canal `updates:set-auto-check`. Os temporizadores sempre rodam, mas cada disparo confere a preferência; ligar ou desligar vale na hora.
 - `HOMELAB_UPDATES=off` impede o agendamento (os testes E2E usam). A verificação manual continua funcionando.
 
+## Notas da versão em português (IA local)
+As notas vêm do texto do Release no GitHub e saem em inglês (são as linhas dos commits). Em Configurações > Sobre e atualizações, **se houver IA local**, o grupo "Novidades da versão" ganha o botão **Traduzir para português**:
+- **Só com o Ollama ligado** e com ao menos um modelo de texto instalado (`updates:translation-available`, consultado toda vez que a seção abre). Sem IA local o botão não aparece e as notas ficam em inglês; nunca se usa IA externa (Gemini) para isso.
+- **Usa o modelo mais barato:** o menor (em bytes) entre os modelos do Ollama que geram texto (modelos só de embeddings não entram), com o raciocínio desligado (`src/updates/release-notes-translator.ts`).
+- **Loading:** o botão vira "Traduzindo…" com ícone girando e fica desabilitado até a resposta. Depois mostra a tradução com o aviso "Traduzido pela IA local; pode ter imprecisões" e o botão **Ver original** / **Ver tradução**. Falha mostra "Não foi possível traduzir" e deixa tentar de novo.
+- A tradução fica em memória por versão (traduzir de novo não chama o modelo) e some ao fechar o app. O consumo aparece em Consumo como uso do Ollama, sem custo.
+
 ## IPC
-Canais `updates:status`, `updates:check`, `updates:install`, `updates:set-auto-check` e o evento `updates:changed` (o `UpdateStatus` inteiro a cada passo). Ver `ipc-canais.md`. O renderer só pede ações; endereços e checksums ficam no main.
+Canais `updates:status`, `updates:check`, `updates:install`, `updates:set-auto-check`, `updates:translation-available`, `updates:translate-notes` e o evento `updates:changed` (o `UpdateStatus` inteiro a cada passo). Ver `ipc-canais.md`. O renderer só pede ações; endereços e checksums ficam no main.
 
 ## Renderer
-`useUpdateStatus` (cache do TanStack Query alimentado pelo evento), `useCheckForUpdates`, `useInstallUpdate`, `useSetAutoCheck`; `SidebarUpdateNotice` (cartão; some nas Configurações, que mostram o mesmo na tela) e `UpdatesSection` (Configurações > **Sobre e atualizações**, grupo Sistema). Textos em `lib/update-text.ts`.
+`useUpdateStatus` (cache do TanStack Query alimentado pelo evento), `useCheckForUpdates`, `useInstallUpdate`, `useSetAutoCheck`, `useTranslationAvailable`, `useTranslateNotes`; `SidebarUpdateNotice` (cartão; some nas Configurações, que mostram o mesmo na tela) e `UpdatesSection` (Configurações > **Sobre e atualizações**, grupo Sistema). Textos em `lib/update-text.ts`.
 
 ## Para um release ser atualizável
 - Tag `v<versão>` (SemVer) e Release **publicado** (nem rascunho, nem pré-lançamento), marcado como o mais recente. Tudo isso a CI faz (`release.yml`).

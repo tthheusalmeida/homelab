@@ -78,11 +78,11 @@ describe('ReadingSidePanel', () => {
     await waitFor(() => expect(panel()).not.toBeInTheDocument());
   });
 
-  it('when the close button is clicked, should close the panel', async () => {
+  it('when the tab is clicked while the panel is open, should close it', async () => {
     const user = setup();
 
     await user.click(tab());
-    await user.click(screen.getByRole('button', { name: /Fechar painel/ }));
+    await user.click(tab());
 
     await waitFor(() => expect(panel()).not.toBeInTheDocument());
   });
@@ -132,11 +132,11 @@ describe('ReadingSidePanel', () => {
     expect(panel()).toHaveAttribute('data-state', 'open');
   });
 
-  it('when the close button is clicked, should keep the panel on screen while it leaves with the exit transition', async () => {
+  it('when the tab is clicked to close, should keep the panel on screen while it leaves with the exit transition', async () => {
     const user = setup();
 
     await user.click(tab());
-    await user.click(screen.getByRole('button', { name: /Fechar painel/ }));
+    await user.click(tab());
 
     expect(panel()).toBeInTheDocument();
     expect(panel()).toHaveClass('animate-exit-right', 'pointer-events-none');
@@ -149,7 +149,7 @@ describe('ReadingSidePanel', () => {
     const user = setup();
 
     await user.click(tab());
-    await user.click(screen.getByRole('button', { name: /Fechar painel/ }));
+    await user.click(tab());
 
     await waitFor(() => expect(panel()).not.toBeInTheDocument(), { timeout: 1000 });
   });
@@ -158,7 +158,7 @@ describe('ReadingSidePanel', () => {
     const user = setup();
 
     await user.click(tab());
-    await user.click(screen.getByRole('button', { name: /Fechar painel/ }));
+    await user.click(tab());
     await user.click(tab());
 
     expect(panel()).toHaveAttribute('data-state', 'open');
@@ -190,5 +190,24 @@ describe('ReadingSidePanel', () => {
     expect(tab()).toHaveClass('top-[4.5rem]');
     expect(tab().className).not.toContain('top-1/2');
     expect(tab().className).not.toContain('-translate-y-1/2');
+  });
+
+  it('when the panel is open, should not repeat a close button inside it (the tab already closes it)', async () => {
+    const user = setup();
+
+    await user.click(tab());
+
+    expect(screen.queryByRole('button', { name: /Fechar painel/ })).not.toBeInTheDocument();
+    expect(tab()).toHaveAttribute('title', 'Clique para fechar o painel');
+  });
+
+  it('when the panel is open, should rotate the tab arrow to indicate closing', async () => {
+    const user = setup();
+
+    expect(tab().querySelector('svg')).not.toHaveClass('rotate-180');
+
+    await user.click(tab());
+
+    expect(tab().querySelector('svg')).toHaveClass('rotate-180');
   });
 });

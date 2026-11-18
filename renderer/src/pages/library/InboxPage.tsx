@@ -84,6 +84,27 @@ export function InboxPage() {
             Reindexar
           </Button>
         }
+        toolbar={
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant={view === "pending" ? "secondary" : "outline"}
+              aria-pressed={view === "pending"}
+              onClick={() => setView("pending")}
+            >
+              Pendentes ({pending.data?.length ?? 0})
+            </Button>
+
+            <Button
+              size="sm"
+              variant={view === "archived" ? "secondary" : "outline"}
+              aria-pressed={view === "archived"}
+              onClick={() => setView("archived")}
+            >
+              Removidos ({archived.data?.length ?? 0})
+            </Button>
+          </div>
+        }
       />
 
       {errors.length > 0 && (
@@ -104,26 +125,6 @@ export function InboxPage() {
           </CardContent>
         </Card>
       )}
-
-      <div className="flex gap-2">
-        <Button
-          size="sm"
-          variant={view === "pending" ? "secondary" : "outline"}
-          aria-pressed={view === "pending"}
-          onClick={() => setView("pending")}
-        >
-          Pendentes ({pending.data?.length ?? 0})
-        </Button>
-
-        <Button
-          size="sm"
-          variant={view === "archived" ? "secondary" : "outline"}
-          aria-pressed={view === "archived"}
-          onClick={() => setView("archived")}
-        >
-          Removidos ({archived.data?.length ?? 0})
-        </Button>
-      </div>
 
       {current.isLoading ? (
         <div className="flex min-h-[40dvh] items-center justify-center">
@@ -162,11 +163,12 @@ export function InboxPage() {
           />
         )
       ) : (
-        <div className="space-y-3">
+        // Em colunas: cada cartão ocupa só o que precisa e a tela larga deixa de ter linhas quase vazias.
+        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {current.data.map((document, index) => (
             <div
               key={document.id}
-              className="animate-enter"
+              className="animate-enter [&>*]:h-full"
               style={{ "--i": index } as CSSProperties}
             >
             <DocumentCard

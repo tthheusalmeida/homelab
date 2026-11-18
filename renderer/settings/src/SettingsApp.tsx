@@ -11,12 +11,11 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-import { Logo } from '#components/Hex';
+import { PageHeader } from '#components/PageHeader';
 import { ScrollArea } from '#ui/scroll-area';
 import {
   Sidebar,
   SidebarContent,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -82,21 +81,19 @@ export function SettingsApp({ initialSection }: { initialSection?: string | null
 
   return (
     <SnackbarProvider raised={restartPending}>
+      {/* Mesmo cabeçalho das outras telas (prompt, título e descrição); o comando acompanha a seção. */}
+      <div className="flex h-full min-h-0 flex-col gap-4">
+        <PageHeader
+          title={Strings.title}
+          command={`settings --${section.id}`}
+          description={Strings.subtitle}
+        />
+
       <div
-        className="flex h-full min-h-0 overflow-hidden rounded-lg border bg-background text-foreground"
+        className="flex min-h-0 flex-1 overflow-hidden rounded-lg border bg-background text-foreground"
         style={{ '--sidebar-width': '15rem' } as CSSProperties}
       >
         <Sidebar collapsible="none" aria-label="Seções de configuração" className="border-r">
-          <SidebarHeader>
-            <div className="flex flex-col gap-1 px-2 pt-1 pb-2 select-none">
-              <div className="flex items-center gap-2.5">
-                <Logo />
-                <h1 className="text-lg font-semibold tracking-tight">{Strings.title}</h1>
-              </div>
-              <p className="text-xs text-muted-foreground">{Strings.subtitle}</p>
-            </div>
-          </SidebarHeader>
-
           <SidebarContent>
             {/* Mesmo padrão da barra do app: grupos com rótulo, recolhíveis, e lembrados. */}
             {SECTION_GROUPS.map((group) => {
@@ -162,6 +159,7 @@ export function SettingsApp({ initialSection }: { initialSection?: string | null
 
           {restartPending && <RestartBanner onRestart={() => void relaunchApp()} />}
         </div>
+      </div>
       </div>
     </SnackbarProvider>
   );

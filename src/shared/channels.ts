@@ -57,6 +57,8 @@ export const IpcChannels = {
     check: 'updates:check',
     install: 'updates:install',
     setAutoCheck: 'updates:set-auto-check',
+    translationAvailable: 'updates:translation-available',
+    translateNotes: 'updates:translate-notes',
   },
   chat: {
     send: 'chat:send',

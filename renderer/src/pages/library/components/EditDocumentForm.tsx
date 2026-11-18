@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "#ui/button";
+import { DialogFooter, DialogForm } from "#ui/dialog";
 
 import { DocumentFields } from "#components/DocumentFields";
 import { MarkdownEditor } from "#components/MarkdownEditor";
@@ -17,13 +18,17 @@ interface EditDocumentFormProps {
   document: DocumentDetail;
   /** Chamado ao salvar com sucesso ou ao cancelar. */
   onClose: () => void;
+  /** Dentro da janela de edição: botões fixos no rodapé e só o miolo rola. */
+  dialog?: boolean;
 }
 
 /**
  * Formulário de edição de um documento publicado (título, categoria, tags e
  * texto com prévia ao lado). Usado na página de edição e na janela de edição.
  */
-export function EditDocumentForm({ document, onClose }: EditDocumentFormProps) {
+export function EditDocumentForm({ document, onClose, dialog = false }: EditDocumentFormProps) {
+  const Wrapper = dialog ? DialogForm : "form";
+  const Actions = dialog ? DialogFooter : "div";
   const { meta } = document;
 
   const [title, setTitle] = useState(meta.title);
@@ -66,7 +71,7 @@ export function EditDocumentForm({ document, onClose }: EditDocumentFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <Wrapper onSubmit={handleSubmit} className={dialog ? undefined : "space-y-6"}>
       <DocumentFields
         idPrefix="edit"
         title={title}
@@ -100,7 +105,7 @@ export function EditDocumentForm({ document, onClose }: EditDocumentFormProps) {
         </p>
       )}
 
-      <div className="flex justify-end gap-2">
+      <Actions className={dialog ? undefined : "flex justify-end gap-2"}>
         <Button
           type="button"
           variant="outline"
@@ -114,7 +119,7 @@ export function EditDocumentForm({ document, onClose }: EditDocumentFormProps) {
           {update.isPending && <Loader2 className="animate-spin" />}
           Salvar alterações
         </Button>
-      </div>
-    </form>
+      </Actions>
+    </Wrapper>
   );
 }

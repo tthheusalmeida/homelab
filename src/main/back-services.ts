@@ -16,6 +16,7 @@ import type { BackupCollection } from '../backup/backup.service';
 import type { BackReaders } from '../ipc/handlers';
 import { JobCatalog } from '../jobs/job-catalog';
 import { JobLauncher } from '../jobs/job-launcher';
+import type { LocalAiPort } from '../updates/release-notes-translator';
 
 /** Obtém a instância de um service do contêiner do back. */
 export type ServiceResolver = <T>(token: unknown) => T;
@@ -39,6 +40,11 @@ export class BackServices {
       books: this.get(BookService),
       jobs: this.jobs(),
     };
+  }
+
+  /** O serviço de IA do back, só pela porta que o tradutor de notas usa (Ollama). */
+  localAi(): LocalAiPort {
+    return this.get<AIService>(AIService);
   }
 
   /** Jobs, chats e consumo de IA como coleções que o backup exporta e importa (usa os serviços vivos). */

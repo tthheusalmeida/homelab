@@ -34,6 +34,11 @@ export interface UpdaterTimers {
 export interface AppUpdaterDeps {
   currentVersion: string;
   /**
+   * `false` no app não empacotado (desenvolvimento): não agenda nem faz verificação, então a versão
+   * publicada no GitHub não aparece como "atualização" para quem roda o código local.
+   */
+  enabled: boolean;
+  /**
    * Atualizador que baixa só a diferença e instala (Windows empacotado). Sem ele, o app só avisa e
    * leva ao Release no navegador.
    */
@@ -83,6 +88,7 @@ export class AppUpdater {
       progress: this.progress,
       error: this.error,
       checkedAt: this.checkedAt,
+      enabled: this.deps.enabled,
       canInstall: this.deps.native !== null,
       autoCheck: this.deps.getAutoCheck(),
     };
@@ -90,6 +96,10 @@ export class AppUpdater {
 
   /** Agenda a verificação de abertura e as periódicas (cada uma confere a preferência na hora). */
   start(): void {
+    if (!this.deps.enabled) {
+      return;
+    }
+
     const timers = this.deps.timers ?? realTimers;
     const run = () => {
       if (this.deps.getAutoCheck()) {
@@ -119,6 +129,11 @@ export class AppUpdater {
 
   /** Consulta o GitHub agora (manual ou agendada). Havendo versão nova no Windows, já baixa. */
   async check(): Promise<UpdateStatus> {
+    // App não empacotado: não consulta nada (ver `enabled`).
+    if (!this.deps.enabled) {
+      return this.status();
+    }
+
     // Versão já baixada: nada a consultar, só falta reiniciar.
     if (this.busy() || this.state === 'ready') {
       return this.status();

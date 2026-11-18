@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogTitle,
 } from "#ui/dialog";
@@ -59,7 +60,7 @@ export function BookFormDialog({
 }: BookFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent bare className="sm:max-w-2xl">
         {open && (
           <BookForm
             key={book?.id ?? "new"}
@@ -131,7 +132,7 @@ function BookForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <DialogForm onSubmit={handleSubmit}>
       <DialogHeader>
         <DialogTitle>{book ? "Editar livro" : "Novo livro"}</DialogTitle>
 
@@ -282,6 +283,6 @@ function BookForm({
           {book ? "Salvar" : "Criar livro"}
         </Button>
       </DialogFooter>
-    </form>
+    </DialogForm>
   );
 }

@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { CircleArrowUp, Download, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
+import {
+  CircleArrowUp,
+  Download,
+  ExternalLink,
+  Languages,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react';
 
 import { ConfirmDialog } from '#components/ConfirmDialog';
 import { ErrorState } from '#components/ErrorState';
@@ -11,6 +18,8 @@ import {
   useCheckForUpdates,
   useInstallUpdate,
   useSetAutoCheck,
+  useTranslateNotes,
+  useTranslationAvailable,
   useUpdateStatus,
 } from '#hooks/use-updates';
 import { formatDateTime } from '#lib/format';
@@ -30,6 +39,11 @@ export function UpdatesSection() {
   const install = useInstallUpdate();
   const setAutoCheck = useSetAutoCheck();
   const [confirming, setConfirming] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
+  const hasNotes = Boolean(status?.latest?.notes.trim());
+  // Só oferece traduzir com a IA local (Ollama) ligada; sem ela as notas ficam em inglês.
+  const translationAvailable = useTranslationAvailable(hasNotes);
+  const translate = useTranslateNotes();
 
   if (isPending) {
     return <LoadingState message={Strings.loading} />;
@@ -39,7 +53,10 @@ export function UpdatesSection() {
     return <ErrorState primaryMessage={Strings.loadError} action={() => void refetch()} />;
   }
 
-  const { latest } = status;
+  const { latest, enabled } = status;
+  const translated = latest && translate.data?.version === latest.version ? translate.data : null;
+  const canTranslate = hasNotes && translationAvailable.data === true && !translated;
+  const notes = translated && !showOriginal ? translated.notes : (latest?.notes ?? '');
   const checking = status.state === 'checking' || check.isPending;
   const downloading = status.state === 'downloading';
   const ready = status.state === 'ready';
@@ -102,6 +119,7 @@ export function UpdatesSection() {
             </p>
           )}
 
+          {enabled && (
           <div className="flex flex-wrap items-center gap-2">
             {ready && (
               <Button disabled={busy} onClick={() => setConfirming(true)}>
@@ -130,13 +148,19 @@ export function UpdatesSection() {
               {checking ? UpdateStrings.checking : UpdateStrings.check}
             </Button>
           </div>
+          )}
 
           <p className="text-xs text-muted-foreground">
-            {status.canInstall ? UpdateStrings.keepData : UpdateStrings.noAutoInstall}
+            {!enabled
+              ? UpdateStrings.disabledInDev
+              : status.canInstall
+                ? UpdateStrings.keepData
+                : UpdateStrings.noAutoInstall}
           </p>
         </SettingsPanel>
       </SettingsGroup>
 
+      {enabled && (
       <SettingsGroup title="Verificação">
         <SettingsPanel>
           <SettingsRow label={UpdateStrings.autoCheck} hint={UpdateStrings.autoCheckHint}>
@@ -157,12 +181,48 @@ export function UpdatesSection() {
           </SettingsRow>
         </SettingsPanel>
       </SettingsGroup>
+      )}
 
       {latest && (
         <SettingsGroup title={UpdateStrings.notesTitle(latest.version)}>
           <SettingsPanel>
+            {(canTranslate || translated || translate.isError) && (
+              <div className="flex flex-wrap items-center gap-2">
+                {canTranslate && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={translate.isPending}
+                    onClick={() => translate.mutate()}
+                  >
+                    {translate.isPending ? <Loader2 className="animate-spin" /> : <Languages />}
+                    {translate.isPending ? UpdateStrings.translating : UpdateStrings.translate}
+                  </Button>
+                )}
+
+                {translated && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => setShowOriginal((value) => !value)}>
+                      <Languages />
+                      {showOriginal ? UpdateStrings.showTranslation : UpdateStrings.showOriginal}
+                    </Button>
+
+                    <span className="text-xs text-muted-foreground">
+                      {UpdateStrings.translatedHint}
+                    </span>
+                  </>
+                )}
+
+                {translate.isError && (
+                  <p role="alert" className="animate-enter-fade text-sm text-destructive">
+                    {UpdateStrings.translateFailed}
+                  </p>
+                )}
+              </div>
+            )}
+
             {latest.notes.trim() ? (
-              <MarkdownMessage content={latest.notes} />
+              <MarkdownMessage content={notes} />
             ) : (
               <p className="text-sm text-muted-foreground">{UpdateStrings.noNotes}</p>
             )}

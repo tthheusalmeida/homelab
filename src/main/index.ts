@@ -72,6 +72,7 @@ import { createAppUpdater } from './app-updater-factory';
 import { createElectronNativeUpdater } from './electron-native-updater';
 import { SystemNotifier } from './system-notifier';
 import type { AppUpdater } from '../updates/app-updater';
+import { ReleaseNotesTranslator } from '../updates/release-notes-translator';
 import { UPDATE_REPOSITORY } from '../updates/release-source';
 import { resolveStaticFile } from './static-files';
 import { createSplashWindowOptions, createWindowOptions } from './window-options';
@@ -355,6 +356,8 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
 
   appUpdater = createAppUpdater({
     currentVersion: app.getVersion(),
+    // Só o app instalado verifica atualizações; rodando o código local (dev) não há o que atualizar.
+    enabled: app.isPackaged,
     fetchFn: (url, init) => net.fetch(url, init),
     // Só o Windows empacotado atualiza sozinho (instalador NSIS); nos outros casos leva ao Release.
     native:
@@ -484,6 +487,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       notices,
       components: services.components,
       updates: appUpdater,
+      notesTranslator: new ReleaseNotesTranslator(backServices.localAi()),
       settings: services.settingsService,
       externalProviders: services.externalProviders,
       localProviders: services.localProviders,

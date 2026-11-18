@@ -23,4 +23,14 @@ describe('ReadingSideTab', () => {
     expect(tab.className).toContain('bg-[var(--reading-tab-bg,var(--foreground))]');
     expect(tab.className).toContain('text-[var(--reading-tab-fg,var(--background))]');
   });
+
+  it('when open, should rotate the arrow half a turn to indicate closing', () => {
+    const { container, rerender } = render(<ReadingSideTab />);
+
+    expect(container.querySelector('svg')).not.toHaveClass('rotate-180');
+
+    rerender(<ReadingSideTab open />);
+
+    expect(container.querySelector('svg')).toHaveClass('rotate-180');
+  });
 });

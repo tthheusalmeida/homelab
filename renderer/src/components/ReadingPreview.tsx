@@ -33,7 +33,8 @@ function MiniCard({ title, lines }: { title: string; lines: number }) {
  * (`reading-chrome`) e os mesmos quadros (`sidebar-card`) do real, o texto no mesmo desenho
  * (módulo, capítulo, título e texto), o
  * mesmo botão (`ReadingSideToggle`) no topo, à direita, que abre o painel. Com a opção do painel fixo marcada, mostra o
- * painel ao lado do texto no lugar da aba. Sem rolagem: mostra tudo de uma vez.
+ * painel ao lado do texto no lugar da aba. Tem **altura fixa** e corta o que passar (com um esmaecido
+ * embaixo): fonte, tamanho e zoom grandes não podem esticar o quadro nem empurrar o que vem abaixo.
  */
 export function ReadingPreview() {
   const { reading } = useReadingPreferences();
@@ -44,7 +45,7 @@ export function ReadingPreview() {
         framed={false}
         aria-label="Pré-visualização da leitura"
         role="region"
-        className="flex flex-col overflow-hidden rounded-lg border bg-background"
+        className="relative flex h-80 min-w-0 flex-col overflow-hidden rounded-lg border bg-background"
       >
         <div className="reading-chrome flex h-7 shrink-0 items-center justify-between border-b px-3 font-sans text-[10px]">
           <span className="font-medium">Título do livro</span>
@@ -52,10 +53,10 @@ export function ReadingPreview() {
           <span>Sair do modo leitura</span>
         </div>
 
-        <div className="flex">
+        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
           <div
             className={cn(
-              'reading-column min-w-0 flex-1 space-y-5 py-4 pl-5',
+              'reading-column min-w-0 flex-1 space-y-5 overflow-hidden py-4 pl-5',
               // Com o painel escondido, reserva o lugar do botão para ele não cobrir o texto.
               reading.pinSidebar ? 'pr-5' : 'pr-14',
             )}
@@ -78,6 +79,11 @@ export function ReadingPreview() {
             </div>
           )}
         </div>
+
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent"
+        />
       </ReadingSurface>
 
       {!reading.pinSidebar && (

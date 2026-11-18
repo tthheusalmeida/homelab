@@ -22,6 +22,8 @@ interface SetupOptions {
   /** `false` simula Linux, macOS ou app não empacotado (sem atualizador nativo). */
   withNative?: boolean;
   autoCheck?: boolean;
+  /** `false` simula o app não empacotado (desenvolvimento). */
+  enabled?: boolean;
   timers?: UpdaterTimers;
 }
 
@@ -29,6 +31,7 @@ function setup({
   latest = release(),
   withNative = true,
   autoCheck = true,
+  enabled = true,
   timers,
 }: SetupOptions = {}) {
   /** Os mocks ficam à parte para os testes poderem trocar o comportamento e conferir as chamadas. */
@@ -46,6 +49,7 @@ function setup({
   };
   const config: AppUpdaterDeps = {
     currentVersion: '0.2.0',
+    enabled,
     native: withNative ? native : null,
     now: () => 1000,
     timers,
@@ -66,13 +70,44 @@ describe('AppUpdater.status', () => {
       progress: 0,
       error: null,
       checkedAt: null,
+      enabled: true,
       canInstall: true,
       autoCheck: true,
     });
   });
 
+  it('when the app is not packaged, should report that updates are disabled', () => {
+    expect(setup({ enabled: false }).updater.status().enabled).toBe(false);
+  });
+
   it('when there is no native updater, should say it cannot install by itself', () => {
     expect(setup({ withNative: false }).updater.status().canInstall).toBe(false);
+  });
+});
+
+describe('AppUpdater when disabled (app not packaged)', () => {
+  it('when checking, should not look at GitHub and should stay idle without a new version', async () => {
+    const { updater, deps, native } = setup({ enabled: false });
+
+    const status = await updater.check();
+
+    expect(deps.source.latest).not.toHaveBeenCalled();
+    expect(native.prepare).not.toHaveBeenCalled();
+    expect(deps.notify).not.toHaveBeenCalled();
+    expect(status).toMatchObject({ state: 'idle', latest: null, checkedAt: null, enabled: false });
+  });
+
+  it('when started, should not schedule any automatic check', () => {
+    const timers = {
+      setTimeout: jest.fn(),
+      setInterval: jest.fn(),
+      clear: jest.fn(),
+    };
+
+    setup({ enabled: false, timers }).updater.start();
+
+    expect(timers.setTimeout).not.toHaveBeenCalled();
+    expect(timers.setInterval).not.toHaveBeenCalled();
   });
 });
 

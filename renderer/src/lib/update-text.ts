@@ -30,9 +30,17 @@ export const UpdateStrings = {
   downloading: (percent: number) => `Baixando a atualização… ${percent}%`,
   installing: 'Instalando… o HomeLab vai fechar e abrir de novo sozinho.',
   keepData: 'Biblioteca, conversas, configurações e componentes instalados são mantidos.',
+  disabledInDev:
+    'Esta é uma execução de desenvolvimento: as atualizações só são verificadas no app instalado.',
   noAutoInstall: 'Neste sistema a atualização é instalada por você: abra a página da versão.',
   notesTitle: (version: string) => `Novidades da versão ${version}`,
   noNotes: 'Esta versão não traz notas.',
+  translate: 'Traduzir para português',
+  translating: 'Traduzindo…',
+  showOriginal: 'Ver original',
+  showTranslation: 'Ver tradução',
+  translatedHint: 'Traduzido pela IA local; pode ter imprecisões.',
+  translateFailed: 'Não foi possível traduzir. Tente de novo.',
   confirmTitle: 'Reiniciar o HomeLab?',
   confirmDescription:
     'O app vai fechar para instalar a versão nova e abrir de novo. Tarefas em andamento serão interrompidas.',

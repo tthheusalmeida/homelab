@@ -9,6 +9,8 @@ export const RELEASES_TIMEOUT_MS = 15_000;
 
 export interface AppUpdaterWiring {
   currentVersion: string;
+  /** `false` no app não empacotado: o atualizador não verifica nem avisa. */
+  enabled: boolean;
   /** `fetch` do Electron (`net.fetch`), que segue os redirecionamentos do GitHub. */
   fetchFn: FetchLike;
   /**
@@ -39,6 +41,7 @@ export function createAppUpdater(wiring: AppUpdaterWiring): AppUpdater {
 
   return new AppUpdater({
     currentVersion: wiring.currentVersion,
+    enabled: wiring.enabled,
     native: wiring.native,
     source,
     getAutoCheck: wiring.getAutoCheck,

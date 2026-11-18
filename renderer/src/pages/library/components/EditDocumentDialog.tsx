@@ -24,7 +24,7 @@ export function EditDocumentDialog({
 }: EditDocumentDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="top-0 left-0 h-dvh w-screen max-w-none translate-x-0 translate-y-0 max-h-none rounded-none sm:max-w-none">
+      <DialogContent bare className="top-0 left-0 h-dvh w-screen max-w-none translate-x-0 translate-y-0 max-h-none rounded-none sm:max-w-none">
         <DialogHeader>
           <DialogTitle>Editar página</DialogTitle>
 
@@ -36,6 +36,7 @@ export function EditDocumentDialog({
 
         {open && (
           <EditDocumentForm
+            dialog
             document={document}
             onClose={() => onOpenChange(false)}
           />

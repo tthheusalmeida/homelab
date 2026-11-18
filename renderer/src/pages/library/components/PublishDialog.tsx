@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogTitle,
 } from "#ui/dialog";
@@ -29,7 +30,7 @@ interface PublishDialogProps {
 export function PublishDialog({ document, onOpenChange }: PublishDialogProps) {
   return (
     <Dialog open={document !== null} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent bare className="sm:max-w-xl">
         {document && (
           <PublishForm
             key={document.id}
@@ -75,7 +76,7 @@ function PublishForm({ document, onDone }: PublishFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <DialogForm onSubmit={handleSubmit}>
       <DialogHeader>
         <DialogTitle>
           {isReadd ? "Readicionar à biblioteca" : "Adicionar à biblioteca"}
@@ -87,8 +88,6 @@ function PublishForm({ document, onDone }: PublishFormProps) {
         </DialogDescription>
       </DialogHeader>
 
-      {/* Só o miolo rola; título e botões ficam sempre visíveis. */}
-      <div className="max-h-[55dvh] space-y-5 overflow-y-auto px-1 py-1">
         <SuggestionPanel
           documentId={document.id}
           disabled={publish.isPending}
@@ -123,7 +122,6 @@ function PublishForm({ document, onDone }: PublishFormProps) {
             Não foi possível adicionar. Verifique a categoria e tente novamente.
           </p>
         )}
-      </div>
 
       <DialogFooter>
         <Button
@@ -140,6 +138,6 @@ function PublishForm({ document, onDone }: PublishFormProps) {
           {isReadd ? "Readicionar" : "Adicionar"}
         </Button>
       </DialogFooter>
-    </form>
+    </DialogForm>
   );
 }

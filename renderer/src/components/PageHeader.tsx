@@ -1,6 +1,9 @@
-import type { ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "#lib/utils";
+
+import { PageHeaderSlotContext } from "./PageHeaderSlot";
 
 interface PageHeaderProps {
   /** Nome da tela, igual ao do item da sidebar. */
@@ -12,12 +15,19 @@ interface PageHeaderProps {
   status?: ReactNode;
   /** Botões à direita. */
   actions?: ReactNode;
+  /** Filtros, busca ou abas da tela: ficam presos junto com o cabeçalho, abaixo da descrição. */
+  toolbar?: ReactNode;
   className?: string;
 }
 
 /**
  * Cabeçalho padrão das telas com cara de homelab: prompt de terminal, título, descrição e ações.
  * O título deve ser o mesmo texto do item da sidebar.
+ *
+ * **Fica fixo no topo:** dentro do `AppLayout` ele é desenhado (portal) no lugar fixo acima da
+ * área de rolagem, então só o conteúdo da tela rola; o cabeçalho, a descrição e os filtros em
+ * `toolbar` nunca saem de vista nem mudam de tamanho. Fora do layout (testes), aparece onde foi
+ * escrito.
  */
 export function PageHeader({
   title,
@@ -25,10 +35,19 @@ export function PageHeader({
   command,
   status,
   actions,
+  toolbar,
   className,
 }: PageHeaderProps) {
-  return (
-    <header className={cn("space-y-3 border-b border-border pb-4", className)}>
+  const slot = useContext(PageHeaderSlotContext);
+
+  const header = (
+    <header
+      data-slot="page-header"
+      className={cn(
+        "space-y-3 border-b border-border bg-background px-4 pt-4 pb-4",
+        className,
+      )}
+    >
       <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground select-none">
         <span>root@homelab:~$</span>
         <span>{command}</span>
@@ -46,6 +65,10 @@ export function PageHeader({
 
         {actions}
       </div>
+
+      {toolbar}
     </header>
   );
+
+  return slot ? createPortal(header, slot) : header;
 }

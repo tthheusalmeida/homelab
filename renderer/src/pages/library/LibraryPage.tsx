@@ -119,8 +119,7 @@ export function LibraryPage() {
         title="Páginas"
         command="library --pages"
         description="Seus conhecimentos organizados por tema. Pesquise por título, tags, categorias ou pelo texto das páginas."
-      />
-
+        toolbar={
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <SearchInput
@@ -190,6 +189,8 @@ export function LibraryPage() {
           />
         )}
       </div>
+        }
+      />
 
       <div className="grid gap-6 lg:grid-cols-[16rem_1fr]">
         <aside>

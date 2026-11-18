@@ -42,11 +42,17 @@ function DialogContent({
   children,
   showCloseButton = true,
   bodyClassName,
+  bare = false,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
-  /** Classes do miolo que rola (ex.: sem padding, na paleta de comandos). */
+  /** Classes do miolo que rola. */
   bodyClassName?: string
+  /**
+   * Quem usa monta as três faixas (`DialogSections`/`DialogForm`): para conteúdo que vive dentro
+   * de outro componente (formulário, tela cheia) ou que não tem cabeçalho nem rodapé (paleta).
+   */
+  bare?: boolean
 }) {
   return (
     <DialogPortal>
@@ -59,19 +65,12 @@ function DialogContent({
         )}
         {...props}
       >
-        {/* Só este miolo rola: DialogHeader e DialogFooter ficam presos ao topo e à base (sticky). */}
-        <div
-          data-slot="dialog-scroll"
-          className={cn(
-            "grid min-h-0 flex-1 gap-4 overflow-y-auto p-5",
-            // Sem conteúdo entre o cabeçalho e o rodapé (ex.: confirmação só com texto): não deixa
-            // a faixa vazia entre as duas bordas, junta o rodapé ao cabeçalho.
-            "[&>[data-slot=dialog-header]:has(+[data-slot=dialog-footer])]:border-b-0 [&>[data-slot=dialog-header]+[data-slot=dialog-footer]]:-mt-4",
-            bodyClassName
-          )}
-        >
-          {children}
-        </div>
+        {/* Três faixas: cabeçalho e rodapé fixos; só o miolo (`DialogBody`) rola. */}
+        {bare ? (
+          children
+        ) : (
+          <DialogSections bodyClassName={bodyClassName}>{children}</DialogSections>
+        )}
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
@@ -93,13 +92,83 @@ function DialogContent({
   )
 }
 
+/** Miolo do diálogo: a única parte que rola (cabeçalho e rodapé ficam fora dela). */
+function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-body"
+      className={cn(
+        "grid min-h-0 flex-1 content-start gap-4 overflow-y-auto px-5 py-4",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+/**
+ * Distribui os filhos nas três faixas: `DialogHeader` no topo e `DialogFooter` na base, ambos
+ * fixos, e todo o resto num `DialogBody` que rola. Dentro de um `DialogContent` (ou de um
+ * `DialogForm`) isso é automático; use direto só em conteúdo `bare`.
+ */
+function DialogSections({
+  children,
+  bodyClassName,
+}: {
+  children?: React.ReactNode
+  bodyClassName?: string
+}) {
+  const headers: React.ReactNode[] = []
+  const footers: React.ReactNode[] = []
+  const body: React.ReactNode[] = []
+
+  React.Children.toArray(children).forEach((child) => {
+    if (React.isValidElement(child) && child.type === DialogHeader) {
+      headers.push(child)
+    } else if (React.isValidElement(child) && child.type === DialogFooter) {
+      footers.push(child)
+    } else {
+      body.push(child)
+    }
+  })
+
+  return (
+    <>
+      {headers}
+      {body.length > 0 && <DialogBody className={bodyClassName}>{body}</DialogBody>}
+      {footers}
+    </>
+  )
+}
+
+/**
+ * Formulário que ocupa o diálogo inteiro: cabeçalho e rodapé (`DialogFooter` com os botões) fixos
+ * e só o miolo rolando, sem que o `<form>` quebre o layout em faixas.
+ */
+function DialogForm({
+  className,
+  children,
+  bodyClassName,
+  ...props
+}: React.ComponentProps<"form"> & { bodyClassName?: string }) {
+  return (
+    <form
+      data-slot="dialog-form"
+      className={cn("flex min-h-0 flex-1 flex-col", className)}
+      {...props}
+    >
+      <DialogSections bodyClassName={bodyClassName}>{children}</DialogSections>
+    </form>
+  )
+}
+
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
       className={cn(
-        // sticky respeita o padding do miolo (p-5): o deslocamento negativo cola o cabeçalho na borda de cima.
-        "sticky top-[-1.25rem] z-10 -mx-5 -mt-5 flex flex-col gap-1 border-b bg-popover px-5 pt-4 pr-12 pb-3",
+        // Fora da rolagem: só o miolo rola. Sem miolo entre ele e o rodapé, o rodapé já traz a borda.
+        "flex shrink-0 flex-col gap-1 border-b bg-popover px-5 pt-4 pr-12 pb-3 has-[+[data-slot=dialog-footer]]:border-b-0",
         className
       )}
       {...props}
@@ -119,7 +188,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "sticky bottom-[-1.25rem] z-10 -mx-5 -mb-5 flex flex-col-reverse gap-2 border-t bg-popover px-5 py-3 sm:flex-row sm:justify-end",
+        "flex shrink-0 flex-col-reverse gap-2 border-t bg-popover px-5 py-3 sm:flex-row sm:justify-end",
         className
       )}
       {...props}
@@ -162,13 +231,16 @@ function DialogDescription({
 
 export {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogOverlay,
   DialogPortal,
+  DialogSections,
   DialogTitle,
   DialogTrigger,
 }

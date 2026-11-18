@@ -120,6 +120,15 @@ describe('ReadingPreview', () => {
       expect(surface.querySelector('.overflow-y-auto')).toBeNull();
     });
 
+    it('when the font, size or zoom grow, should keep a fixed box and clip the overflow so nothing below moves', () => {
+      render(<ReadingPreview />);
+
+      const surface = screen.getByRole('region', { name: 'Pré-visualização da leitura' });
+
+      expect(surface).toHaveClass('h-80', 'overflow-hidden', 'min-w-0');
+      expect(surface.querySelector('.reading-column')).toHaveClass('overflow-hidden', 'min-w-0');
+    });
+
     it('when the panel is hidden, should leave room for the button so it does not cover the text', () => {
       render(<ReadingPreview />);
 

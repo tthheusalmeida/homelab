@@ -26,10 +26,27 @@ export interface UpdateStatus {
   error: string | null;
   /** Quando a última verificação terminou (ms desde 1970); `null` se ainda não verificou. */
   checkedAt: number | null;
+  /**
+   * Se o app verifica atualizações. `false` no app não empacotado (execução de desenvolvimento): lá
+   * nada é consultado nem avisado, só o app instalado recebe o aviso.
+   */
+  enabled: boolean;
   /** Se o app consegue baixar e aplicar a atualização sozinho (hoje só no Windows). */
   canInstall: boolean;
   /** Verificar sozinho ao abrir e a cada 6 horas (preferência `updates.autoCheck`). */
   autoCheck: boolean;
+}
+
+/** Resposta de `updates:translation-available`: há IA local (Ollama ligado com modelo de texto). */
+export interface TranslationAvailability {
+  available: boolean;
+}
+
+/** Resposta de `updates:translate-notes`: as notas da versão nova em português. */
+export interface TranslatedNotes {
+  version: string;
+  /** Markdown traduzido. */
+  notes: string;
 }
 
 /** Corpo de `updates:set-auto-check`. */

@@ -15,7 +15,9 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
+  DialogSections,
   DialogTitle,
 } from "#ui/dialog";
 import { Input } from "#ui/input";
@@ -63,7 +65,7 @@ export function BookOrganizerDialog({
 }: BookOrganizerDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="top-0 left-0 h-dvh w-screen max-w-none translate-x-0 translate-y-0 max-h-none rounded-none sm:max-w-none">
+      <DialogContent bare className="top-0 left-0 h-dvh w-screen max-w-none translate-x-0 translate-y-0 max-h-none rounded-none sm:max-w-none">
         {open && <Organizer book={book} onClose={() => onOpenChange(false)} />}
       </DialogContent>
     </Dialog>
@@ -163,7 +165,7 @@ function Organizer({
   let chapterNumber = 0;
 
   return (
-    <>
+    <DialogSections>
       <DialogHeader>
         <DialogTitle>Organizar “{book.title}”</DialogTitle>
 
@@ -431,7 +433,7 @@ function Organizer({
         </p>
       )}
 
-      <div className="flex justify-end gap-2">
+      <DialogFooter>
         <Button
           type="button"
           variant="outline"
@@ -445,7 +447,7 @@ function Organizer({
           {save.isPending && <Loader2 className="animate-spin" />}
           Salvar
         </Button>
-      </div>
-    </>
+      </DialogFooter>
+    </DialogSections>
   );
 }

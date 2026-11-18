@@ -1,13 +1,13 @@
-import { PanelRightOpen } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 
 import { cn } from '#lib/utils';
 
 /**
  * Aba hexagonal na borda direita do modo leitura: o que o usuário procura para abrir o painel
  * lateral. É **invertida** em relação ao fundo da leitura (tinta como fundo da aba e fundo como
- * cor do ícone), para sempre contrastar com a página, qualquer que seja a cor escolhida. Usada no modo leitura (`ReadingSidePanel`) e no preview das Configurações.
+ * cor do ícone), para sempre contrastar com a página, qualquer que seja a cor escolhida. Com o painel aberto (`open`), a seta gira e indica "fechar". Usada no modo leitura (`ReadingSidePanel`) e no preview das Configurações.
  */
-export function ReadingSideTab({ className }: { className?: string }) {
+export function ReadingSideTab({ className, open = false }: { className?: string; open?: boolean }) {
   return (
     <span
       aria-hidden
@@ -16,7 +16,10 @@ export function ReadingSideTab({ className }: { className?: string }) {
         className,
       )}
     >
-      <PanelRightOpen className="size-4" />
+      {/* Seta de recolher, na lateral: com o painel aberto gira meia volta e indica "fechar". */}
+      <ChevronLeft
+        className={cn('size-5 transition-transform duration-300 ease-out', open && 'rotate-180')}
+      />
     </span>
   );
 }

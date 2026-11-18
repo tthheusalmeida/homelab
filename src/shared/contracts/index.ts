@@ -25,7 +25,12 @@ import type {
   BookUpdateRequest,
 } from './books';
 import type { ComponentRequest, ComponentsInstallRequest, ComponentsStatus } from './components';
-import type { SetAutoCheckRequest, UpdateStatus } from './updates';
+import type {
+  SetAutoCheckRequest,
+  TranslatedNotes,
+  TranslationAvailability,
+  UpdateStatus,
+} from './updates';
 import type {
   BackupCreateRequest,
   BackupCreateResult,
@@ -171,6 +176,13 @@ export interface IpcContracts {
   [IpcChannels.updates.install]: { request: void; response: UpdateStatus };
   /** Liga ou desliga a verificação automática (a manual continua funcionando). */
   [IpcChannels.updates.setAutoCheck]: { request: SetAutoCheckRequest; response: UpdateStatus };
+  /** Diz se dá para traduzir as notas: só com a IA local (Ollama) ligada e com um modelo de texto. */
+  [IpcChannels.updates.translationAvailable]: { request: void; response: TranslationAvailability };
+  /**
+   * Traduz para português as notas da versão nova, com o menor modelo do Ollama. Sem IA local:
+   * `NOT_CONFIGURED`; falha do modelo: `PROVIDER_FAILED`. Sem versão nova: `VALIDATION`.
+   */
+  [IpcChannels.updates.translateNotes]: { request: void; response: TranslatedNotes };
 
   /** Mostra o que dá para incluir no backup, com tamanhos, e o que não entra. */
   [IpcChannels.backup.preview]: { request: void; response: BackupPreview };
