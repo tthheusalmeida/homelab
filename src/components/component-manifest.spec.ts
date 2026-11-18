@@ -95,7 +95,9 @@ describe('catalogFor', () => {
   });
 
   it('when the Windows package is downloaded, should come from the project release, not a third party', () => {
-    expect(WINDOWS_BIN_PACKAGE.url).toMatch(/^https:\/\/github\.com\/tthheusalmeida\/homelab\/releases\/download\/bin-v1\//);
+    expect(WINDOWS_BIN_PACKAGE.url).toMatch(
+      /^https:\/\/github\.com\/tthheusalmeida\/homelab\/releases\/download\/bin-v1\//,
+    );
     expect(WINDOWS_BIN_PACKAGE.sha256).toMatch(/^[0-9a-f]{64}$/);
   });
 
