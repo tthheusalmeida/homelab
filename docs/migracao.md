@@ -22,6 +22,5 @@ Todas as fases estão **concluídas**. O que cada uma deixou virou documentaçã
 - **Atualização automática no Linux:** o AppImage só avisa e abre o Release.
 
 ## Pendências técnicas
-- **`npm install --legacy-peer-deps`** por causa do peer do Babel entre Jest e o plugin React do Vite; decidir se resolve de outro jeito (a CI depende disso).
 - O smoke E2E (14 testes) passa com o app atual, mas não cobre criar um job nem uma conversa real, nem o download de plataformas (a janela de login depende de um site real).
 - O fluxo real de atualização no app (download só da diferença) se confirma quando houver dois releases seguidos com as próximas funcionalidades.
