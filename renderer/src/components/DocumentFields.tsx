@@ -1,6 +1,7 @@
 import { Input } from "#ui/input";
 import { Label } from "#ui/label";
 
+import { Callout } from "#components/Callout";
 import {
   CategoryPicker,
   type CategoryOption,
@@ -14,6 +15,8 @@ interface DocumentFieldsProps {
   title: string;
   onTitleChange: (title: string) => void;
   titlePlaceholder?: string;
+  /** Trava só o título (os outros campos continuam editáveis) e explica por quê. */
+  titleDisabledReason?: string;
 
   category: string[];
   onCategoryChange: (category: string[]) => void;
@@ -31,6 +34,7 @@ export function DocumentFields({
   title,
   onTitleChange,
   titlePlaceholder,
+  titleDisabledReason,
   category,
   onCategoryChange,
   categoryOptions,
@@ -50,8 +54,10 @@ export function DocumentFields({
           value={title}
           onChange={(event) => onTitleChange(event.target.value)}
           placeholder={titlePlaceholder}
-          disabled={disabled}
+          disabled={disabled || Boolean(titleDisabledReason)}
         />
+
+        {titleDisabledReason && <Callout tone="warning">{titleDisabledReason}</Callout>}
       </div>
 
       <CategoryPicker

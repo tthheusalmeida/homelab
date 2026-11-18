@@ -22,12 +22,22 @@ async function* asyncList<T>(items: T[]) {
 describe('GeminiProvider', () => {
   let usage: AiUsageService;
 
-  const build = (geminiApiKey: string | null = 'test-key') =>
-    new GeminiProvider(usage, { geminiApiKey } as BackConfig);
+  const sleep = jest.fn().mockResolvedValue(undefined);
+
+  const build = (geminiApiKey: string | null = 'test-key') => {
+    const provider = new GeminiProvider(usage, { geminiApiKey } as BackConfig);
+
+    provider.sleep = sleep;
+
+    return provider;
+  };
+
+  const apiError = (status: number) => Object.assign(new Error(`HTTP ${status}`), { status });
 
   beforeEach(() => {
     usage = new AiUsageService();
     generateContent.mockReset();
+    sleep.mockClear();
     list.mockReset();
     get.mockReset();
   });
@@ -160,26 +170,106 @@ describe('GeminiProvider', () => {
       });
     });
 
-    it('when the response has no text, should record a single failure and throw', async () => {
+    it('when the response keeps coming empty, should try 3 times, record a single failure and explain', async () => {
       generateContent.mockResolvedValue({ text: '' });
 
       await expect(build().chat({ message: 'a', model: 'm' })).rejects.toThrow(
-        'chat do Gemini falhou',
+        'O Gemini devolveu uma resposta vazia.',
       );
 
+      expect(generateContent).toHaveBeenCalledTimes(3);
       const { recentRequests } = usage.getUsage();
       expect(recentRequests).toHaveLength(1);
       expect(recentRequests[0].success).toBe(false);
     });
 
-    it('when the API fails, should record a failure and throw', async () => {
+    it('when the API fails with an unknown error, should not retry, record a failure and throw the generic message', async () => {
       generateContent.mockRejectedValue(new Error('api'));
 
       await expect(build().chat({ message: 'a', model: 'm' })).rejects.toThrow(
         'chat do Gemini falhou',
       );
 
+      expect(generateContent).toHaveBeenCalledTimes(1);
       expect(usage.getUsage().recentRequests[0].success).toBe(false);
+    });
+
+    it('when the first call is overloaded (503) and the second works, should return the text without failing', async () => {
+      generateContent.mockRejectedValueOnce(apiError(503)).mockResolvedValueOnce({ text: 'resp' });
+
+      await expect(build().chat({ message: 'a', model: 'm' })).resolves.toBe('resp');
+
+      expect(generateContent).toHaveBeenCalledTimes(2);
+      expect(sleep).toHaveBeenCalledTimes(1);
+      expect(usage.getUsage().recentRequests).toHaveLength(1);
+      expect(usage.getUsage().recentRequests[0].success).toBe(true);
+    });
+
+    it('when the limit is reached (429) on every attempt, should try 3 times and explain the limit', async () => {
+      generateContent.mockRejectedValue(apiError(429));
+
+      await expect(build().chat({ message: 'a', model: 'm' })).rejects.toThrow(
+        'O limite de uso do Gemini foi atingido',
+      );
+
+      expect(generateContent).toHaveBeenCalledTimes(3);
+      expect(sleep.mock.calls.map(([ms]) => ms)).toEqual([3000, 8000]);
+    });
+
+    it('when it retries, should tell the caller each new attempt with the reason', async () => {
+      generateContent
+        .mockRejectedValueOnce(apiError(503))
+        .mockRejectedValueOnce(apiError(429))
+        .mockResolvedValueOnce({ text: 'resp' });
+      const onRetry = jest.fn();
+
+      await build().chat({ message: 'a', model: 'm', onRetry });
+
+      expect(onRetry).toHaveBeenNthCalledWith(1, {
+        attempt: 2,
+        maxAttempts: 3,
+        delayMs: 3000,
+        reason: 'O Gemini está sobrecarregado ou indisponível no momento.',
+      });
+      expect(onRetry).toHaveBeenNthCalledWith(2, {
+        attempt: 3,
+        maxAttempts: 3,
+        delayMs: 8000,
+        reason: 'O limite de uso do Gemini foi atingido. Aguarde um pouco ou escolha outro modelo.',
+      });
+    });
+
+    it.each([
+      [401, 'recusou a chave'],
+      [403, 'recusou a chave'],
+      [404, 'modelo escolhido não está disponível'],
+      [400, 'não aceitou o pedido'],
+    ])('when the API answers %s, should not retry and explain', async (status, text) => {
+      generateContent.mockRejectedValue(apiError(status));
+
+      await expect(build().chat({ message: 'a', model: 'm' })).rejects.toThrow(text);
+
+      expect(generateContent).toHaveBeenCalledTimes(1);
+      expect(sleep).not.toHaveBeenCalled();
+    });
+
+    it('when the connection drops once, should retry and work', async () => {
+      generateContent
+        .mockRejectedValueOnce(new TypeError('fetch failed'))
+        .mockResolvedValueOnce({ text: 'resp' });
+
+      await expect(build().chat({ message: 'a', model: 'm' })).resolves.toBe('resp');
+    });
+
+    it('when the final error is thrown, should keep the original one in the cause', async () => {
+      const original = apiError(503);
+      generateContent.mockRejectedValue(original);
+
+      const error = await build()
+        .chat({ message: 'a', model: 'm' })
+        .catch((e: Error) => e);
+
+      expect((error as Error).cause).toBe(original);
     });
   });
 

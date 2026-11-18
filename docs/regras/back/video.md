@@ -26,7 +26,8 @@
 - Monta o prompt seguido da transcrição e envia ao `AIService.chat`. O prompt depende do **nível de detalhe** (`buildSummaryPrompt`): `brief` (prompt original, resumo curto), `detailed` (padrão; preserva conceitos, explicações, comandos e exemplos) e `study` (material de consulta quase completo, com agrupamentos Conceitos-chave / Passo a passo / Comandos e exemplos / Pontos de atenção / Para revisar, só com o que existir na fonte). Os três mantêm as regras de fidelidade à fonte; muda só a seção "NÍVEL DE DETALHE".
 - Em `detailed` e `study`, transcrições com mais de 12000 caracteres são divididas em partes (`splitText`, cortando no fim de frases); cada parte é resumida em uma chamada (com a nota "parte i de n"; da 2ª em diante, sem repetir o título principal) e os resumos são juntados com linha em branco. `brief` sempre vai em uma chamada só.
 - `thinking` assume `off` se não informado.
-- Falha vira "Falha ao gerar o resumo".
+- Falha vira "Falha ao gerar o resumo." **seguida do motivo** da IA (ex.: "Falha ao gerar o resumo. O limite de uso do Gemini foi atingido..."), para o usuário saber se foi limite, serviço fora do ar, chave ou modelo.
+- Enquanto o provider tenta de novo, o processor grava no job o aviso "Tentando de novo (tentativa x de y): motivo" (`Job.setNote`, não vai para o disco), que a tela mostra na linha ao vivo e que some quando a etapa muda.
 
 ## Apagar temporários
 - `deleteVideo`/`deleteAudio` removem o arquivo; se não existir, lançam erro específico (vídeo ou áudio).

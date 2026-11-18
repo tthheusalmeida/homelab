@@ -16,6 +16,8 @@ import {
   type SummaryDetail,
 } from "../summary-detail";
 import { useCreateVideoToSummary } from "../hooks/useCreateVideoToSummary";
+import { useLinksField } from "../hooks/useLinksField";
+import { VideoUrlStrings } from "../video-url-text";
 import { JobDocumentFields } from "./JobDocumentFields";
 import { VideoUrlField } from "./VideoUrlField";
 import { OptionSelect } from "#components/OptionSelect";
@@ -26,7 +28,7 @@ interface VideoToSummaryFormProps {
 }
 
 export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
-  const [url, setUrl] = useState("");
+  const links = useLinksField();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
@@ -50,6 +52,8 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
   const createJob = useCreateVideoToSummary();
   const [sent, setSent] = useState(false);
 
+  const isBatch = links.urls.length > 1;
+
   // Travado enquanto envia e depois de enviar: evita criar o mesmo job duas vezes.
   const locked = createJob.isPending || sent;
 
@@ -60,23 +64,26 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
       return;
     }
 
-    if (locked) {
+    if (locked || !links.canSubmit) {
       return;
     }
 
     createJob.mutate(
       {
-        url,
+        urls: links.urls,
         providerId,
         modelId,
         thinking: thinkingId,
         detail,
-        ...buildDocumentHints({ title, category, tags }),
+        // Com vários links o título único não vale: cada documento usa o padrão.
+        ...buildDocumentHints({ title: isBatch ? "" : title, category, tags }),
       },
       {
-        onSuccess: () => {
-          setSent(true);
-          onCreated?.();
+        onSuccess: (result) => {
+          if (links.applyResult(result)) {
+            setSent(true);
+            onCreated?.();
+          }
         },
       },
     );
@@ -99,7 +106,7 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
 
   return (
     <DialogForm onSubmit={handleSubmit}>
-      <VideoUrlField value={url} onChange={setUrl} disabled={locked} />
+      <VideoUrlField field={links} disabled={locked} />
 
       <div className="flex items-center gap-2">
         <OptionSelect
@@ -168,6 +175,7 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
         tags={tags}
         onTagsChange={setTags}
         disabled={locked}
+        isBatch={isBatch}
       />
 
       {createJob.isError && (
@@ -180,11 +188,15 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
         <Button
           type="submit"
           disabled={
-            !url.trim() || !providerId || !modelId || !thinkingId || locked
+            !links.canSubmit ||
+            !providerId ||
+            !modelId ||
+            !thinkingId ||
+            locked
           }
         >
           {createJob.isPending && <Loader2 className="animate-spin" />}
-          Criar
+          {VideoUrlStrings.submit(links.urls.length)}
         </Button>
       </DialogFooter>
     </DialogForm>

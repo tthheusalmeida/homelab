@@ -5,7 +5,7 @@ import { JobStatusOptions, type Job } from "../../types/job.types";
 import { TrackStrings } from "../strings";
 
 interface JobLiveProgressProps {
-  job: Pick<Job, "status" | "steps" | "startedAt" | "cancelRequested">;
+  job: Pick<Job, "status" | "steps" | "startedAt" | "cancelRequested" | "note">;
 }
 
 /**
@@ -39,6 +39,12 @@ export function JobLiveProgress({ job }: JobLiveProgressProps) {
       {elapsed !== null && <span>{formatDuration(Math.floor(elapsed / 1000) * 1000)}</span>}
 
       {job.cancelRequested && <span className="text-amber-500">{TrackStrings.cancelling}</span>}
+
+      {job.note && (
+        <span role="status" className="basis-full text-amber-500">
+          {job.note}
+        </span>
+      )}
     </p>
   );
 }

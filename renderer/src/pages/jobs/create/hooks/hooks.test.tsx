@@ -4,20 +4,28 @@ import { useQueryClient } from "@tanstack/react-query";
 
 vi.mock("../api/create", () => ({
   getJobTypes: vi.fn(),
-  createVideoToTranscript: vi.fn(),
-  createVideoToSummary: vi.fn(),
+  createVideoToTranscriptBatch: vi.fn(),
+  createVideoToSummaryBatch: vi.fn(),
 }));
 
 import { createWrapper } from "../../../../test/utils";
 import {
-  createVideoToSummary,
-  createVideoToTranscript,
+  createVideoToSummaryBatch,
+  createVideoToTranscriptBatch,
   getJobTypes,
 } from "../api/create";
 
 import { useCreateVideoToSummary } from "./useCreateVideoToSummary";
 import { useCreateVideoToTranscript } from "./useCreateVideoToTranscript";
 import { useJobTypes } from "./useJobsTypes";
+
+const summaryParams = {
+  urls: ["http://x"],
+  providerId: "p",
+  modelId: "m",
+  thinking: "off",
+  detail: "detailed" as const,
+};
 
 describe("jobs create hooks", () => {
   it("when useJobTypes mounts, should fetch the job types", async () => {
@@ -33,65 +41,59 @@ describe("jobs create hooks", () => {
     expect(result.current.data).toHaveLength(1);
   });
 
-  it("when the transcript mutation runs, should call createVideoToTranscript", async () => {
-    vi.mocked(createVideoToTranscript).mockResolvedValue({
-      id: "1",
-      status: "pending",
+  it("when the transcript mutation runs, should create the batch of links", async () => {
+    vi.mocked(createVideoToTranscriptBatch).mockResolvedValue({
+      created: 2,
+      failed: [],
     });
     const { result } = renderHook(() => useCreateVideoToTranscript(), {
       wrapper: createWrapper(),
     });
 
     await act(async () => {
-      await result.current.mutateAsync({ url: "http://x" });
+      await result.current.mutateAsync({ urls: ["http://x", "http://y"] });
     });
 
-    expect(vi.mocked(createVideoToTranscript).mock.calls[0][0]).toEqual({
-      url: "http://x",
+    expect(vi.mocked(createVideoToTranscriptBatch).mock.calls[0][0]).toEqual({
+      urls: ["http://x", "http://y"],
     });
   });
 
-  it("when the summary mutation runs, should call createVideoToSummary", async () => {
-    vi.mocked(createVideoToSummary).mockResolvedValue({
-      id: "1",
-      status: "pending",
+  it("when the summary mutation runs, should create the batch of links", async () => {
+    vi.mocked(createVideoToSummaryBatch).mockResolvedValue({
+      created: 1,
+      failed: [],
     });
     const { result } = renderHook(() => useCreateVideoToSummary(), {
       wrapper: createWrapper(),
     });
-    const params = {
-      url: "http://x",
-      providerId: "p",
-      modelId: "m",
-      thinking: "off",
-      detail: "detailed" as const,
-    };
 
     await act(async () => {
-      await result.current.mutateAsync(params);
+      await result.current.mutateAsync(summaryParams);
     });
 
-    expect(vi.mocked(createVideoToSummary).mock.calls[0][0]).toEqual(params);
+    expect(vi.mocked(createVideoToSummaryBatch).mock.calls[0][0]).toEqual(
+      summaryParams,
+    );
   });
 
   it.each([
-    ["transcript", () => useCreateVideoToTranscript(), createVideoToTranscript, { url: "http://x" }],
+    [
+      "transcript",
+      () => useCreateVideoToTranscript(),
+      createVideoToTranscriptBatch,
+      { urls: ["http://x"] },
+    ],
     [
       "summary",
       () => useCreateVideoToSummary(),
-      createVideoToSummary,
-      {
-        url: "http://x",
-        providerId: "p",
-        modelId: "m",
-        thinking: "off",
-        detail: "detailed" as const,
-      },
+      createVideoToSummaryBatch,
+      summaryParams,
     ],
   ])(
     "when the %s job is created, should refresh the jobs list right away",
     async (_name, useHook, api, params) => {
-      vi.mocked(api).mockResolvedValue({ id: "1", status: "pending" });
+      vi.mocked(api).mockResolvedValue({ created: 1, failed: [] });
       const wrapper = createWrapper();
       const { result } = renderHook(
         () => ({ create: useHook(), client: useQueryClient() }),
@@ -106,4 +108,22 @@ describe("jobs create hooks", () => {
       expect(invalidate).toHaveBeenCalledWith({ queryKey: ["jobs"] });
     },
   );
+
+  it("when only part of the batch is created, should still refresh the jobs list", async () => {
+    vi.mocked(createVideoToTranscriptBatch).mockResolvedValue({
+      created: 1,
+      failed: ["http://y"],
+    });
+    const { result } = renderHook(
+      () => ({ create: useCreateVideoToTranscript(), client: useQueryClient() }),
+      { wrapper: createWrapper() },
+    );
+    const invalidate = vi.spyOn(result.current.client, "invalidateQueries");
+
+    await act(async () => {
+      await result.current.create.mutateAsync({ urls: ["http://x", "http://y"] });
+    });
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["jobs"] });
+  });
 });

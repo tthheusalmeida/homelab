@@ -98,7 +98,9 @@ function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="dialog-body"
       className={cn(
-        "grid min-h-0 flex-1 content-start gap-4 overflow-y-auto px-5 py-4",
+        // A coluna única encolhe (`minmax(0,1fr)`): sem isso um texto sem quebra (link comprido)
+        // alarga a grade e cria rolagem horizontal; cada filho corta com reticências.
+        "grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] content-start gap-4 overflow-x-hidden overflow-y-auto px-5 py-4",
         className
       )}
       {...props}

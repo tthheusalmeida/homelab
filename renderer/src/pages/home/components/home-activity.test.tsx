@@ -84,7 +84,7 @@ describe("ActivitySection", () => {
     expect(await screen.findByText("2")).toBeInTheDocument();
     expect(screen.getByText("em execução agora")).toBeInTheDocument();
     expect(await screen.findByText("3")).toBeInTheDocument();
-    expect(screen.getByText("páginas aguardando decisão")).toBeInTheDocument();
+    expect(screen.getByText("páginas para classificar")).toBeInTheDocument();
     expect(await screen.findByText("7")).toBeInTheDocument();
     expect(screen.getByText("requisições · $1.50")).toBeInTheDocument();
   });
@@ -112,7 +112,7 @@ describe("ActivitySection", () => {
 
     renderWithRouter(<ActivitySection />);
 
-    expect(await screen.findByText("página aguardando decisão")).toBeInTheDocument();
+    expect(await screen.findByText("página para classificar")).toBeInTheDocument();
   });
 });
 
@@ -163,6 +163,6 @@ describe("QuickActions", () => {
     expect(link).toHaveTextContent("G T");
     expect(screen.getByRole("link", { name: /Nova página/ })).toHaveTextContent("G N");
     expect(screen.getByRole("link", { name: /Conversa/ })).toHaveTextContent("G C");
-    expect(screen.getByRole("link", { name: /Caixa de entrada/ })).toHaveTextContent("G I");
+    expect(screen.getByRole("link", { name: /Classificação/ })).toHaveTextContent("G I");
   });
 });

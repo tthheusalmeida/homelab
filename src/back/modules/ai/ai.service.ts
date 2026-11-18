@@ -81,6 +81,7 @@ export class AIService {
       model: dto.modelId,
       thinking: dto.thinking,
       ...(dto.messages ? { messages: dto.messages } : {}),
+      ...(dto.onRetry ? { onRetry: dto.onRetry } : {}),
     });
   }
 

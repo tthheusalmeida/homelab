@@ -123,6 +123,30 @@ describe('OllamaProvider', () => {
       expect(usage.getUsage().recentRequests[0].success).toBe(false);
     });
 
+    it('when Ollama is not running, should explain it could not be reached and keep the cause', async () => {
+      const cause = Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' });
+      http.post.mockReturnValue(throwError(() => cause));
+
+      const error = await provider.chat({ message: 'a', model: 'm' }).catch((e: Error) => e);
+
+      expect((error as Error).message).toContain('Não foi possível conectar ao Ollama');
+      expect((error as Error).cause).toBe(cause);
+    });
+
+    it('when the model is not installed, should say so in plain words', async () => {
+      http.post.mockReturnValue(
+        throwError(() =>
+          Object.assign(new Error('404'), {
+            response: { status: 404, data: { error: 'model not found' } },
+          }),
+        ),
+      );
+
+      await expect(provider.chat({ message: 'a', model: 'm' })).rejects.toThrow(
+        'modelo escolhido não está instalado no Ollama',
+      );
+    });
+
     it('when the network fails, should record a failure with zeroed tokens', async () => {
       http.post.mockReturnValue(throwError(() => new Error('net')));
 

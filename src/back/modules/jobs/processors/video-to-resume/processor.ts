@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { Job } from '../../domain/job.entity';
 import { JobProcessor } from '../../domain/job-processor.interface';
+import { retryNote } from '../../domain/retry-note';
 
 import { normalizeText, removeAllegedAuthorship } from '../../../../utils/text';
 import { VideoToSummaryDto } from './dto/video-to-summary.dto';
@@ -80,7 +81,8 @@ export class VideoToSummaryJobProcessor implements JobProcessor<VideoToSummaryDt
       this.videoService.summarize(
         buildSummaryPrompt(options.detail ?? DEFAULT_SUMMARY_DETAIL),
         transcription,
-        options,
+        // Enquanto a IA tenta de novo, a tela mostra "tentativa x de y".
+        { ...options, onRetry: (info) => job.setNote(retryNote(info)) },
       ),
     );
   }

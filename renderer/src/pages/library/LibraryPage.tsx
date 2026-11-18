@@ -3,6 +3,7 @@ import { useState, type CSSProperties } from "react";
 import { Link, useLocation } from "react-router";
 import { Inbox, SearchX, Library as LibraryIcon } from "lucide-react";
 
+import { InboxStrings } from "#lib/inbox-text";
 import { Button, buttonVariants } from "#ui/button";
 import { Card, CardContent } from "#ui/card";
 
@@ -218,13 +219,13 @@ export function LibraryPage() {
               <EmptyState
                 icon={LibraryIcon}
                 title="A biblioteca está vazia"
-                description="Adicione resumos e transcrições da Entrada ou escreva uma página."
+                description={`Adicione resumos e transcrições ${InboxStrings.from} ou escreva uma página.`}
                 action={
                   <Link
                     to="/library/inbox"
                     className={buttonVariants({ variant: "secondary" })}
                   >
-                    <Inbox /> Ir para a Entrada
+                    <Inbox /> {InboxStrings.goTo}
                   </Link>
                 }
               />

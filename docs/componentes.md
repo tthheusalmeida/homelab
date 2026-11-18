@@ -4,7 +4,7 @@ O instalador é pequeno (app, Whisper em CPU e ffmpeg). O que é grande (modelos
 
 ## Catálogo (`src/components/component-manifest.ts`)
 Uma entrada por componente: `id`, `group` (`runtime`, `download`, `gpu`, `model`), `label`, `description`, `required`, `kind`, tamanho, arquivo que prova a instalação e, se baixável, `download: { url, sha256 }`.
-- `bundled`: já vem no instalador (Windows: Whisper, ffmpeg); só é conferido.
+- `bundled`: só é conferido, não é baixado. No Windows é o ffmpeg ("Processamento de áudio"), que chega junto do pacote da Transcrição.
 - `file`: arquivo baixado para `<userData>/components/models`.
 - `zip`: pacote baixado e extraído ao lado do `whisper-cli` (pacote CUDA); `provides` lista os arquivos esperados.
 - `binary`: programa único baixado direto para a pasta de binários (`yt-dlp`, e o `ffmpeg` no Linux; ver `download-de-videos.md`). Fora do Windows o app dá permissão de execução depois do download (`chmod 755`, também nos arquivos de um `zip`); a detecção olha se o arquivo existe, então o programa pode se atualizar sozinho sem o catálogo notar.
@@ -17,9 +17,10 @@ O usuário vê **um item só, com nome genérico** em qualquer sistema: "Transcr
 Cada entrada (`ComponentTemplate`) tem `variants` por `<sistema>-<arch>` (a mesma chave de `resources/bin`) dizendo como obter aquele item ali (`kind`, tamanho, arquivo, `download`). `catalogFor(target)` devolve a lista já resolvida para o sistema, e é ela que o `ComponentsService` usa. Regras:
 - Entrada com `variants` só existe nos sistemas listados (o pacote CUDA não aparece no Linux, e a recomendação de hardware deixa de sugeri-lo: `accelerationAvailable`).
 - Entrada sem `variants` vale para todos (os modelos).
-- Hoje: `win32-x64` (ffmpeg e Whisper `bundled`, yt-dlp e CUDA baixados) e `linux-x64` (Whisper, ffmpeg e yt-dlp baixados como programa único, direto do GitHub: build estático do `eugeneware/ffmpeg-static` e `yt-dlp_linux`).
+- Hoje: `win32-x64` (Transcrição baixada como pacote `zip` (traz também o ffmpeg, que fica `bundled`), yt-dlp e CUDA baixados) e `linux-x64` (Whisper, ffmpeg e yt-dlp baixados como programa único, direto do GitHub: build estático do `eugeneware/ffmpeg-static` e `yt-dlp_linux`).
 
 Origens: o Linux baixa o ffmpeg de `eugeneware/ffmpeg-static` (tag `b6.1.1`) e o yt-dlp do release oficial; os SHA-256 do yt-dlp vêm do `SHA2-256SUMS` do release. Modelos em `huggingface.co/ggerganov/whisper.cpp` (SHA-256 vindos da API do Hugging Face); pacote CUDA no Release `components-v1` do repositório (arquivo `whisper-cuda12-win32-x64.zip`, gerado a partir de `resources/bin/win32-x64`). O repositório precisa ser público para o download sem token.
+**Windows: Transcrição e ffmpeg vêm do pacote `bin-v1`.** O instalador já os leva (a CI baixa o mesmo pacote com `scripts/bin-fetch.mjs`), então no app instalado nada é baixado. Quando os arquivos não estão na pasta de binários (ambiente de desenvolvimento, pasta de uma worktree nova, arquivo apagado), a **Transcrição** é obrigatória e o app a baixa do Release `bin-v1` (`win32-x64.zip`, ~42 MB, com SHA-256 conferido) pelo assistente ou por Configurações > Componentes; o ffmpeg vem no mesmo pacote. A URL e o SHA-256 ficam em `WINDOWS_BIN_PACKAGE` (`component-manifest.ts`) e **precisam bater** com `scripts/windows-bin.json` (um teste confere). Se gerar o pacote de novo (`npm run bin:pack`), atualize os dois.
 
 ## Serviço (`ComponentsService`)
 - `status()`: estado de cada item (`missing`, `queued`, `downloading`, `verifying`, `installing`, `installed`, `failed`), hardware, progresso geral e `needsSetup` (falta obrigatório ou nenhum modelo).
@@ -38,7 +39,7 @@ A mensagem em português vai ao usuário junto com a pré-seleção.
 
 ## Interface
 - `InstallAssistant` (app principal): abre sozinho quando `needsSetup`; mostra o hardware, a lista com a recomendação marcada e, ao instalar, o progresso geral e de cada item. "Agora não" fecha.
-- `SidebarSetupProgress`: cartão acima de Configurações com "Instalando n de N" e a porcentagem, ou o lembrete de concluir; clicar abre Configurações > Componentes.
+- `SidebarSetupProgress`: cartão acima de Configurações com "Instalando n de N" e a porcentagem, ou o lembrete de concluir; clicar abre Configurações > Componentes. O lembrete diz a **causa real** (`setupHint`): se falta um componente essencial (os que vêm junto do app, como Transcrição e Processamento de áudio) ele os nomeia; só quando eles estão ali e não há modelo é que pede "baixar um modelo". Num ambiente de desenvolvimento esses binários ficam em `resources/bin/<plataforma>`, fora do Git; a mensagem manda abrir Componentes para instalar.
 - Configurações > Componentes (`ComponentsSection`): o mesmo `ComponentChecklist`, com Usar e Remover por item e Instalar selecionados.
 - `ComponentChecklist`, `HardwareCard`, `lib/components-text.ts` e `hooks/use-components.ts` são a fonte única nas duas janelas.
 

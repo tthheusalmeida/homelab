@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { FilePlus, Inbox, LayersPlus, MessageSquare, type LucideIcon } from "lucide-react";
 
+import { InboxStrings } from "#lib/inbox-text";
 import { goShortcutLabel } from "#lib/shortcuts";
 
 import { HomeBaseSection } from "./BaseSection";
@@ -9,7 +10,7 @@ const ACTIONS: { title: string; to: string; icon: LucideIcon }[] = [
   { title: "Nova tarefa", to: "/jobs/create", icon: LayersPlus },
   { title: "Nova página", to: "/library/new", icon: FilePlus },
   { title: "Conversa", to: "/ai/chat", icon: MessageSquare },
-  { title: "Caixa de entrada", to: "/library/inbox", icon: Inbox },
+  { title: InboxStrings.name, to: "/library/inbox", icon: Inbox },
 ];
 
 /** Atalhos para o que mais se faz, com a tecla de cada um (`G` e uma letra). */

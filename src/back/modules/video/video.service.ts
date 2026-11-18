@@ -7,7 +7,7 @@ import * as path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
-import { AIProviderName } from '../ai/ai.model';
+import { AIProviderName, AIRetryInfo } from '../ai/ai.model';
 import { SummaryDetail } from '../ai/prompts/summary-specialist.prompt';
 import { splitText } from '../../utils/text';
 import { AIService } from '../ai/ai.service';
@@ -27,6 +27,8 @@ export interface VideoSummarizeOptions {
   thinking?: string;
   /** Qualquer valor diferente de brief divide transcrições longas em partes. */
   detail?: SummaryDetail;
+  /** Chamado antes de cada nova tentativa automática do provedor de IA. */
+  onRetry?: (info: AIRetryInfo) => void;
 }
 
 /** Tamanho máximo (em caracteres) de cada parte enviada ao modelo. */
@@ -218,7 +220,7 @@ export class VideoService {
     options: VideoSummarizeOptions,
   ): Promise<string> {
     try {
-      const { providerId, modelId, thinking = 'off', detail } = options;
+      const { providerId, modelId, thinking = 'off', detail, onRetry } = options;
 
       // O resumo curto vai de uma vez; os detalhados resumem por partes para o
       // modelo não comprimir uma aula longa em poucos parágrafos.
@@ -237,6 +239,7 @@ export class VideoService {
             providerId,
             modelId,
             thinking,
+            ...(onRetry ? { onRetry } : {}),
             message: `
       ${prompt}
       ${note}${chunk}
@@ -248,7 +251,11 @@ export class VideoService {
       return parts.join('\n\n');
     } catch (error) {
       console.log(error);
-      throw new Error('Falha ao gerar o resumo.', {
+
+      // O motivo (limite de uso, serviço ocupado...) vem na mensagem do provedor de IA.
+      const reason = error instanceof Error && error.message ? ` ${error.message}` : '';
+
+      throw new Error(`Falha ao gerar o resumo.${reason}`, {
         cause: error,
       });
     }

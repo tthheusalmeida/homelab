@@ -30,6 +30,8 @@ export interface JobView {
   cancelRequested?: boolean;
   /** Falhou e guarda os dados de criação: dá para tentar de novo. */
   retryable?: boolean;
+  /** Aviso da etapa em andamento, ex.: "Tentando de novo (2 de 3): serviço sobrecarregado". */
+  note?: string;
   /** Falhou porque o vídeo exige login: a tela oferece "Entrar no site" e depois tenta de novo. */
   errorCode?: 'ACCESS_REQUIRED';
   /** Endereço do vídeo que pediu login (junto com `errorCode`). */

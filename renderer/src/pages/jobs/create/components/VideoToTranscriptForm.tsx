@@ -7,6 +7,8 @@ import { DialogFooter, DialogForm } from "#ui/dialog";
 
 import { buildDocumentHints } from "../hints";
 import { useCreateVideoToTranscript } from "../hooks/useCreateVideoToTranscript";
+import { useLinksField } from "../hooks/useLinksField";
+import { VideoUrlStrings } from "../video-url-text";
 import { JobDocumentFields } from "./JobDocumentFields";
 import { VideoUrlField } from "./VideoUrlField";
 
@@ -18,7 +20,7 @@ interface VideoToTranscriptFormProps {
 export function VideoToTranscriptForm({
   onCreated,
 }: VideoToTranscriptFormProps) {
-  const [url, setUrl] = useState("");
+  const links = useLinksField();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
@@ -26,22 +28,34 @@ export function VideoToTranscriptForm({
   const createJob = useCreateVideoToTranscript();
   const [sent, setSent] = useState(false);
 
+  const isBatch = links.urls.length > 1;
+
   // Travado enquanto envia e depois de enviar: evita criar o mesmo job duas vezes.
   const locked = createJob.isPending || sent;
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (locked) {
+    if (locked || !links.canSubmit) {
       return;
     }
 
     createJob.mutate(
-      { url, ...buildDocumentHints({ title, category, tags }) },
       {
-        onSuccess: () => {
-          setSent(true);
-          onCreated?.();
+        urls: links.urls,
+        // Com vários links o título único não vale: cada documento usa o padrão.
+        ...buildDocumentHints({
+          title: isBatch ? "" : title,
+          category,
+          tags,
+        }),
+      },
+      {
+        onSuccess: (result) => {
+          if (links.applyResult(result)) {
+            setSent(true);
+            onCreated?.();
+          }
         },
       },
     );
@@ -49,7 +63,7 @@ export function VideoToTranscriptForm({
 
   return (
     <DialogForm onSubmit={handleSubmit}>
-      <VideoUrlField value={url} onChange={setUrl} disabled={locked} />
+      <VideoUrlField field={links} disabled={locked} />
 
       <JobDocumentFields
         idPrefix="transcript"
@@ -61,6 +75,7 @@ export function VideoToTranscriptForm({
         tags={tags}
         onTagsChange={setTags}
         disabled={locked}
+        isBatch={isBatch}
       />
 
       {createJob.isError && (
@@ -70,9 +85,9 @@ export function VideoToTranscriptForm({
       )}
 
       <DialogFooter>
-        <Button type="submit" disabled={!url.trim() || locked}>
+        <Button type="submit" disabled={!links.canSubmit || locked}>
           {createJob.isPending && <Loader2 className="animate-spin" />}
-          Criar
+          {VideoUrlStrings.submit(links.urls.length)}
         </Button>
       </DialogFooter>
     </DialogForm>

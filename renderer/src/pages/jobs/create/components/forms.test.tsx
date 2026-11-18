@@ -66,13 +66,13 @@ describe("VideoToTranscriptForm", () => {
     render(<VideoToTranscriptForm />);
 
     await user.type(
-      screen.getByLabelText("URL do vídeo"),
+      screen.getByLabelText("Links dos vídeos"),
       "https://x.com/v.mp4",
     );
     await user.click(screen.getByRole("button", { name: /criar/i }));
 
     expect(mutate).toHaveBeenCalledWith(
-      { url: "https://x.com/v.mp4" },
+      { urls: ["https://x.com/v.mp4"] },
       expect.any(Object),
     );
   });
@@ -82,7 +82,7 @@ describe("VideoToTranscriptForm", () => {
     render(<VideoToTranscriptForm />);
 
     await user.type(
-      screen.getByLabelText("URL do vídeo"),
+      screen.getByLabelText("Links dos vídeos"),
       "https://x.com/v.mp4",
     );
     await user.type(screen.getByLabelText("Título"), "  Aula 3 ");
@@ -93,7 +93,7 @@ describe("VideoToTranscriptForm", () => {
 
     expect(mutate).toHaveBeenCalledWith(
       {
-        url: "https://x.com/v.mp4",
+        urls: ["https://x.com/v.mp4"],
         title: "Aula 3",
         category: ["Tecnologia", "DevOps"],
         tags: ["docker"],
@@ -108,13 +108,13 @@ describe("VideoToTranscriptForm", () => {
 
     await user.type(screen.getByLabelText("Título"), "   ");
     await user.type(
-      screen.getByLabelText("URL do vídeo"),
+      screen.getByLabelText("Links dos vídeos"),
       "https://x.com/v.mp4",
     );
     await user.click(screen.getByRole("button", { name: /criar/i }));
 
     expect(mutate).toHaveBeenCalledWith(
-      { url: "https://x.com/v.mp4" },
+      { urls: ["https://x.com/v.mp4"] },
       expect.any(Object),
     );
   });
@@ -141,7 +141,7 @@ describe("VideoToTranscriptForm", () => {
     const user = userEvent.setup();
     render(<VideoToTranscriptForm />);
 
-    await user.type(screen.getByLabelText("URL do vídeo"), "   ");
+    await user.type(screen.getByLabelText("Links dos vídeos"), "   ");
 
     expect(screen.getByRole("button", { name: /criar/i })).toBeDisabled();
   });
@@ -150,7 +150,7 @@ describe("VideoToTranscriptForm", () => {
     mutationState.isPending = true;
     render(<VideoToTranscriptForm />);
 
-    expect(screen.getByLabelText("URL do vídeo")).toBeDisabled();
+    expect(screen.getByLabelText("Links dos vídeos")).toBeDisabled();
     expect(screen.getByRole("button", { name: /criar/i })).toBeDisabled();
   });
 
@@ -176,7 +176,7 @@ describe("VideoToSummaryForm", () => {
     render(<VideoToSummaryForm />);
 
     await user.type(
-      screen.getByLabelText("URL do vídeo"),
+      screen.getByLabelText("Links dos vídeos"),
       "https://x.com/v.mp4",
     );
 
@@ -206,7 +206,7 @@ describe("VideoToSummaryForm", () => {
     mutationState.isPending = true;
     render(<VideoToSummaryForm />);
 
-    expect(screen.getByLabelText("URL do vídeo")).toBeDisabled();
+    expect(screen.getByLabelText("Links dos vídeos")).toBeDisabled();
   });
 });
 
@@ -214,14 +214,14 @@ describe("JobForm", () => {
   it("when type is video-to-transcript, should render the transcript form", () => {
     render(<JobForm jobType={jobType("video-to-transcript")} />);
 
-    expect(screen.getByLabelText("URL do vídeo")).toBeInTheDocument();
+    expect(screen.getByLabelText("Links dos vídeos")).toBeInTheDocument();
     expect(screen.queryByText("Provedor")).not.toBeInTheDocument();
   });
 
   it("when type is video-to-summary, should render the summary form", () => {
     render(<JobForm jobType={jobType("video-to-summary")} />);
 
-    expect(screen.getByLabelText("URL do vídeo")).toBeInTheDocument();
+    expect(screen.getByLabelText("Links dos vídeos")).toBeInTheDocument();
     expect(screen.getByText("Provedor")).toBeInTheDocument();
   });
 

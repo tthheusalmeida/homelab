@@ -58,7 +58,7 @@ const renderPage = () =>
 
 async function createTranscript(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getAllByRole("button", { name: /Criar/ })[0]);
-  await user.type(screen.getByLabelText("URL do vídeo"), "https://x.com/v.mp4");
+  await user.type(screen.getByLabelText("Links dos vídeos"), "https://x.com/v.mp4");
   await user.click(screen.getByRole("button", { name: /^Criar$/ }));
 }
 
@@ -66,8 +66,8 @@ describe("CreatePage — creating a job", () => {
   beforeEach(() => {
     mutate.mockReset();
     mutate.mockImplementation(
-      (_params: unknown, options: { onSuccess: () => void }) =>
-        options.onSuccess(),
+      (_params: unknown, options: { onSuccess: (result: unknown) => void }) =>
+        options.onSuccess({ created: 1, failed: [] }),
     );
     jobTypes.data = [
       {
@@ -92,7 +92,7 @@ describe("CreatePage — creating a job", () => {
     await user.click(screen.getAllByRole("button", { name: /Criar/ })[0]);
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByLabelText("URL do vídeo")).toBeInTheDocument();
+    expect(screen.getByLabelText("Links dos vídeos")).toBeInTheDocument();
   });
 
   it("when the job is created, should close the window", async () => {
@@ -131,8 +131,8 @@ describe("CreatePage — creating a job", () => {
 
     await user.click(screen.getAllByRole("button", { name: /Criar/ })[0]);
 
-    expect(screen.getByLabelText("URL do vídeo")).toHaveValue("");
-    expect(screen.getByLabelText("URL do vídeo")).toBeEnabled();
+    expect(screen.getByLabelText("Links dos vídeos")).toHaveValue("");
+    expect(screen.getByLabelText("Links dos vídeos")).toBeEnabled();
     expect(screen.getByRole("button", { name: /^Criar$/ })).toBeDisabled();
   });
 

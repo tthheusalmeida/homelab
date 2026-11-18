@@ -70,7 +70,25 @@ describe('VideoToSummaryJobProcessor', () => {
       modelId: 'qwen3.5:8b',
       thinking: 'on',
       detail: 'detailed',
+      onRetry: expect.any(Function),
     });
+  });
+
+  it('when the AI retries while summarizing, should show the attempt on the job and clear it when the step ends', async () => {
+    let noteDuringRetry: string | undefined;
+    video.summarize.mockImplementation(
+      (_prompt: string, _text: string, options: { onRetry: (info: unknown) => void }) => {
+        options.onRetry({ attempt: 2, maxAttempts: 3, delayMs: 3000, reason: 'Serviço ocupado.' });
+        noteDuringRetry = job.note;
+
+        return Promise.resolve('# resumo');
+      },
+    );
+
+    await processor.process(job, dto);
+
+    expect(noteDuringRetry).toBe('Tentando de novo (tentativa 2 de 3): Serviço ocupado.');
+    expect(job.note).toBeUndefined();
   });
 
   it.each(['brief', 'study'] as const)(

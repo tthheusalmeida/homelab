@@ -52,6 +52,8 @@ export class Job {
   private _error?: string;
   private _errorInfo?: JobErrorInfo;
   private _cancelRequested = false;
+  /** Aviso passageiro da etapa em andamento (ex.: "Tentando de novo (2 de 3)"); não vai para o disco. */
+  private _note?: string;
 
   private _steps: JobStep[] = [];
 
@@ -118,6 +120,15 @@ export class Job {
 
   get cancelRequested(): boolean {
     return this._cancelRequested;
+  }
+
+  /** Aviso da etapa em andamento (tentativa automática, por exemplo); some quando a etapa muda. */
+  get note(): string | undefined {
+    return this._note;
+  }
+
+  setNote(note?: string): void {
+    this._note = note;
   }
 
   /** Falhou e guarda os dados de criação: dá para criar outro igual. */
@@ -206,18 +217,21 @@ export class Job {
 
     const step = this.findStep(name);
 
+    this._note = undefined;
     step.status = JobStatus.RUNNING;
   }
 
   completeStep(name: string): void {
     const step = this.findStep(name);
 
+    this._note = undefined;
     step.status = JobStatus.COMPLETED;
   }
 
   failStep(name: string): void {
     const step = this.findStep(name);
 
+    this._note = undefined;
     step.status = JobStatus.FAILED;
   }
 
@@ -279,6 +293,7 @@ export class Job {
       steps: this.steps,
       cancelRequested: this._cancelRequested,
       retryable: this.retryable,
+      note: this._note,
     };
   }
 }

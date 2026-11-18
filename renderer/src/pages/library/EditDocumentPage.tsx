@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from "react-router";
 
+import { InboxStrings } from "#lib/inbox-text";
 import { Card, CardContent } from "#ui/card";
 
 import { ErrorState } from "#components/ErrorState";
@@ -44,7 +45,7 @@ export function EditDocumentPage() {
         <CardContent className="py-10 text-center">
           <ErrorState
             primaryMessage="Só é possível editar páginas que estão na biblioteca."
-            secondaryMessage="Readicione a página pela Entrada para editá-la."
+            secondaryMessage={`Readicione a página ${InboxStrings.via} para editá-la.`}
             actionLabel="Voltar à página"
             action={() => navigate(`/library/${data.meta.id}`)}
           />

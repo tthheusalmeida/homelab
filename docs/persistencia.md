@@ -88,7 +88,7 @@ Hoje seus dados estão em pastas soltas (`D:\homelab\lib`, `D:/homelab/temp/docs
 
 **Ações nos jobs (cancelar, tentar de novo, desfazer)**
 - Canais `jobs:cancel`, `jobs:retry` e `jobs:undo-delete` (ver `docs/ipc-canais.md`). Cancelar é cooperativo: para ao fim da etapa em andamento.
-- Na tela Em andamento: botão **Cancelar** nos jobs ativos, **Tentar de novo** nos que falharam (e guardam `request`), linha ao vivo com **etapa n/total, nome da etapa e tempo decorrido**, e **Desfazer** no snackbar depois de excluir.
+- Na tela Em andamento: botão **Cancelar** nos jobs ativos, **Tentar de novo** nos que falharam (e guardam `request`), linha ao vivo com **etapa n/total, nome da etapa e tempo decorrido** (e, quando a IA está tentando de novo, "Tentando de novo (tentativa x de 3): motivo"), e **Desfazer** no snackbar depois de excluir.
 
 ## Parte C. Seção de Chats
 **Modelo** (em `chats.json`)

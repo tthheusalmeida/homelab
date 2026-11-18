@@ -141,12 +141,58 @@ describe('Job', () => {
         'id',
         'label',
         'name',
+        'note',
         'retryable',
         'startedAt',
         'status',
         'steps',
       ].sort(),
     );
+  });
+
+  describe('note', () => {
+    it('when a note is set, should expose it in the JSON but not save it to disk', () => {
+      const job = newJob();
+
+      job.setNote('Tentando de novo');
+
+      expect(job.note).toBe('Tentando de novo');
+      expect(job.toJSON().note).toBe('Tentando de novo');
+      expect(job.snapshot()).not.toHaveProperty('note');
+    });
+
+    it.each(['startStep', 'completeStep', 'failStep'] as const)(
+      'when the step changes with %s, should clear the note',
+      (method) => {
+        const job = newJob();
+        const step = job.steps[0].name;
+
+        job.setNote('aviso');
+        job[method](step);
+
+        expect(job.note).toBeUndefined();
+      },
+    );
+
+    it('when a step fails inside runStep, should clear the note', async () => {
+      const job = newJob();
+
+      job.setNote('aviso');
+      await expect(
+        job.runStep(job.steps[0].name, () => Promise.reject(new Error('x'))),
+      ).rejects.toThrow('x');
+
+      expect(job.note).toBeUndefined();
+    });
+
+    it('when the note is set with nothing, should clear it', () => {
+      const job = newJob();
+
+      job.setNote('aviso');
+      job.setNote(undefined);
+
+      expect(job.note).toBeUndefined();
+    });
   });
 
   describe('persistence', () => {

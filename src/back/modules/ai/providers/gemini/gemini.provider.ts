@@ -10,6 +10,14 @@ import { IpcError, IpcErrorCode } from '../../../../../shared/errors';
 import { BackConfig } from '../../../../config/back-config';
 import { AiUsageService } from '../../usage/ai-usage.service';
 
+import { defaultSleep, withRetry } from '../../../../utils/retry';
+
+import {
+  classifyGeminiError,
+  GEMINI_MAX_ATTEMPTS,
+  GEMINI_RETRY_DELAYS_MS,
+  GeminiEmptyResponseError,
+} from './gemini-errors';
 import { pricing } from './gemini.pricing';
 
 export const GEMINI_NOT_CONFIGURED =
@@ -19,6 +27,9 @@ export const GEMINI_NOT_CONFIGURED =
 export class GeminiProvider implements AIProvider {
   private readonly ai: GoogleGenAI | null;
   readonly name = 'gemini' as const;
+
+  /** Espera entre tentativas (os testes trocam por uma que não espera). */
+  sleep: (ms: number) => Promise<void> = defaultSleep;
 
   constructor(
     private readonly usageService: AiUsageService,
@@ -88,33 +99,42 @@ export class GeminiProvider implements AIProvider {
     const startedAt = Date.now();
 
     try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: request.messages
-          ? request.messages.map((turn) => ({
-              role: turn.role === 'assistant' ? 'model' : 'user',
-              parts: [{ text: turn.content }],
-            }))
-          : request.message,
-      });
+      // Erro passageiro (limite de uso, servidor ocupado, rede, resposta vazia) repete sozinho,
+      // até `GEMINI_MAX_ATTEMPTS` vezes, e avisa quem chamou antes de cada nova tentativa.
+      const response = await withRetry(
+        async () => {
+          const result = await ai.models.generateContent({
+            model,
+            contents: request.messages
+              ? request.messages.map((turn) => ({
+                  role: turn.role === 'assistant' ? 'model' : 'user',
+                  parts: [{ text: turn.content }],
+                }))
+              : request.message,
+          });
+
+          if (!result.text) {
+            throw new GeminiEmptyResponseError();
+          }
+
+          return result;
+        },
+        {
+          maxAttempts: GEMINI_MAX_ATTEMPTS,
+          delaysMs: GEMINI_RETRY_DELAYS_MS,
+          isRetryable: (error) => classifyGeminiError(error).retryable,
+          sleep: (ms) => this.sleep(ms),
+          onRetry: ({ attempt, maxAttempts, delayMs, error }) =>
+            request.onRetry?.({
+              attempt,
+              maxAttempts,
+              delayMs,
+              reason: classifyGeminiError(error).message,
+            }),
+        },
+      );
 
       const latencyMs = Date.now() - startedAt;
-
-      if (!response.text) {
-        this.usageService.record({
-          provider: 'gemini',
-          model,
-          operation: 'chat',
-          inputTokens: 0,
-          outputTokens: 0,
-          totalTokens: 0,
-          estimatedCost: 0,
-          latencyMs,
-          success: false,
-        });
-
-        throw new Error('A resposta do Gemini não contém texto.');
-      }
 
       const inputTokens = response.usageMetadata?.promptTokenCount ?? 0;
       const outputTokens = response.usageMetadata?.candidatesTokenCount ?? 0;
@@ -134,14 +154,8 @@ export class GeminiProvider implements AIProvider {
         success: true,
       });
 
-      return response.text;
+      return response.text as string;
     } catch (error) {
-      if (error instanceof Error && error.message === 'A resposta do Gemini não contém texto.') {
-        throw new Error('A requisição para o chat do Gemini falhou.', {
-          cause: error,
-        });
-      }
-
       this.usageService.record({
         provider: 'gemini',
         model,
@@ -154,9 +168,9 @@ export class GeminiProvider implements AIProvider {
         success: false,
       });
 
-      throw new Error('A requisição para o chat do Gemini falhou.', {
-        cause: error,
-      });
+      // O motivo real (limite de uso, servidor ocupado, chave recusada...) vai na mensagem; o erro
+      // original fica em `cause`.
+      throw new Error(classifyGeminiError(error).message, { cause: error });
     }
   }
 

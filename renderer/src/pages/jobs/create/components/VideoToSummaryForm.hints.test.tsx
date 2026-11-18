@@ -80,7 +80,7 @@ describe("VideoToSummaryForm — document fields", () => {
     render(<VideoToSummaryForm />);
 
     await user.type(
-      screen.getByLabelText("URL do vídeo"),
+      screen.getByLabelText("Links dos vídeos"),
       "https://x.com/v.mp4",
     );
     await chooseModel(user);
@@ -91,7 +91,7 @@ describe("VideoToSummaryForm — document fields", () => {
 
     expect(mutate).toHaveBeenCalledWith(
       {
-        url: "https://x.com/v.mp4",
+        urls: ["https://x.com/v.mp4"],
         providerId: "gemini",
         modelId: "m1",
         thinking: "off",
@@ -109,7 +109,7 @@ describe("VideoToSummaryForm — document fields", () => {
     render(<VideoToSummaryForm />);
 
     await user.type(
-      screen.getByLabelText("URL do vídeo"),
+      screen.getByLabelText("Links dos vídeos"),
       "https://x.com/v.mp4",
     );
     await chooseModel(user);
@@ -117,7 +117,7 @@ describe("VideoToSummaryForm — document fields", () => {
 
     expect(mutate).toHaveBeenCalledWith(
       {
-        url: "https://x.com/v.mp4",
+        urls: ["https://x.com/v.mp4"],
         providerId: "gemini",
         modelId: "m1",
         thinking: "off",
@@ -132,7 +132,7 @@ describe("VideoToSummaryForm — document fields", () => {
     render(<VideoToSummaryForm />);
 
     await user.type(
-      screen.getByLabelText("URL do vídeo"),
+      screen.getByLabelText("Links dos vídeos"),
       "https://x.com/v.mp4",
     );
     await chooseModel(user);

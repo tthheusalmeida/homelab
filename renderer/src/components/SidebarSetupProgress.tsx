@@ -3,7 +3,7 @@ import { Download } from 'lucide-react';
 import { ProgressBar } from '#components/ProgressBar';
 import { SidebarNotice } from '#components/SidebarNotice';
 import { openComponentsSettings, useComponentsStatus } from '#hooks/use-components';
-import { ComponentStrings, overallPercent } from '#lib/components-text';
+import { ComponentStrings, overallPercent, setupHint } from '#lib/components-text';
 
 /**
  * Aviso na barra lateral, acima de Configurações: mostra o progresso do que está sendo baixado
@@ -41,7 +41,7 @@ export function SidebarSetupProgress() {
       hint={
         overall
           ? `${overallPercent(overall)}% · ${ComponentStrings.sidebarOpen.toLowerCase()}`
-          : ComponentStrings.sidebarPendingHint
+          : setupHint(status.components)
       }
       onOpen={() => void openComponentsSettings()}
       openLabel={ComponentStrings.sidebarOpen}

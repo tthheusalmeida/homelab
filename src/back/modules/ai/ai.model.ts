@@ -37,10 +37,23 @@ export interface AIChatTurn {
   content: string;
 }
 
+/** O provedor falhou por um motivo passageiro e vai tentar de novo. */
+export interface AIRetryInfo {
+  /** Tentativa que vai começar (2 é a primeira repetição). */
+  attempt: number;
+  maxAttempts: number;
+  /** Espera antes da nova tentativa. */
+  delayMs: number;
+  /** Motivo da falha, em português. */
+  reason: string;
+}
+
 export interface AIChatRequest {
   message: string;
   model: string;
   thinking?: string;
+  /** Chamado antes de cada nova tentativa automática (para mostrar "tentando de novo"). */
+  onRetry?: (info: AIRetryInfo) => void;
   /**
    * Conversa inteira (incluindo a mensagem nova, que é a última). Quando existe, o provedor a usa
    * no lugar de `message`; sem ela vale só `message` (jobs de resumo, que são de uma mensagem só).

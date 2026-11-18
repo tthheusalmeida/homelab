@@ -71,7 +71,7 @@ describe('AppSidebar', () => {
       'Consumo',
       'Páginas',
       'Livros',
-      'Caixa de entrada',
+      'Classificação',
       'Nova página',
       'Nova tarefa',
       'Em andamento',
@@ -102,7 +102,7 @@ describe('AppSidebar', () => {
     ['/ai/usage', 'Consumo'],
     ['/library', 'Páginas'],
     ['/library/books/abc', 'Livros'],
-    ['/library/inbox', 'Caixa de entrada'],
+    ['/library/inbox', 'Classificação'],
     ['/library/new', 'Nova página'],
     ['/jobs/create', 'Nova tarefa'],
     ['/jobs/track', 'Em andamento'],
@@ -194,18 +194,18 @@ describe('AppSidebar', () => {
   });
 });
 
-describe('AppSidebar: contador da caixa de entrada', () => {
+describe('AppSidebar: contador da Classificação', () => {
   const page = (id: string) => ({ id, title: `Página ${id}`, status: 'pending' });
 
-  it('when there are pages waiting, should show how many next to Caixa de entrada', async () => {
+  it('when there are pages waiting, should show how many next to Classificação', async () => {
     mockApi({ [IpcChannels.library.inbox]: () => ok([page('1'), page('2'), page('3')]) });
 
     renderSidebar();
 
-    const badge = await screen.findByLabelText('3 na caixa de entrada');
+    const badge = await screen.findByLabelText('3 para classificar');
 
     expect(badge).toHaveTextContent('3');
-    expect(badge.closest('li')).toHaveTextContent('Caixa de entrada');
+    expect(badge.closest('li')).toHaveTextContent('Classificação');
   });
 
   it('when the inbox is empty, should show no counter', async () => {
@@ -214,7 +214,7 @@ describe('AppSidebar: contador da caixa de entrada', () => {
     renderSidebar();
     await waitFor(() => expect(invoke).toHaveBeenCalledWith(IpcChannels.library.inbox));
 
-    expect(screen.queryByLabelText(/na caixa de entrada$/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/para classificar$/)).not.toBeInTheDocument();
   });
 
   it('when the inbox cannot be loaded, should still render the menu without a counter', () => {
@@ -222,8 +222,8 @@ describe('AppSidebar: contador da caixa de entrada', () => {
 
     renderSidebar();
 
-    expect(screen.getByText('Caixa de entrada')).toBeInTheDocument();
-    expect(screen.queryByLabelText(/na caixa de entrada$/)).not.toBeInTheDocument();
+    expect(screen.getByText('Classificação')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/para classificar$/)).not.toBeInTheDocument();
   });
 
   it('when pages wait and jobs run, should keep each counter on its own item', async () => {
@@ -245,8 +245,8 @@ describe('AppSidebar: contador da caixa de entrada', () => {
 
     renderSidebar();
 
-    expect((await screen.findByLabelText('1 na caixa de entrada')).closest('li')).toHaveTextContent(
-      'Caixa de entrada',
+    expect((await screen.findByLabelText('1 para classificar')).closest('li')).toHaveTextContent(
+      'Classificação',
     );
     expect((await screen.findByLabelText('1 em andamento')).closest('li')).toHaveTextContent(
       'Em andamento',

@@ -13,7 +13,7 @@ O instalador é gerado pelo `electron-builder` (config em `electron-builder.yml`
 - `dist/` (main e preload), `dist-renderer/` (as duas janelas) e `package.json`, dentro do `app.asar`. As dependências do renderer (React, Vite, Tailwind…) são `devDependencies` e **não** entram: só as do main (`@google/genai`, Nest, axios, rxjs, uuidv7, yaml…).
 - `resources/bin/<plataforma>-<arch>/` vai para `<instalação>/resources/bin/<plataforma>-<arch>` (`extraResources` dentro de `win:`, **fora do asar**, porque é executado): cada instalador leva só os binários do seu sistema. No Windows entram `whisper-cli.exe`, as DLLs de CPU e o `ffmpeg.exe`. **Não entram** os modelos (`*.bin`) nem o pacote CUDA (`cublas*`, `cudart*`, `nvblas*`, `nvrtc*`, `ggml-cuda.dll`): o instalador NSIS não passa de ~2 GB, então o assistente de instalação do app baixa esses itens depois. Como obter os binários: `resources/bin/README.md`.
 - **ffmpeg:** o app usa o embutido (`resolveFfmpegPath`, `src/providers/ffmpeg-binary-resolver.ts`) e, se ele não existir (desenvolvimento), o `ffmpeg` do PATH.
-- `resources/bin` não é versionado. Antes de `npm run dist`, ele precisa estar preenchido (a CI baixa o pacote `bin-v1`, ver abaixo).
+- `resources/bin` não é versionado. Antes de `npm run dist`, ele precisa estar preenchido (a CI baixa o pacote `bin-v1`, ver abaixo). Para **desenvolver**, não é preciso copiar nada à mão: o app baixa o pacote sozinho quando faltar (ver `componentes.md`); `npm run bin:fetch` faz o mesmo pela linha de comando.
 - O bloco `publish` do `electron-builder.yml` aponta para o repositório dos Releases: gera `latest.yml`/`latest-linux.yml` e os `.blockmap` (lidos pelo atualizador do app). Nunca publica sozinho (`--publish never`).
 
 ## Caminhos

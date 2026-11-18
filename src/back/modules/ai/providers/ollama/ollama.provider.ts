@@ -10,6 +10,7 @@ import { HealthCheck, HealthStatusOptions } from '../../../health/health.model';
 
 import { AiUsageService } from '../../usage/ai-usage.service';
 
+import { describeOllamaError } from './ollama-errors';
 import { pricing } from './ollama.pricing';
 import { chooseContextWindow, parseModelContextLimit } from './context-window';
 import { BackConfig } from '../../../../config/back-config';
@@ -187,7 +188,7 @@ export class OllamaProvider implements AIProvider {
         success: false,
       });
 
-      throw new Error('A requisição para o chat do Ollama falhou.', {
+      throw new Error(describeOllamaError(error), {
         cause: error,
       });
     }
