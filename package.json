@@ -5,6 +5,9 @@
   "description": "HomeLab desktop (Electron)",
   "license": "MIT",
   "main": "dist/main/index.js",
+  "engines": {
+    "node": ">=24.14.0"
+  },
   "scripts": {
     "build:main": "tsc -p tsconfig.build.json && npm run build:preload",
     "build": "npm run build:renderer && npm run build:main",
