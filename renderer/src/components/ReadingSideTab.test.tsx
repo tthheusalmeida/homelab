@@ -34,3 +34,16 @@ describe('ReadingSideTab', () => {
     expect(container.querySelector('svg')).toHaveClass('rotate-180');
   });
 });
+
+describe('ReadingSideTab — side', () => {
+  it('when on the left, should point the arrow inward (right) and flip it when open', () => {
+    const { container, rerender } = render(<ReadingSideTab side="left" />);
+
+    expect(container.querySelector('svg')).toHaveClass('lucide-chevron-right');
+    expect(container.querySelector('svg')).not.toHaveClass('rotate-180');
+
+    rerender(<ReadingSideTab side="left" open />);
+
+    expect(container.querySelector('svg')).toHaveClass('rotate-180');
+  });
+});

@@ -11,12 +11,11 @@ import { BackToTopButton } from "#components/BackToTopButton";
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { ErrorState } from "#components/ErrorState";
 import { LoadingState } from "#components/LoadingState";
-import { MarkdownMessage } from "#components/MarkdownMessage";
+import { DocumentBody } from "#components/DocumentBody";
 import { ReadingMode } from "#components/ReadingMode";
 import { ReadingSection } from "#components/ReadingSection";
 import { ReadingSurface } from "#components/ReadingSurface";
 import { cn } from "#lib/utils";
-import { TranscriptView } from "#components/TranscriptView";
 import { useSummaryPreferences } from "#hooks/use-appearance";
 import { useActiveSection } from "#hooks/use-active-section";
 import { extractHeadings } from "#lib/markdown";
@@ -160,15 +159,12 @@ export function DocumentPage() {
       label={documentTypeLabels[meta.type]}
       title={meta.title}
     >
-      {excerpts ? (
-        <TranscriptView
-          excerpts={excerpts}
-          sourceUrl={meta.sourceUrl}
-          railSlot={reading ? undefined : railSlot}
-        />
-      ) : (
-        <MarkdownMessage content={content} headingIds size="inherit" />
-      )}
+      <DocumentBody
+        content={content}
+        isTranscription={meta.type === "transcription"}
+        sourceUrl={meta.sourceUrl}
+        railSlot={railSlot}
+      />
     </ReadingSection>
   );
 
@@ -178,9 +174,19 @@ export function DocumentPage() {
         <ReadingMode
           title={meta.title}
           onExit={() => setReading(false)}
-          toc={
+          follow={
+            excerpts ? (
+              <div ref={setRailSlot} />
+            ) : (
+              hasLeftColumn && (
+                <DocumentOutline headings={sidebarHeadings} activeId={activeId} />
+              )
+            )
+          }
+          options={
             <DocumentSidebar
               embedded
+              hideOutline
               headings={sidebarHeadings}
               activeId={activeId}
               onOpenAbout={() => setModal("about")}

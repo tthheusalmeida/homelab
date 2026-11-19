@@ -2,7 +2,7 @@ import { ArrowRight, Check } from "lucide-react";
 
 import { Button } from "#ui/button";
 
-import { MarkdownMessage } from "#components/MarkdownMessage";
+import { DocumentBody } from "#components/DocumentBody";
 import { ModuleDivider } from "#components/ModuleDivider";
 import { ReadingSection } from "#components/ReadingSection";
 import { cn } from "#lib/utils";
@@ -104,11 +104,12 @@ export function BookContent({
                     </>
                   }
                 >
-                  <MarkdownMessage
+                  {/* O capítulo não informa o tipo: transcrição com tempo é reconhecida pelo texto. */}
+                  <DocumentBody
                     content={chapter.content}
-                    headingIds
+                    isTranscription
+                    compact
                     idPrefix={chapter.documentId}
-                    size="inherit"
                   />
                 </ReadingSection>
               </div>

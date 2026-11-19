@@ -12,6 +12,10 @@ interface ReadingSideToggleProps {
   className?: string;
   /** No preview das Configurações: o mesmo botão, só de enfeite (sem foco, clique ou leitor de tela). */
   preview?: boolean;
+  /** Borda da tela em que o botão fica (padrão: direita). */
+  side?: 'left' | 'right';
+  /** Nome acessível do botão. */
+  label?: string;
   ref?: Ref<HTMLButtonElement>;
 }
 
@@ -25,13 +29,15 @@ export function ReadingSideToggle({
   onClick,
   className,
   preview = false,
+  side = 'right',
+  label = 'Mostrar painel lateral',
   ref,
 }: ReadingSideToggleProps) {
   return (
     <button
       ref={ref}
       type="button"
-      aria-label="Mostrar painel lateral"
+      aria-label={label}
       title={open ? 'Clique para fechar o painel' : 'Clique para abrir o painel'}
       aria-expanded={open}
       {...(preview ? { 'aria-hidden': true, tabIndex: -1 } : {})}
@@ -42,7 +48,7 @@ export function ReadingSideToggle({
       )}
       onClick={onClick}
     >
-      <ReadingSideTab open={open} />
+      <ReadingSideTab open={open} side={side} />
     </button>
   );
 }

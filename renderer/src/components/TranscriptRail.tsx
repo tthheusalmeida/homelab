@@ -34,10 +34,16 @@ export function TranscriptRail({
   stickyClassName = 'top-20 max-h-[calc(100dvh-7rem)]',
 }: TranscriptRailProps) {
   const box = useRef<HTMLElement>(null);
+  // Depois que a pessoa rola a barra à mão, ela não volta sozinha ao trecho atual (até um clique).
+  const manualScroll = useRef(false);
 
   // Com muitos trechos a barra rola por dentro: mantém o atual à vista sem mexer na página.
   useEffect(() => {
     const container = box.current;
+
+    if (manualScroll.current) {
+      return;
+    }
     const item = container?.querySelector<HTMLElement>('[aria-current="step"]');
 
     if (!container || !item) {
@@ -57,6 +63,8 @@ export function TranscriptRail({
   return (
     <aside
       ref={box}
+      onWheel={() => (manualScroll.current = true)}
+      onTouchMove={() => (manualScroll.current = true)}
       aria-label={TranscriptStrings.railLabel}
       data-slot="transcript-rail"
       className={cn(
@@ -99,7 +107,10 @@ export function TranscriptRail({
                   type="button"
                   aria-current={current ? 'step' : undefined}
                   aria-label={TranscriptStrings.goTo(clock)}
-                  onClick={() => onSelect(index)}
+                  onClick={() => {
+                    manualScroll.current = false;
+                    onSelect(index);
+                  }}
                   className={cn(
                     'relative flex w-full cursor-pointer items-center gap-1.5 rounded-lg pr-1.5 text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                     row,

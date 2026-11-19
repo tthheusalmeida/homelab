@@ -458,7 +458,7 @@ describe("DocumentPage — reading mode", () => {
     return user;
   };
 
-  it("when Modo leitura is clicked, should hide the side panel until the tab is clicked", async () => {
+  it("when Modo leitura is clicked, should hide both side panels until their tabs are clicked", async () => {
     const user = await enterReading();
 
     expect(
@@ -468,13 +468,17 @@ describe("DocumentPage — reading mode", () => {
       screen.queryByRole("button", { name: "Aumentar a letra" }),
     ).not.toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole("button", { name: "Mostrar painel lateral" }),
-    );
+    await user.hover(document.querySelector('[data-slot="reading-edge-left"]') as HTMLElement);
 
     expect(
       screen.getByRole("navigation", { name: "Sumário" }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Aumentar a letra" }),
+    ).not.toBeInTheDocument();
+
+    await user.hover(document.querySelector('[data-slot="reading-edge-right"]') as HTMLElement);
+
     expect(
       screen.getByRole("button", { name: "Aumentar a letra" }),
     ).toBeInTheDocument();
@@ -483,9 +487,7 @@ describe("DocumentPage — reading mode", () => {
   it("when Modo leitura is clicked, should show only the title, the text and the summary", async () => {
     const user = await enterReading();
 
-    await user.click(
-      screen.getByRole("button", { name: "Mostrar painel lateral" }),
-    );
+    await user.hover(document.querySelector('[data-slot="reading-edge-left"]') as HTMLElement);
 
     const region = screen.getByRole("region", { name: "Modo leitura" });
 
@@ -511,9 +513,8 @@ describe("DocumentPage — reading mode", () => {
   it("when in reading mode, should show the same side panel as the page: summary, reading adjustments and about", async () => {
     const user = await enterReading();
 
-    await user.click(
-      screen.getByRole("button", { name: "Mostrar painel lateral" }),
-    );
+    await user.hover(document.querySelector('[data-slot="reading-edge-left"]') as HTMLElement);
+    await user.hover(document.querySelector('[data-slot="reading-edge-right"]') as HTMLElement);
 
     expect(
       screen.getByRole("navigation", { name: "Sumário" }),
@@ -532,9 +533,7 @@ describe("DocumentPage — reading mode", () => {
   it("when Sobre a página is clicked in reading mode, should open the about window over the reading", async () => {
     const user = await enterReading();
 
-    await user.click(
-      screen.getByRole("button", { name: "Mostrar painel lateral" }),
-    );
+    await user.hover(document.querySelector('[data-slot="reading-edge-right"]') as HTMLElement);
     await user.click(
       screen.getByRole("button", { name: /Sobre a página/ }),
     );
@@ -553,9 +552,7 @@ describe("DocumentPage — reading mode", () => {
   it("when a summary item is clicked in reading mode, should scroll to it", async () => {
     const user = await enterReading();
     const target = screen.getByRole("heading", { name: "Detalhes", level: 2 });
-    await user.click(
-      screen.getByRole("button", { name: "Mostrar painel lateral" }),
-    );
+    await user.hover(document.querySelector('[data-slot="reading-edge-left"]') as HTMLElement);
 
     target.scrollIntoView = vi.fn();
 

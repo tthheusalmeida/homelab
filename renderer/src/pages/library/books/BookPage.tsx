@@ -46,7 +46,7 @@ import { BookFindBar } from "./components/BookFindBar";
 import { BookFormDialog } from "./components/BookFormDialog";
 import { BookOrganizerDialog } from "./components/BookOrganizerDialog";
 import { BookPrintView } from "./components/BookPrintView";
-import { BookSidebar } from "./components/BookSidebar";
+import { BookOutlineCard, BookSidebar } from "./components/BookSidebar";
 import {
   useBook,
   useBookReading,
@@ -335,9 +335,19 @@ export function BookPage() {
           title={book.title}
           onExit={() => setReader(false)}
           actions={findBar}
-          toc={
+          follow={
+            <BookOutlineCard
+              modules={modules}
+              activeChapterId={activeChapterId}
+              readIds={readIds}
+              onSelectChapter={goToChapter}
+              onToggleRead={handleToggleRead}
+            />
+          }
+          options={
             <BookSidebar
               embedded
+              hideOutline
               modules={modules}
               activeChapterId={activeChapterId}
               readIds={readIds}
@@ -348,6 +358,7 @@ export function BookPage() {
               isSearching={results.isFetching}
               onSelectChapter={goToChapter}
               onSelectHit={handleHit}
+              onToggleRead={handleToggleRead}
             />
           }
         >
@@ -478,7 +489,20 @@ export function BookPage() {
           }
         />
       ) : (
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <div className="grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)_16rem]">
+          <aside
+            aria-label="Onde você está"
+            className="hidden lg:sticky lg:top-4 lg:block lg:self-start"
+          >
+            <BookOutlineCard
+              modules={modules}
+              activeChapterId={activeChapterId}
+              readIds={readIds}
+              onSelectChapter={goToChapter}
+              onToggleRead={handleToggleRead}
+            />
+          </aside>
+
           <div
             ref={setContainer}
             className="min-w-0"
@@ -498,6 +522,7 @@ export function BookPage() {
           </div>
 
           <BookSidebar
+            hideOutline
             modules={modules}
             activeChapterId={activeChapterId}
             readIds={readIds}
@@ -509,6 +534,7 @@ export function BookPage() {
             isSearching={results.isFetching}
             onSelectChapter={goToChapter}
             onSelectHit={handleHit}
+            onToggleRead={handleToggleRead}
           />
         </div>
       )}

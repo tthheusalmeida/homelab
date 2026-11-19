@@ -8,7 +8,7 @@ describe("ReadingMode — actions", () => {
     render(
       <ReadingMode
         title="Livro"
-        toc={null}
+        options={null}
         onExit={() => {}}
         actions={<input aria-label="busca" />}
       >
@@ -27,7 +27,7 @@ describe("ReadingMode — actions", () => {
 
   it("when no actions are given, should show only the title and the exit button", () => {
     render(
-      <ReadingMode title="Livro" toc={null} onExit={() => {}}>
+      <ReadingMode title="Livro" options={null} onExit={() => {}}>
         <p>texto</p>
       </ReadingMode>,
     );

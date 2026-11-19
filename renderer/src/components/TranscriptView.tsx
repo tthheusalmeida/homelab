@@ -28,6 +28,11 @@ interface TranscriptViewProps {
    * `null` espera o elemento ficar pronto.
    */
   railSlot?: HTMLElement | null;
+  /**
+   * Versão enxuta (capítulo de livro): só o horário e o parágrafo, sem barra lateral, sem
+   * progresso e sem destaque ao passar o mouse.
+   */
+  compact?: boolean;
 }
 
 type State = 'played' | 'active' | 'idle';
@@ -76,19 +81,25 @@ function TimeChip({
  * inteiro e sem divisórias; quem acompanha a rolagem é só a marcação (ver `useExcerptProgress`).
  * Documentos antigos, sem tempo, não passam por aqui.
  */
-export function TranscriptView({ excerpts, sourceUrl, railSlot }: TranscriptViewProps) {
+export function TranscriptView({
+  excerpts,
+  sourceUrl,
+  railSlot,
+  compact = false,
+}: TranscriptViewProps) {
   const preferences = useTranscriptPreferences();
   const [root, setRoot] = useState<HTMLElement | null>(null);
   const fillRef = useRef<HTMLDivElement>(null);
   const spans = useMemo(() => excerptSpans(excerpts.map((e) => e.seconds)), [excerpts]);
-  const active = useExcerptProgress(root, excerpts.length, fillRef);
+  // Na versão enxuta ninguém acompanha a rolagem: sem raiz, o hook não faz nada.
+  const active = useExcerptProgress(compact ? null : root, excerpts.length, fillRef);
 
   const goTo = (index: number) =>
     root
       ?.querySelectorAll<HTMLElement>('[data-excerpt]')
       [index]?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
 
-  const docked = railSlot !== undefined;
+  const docked = !compact && railSlot !== undefined;
   const rail = (
     <TranscriptRail
       excerpts={excerpts}
@@ -103,14 +114,16 @@ export function TranscriptView({ excerpts, sourceUrl, railSlot }: TranscriptView
   return (
     <div
       data-slot="transcript"
-      className={cn('items-start gap-6', !docked && 'grid md:grid-cols-[auto_minmax(0,1fr)]')}
+      className={cn('items-start gap-6', !compact && !docked && 'grid md:grid-cols-[auto_minmax(0,1fr)]')}
     >
-      {docked ? railSlot && createPortal(rail, railSlot) : rail}
+      {!compact && (docked ? railSlot && createPortal(rail, railSlot) : rail)}
 
       <div ref={setRoot} className="min-w-0">
         {excerpts.map((excerpt, index) => {
           const span = spans[index];
-          const state: State = index < active ? 'played' : index === active ? 'active' : 'idle';
+          const state: State = compact
+            ? 'idle'
+            : index < active ? 'played' : index === active ? 'active' : 'idle';
 
           return (
             <section
@@ -118,12 +131,15 @@ export function TranscriptView({ excerpts, sourceUrl, railSlot }: TranscriptView
               data-excerpt=""
               data-state={state}
               aria-label={TranscriptStrings.excerptLabel(formatClock(excerpt.seconds))}
-              className="scroll-mt-20 pb-6"
+              className={cn(
+                'scroll-mt-20 pb-6',
+                !compact && '-mx-3 rounded-lg px-3 pt-2 transition-colors hover:bg-foreground/8',
+              )}
             >
               <div className="mb-1.5 flex items-center gap-3">
                 <TimeChip seconds={excerpt.seconds} sourceUrl={sourceUrl} state={state} />
 
-                {preferences.progress && (
+                {!compact && preferences.progress && (
                   <span
                     role="progressbar"
                     aria-label={TranscriptStrings.excerptProgress}

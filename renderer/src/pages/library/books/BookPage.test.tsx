@@ -368,9 +368,7 @@ describe("BookPage", () => {
       within(region).queryByRole("navigation", { name: "Sumário do livro" }),
     ).not.toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole("button", { name: "Mostrar painel lateral" }),
-    );
+    await user.hover(document.querySelector('[data-slot="reading-edge-left"]') as HTMLElement);
 
     expect(within(region).getByText("Capítulo 1")).toBeInTheDocument();
     expect(

@@ -761,6 +761,28 @@
   }
 }
 
+@keyframes hl-enter-left {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hl-exit-left {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+
 @keyframes hl-exit-right {
   from {
     opacity: 1;
@@ -842,6 +864,14 @@
 
 @utility animate-enter-right {
   animation: hl-enter-right var(--duration-enter) var(--ease-out-soft) both;
+}
+
+@utility animate-enter-left {
+  animation: hl-enter-left var(--duration-enter) var(--ease-out-soft) both;
+}
+
+@utility animate-exit-left {
+  animation: hl-exit-left var(--duration-exit) var(--ease-in-soft) both;
 }
 
 @utility animate-exit-right {
@@ -1135,6 +1165,15 @@
   --tw-prose-td-borders: color-mix(in oklab, currentColor 15%, transparent);
 }
 
+/*
+ * Hierarquia dos títulos: o título da página ou do capítulo (1.875em) é sempre o maior; os títulos
+ * do texto vêm abaixo dele, em ordem decrescente. O peso também nunca passa do
+ * do título (semibold), senão um título interno em negrito pareceria maior que ele.
+ */
+.reading-surface .prose h1 { font-size: 1.625em; font-weight: 600; }
+.reading-surface .prose h2 { font-size: 1.4em; font-weight: 600; }
+.reading-surface .prose h3 { font-size: 1.2em; font-weight: 500; }
+.reading-surface .prose h4 { font-size: 1.05em; font-weight: 500; }
 
 /* Controle de intensidade da leitura (ShadeSlider): trilha em degraus da cor e marcador hexagonal. */
 .shade-slider {

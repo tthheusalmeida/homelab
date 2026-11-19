@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { cn } from '#lib/utils';
 
@@ -7,7 +7,18 @@ import { cn } from '#lib/utils';
  * lateral. É **invertida** em relação ao fundo da leitura (tinta como fundo da aba e fundo como
  * cor do ícone), para sempre contrastar com a página, qualquer que seja a cor escolhida. Com o painel aberto (`open`), a seta gira e indica "fechar". Usada no modo leitura (`ReadingSidePanel`) e no preview das Configurações.
  */
-export function ReadingSideTab({ className, open = false }: { className?: string; open?: boolean }) {
+export function ReadingSideTab({
+  className,
+  open = false,
+  side = 'right',
+}: {
+  className?: string;
+  open?: boolean;
+  /** Borda em que a aba fica: a seta aponta para dentro da tela e gira ao abrir. */
+  side?: 'left' | 'right';
+}) {
+  const Arrow = side === 'left' ? ChevronRight : ChevronLeft;
+
   return (
     <span
       aria-hidden
@@ -17,7 +28,7 @@ export function ReadingSideTab({ className, open = false }: { className?: string
       )}
     >
       {/* Seta de recolher, na lateral: com o painel aberto gira meia volta e indica "fechar". */}
-      <ChevronLeft
+      <Arrow
         className={cn('size-5 transition-transform duration-300 ease-out', open && 'rotate-180')}
       />
     </span>

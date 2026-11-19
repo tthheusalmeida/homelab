@@ -27,11 +27,46 @@ interface BookSidebarProps {
   isSearching?: boolean;
   onSelectChapter: (documentId: string) => void;
   onSelectHit: (hit: BookSearchHit) => void;
+  /** Marca ou desmarca um capítulo como lido direto pelo sumário. */
+  onToggleRead?: (documentId: string, read: boolean) => void;
   /**
    * Dentro do painel do modo leitura: o mesmo conteúdo (progresso, ajustes de leitura, resultados e
    * sumário), sem fixar no topo e sem repetir o marco de navegação. A busca fica na barra do topo.
    */
   embedded?: boolean;
+  /** Na página o sumário fica numa coluna própria à esquerda (`BookOutlineCard`), não aqui. */
+  hideOutline?: boolean;
+}
+
+/** Cartão "Sumário do livro": módulos e capítulos, com o capítulo em leitura em destaque. */
+export function BookOutlineCard({
+  modules,
+  activeChapterId,
+  readIds,
+  onSelectChapter,
+  onToggleRead,
+}: Pick<
+  BookSidebarProps,
+  "modules" | "activeChapterId" | "readIds" | "onSelectChapter" | "onToggleRead"
+>) {
+  return (
+    <Card className="sidebar-card">
+      <CardHeader>
+        <CardTitle className="text-sm">Sumário do livro</CardTitle>
+      </CardHeader>
+
+      <CardContent>
+        <BookOutline
+          modules={modules}
+          activeChapterId={activeChapterId}
+          readIds={readIds}
+          onSelectChapter={onSelectChapter}
+          onToggleRead={onToggleRead}
+          className="max-h-[50dvh]"
+        />
+      </CardContent>
+    </Card>
+  );
 }
 
 /**
@@ -50,7 +85,9 @@ export function BookSidebar({
   isSearching,
   onSelectChapter,
   onSelectHit,
+  onToggleRead,
   embedded = false,
+  hideOutline = false,
 }: BookSidebarProps) {
   const Root = embedded ? "div" : "aside";
 
@@ -126,21 +163,15 @@ export function BookSidebar({
         </Card>
       )}
 
-      <Card className="sidebar-card">
-        <CardHeader>
-          <CardTitle className="text-sm">Sumário do livro</CardTitle>
-        </CardHeader>
-
-        <CardContent>
-          <BookOutline
-            modules={modules}
-            activeChapterId={activeChapterId}
-            readIds={readIds}
-            onSelectChapter={onSelectChapter}
-            className="max-h-[50dvh]"
-          />
-        </CardContent>
-      </Card>
+      {!hideOutline && (
+        <BookOutlineCard
+          modules={modules}
+          activeChapterId={activeChapterId}
+          readIds={readIds}
+          onSelectChapter={onSelectChapter}
+          onToggleRead={onToggleRead}
+        />
+      )}
     </Root>
   );
 }

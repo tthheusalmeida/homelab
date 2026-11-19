@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import type { BookReading } from "../types";
 
@@ -21,6 +22,11 @@ const modules: BookReading["modules"] = [
   },
 ];
 
+const mark = (title: string) =>
+  screen.getByRole("button", { name: title }).parentElement?.querySelector(
+    "[data-slot=read-mark]",
+  ) as HTMLElement;
+
 describe("BookOutline — read chapters", () => {
   it("when a chapter is read, should show a check and announce it", () => {
     render(
@@ -31,12 +37,9 @@ describe("BookOutline — read chapters", () => {
       />,
     );
 
-    const read = screen.getByRole("button", { name: "1. Docker, lido" });
-
-    expect(read.querySelector("svg")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "2. Redes" }).querySelector("svg"),
-    ).not.toBeInTheDocument();
+    expect(mark("1. Docker").querySelector("svg")).toBeInTheDocument();
+    expect(mark("1. Docker")).toHaveTextContent(", lido");
+    expect(mark("2. Redes").querySelector("svg")).not.toBeInTheDocument();
   });
 
   it("when no chapter is read, should show no check", () => {
@@ -44,9 +47,7 @@ describe("BookOutline — read chapters", () => {
 
     expect(document.querySelector("svg")).not.toBeInTheDocument();
   });
-});
 
-describe("BookOutline — aligned read marks", () => {
   it("when chapters are listed, should reserve the same mark column in every row, read or not", () => {
     render(
       <BookOutline
@@ -64,43 +65,76 @@ describe("BookOutline — aligned read marks", () => {
     }
   });
 
-  it("when a chapter is read, should put the check in the mark column and not beside the title text", () => {
-    render(
-      <BookOutline
-        modules={modules}
-        readIds={["d1"]}
-        onSelectChapter={() => {}}
-      />,
-    );
-
-    const button = screen.getByRole("button", { name: "1. Docker, lido" });
-    const [title, mark] = [...button.children];
-
-    expect(title).toHaveTextContent("1. Docker");
-    expect(title.querySelector("svg")).toBeNull();
-    expect(mark).toHaveAttribute("data-slot", "read-mark");
-    expect(mark.querySelector("svg")).toBeInTheDocument();
-  });
-
-  it("when a chapter is unread, should leave its mark column empty", () => {
-    render(
-      <BookOutline
-        modules={modules}
-        readIds={["d1"]}
-        onSelectChapter={() => {}}
-      />,
-    );
-
-    const unread = screen.getByRole("button", { name: "2. Redes" });
-
-    expect(unread.querySelector("[data-slot=read-mark]")).toBeEmptyDOMElement();
-  });
-
   it("when the title is long, should let it wrap in its own column", () => {
     render(<BookOutline modules={modules} onSelectChapter={() => {}} />);
 
     expect(
       screen.getByRole("button", { name: "1. Docker" }).firstElementChild,
     ).toHaveClass("min-w-0", "flex-1");
+  });
+
+  it("when the chapters are listed, should not draw a bar on their left", () => {
+    render(<BookOutline modules={modules} onSelectChapter={() => {}} />);
+
+    const list = screen.getByRole("button", { name: "1. Docker" }).closest("ul");
+
+    expect(list?.className).not.toContain("border-l");
+  });
+});
+
+describe("BookOutline — toggling read from the summary", () => {
+  it("when a toggle function is given, should offer a button to mark an unread chapter", async () => {
+    const onToggleRead = vi.fn();
+    render(
+      <BookOutline
+        modules={modules}
+        readIds={["d1"]}
+        onSelectChapter={() => {}}
+        onToggleRead={onToggleRead}
+      />,
+    );
+
+    const button = screen.getByRole("button", { name: 'Marcar "Redes" como lido' });
+    expect(button).toHaveAttribute("aria-pressed", "false");
+
+    await userEvent.setup().click(button);
+
+    expect(onToggleRead).toHaveBeenCalledWith("d2", true);
+  });
+
+  it("when a chapter is read, should offer a button to unmark it", async () => {
+    const onToggleRead = vi.fn();
+    render(
+      <BookOutline
+        modules={modules}
+        readIds={["d1"]}
+        onSelectChapter={() => {}}
+        onToggleRead={onToggleRead}
+      />,
+    );
+
+    const button = screen.getByRole("button", { name: 'Desmarcar "Docker" como lido' });
+    expect(button).toHaveAttribute("aria-pressed", "true");
+
+    await userEvent.setup().click(button);
+
+    expect(onToggleRead).toHaveBeenCalledWith("d1", false);
+  });
+
+  it("when the toggle is clicked, should not open the chapter", async () => {
+    const onSelectChapter = vi.fn();
+    render(
+      <BookOutline
+        modules={modules}
+        onSelectChapter={onSelectChapter}
+        onToggleRead={() => {}}
+      />,
+    );
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: 'Marcar "Docker" como lido' }));
+
+    expect(onSelectChapter).not.toHaveBeenCalled();
   });
 });
