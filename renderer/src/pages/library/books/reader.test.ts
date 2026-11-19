@@ -66,10 +66,12 @@ describe("goToElement", () => {
       block: "start",
     });
     expect(element).toHaveClass("bg-primary/15");
+    // Com respiro: padding e margem negativa iguais, para o texto não se mexer.
+    expect(element).toHaveClass("px-3", "-mx-3", "py-1.5", "-my-1.5");
 
     vi.advanceTimersByTime(2000);
 
-    expect(element).not.toHaveClass("bg-primary/15");
+    expect(element).not.toHaveClass("bg-primary/15", "px-3", "-mx-3", "py-1.5", "-my-1.5");
   });
 
   it("when the element does not exist, should do nothing", () => {

@@ -27,6 +27,19 @@ export function hitTargetId(hit: BookSearchHit, content: string): string {
     : chapterElementId(hit.documentId);
 }
 
+/**
+ * Cor do destaque com respiro: o padding afasta o fundo das letras e a margem negativa de mesmo
+ * tamanho compensa, então o texto não se mexe quando o destaque entra e sai.
+ */
+const HIGHLIGHT_CLASSES = [
+  "bg-primary/15",
+  "rounded-md",
+  "-mx-3",
+  "px-3",
+  "-my-1.5",
+  "py-1.5",
+];
+
 /** Rola até o elemento e destaca por um instante (para onde o leitor foi levado). */
 export function goToElement(elementId: string) {
   const element = document.getElementById(elementId);
@@ -36,9 +49,6 @@ export function goToElement(elementId: string) {
   }
 
   element.scrollIntoView?.({ behavior: "smooth", block: "start" });
-  element.classList.add("bg-primary/15", "rounded-md");
-  window.setTimeout(
-    () => element.classList.remove("bg-primary/15", "rounded-md"),
-    1800,
-  );
+  element.classList.add(...HIGHLIGHT_CLASSES);
+  window.setTimeout(() => element.classList.remove(...HIGHLIGHT_CLASSES), 1800);
 }
