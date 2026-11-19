@@ -72,7 +72,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
       - run: npm run lint
       - run: npm run typecheck:renderer
       - run: npm test
@@ -94,7 +94,7 @@ jobs:
           path: ~\AppData\Local\electron-builder\Cache
           key: electron-builder-win-${{ hashFiles('package-lock.json') }}
           restore-keys: electron-builder-win-
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
       - name: Versão do release (só no build; não é commitada)
         run: npm version "${{ needs.plan.outputs.version }}" --no-git-tag-version --allow-same-version
         shell: bash
@@ -132,7 +132,7 @@ jobs:
           path: ~/.cache/electron-builder
           key: electron-builder-linux-${{ hashFiles('package-lock.json') }}
           restore-keys: electron-builder-linux-
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
       - name: Versão do release (só no build; não é commitada)
         run: npm version "${{ needs.plan.outputs.version }}" --no-git-tag-version --allow-same-version
       - name: Gerar o AppImage

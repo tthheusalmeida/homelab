@@ -36,7 +36,7 @@ desktop/
 
 ## Renderer do desktop
 - O renderer é o **próprio front**, copiado para `renderer/src` (fase 09b) com a mesma estrutura de pastas: `app`, `pages/<rota>` (cada uma com `api`, `hooks`, `components`, `types`), `components`, `ui`, `lib`, `hooks`, `test`. Não lê mais `../front`, não tem overrides nem `fetch`.
-- Dependências (React 19, Vite, Vitest, Tailwind 4, TanStack Query, React Router, base-ui…) estão no `package.json` do desktop. Instalar com `npm install --legacy-peer-deps` (o plugin do Vite pede Babel 8 e o Jest usa Babel 7).
+- Dependências (React 19, Vite, Vitest, Tailwind 4, TanStack Query, React Router, base-ui…) estão no `package.json` do desktop. Instalar com `npm install` (sem `--legacy-peer-deps`: os peers do Babel entre Jest e o plugin do Vite já não conflitam).
 - **Um build (`dist-renderer`):** o app (raiz `renderer/`, `index.html` e `public`) e a tela de abertura (`splash.html`). As **Configurações são uma rota do app** (`/settings`, `?section=<id>` abre numa seção); o código da tela fica em `renderer/settings/src` (seções e componentes próprios) e entra pela `pages/settings/SettingsPage`. Em dev, um só servidor do Vite (5173).
 - **Cache do Vite em dev:** o servidor usa `node_modules/.vite-main`. Se aparecer `504 Outdated Optimize Dep`, feche o `npm run dev`, apague essa pasta e suba de novo.
 - **Aliases** (`renderer/vite-aliases.mts` e `paths` do `tsconfig.renderer.json`): `#ui`, `#components`, `#lib`, `#hooks`, `#test` (para `renderer/src`) e `#shared` (contratos IPC em `src/shared`).

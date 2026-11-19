@@ -72,7 +72,7 @@ No primeiro uso, o assistente de instalação baixa só o que o seu computador p
 Electron + React + IPC, com o back em Nest usado só como contêiner de injeção de dependência (sem HTTP, sem porta).
 
 ```bash
-npm install --legacy-peer-deps
+npm install
 npm run dev        # Vite + Electron
 npm test           # Jest (main e back)
 npm run test:renderer
