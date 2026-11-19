@@ -13,6 +13,16 @@ describe("findActiveId", () => {
     ).toBe("b");
   });
 
+  it("when the scroll is at the bottom, should pick the last section even if it never reached the offset", () => {
+    expect(
+      findActiveId(["a", "b", "c"], tops({ a: -300, b: 50, c: 400 }), 120, true),
+    ).toBe("c");
+  });
+
+  it("when the scroll is at the bottom but no section is on the page, should pick nothing", () => {
+    expect(findActiveId(["a"], tops({}), 120, true)).toBeUndefined();
+  });
+
   it("when none reached the offset yet, should pick the first one on the page", () => {
     expect(findActiveId(["a", "b"], tops({ a: 300, b: 900 }))).toBe("a");
   });
