@@ -18,6 +18,9 @@
 - Valida antes: executável, modelo e arquivo de áudio devem existir; senão erro específico e o whisper não roda.
 - Lê o `.txt` gerado, devolve o texto sem espaços nas pontas e **sempre** tenta apagar o `.txt` (falha ao apagar é ignorada).
 - Falha do whisper vira "Falha ao transcrever o áudio".
+- **Com tempo (`transcribeSegments`)**: mesma execução, mas com `--output-json`; lê os trechos (início e fim em ms, texto) e apaga o `.json` no fim. JSON inválido ou sem `transcription` vira a mesma falha "Falha ao transcrever o áudio". O resumo continua usando só `transcribe` (texto).
+- **Documento de transcrição (job `video-to-transcript`)**: os trechos viram **parágrafos** (`timed-transcript.ts`) e cada parágrafo começa com o instante em que a fala iniciou, no formato fixo `[HH:MM:SS] texto`, separados por linha em branco. Um parágrafo novo começa quando a pausa entre trechos é de 2 s ou mais, quando o atual passou de 400 caracteres e terminou uma frase, ou quando passou de 800. A assinatura "Legenda por ..." sai do último parágrafo (e o parágrafo some se só tinha ela). O vídeo continua sendo apagado depois de virar áudio: o tempo serve para abrir o link original no momento certo, não para guardar o vídeo.
+- **Documentos antigos** (sem o prefixo `[HH:MM:SS]`) não são reescritos: só a exibição os trata como texto corrido. `TIMESTAMP_PREFIX` é o padrão que a tela usa para reconhecer o tempo.
 
 ## Salvar arquivo
 - Grava `nome + extensão` em UTF-8; a extensão padrão é `.md` e a pasta padrão é `TEMP_DOCS_DIR` (criada se não existir); devolve o caminho.

@@ -152,4 +152,69 @@ describe('DesktopWhisperService', () => {
     expect(run).toHaveBeenNthCalledWith(1, exe, expect.arrayContaining(['-m', model]));
     expect(run).toHaveBeenNthCalledWith(2, other, expect.arrayContaining(['-m', otherModel]));
   });
+
+  describe('transcribeSegments', () => {
+    const json = JSON.stringify({
+      transcription: [
+        { offsets: { from: 0, to: 3000 }, text: ' Olá' },
+        { offsets: { from: 3000, to: 7000 }, text: ' mundo.' },
+      ],
+    });
+
+    it('when everything exists, should ask whisper for the json output of the same audio', async () => {
+      const { service, run } = setup({ text: json });
+
+      await service.transcribeSegments(audio);
+
+      expect(run).toHaveBeenCalledWith(exe, [
+        '-m',
+        model,
+        '-f',
+        audio,
+        '-l',
+        'pt',
+        '--no-prints',
+        '--output-json',
+        '-of',
+        audio,
+      ]);
+    });
+
+    it('when whisper writes the json, should answer the segments with their times and read the right file', async () => {
+      const { service, files } = setup({ text: json });
+
+      await expect(service.transcribeSegments(audio)).resolves.toEqual([
+        { startMs: 0, endMs: 3000, text: 'Olá' },
+        { startMs: 3000, endMs: 7000, text: 'mundo.' },
+      ]);
+      expect(files.readText).toHaveBeenCalledWith(`${audio}.json`);
+    });
+
+    it('when the transcription finishes, should remove the json file', async () => {
+      const { service, files } = setup({ text: json });
+
+      await service.transcribeSegments(audio);
+
+      expect(files.remove).toHaveBeenCalledWith(`${audio}.json`);
+    });
+
+    it('when the json is invalid, should throw the transcribe message keeping the cause and still remove the file', async () => {
+      const { service, files } = setup({ text: 'nao e json' });
+
+      const error = await service.transcribeSegments(audio).catch((e: Error) => e);
+
+      expect((error as Error).message).toBe(WhisperServiceMessages.transcribeFailed);
+      expect((error as Error).cause).toBeInstanceOf(Error);
+      expect(files.remove).toHaveBeenCalledWith(`${audio}.json`);
+    });
+
+    it('when the audio does not exist, should not run whisper', async () => {
+      const { service, run } = setup({ existing: [exe, model] });
+
+      await expect(service.transcribeSegments(audio)).rejects.toThrow(
+        WhisperServiceMessages.audioMissing(audio),
+      );
+      expect(run).not.toHaveBeenCalled();
+    });
+  });
 });

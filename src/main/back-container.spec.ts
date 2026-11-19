@@ -22,7 +22,10 @@ import { BackContainer } from './back-container';
 describe('BackContainer', () => {
   let root: string;
   let container: BackContainer;
-  const whisper = { transcribe: jest.fn().mockResolvedValue('texto') };
+  const whisper = {
+    transcribe: jest.fn().mockResolvedValue('texto'),
+    transcribeSegments: jest.fn().mockResolvedValue([]),
+  };
 
   const config = (): BackConfig => ({
     libraryDir: path.join(root, 'library'),

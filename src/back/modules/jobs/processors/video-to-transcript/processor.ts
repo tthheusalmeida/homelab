@@ -4,9 +4,9 @@ import { Job } from '../../domain/job.entity';
 import { JobProcessor } from '../../domain/job-processor.interface';
 
 import { VideoService } from '../../../video/video.service';
-import { WhisperService } from '../../../ai/whisper/whisper.service';
-import { normalizeText, removeAllegedAuthorship } from '../../../../utils/text';
+import { TranscriptSegment, WhisperService } from '../../../ai/whisper/whisper.service';
 import { VideoToTranscriptSteps } from './steps';
+import { buildTimedTranscript } from './timed-transcript';
 
 import { newPendingMeta } from '../../../library/domain/document';
 import { serializeDocument } from '../../../library/domain/frontmatter';
@@ -25,9 +25,8 @@ export class VideoToTranscriptJobProcessor implements JobProcessor<string, strin
     const audioPath = await this.convertToAudio(job, videoPath);
     await this.deleteVideo(job, videoPath);
 
-    const rawTranscription = await this.transcribe(job, audioPath);
-    const transcription = removeAllegedAuthorship(normalizeText(rawTranscription));
-    await this.saveFile(job, transcription, videoUrl);
+    const segments = await this.transcribe(job, audioPath);
+    await this.saveFile(job, buildTimedTranscript(segments), videoUrl);
     await this.deleteAudio(job, audioPath);
   }
 
@@ -49,9 +48,9 @@ export class VideoToTranscriptJobProcessor implements JobProcessor<string, strin
     );
   }
 
-  private async transcribe(job: Job, audioPath: string): Promise<string> {
+  private async transcribe(job: Job, audioPath: string): Promise<TranscriptSegment[]> {
     return job.runStep(VideoToTranscriptSteps.TRANSCRIBE.name, () =>
-      this.whisperService.transcribe(audioPath),
+      this.whisperService.transcribeSegments(audioPath),
     );
   }
 
