@@ -174,4 +174,92 @@ describe('MindMapService', () => {
       await expect(service.get('x')).rejects.toBeInstanceOf(NotFoundException);
     });
   });
+
+  describe('save', () => {
+    const edited = {
+      subtitle: 'Meu subtítulo',
+      nodes: [
+        { label: 'Meu termo', note: 'Minha frase', children: [{ label: 'Filho', children: [] }] },
+      ],
+    };
+
+    it('when the user saves the edited map, should store it marked as edited and return it', async () => {
+      const map = await service.save('1', edited);
+
+      expect(map).toMatchObject({ subtitle: 'Meu subtítulo', edited: true, stale: false });
+      expect(map.nodes[0]).toMatchObject({ label: 'Meu termo', note: 'Minha frase' });
+      expect(store.get('1')).toMatchObject({ edited: true, subtitle: 'Meu subtítulo' });
+    });
+
+    it('when there was an AI map, should keep its model and creation date', async () => {
+      const generated = await service.generate('1');
+
+      await service.save('1', edited);
+
+      expect(store.get('1')).toMatchObject({
+        model: generated.model,
+        createdAt: generated.createdAt,
+      });
+    });
+
+    it('when there was no map yet (the user edited the simple one), should save it as a manual map', async () => {
+      await service.save('1', edited);
+
+      expect(store.get('1')?.model).toBe('manual');
+    });
+
+    it('when the summary text changed since the AI map, saving should clear the stale mark', async () => {
+      await service.generate('1');
+      content = '## Texto novo';
+
+      await expect(service.get('1')).resolves.toMatchObject({ stale: true });
+
+      await service.save('1', edited);
+
+      await expect(service.get('1')).resolves.toMatchObject({ stale: false, edited: true });
+    });
+
+    it('when the text changes after saving, should mark the edited map as stale again but keep it edited', async () => {
+      await service.save('1', edited);
+      content = '## Outro texto';
+
+      await expect(service.get('1')).resolves.toMatchObject({ stale: true, edited: true });
+    });
+
+    it('when the map has no branch with text, should answer 400 and keep the saved map', async () => {
+      await service.save('1', edited);
+
+      const failure = service.save('1', { nodes: [{ label: '  ', children: [] }] });
+
+      await expect(failure).rejects.toBeInstanceOf(BadRequestException);
+      await expect(failure).rejects.toThrow('O mapa precisa ter pelo menos um ramo com texto.');
+      expect(store.get('1')?.nodes[0].label).toBe('Meu termo');
+    });
+
+    it('when the page is not a summary, should answer 400', async () => {
+      type = 'transcription';
+
+      await expect(service.save('1', edited)).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('when the page does not exist, should propagate the not found error', async () => {
+      library.get.mockRejectedValue(new NotFoundException('sem página'));
+
+      await expect(service.save('x', edited)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('when generated again after an edit, should replace the edited map and drop the edited mark', async () => {
+      await service.save('1', edited);
+
+      const map = await service.generate('1');
+
+      expect(map.edited).toBe(false);
+      expect(store.get('1')?.edited).toBeUndefined();
+    });
+
+    it('when the AI map was never edited, should say it is not edited', async () => {
+      await expect(service.generate('1')).resolves.toMatchObject({ edited: false });
+      await expect(service.get('1')).resolves.toMatchObject({ edited: false });
+    });
+  });
 });

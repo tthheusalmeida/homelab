@@ -1,6 +1,6 @@
 import { BadGatewayException, BadRequestException, Injectable } from '@nestjs/common';
 
-import type { LibraryMindMap } from '../../../../shared/contracts/library';
+import type { LibraryMindMap, LibraryMindMapNode } from '../../../../shared/contracts/library';
 import { AIService } from '../../ai/ai.service';
 import { buildMindMapPrompt } from '../../ai/prompts/mind-map.prompt';
 import { cheapestModel } from '../../ai/providers/gemini/gemini.pricing';
@@ -8,6 +8,7 @@ import { cheapestModel } from '../../ai/providers/gemini/gemini.pricing';
 import {
   hashContent,
   InvalidMindMapError,
+  parseEditedMindMap,
   parseMindMap,
   type StoredMindMap,
 } from '../domain/mind-map';
@@ -55,6 +56,49 @@ export class MindMapService {
     this.inFlight.set(id, promise);
 
     return promise;
+  }
+
+  /**
+   * Guarda o mapa **como o usuário o editou** (termos, frases, subtítulo, nós a mais ou a menos).
+   * O texto vira o do usuário (limites de edição), o mapa fica marcado como editado e deixa de
+   * estar desatualizado (o usuário o conferiu com o texto de agora). Só para resumos, e o mapa
+   * precisa ter pelo menos um ramo com texto.
+   */
+  async save(
+    id: string,
+    input: { subtitle?: string; nodes: LibraryMindMapNode[] },
+  ): Promise<LibraryMindMap> {
+    const { meta, content } = await this.library.get(id);
+
+    if (meta.type !== DocumentTypeOptions.SUMMARY) {
+      throw new BadRequestException('O mapa mental só existe para resumos.');
+    }
+
+    let parsed;
+
+    try {
+      parsed = parseEditedMindMap(input);
+    } catch (error) {
+      if (error instanceof InvalidMindMapError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+
+    const previous = this.store.get(id);
+    const stored: StoredMindMap = {
+      contentHash: hashContent(content),
+      // Mapa feito do zero (sem IA antes) fica como "manual".
+      model: previous?.model ?? 'manual',
+      createdAt: previous?.createdAt ?? new Date().toISOString(),
+      edited: true,
+      ...parsed,
+    };
+
+    this.store.set(id, stored);
+
+    return toView(stored, stored.contentHash);
   }
 
   private async run(id: string, modelId?: string): Promise<LibraryMindMap> {
@@ -113,6 +157,7 @@ function toView(stored: StoredMindMap, currentHash: string): LibraryMindMap {
     model: stored.model,
     createdAt: stored.createdAt,
     stale: stored.contentHash !== currentHash,
+    edited: stored.edited === true,
   };
 }
 

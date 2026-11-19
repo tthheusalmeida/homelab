@@ -15,6 +15,7 @@ import {
   ChevronsUpDown,
   ImageDown,
   Maximize,
+  Plus,
   SquareDashed,
   ZoomIn,
   ZoomOut,
@@ -22,9 +23,23 @@ import {
 
 import { cn } from '#lib/utils';
 import type { MindMap, MindMapNode } from '#lib/mind-map';
+import {
+  addBranch,
+  addChild,
+  canAddBranch,
+  canAddChild,
+  pathKey,
+  removeNode,
+  setSubtitle,
+  updateNode,
+  type MindMapDraft,
+  type NodePath,
+} from '#lib/mind-map-edit';
+import { MIND_MAP_EDIT_LIMITS } from '#shared/mind-map-limits';
 import { captureMindMapPng, mindMapImageName } from '#lib/mind-map-image';
 import { HexDot, HexLoader, HoneycombBackdrop, Logo } from './Hex';
 import { IconButton } from './IconButton';
+import { EditableTopic, type EditOps } from './MindMapEditable';
 
 /** Acima disso o mapa abre com os ramos recolhidos (a pessoa abre o que quiser). */
 const LARGE_MAP_NODES = 80;
@@ -68,6 +83,11 @@ interface MindMapViewProps {
    */
   onDownloadImage?: (image: { fileName: string; dataBase64: string }) => Promise<void>;
   onDownloadError?: (message: string) => void;
+  /**
+   * Modo de edição: o mapa mostra o **rascunho** (não o `map`) com campos no lugar dos textos, e
+   * cada mudança chega em `onChange`. Quem guarda ou descarta o rascunho é quem usa o componente.
+   */
+  edit?: { draft: MindMapDraft; onChange: (draft: MindMapDraft) => void };
   className?: string;
 }
 
@@ -178,6 +198,7 @@ export function MindMapView({
   overlay,
   onDownloadImage,
   onDownloadError,
+  edit,
   className,
 }: MindMapViewProps) {
   const frameRef = useRef<HTMLDivElement>(null);
@@ -185,6 +206,9 @@ export function MindMapView({
   const hubRef = useRef<HTMLDivElement>(null);
   const arrowId = `mm-arrow-${useId().replace(/:/g, '')}`;
 
+  // Em edição o mapa é o rascunho (e nada fica recolhido: tudo precisa estar à mão para editar).
+  const nodes = edit ? edit.draft.nodes : map.nodes;
+  const subtitle = edit ? edit.draft.subtitle : map.subtitle;
   const large = map.size > LARGE_MAP_NODES;
   const allIndexes = () => new Set(map.nodes.map((_, index) => index));
 
@@ -208,7 +232,7 @@ export function MindMapView({
   viewRef.current = view;
 
   const wide = frameSize.w >= WIDE_MIN_PX;
-  const leftCount = Math.ceil(map.nodes.length / 2);
+  const leftCount = Math.ceil(nodes.length / 2);
 
   // Mapa novo: volta ao estado inicial (aberto, ou recolhido se for grande).
   useEffect(() => {
@@ -338,7 +362,8 @@ export function MindMapView({
   }, [zoomAt]);
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) {
+    // Em um campo de texto, arrastar é selecionar o texto, não mover o mapa.
+    if (event.button !== 0 || (event.target as HTMLElement).closest('input, textarea')) {
       return;
     }
 
@@ -410,7 +435,7 @@ export function MindMapView({
     const natural = (value: number, origin: number) => (value - origin) / k;
 
     setArrows(
-      map.nodes.map((_, index) => {
+      nodes.map((_, index) => {
         const badge = stage.querySelector<HTMLElement>(`[data-anchor="${index}"]`);
         const card = stage.querySelector<HTMLElement>(`[data-card="${index}"]`);
 
@@ -431,11 +456,11 @@ export function MindMapView({
         return `M${startX} ${startY} C${startX + direction * reach} ${startY}, ${endX - direction * reach} ${endY}, ${endX} ${endY}`;
       }),
     );
-  }, [map.nodes, leftCount, wide]);
+  }, [nodes, leftCount, wide]);
 
   useLayoutEffect(() => {
     drawArrows();
-  }, [drawArrows, collapsed, frameSize.w]);
+  }, [drawArrows, collapsed, frameSize.w, edit?.draft]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -469,17 +494,52 @@ export function MindMapView({
     setCollapsed(allOpen ? allIndexes() : new Set());
   };
 
-  const topic = (index: number) => (
-    <Topic
-      key={`${map.nodes[index].label}-${index}`}
-      node={map.nodes[index]}
-      index={index}
-      collapsed={collapsed.has(index)}
-      onToggle={() => toggle(index)}
-    />
-  );
+  // Em edição, cada mudança vai para o rascunho de quem usa o componente.
+  const focusRef = useRef<string | null>(null);
+  const ops: EditOps | null = edit
+    ? {
+        update: (path, patch) => edit.onChange(updateNode(edit.draft, path, patch)),
+        addChild: (path: NodePath) => {
+          const added = addChild(edit.draft, path);
 
-  const indexes = map.nodes.map((_, index) => index);
+          if (added.path) {
+            focusRef.current = pathKey(added.path);
+            edit.onChange(added.draft);
+          }
+        },
+        remove: (path) => edit.onChange(removeNode(edit.draft, path)),
+        canAddChild: (path) => canAddChild(edit.draft, path),
+        focusRef,
+      }
+    : null;
+
+  const addNewBranch = () => {
+    if (!edit) {
+      return;
+    }
+
+    const added = addBranch(edit.draft);
+
+    if (added.path) {
+      focusRef.current = pathKey(added.path);
+      edit.onChange(added.draft);
+    }
+  };
+
+  const topic = (index: number) =>
+    ops ? (
+      <EditableTopic key={index} node={nodes[index]} index={index} ops={ops} />
+    ) : (
+      <Topic
+        key={`${nodes[index].label}-${index}`}
+        node={nodes[index]}
+        index={index}
+        collapsed={collapsed.has(index)}
+        onToggle={() => toggle(index)}
+      />
+    );
+
+  const indexes = nodes.map((_, index) => index);
 
   // O nó central tem folga própria (caixa com respiro): o título quebra em linhas e as setas saem
   // da borda da caixa, sem encostar no texto.
@@ -494,10 +554,28 @@ export function MindMapView({
         {map.title}
       </h2>
 
-      {map.subtitle && (
-        <p className="text-[1.05em] leading-snug text-balance text-muted-foreground">
-          {map.subtitle}
-        </p>
+      {edit ? (
+        <>
+          <input
+            type="text"
+            aria-label="Subtítulo do mapa"
+            value={edit.draft.subtitle}
+            maxLength={MIND_MAP_EDIT_LIMITS.maxSubtitleChars}
+            placeholder="Do que o resumo trata (opcional)"
+            onChange={(event) => edit.onChange(setSubtitle(edit.draft, event.target.value))}
+            className="w-full rounded-sm border-0 border-b border-dashed border-brand/40 bg-transparent px-0.5 text-center text-[1.05em] outline-none select-text placeholder:text-muted-foreground/60 focus:border-solid focus:border-brand focus:bg-brand/5"
+          />
+
+          <p className="text-[0.75em] text-muted-foreground">
+            O título é o da página: edite-o em &ldquo;Sobre a página&rdquo;.
+          </p>
+        </>
+      ) : (
+        subtitle && (
+          <p className="text-[1.05em] leading-snug text-balance text-muted-foreground">
+            {subtitle}
+          </p>
+        )
       )}
 
       <div aria-hidden="true" className="flex w-full items-center gap-2 text-brand">
@@ -546,6 +624,20 @@ export function MindMapView({
 
       {toolbar && <span aria-hidden="true" className="mx-0.5 h-5 w-px bg-border" />}
 
+      {edit && (
+        <>
+          <IconButton
+            label="Adicionar ramo"
+            disabled={!canAddBranch(edit.draft)}
+            onClick={addNewBranch}
+          >
+            <Plus />
+          </IconButton>
+
+          <span aria-hidden="true" className="mx-0.5 h-5 w-px bg-border" />
+        </>
+      )}
+
       <IconButton
         label="Diminuir o mapa"
         disabled={view.k <= MIN_ZOOM}
@@ -577,6 +669,7 @@ export function MindMapView({
 
       <IconButton
         label={allOpen ? 'Recolher todos os ramos' : 'Expandir todos os ramos'}
+        disabled={Boolean(edit)}
         onClick={toggleAll}
       >
         {allOpen ? <ChevronsDownUp /> : <ChevronsUpDown />}

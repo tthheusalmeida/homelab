@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const saved = vi.hoisted(() => ({
   state: { isPending: false, isSuccess: true, isError: false, data: null as unknown },
 }));
 const save = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
+const saveMap = vi.hoisted(() => ({ mutateAsync: vi.fn(), isPending: false }));
 const snackbar = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 const generate = vi.hoisted(() => ({
   mutate: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock('../hooks/useLibrary', () => ({
   useMindMap: () => saved.state,
   useGenerateMindMap: () => ({ mutate: generate.mutate, ...generate.state }),
   useSaveMindMapImage: () => ({ mutateAsync: save.mutateAsync }),
+  useSaveMindMap: () => ({ mutateAsync: saveMap.mutateAsync, isPending: saveMap.isPending }),
 }));
 vi.mock('#components/Snackbar', () => ({ useSnackbar: () => snackbar }));
 vi.mock('#components/MindMapView', () => ({
@@ -26,7 +28,15 @@ vi.mock('#components/MindMapView', () => ({
     overlay,
     onDownloadImage,
     onDownloadError,
+    edit,
   }: {
+    edit?: {
+      draft: { subtitle: string; nodes: { label: string; note?: string; children: unknown[] }[] };
+      onChange: (draft: {
+        subtitle: string;
+        nodes: { label: string; note?: string; children: unknown[] }[];
+      }) => void;
+    };
     map: { title: string; subtitle?: string; nodes: { label: string }[] };
     notice?: React.ReactNode;
     toolbar?: React.ReactNode;
@@ -42,6 +52,31 @@ vi.mock('#components/MindMapView', () => ({
       {notice && <div data-testid="map-notice">{notice}</div>}
       {toolbar && <div data-testid="map-toolbar">{toolbar}</div>}
       {overlay && <div data-testid="map-overlay">{overlay}</div>}
+      {edit && (
+        <div data-testid="editing">
+          {edit.draft.subtitle}|{edit.draft.nodes.map((node) => node.label).join(',')}
+          <button
+            type="button"
+            onClick={() => edit.onChange({ ...edit.draft, subtitle: ' Novo subtítulo ' })}
+          >
+            mudar-subtitulo
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              edit.onChange({
+                ...edit.draft,
+                nodes: [{ label: '  ', children: [] }, ...edit.draft.nodes.slice(1)],
+              })
+            }
+          >
+            esvaziar-termo
+          </button>
+          <button type="button" onClick={() => edit.onChange({ ...edit.draft, nodes: [] })}>
+            apagar-tudo
+          </button>
+        </div>
+      )}
       <button
         type="button"
         onClick={() =>
@@ -78,6 +113,8 @@ function renderMap(id = nextId()) {
 }
 
 beforeEach(() => {
+  saveMap.mutateAsync.mockReset();
+  saveMap.isPending = false;
   save.mutateAsync.mockReset();
   snackbar.success.mockReset();
   snackbar.error.mockReset();
@@ -118,7 +155,9 @@ describe('SummaryMindMap', () => {
 
     expect(screen.getByTestId('mind-map')).toHaveTextContent('Redes (Estuda redes): Da IA');
     expect(
-      within(screen.getByTestId('map-toolbar')).getByRole('button', { name: 'Gerar de novo com IA' }),
+      within(screen.getByTestId('map-toolbar')).getByRole('button', {
+        name: 'Gerar de novo com IA',
+      }),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('map-notice')).not.toBeInTheDocument();
     expect(generate.mutate).not.toHaveBeenCalled();
@@ -183,7 +222,7 @@ describe('SummaryMindMap', () => {
 
     renderMap(id);
     generate.mutate.mockClear();
-    document.body.innerHTML = '';
+    cleanup();
     renderMap(id);
 
     expect(generate.mutate).not.toHaveBeenCalled();
@@ -229,7 +268,9 @@ describe('SummaryMindMap placement', () => {
     const id = renderMap();
 
     await userEvent.click(
-      within(screen.getByTestId('map-toolbar')).getByRole('button', { name: 'Gerar de novo com IA' }),
+      within(screen.getByTestId('map-toolbar')).getByRole('button', {
+        name: 'Gerar de novo com IA',
+      }),
     );
 
     expect(generate.mutate).toHaveBeenCalledWith({ id });
@@ -241,7 +282,11 @@ describe('SummaryMindMap placement', () => {
     renderMap();
 
     expect(screen.getByTestId('map-notice')).toHaveTextContent('O resumo mudou');
-    expect(screen.queryByTestId('map-toolbar')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('map-toolbar')).queryByRole('button', {
+        name: 'Gerar de novo com IA',
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('when regenerating a saved map fails, should show the error with Tentar de novo inside it and keep the saved map', async () => {
@@ -254,7 +299,11 @@ describe('SummaryMindMap placement', () => {
     expect(alert).toHaveTextContent('Sem conexão.');
     expect(alert).toHaveTextContent('O mapa anterior continua aqui.');
     expect(screen.getByTestId('mind-map')).toHaveTextContent('Redes (Estuda redes): Da IA');
-    expect(screen.queryByTestId('map-toolbar')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('map-toolbar')).queryByRole('button', {
+        name: 'Gerar de novo com IA',
+      }),
+    ).not.toBeInTheDocument();
 
     await userEvent.click(within(alert).getByRole('button', { name: 'Tentar de novo' }));
 
@@ -304,5 +353,303 @@ describe('SummaryMindMap placement', () => {
     await waitFor(() =>
       expect(snackbar.error).toHaveBeenCalledWith('Não foi possível salvar a imagem.'),
     );
+  });
+});
+
+describe('SummaryMindMap editing', () => {
+  const edited = { ...aiMap, edited: true };
+  const toolbar = () => screen.getByTestId('map-toolbar');
+  const startEditing = async () =>
+    userEvent.click(within(toolbar()).getByRole('button', { name: 'Editar o mapa' }));
+
+  it('when there is an AI map, should offer to edit it next to generating again', () => {
+    saved.state = { ...saved.state, data: aiMap };
+
+    renderMap();
+
+    expect(within(toolbar()).getByRole('button', { name: 'Editar o mapa' })).toBeInTheDocument();
+    expect(
+      within(toolbar()).getByRole('button', { name: 'Gerar de novo com IA' }),
+    ).toBeInTheDocument();
+  });
+
+  it('when there is only the simple map, should still offer to edit it', () => {
+    renderMap();
+
+    expect(within(toolbar()).getByRole('button', { name: 'Editar o mapa' })).toBeInTheDocument();
+  });
+
+  it('when the AI is working, should not offer to edit', () => {
+    generate.state = { isPending: true, isError: false, error: null };
+
+    renderMap();
+
+    expect(within(toolbar()).getByRole('button', { name: 'Editar o mapa' })).toBeDisabled();
+  });
+
+  it('when the user starts editing, should show the editing map and swap the controls to Salvar and Cancelar', async () => {
+    saved.state = { ...saved.state, data: aiMap };
+
+    renderMap();
+    await startEditing();
+
+    expect(screen.getByTestId('editing')).toHaveTextContent('Estuda redes|Da IA');
+    expect(within(toolbar()).getByRole('button', { name: 'Salvar alterações' })).toBeEnabled();
+    expect(within(toolbar()).getByRole('button', { name: 'Cancelar edição' })).toBeInTheDocument();
+    expect(within(toolbar()).queryByRole('button', { name: 'Editar o mapa' })).toBeNull();
+    expect(within(toolbar()).queryByRole('button', { name: 'Gerar de novo com IA' })).toBeNull();
+  });
+
+  it('when editing the simple map, should start from the simple map text', async () => {
+    renderMap();
+    await startEditing();
+
+    expect(screen.getByTestId('editing')).toHaveTextContent('|Local A');
+  });
+
+  it('when the user saves, should send the trimmed map, tell the user and leave editing', async () => {
+    saved.state = { ...saved.state, data: aiMap };
+    saveMap.mutateAsync.mockResolvedValue({ ...aiMap, edited: true });
+
+    const id = renderMap();
+
+    await startEditing();
+    await userEvent.click(screen.getByRole('button', { name: 'mudar-subtitulo' }));
+    await userEvent.click(within(toolbar()).getByRole('button', { name: 'Salvar alterações' }));
+
+    await waitFor(() => expect(snackbar.success).toHaveBeenCalledWith('Mapa salvo.'));
+
+    expect(saveMap.mutateAsync).toHaveBeenCalledWith({
+      id,
+      subtitle: 'Novo subtítulo',
+      nodes: [{ label: 'Da IA', children: [] }],
+    });
+    expect(screen.queryByTestId('editing')).not.toBeInTheDocument();
+  });
+
+  it('when saving fails, should show the error and stay in editing with the changes', async () => {
+    saved.state = { ...saved.state, data: aiMap };
+    saveMap.mutateAsync.mockRejectedValue(new Error('Disco cheio.'));
+
+    renderMap();
+    await startEditing();
+    await userEvent.click(screen.getByRole('button', { name: 'mudar-subtitulo' }));
+    await userEvent.click(within(toolbar()).getByRole('button', { name: 'Salvar alterações' }));
+
+    await waitFor(() => expect(snackbar.error).toHaveBeenCalledWith('Disco cheio.'));
+
+    expect(screen.getByTestId('editing')).toHaveTextContent('Novo subtítulo');
+    expect(snackbar.success).not.toHaveBeenCalled();
+  });
+
+  it('when saving fails without a message, should say so in general', async () => {
+    saveMap.mutateAsync.mockRejectedValue('x');
+
+    renderMap();
+    await startEditing();
+    await userEvent.click(within(toolbar()).getByRole('button', { name: 'Salvar alterações' }));
+
+    await waitFor(() =>
+      expect(snackbar.error).toHaveBeenCalledWith('Não foi possível salvar o mapa.'),
+    );
+  });
+
+  it('when a term is left empty, should warn and not let the user save', async () => {
+    saved.state = { ...saved.state, data: aiMap };
+
+    renderMap();
+    await startEditing();
+    await userEvent.click(screen.getByRole('button', { name: 'esvaziar-termo' }));
+
+    expect(screen.getByTestId('map-notice')).toHaveTextContent('Preencha o termo de todos os nós');
+    expect(within(toolbar()).getByRole('button', { name: 'Salvar alterações' })).toBeDisabled();
+    expect(saveMap.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('when every branch is deleted, should warn that at least one is needed and not let the user save', async () => {
+    saved.state = { ...saved.state, data: aiMap };
+
+    renderMap();
+    await startEditing();
+    await userEvent.click(screen.getByRole('button', { name: 'apagar-tudo' }));
+
+    expect(screen.getByTestId('map-notice')).toHaveTextContent('pelo menos um ramo');
+    expect(within(toolbar()).getByRole('button', { name: 'Salvar alterações' })).toBeDisabled();
+  });
+
+  it('when the map is being saved, should show it and block saving twice and cancelling', async () => {
+    saveMap.isPending = true;
+
+    renderMap();
+    await startEditing();
+
+    expect(within(toolbar()).getByRole('button', { name: 'Salvando…' })).toBeDisabled();
+    expect(within(toolbar()).getByRole('button', { name: 'Cancelar edição' })).toBeDisabled();
+  });
+
+  it('when the user cancels without changes, should leave editing at once', async () => {
+    renderMap();
+    await startEditing();
+    await userEvent.click(within(toolbar()).getByRole('button', { name: 'Cancelar edição' }));
+
+    expect(screen.queryByTestId('editing')).not.toBeInTheDocument();
+    expect(screen.queryByText('Descartar as alterações?')).not.toBeInTheDocument();
+  });
+
+  it('when the user cancels after changes, should ask before throwing them away', async () => {
+    renderMap();
+    await startEditing();
+    await userEvent.click(screen.getByRole('button', { name: 'mudar-subtitulo' }));
+    await userEvent.click(within(toolbar()).getByRole('button', { name: 'Cancelar edição' }));
+
+    expect(screen.getByText('Descartar as alterações?')).toBeInTheDocument();
+    expect(screen.getByTestId('editing')).toBeInTheDocument();
+  });
+
+  it('when the user confirms discarding, should leave editing without saving', async () => {
+    renderMap();
+    await startEditing();
+    await userEvent.click(screen.getByRole('button', { name: 'mudar-subtitulo' }));
+    await userEvent.click(within(toolbar()).getByRole('button', { name: 'Cancelar edição' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Descartar alterações' }));
+
+    expect(screen.queryByTestId('editing')).not.toBeInTheDocument();
+    expect(saveMap.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('when the user keeps editing after the discard question, should keep the changes', async () => {
+    renderMap();
+    await startEditing();
+    await userEvent.click(screen.getByRole('button', { name: 'mudar-subtitulo' }));
+    await userEvent.click(within(toolbar()).getByRole('button', { name: 'Cancelar edição' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(screen.getByTestId('editing')).toHaveTextContent('Novo subtítulo');
+  });
+
+  it('when the user leaves the tab in the middle of an edit and comes back, should resume the same draft', async () => {
+    saved.state = { ...saved.state, data: aiMap };
+
+    const id = renderMap();
+
+    await startEditing();
+    await userEvent.click(screen.getByRole('button', { name: 'mudar-subtitulo' }));
+
+    cleanup();
+    renderMap(id);
+
+    expect(screen.getByTestId('editing')).toHaveTextContent('Novo subtítulo');
+  });
+
+  it('when the edit was saved, coming back should not resume it', async () => {
+    saved.state = { ...saved.state, data: aiMap };
+    saveMap.mutateAsync.mockResolvedValue({ ...aiMap, edited: true });
+
+    const id = renderMap();
+
+    await startEditing();
+    await userEvent.click(within(toolbar()).getByRole('button', { name: 'Salvar alterações' }));
+    await waitFor(() => expect(snackbar.success).toHaveBeenCalled());
+
+    cleanup();
+    renderMap(id);
+
+    expect(screen.queryByTestId('editing')).not.toBeInTheDocument();
+  });
+
+  it('when the edit was discarded, coming back should not resume it', async () => {
+    const id = renderMap();
+
+    await startEditing();
+    await userEvent.click(screen.getByRole('button', { name: 'mudar-subtitulo' }));
+    await userEvent.click(within(toolbar()).getByRole('button', { name: 'Cancelar edição' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Descartar alterações' }));
+
+    cleanup();
+    renderMap(id);
+
+    expect(screen.queryByTestId('editing')).not.toBeInTheDocument();
+  });
+
+  it('when editing, should hide the other notices (a failed generation, for example)', async () => {
+    generate.state = { isPending: false, isError: true, error: new Error('Sem conexão.') };
+
+    renderMap();
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+
+    await startEditing();
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  describe('generating again over an edited map', () => {
+    it('when the map was edited, should ask before replacing the edits and not call the AI yet', async () => {
+      saved.state = { ...saved.state, data: edited };
+
+      renderMap();
+      await userEvent.click(
+        within(toolbar()).getByRole('button', { name: 'Gerar de novo com IA' }),
+      );
+
+      expect(screen.getByText('Gerar de novo e perder as suas edições?')).toBeInTheDocument();
+      expect(screen.getByText(/apaga as suas edições/)).toBeInTheDocument();
+      expect(generate.mutate).not.toHaveBeenCalled();
+    });
+
+    it('when the user confirms, should generate again', async () => {
+      saved.state = { ...saved.state, data: edited };
+
+      const id = renderMap();
+
+      await userEvent.click(
+        within(toolbar()).getByRole('button', { name: 'Gerar de novo com IA' }),
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Gerar de novo' }));
+
+      expect(generate.mutate).toHaveBeenCalledWith({ id });
+    });
+
+    it('when the user cancels, should keep the edited map and not call the AI', async () => {
+      saved.state = { ...saved.state, data: edited };
+
+      renderMap();
+      await userEvent.click(
+        within(toolbar()).getByRole('button', { name: 'Gerar de novo com IA' }),
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+      expect(generate.mutate).not.toHaveBeenCalled();
+      await waitFor(() =>
+        expect(
+          screen.queryByText('Gerar de novo e perder as suas edições?'),
+        ).not.toBeInTheDocument(),
+      );
+    });
+
+    it('when the map was not edited, should generate again without asking', async () => {
+      saved.state = { ...saved.state, data: aiMap };
+
+      const id = renderMap();
+
+      await userEvent.click(
+        within(toolbar()).getByRole('button', { name: 'Gerar de novo com IA' }),
+      );
+
+      expect(generate.mutate).toHaveBeenCalledWith({ id });
+      expect(screen.queryByText('Gerar de novo e perder as suas edições?')).not.toBeInTheDocument();
+    });
+
+    it('when an edited map is stale, should also ask before the update replaces the edits', async () => {
+      saved.state = { ...saved.state, data: { ...edited, stale: true } };
+
+      renderMap();
+      await userEvent.click(
+        within(screen.getByTestId('map-notice')).getByRole('button', { name: 'Atualizar com IA' }),
+      );
+
+      expect(screen.getByText('Gerar de novo e perder as suas edições?')).toBeInTheDocument();
+      expect(generate.mutate).not.toHaveBeenCalled();
+    });
   });
 });

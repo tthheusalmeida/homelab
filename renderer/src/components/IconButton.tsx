@@ -15,6 +15,8 @@ interface IconButtonProps extends Omit<
   children: ReactNode;
   /** Lado em que o tooltip abre. */
   tooltipSide?: TooltipSide;
+  /** `icon-sm` (padrão) ou `icon-xs`, o botãozinho dos controles que ficam dentro de um bloco. */
+  size?: 'icon-sm' | 'icon-xs';
 }
 
 /** Espera antes de o tooltip aparecer (ms): curta, para o botão sem texto se explicar logo. */
@@ -29,6 +31,7 @@ export function IconButton({
   label,
   children,
   tooltipSide = 'top',
+  size = 'icon-sm',
   variant = 'outline',
   type = 'button',
   ...props
@@ -38,7 +41,7 @@ export function IconButton({
       <Tooltip>
         <TooltipTrigger
           render={
-            <Button type={type} size="icon-sm" variant={variant} aria-label={label} {...props}>
+            <Button type={type} size={size} variant={variant} aria-label={label} {...props}>
               {children}
             </Button>
           }

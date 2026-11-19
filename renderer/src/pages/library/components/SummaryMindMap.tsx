@@ -1,19 +1,33 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { Sparkles } from 'lucide-react';
+import { Check, Pencil, Sparkles, X } from 'lucide-react';
 
 import { buildMindMap, fromAiMap } from '#lib/mind-map';
+import {
+  draftFromMap,
+  draftProblemMessages,
+  isDraftDirty,
+  toSavePayload,
+  validateDraft,
+  type MindMapDraft,
+} from '#lib/mind-map-edit';
 import { cn } from '#lib/utils';
 import { Button } from '#ui/button';
 
 import { Callout } from '#components/Callout';
+import { ConfirmDialog } from '#components/ConfirmDialog';
 import { HexLoader } from '#components/Hex';
 import { IconButton } from '#components/IconButton';
 import { LoadingState } from '#components/LoadingState';
 import { MindMapView } from '#components/MindMapView';
 import { useSnackbar } from '#components/Snackbar';
 
-import { useGenerateMindMap, useMindMap, useSaveMindMapImage } from '../hooks/useLibrary';
+import {
+  useGenerateMindMap,
+  useMindMap,
+  useSaveMindMap,
+  useSaveMindMapImage,
+} from '../hooks/useLibrary';
 
 interface SummaryMindMapProps {
   documentId: string;
@@ -29,6 +43,13 @@ interface SummaryMindMapProps {
  * quem decide tentar outra vez é o botão.
  */
 const requestedThisSession = new Set<string>();
+
+/**
+ * Rascunhos de edição em andamento, por página, nesta sessão. Trocar de aba (Resumo), entrar no modo
+ * leitura ou sair da página no meio da edição não perde o que foi digitado: ao voltar ao mapa, a
+ * edição continua de onde parou. Sai daqui ao salvar ou descartar.
+ */
+const draftsThisSession = new Map<string, MindMapDraft>();
 
 /** Botão de gerar: enquanto a IA trabalha, mostra a colmeia carregando e fica desabilitado. */
 function GenerateButton({
@@ -69,7 +90,8 @@ function GenerateButton({
 }
 
 /**
- * Aba "Mapa mental" de um resumo. O mapa de **revisão** é gerado pela IA com um prompt próprio na
+ * Aba "Mapa mental" de um resumo (também a edição do mapa: termos, frases, subtítulo e nós a mais ou
+ * a menos, guardados em disco). O mapa de **revisão** é gerado pela IA com um prompt próprio na
  * primeira vez que a aba abre e fica guardado em disco. Enquanto a IA trabalha, ou se ela falhar,
  * aparece um mapa simples montado do texto (sem IA), com o aviso do que está acontecendo e, se
  * falhou, o botão de tentar de novo **dentro** da mensagem de erro.
@@ -77,8 +99,15 @@ function GenerateButton({
 export function SummaryMindMap({ documentId, title, content, className }: SummaryMindMapProps) {
   const saved = useMindMap(documentId);
   const generate = useGenerateMindMap();
+  const saveMap = useSaveMindMap();
   const saveImage = useSaveMindMapImage();
   const snackbar = useSnackbar();
+
+  // O rascunho da edição (`null` = não está editando) e qual confirmação está aberta.
+  const [draft, setDraft] = useState<MindMapDraft | null>(
+    () => draftsThisSession.get(documentId) ?? null,
+  );
+  const [confirm, setConfirm] = useState<'discard' | 'regenerate' | null>(null);
 
   const missing = saved.isSuccess && saved.data === null;
 
@@ -97,7 +126,49 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   );
 
   const pending = generate.isPending;
-  const regenerate = () => generate.mutate({ id: documentId });
+  const generateNow = () => generate.mutate({ id: documentId });
+  // Mapa editado à mão: gerar de novo apagaria as edições, então pergunta antes.
+  const regenerate = () => (saved.data?.edited ? setConfirm('regenerate') : generateNow());
+
+  const editing = draft !== null;
+  const base = useMemo(() => draftFromMap(map), [map]);
+  const dirty = draft ? isDraftDirty(draft, base) : false;
+  const problem = draft ? validateDraft(draft) : null;
+
+  const startEditing = () => {
+    const next = draftFromMap(map);
+
+    draftsThisSession.set(documentId, next);
+    setDraft(next);
+  };
+
+  const changeDraft = (next: MindMapDraft) => {
+    draftsThisSession.set(documentId, next);
+    setDraft(next);
+  };
+
+  const closeEditing = () => {
+    draftsThisSession.delete(documentId);
+    setDraft(null);
+  };
+
+  const cancelEditing = () => (dirty ? setConfirm('discard') : closeEditing());
+
+  const saveEditing = async () => {
+    if (!draft || problem) {
+      return;
+    }
+
+    try {
+      await saveMap.mutateAsync({ id: documentId, ...toSavePayload(draft) });
+      snackbar.success('Mapa salvo.');
+      closeEditing();
+    } catch (error) {
+      snackbar.error(
+        error instanceof Error && error.message ? error.message : 'Não foi possível salvar o mapa.',
+      );
+    }
+  };
 
   if (saved.isPending) {
     return (
@@ -108,12 +179,18 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   }
 
   const hasMap = Boolean(saved.data);
-  const failed = generate.isError && !pending;
+  const failed = generate.isError && !pending && !editing;
 
   // Um aviso por vez, com o botão do que fazer dentro dele (o erro e a ação ficam juntos).
   let notice: ReactNode = null;
 
-  if (failed) {
+  if (editing) {
+    notice = problem ? (
+      <Callout tone="warning" role="status">
+        {draftProblemMessages[problem]}
+      </Callout>
+    ) : null;
+  } else if (failed) {
     notice = (
       <Callout
         tone="danger"
@@ -161,18 +238,42 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
     );
   }
 
-  // Com mapa da IA e sem aviso, gerar de novo fica entre os controles do mapa, só com o ícone.
-  const toolbar =
-    hasMap && !notice ? (
+  // Controles do mapa: editar (ou salvar e cancelar, em edição) e, com mapa da IA e sem aviso, gerar
+  // de novo. Só ícones, com tooltip.
+  const toolbar = editing ? (
+    <>
       <IconButton
-        label={pending ? 'Gerando…' : 'Gerar de novo com IA'}
-        disabled={pending}
-        aria-busy={pending}
-        onClick={regenerate}
+        label={saveMap.isPending ? 'Salvando…' : 'Salvar alterações'}
+        variant="default"
+        disabled={Boolean(problem) || saveMap.isPending}
+        aria-busy={saveMap.isPending}
+        onClick={() => void saveEditing()}
       >
-        {pending ? <HexLoader className="size-4" label="Gerando" /> : <Sparkles />}
+        {saveMap.isPending ? <HexLoader className="size-4" label="Salvando" /> : <Check />}
       </IconButton>
-    ) : undefined;
+
+      <IconButton label="Cancelar edição" disabled={saveMap.isPending} onClick={cancelEditing}>
+        <X />
+      </IconButton>
+    </>
+  ) : (
+    <>
+      <IconButton label="Editar o mapa" disabled={pending} onClick={startEditing}>
+        <Pencil />
+      </IconButton>
+
+      {hasMap && !notice && (
+        <IconButton
+          label={pending ? 'Gerando…' : 'Gerar de novo com IA'}
+          disabled={pending}
+          aria-busy={pending}
+          onClick={regenerate}
+        >
+          {pending ? <HexLoader className="size-4" label="Gerando" /> : <Sparkles />}
+        </IconButton>
+      )}
+    </>
+  );
 
   return (
     <div className={cn('h-full', className)} aria-live="polite">
@@ -180,6 +281,7 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
         map={map}
         notice={notice}
         toolbar={toolbar}
+        edit={draft ? { draft, onChange: changeDraft } : undefined}
         overlay={
           pending ? (
             <div aria-hidden="true">
@@ -195,6 +297,32 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
           }
         }}
         onDownloadError={(message) => snackbar.error(message)}
+      />
+
+      <ConfirmDialog
+        open={confirm === 'discard'}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        title="Descartar as alterações?"
+        description="As mudanças que você fez no mapa e ainda não salvou serão perdidas."
+        confirmLabel="Descartar alterações"
+        destructive
+        onConfirm={() => {
+          setConfirm(null);
+          closeEditing();
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirm === 'regenerate'}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        title="Gerar de novo e perder as suas edições?"
+        description="Você editou este mapa à mão. Gerar de novo com a IA cria um mapa novo a partir do resumo e apaga as suas edições. Não há como desfazer."
+        confirmLabel="Gerar de novo"
+        destructive
+        onConfirm={() => {
+          setConfirm(null);
+          generateNow();
+        }}
       />
     </div>
   );

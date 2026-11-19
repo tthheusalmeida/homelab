@@ -19,6 +19,7 @@ import {
   getTags,
   publishDocument,
   reindex,
+  saveMindMap,
   saveMindMapImage,
   suggestClassification,
   updateDocument,
@@ -30,6 +31,13 @@ import type {
 } from "../types/library.types";
 
 export const LIBRARY_KEY = ["library"] as const;
+
+/** Um nó do mapa como vai para o main (termo, frase curta e filhos). */
+type MindMapNodeInput = {
+  label: string;
+  note?: string;
+  children: MindMapNodeInput[];
+};
 
 export function useDocuments(
   filters: LibraryFilters = {},
@@ -63,6 +71,28 @@ export function useGenerateMindMap() {
   return useMutation({
     mutationFn: ({ id, modelId }: { id: string; modelId?: string }) =>
       generateMindMap(id, modelId),
+    onSuccess: (map, { id }) =>
+      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map),
+  });
+}
+
+/**
+ * Guarda o mapa editado e o põe direto na consulta do mapa (não invalida a biblioteca toda), então a
+ * tela já mostra o que foi salvo.
+ */
+export function useSaveMindMap() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      subtitle,
+      nodes,
+    }: {
+      id: string;
+      subtitle?: string;
+      nodes: MindMapNodeInput[];
+    }) => saveMindMap(id, { subtitle, nodes }),
     onSuccess: (map, { id }) =>
       queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map),
   });

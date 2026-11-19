@@ -1,6 +1,14 @@
 import { MIND_MAP_LIMITS } from '../../ai/prompts/mind-map.prompt';
 
-import { hashContent, InvalidMindMapError, parseMindMap } from './mind-map';
+import { MIND_MAP_EDIT_LIMITS } from '../../../../shared/mind-map-limits';
+
+import {
+  hashContent,
+  InvalidMindMapError,
+  MindMapEditMessages,
+  parseEditedMindMap,
+  parseMindMap,
+} from './mind-map';
 
 const answer = (nodes: unknown) => JSON.stringify({ nodes });
 
@@ -151,6 +159,122 @@ describe('parseMindMap: note and subtitle', () => {
     );
 
     expect(subtitle!.length).toBeLessThanOrEqual(MIND_MAP_LIMITS.maxSubtitleChars);
+  });
+});
+
+describe('parseEditedMindMap', () => {
+  const nodes = (n: number) => Array.from({ length: n }, (_, i) => ({ label: `R${i}` }));
+
+  it('when the user sends a valid map, should keep the text, notes, subtitle and tree as typed', () => {
+    const parsed = parseEditedMindMap({
+      subtitle: 'Do que trata',
+      nodes: [{ label: 'Termo', note: 'Frase', children: [{ label: 'Filho' }] }],
+    });
+
+    expect(parsed).toEqual({
+      subtitle: 'Do que trata',
+      nodes: [{ label: 'Termo', note: 'Frase', children: [{ label: 'Filho', children: [] }] }],
+    });
+  });
+
+  it('when the text has markdown characters and final punctuation, should keep them (it is what the user typed)', () => {
+    const [node] = parseEditedMindMap({
+      nodes: [{ label: 'snake_case *2* etapa:', note: 'a_b e c*d.' }],
+    }).nodes;
+
+    expect(node.label).toBe('snake_case *2* etapa:');
+    expect(node.note).toBe('a_b e c*d.');
+  });
+
+  it('when the text has extra spaces, should tidy them', () => {
+    const [node] = parseEditedMindMap({ nodes: [{ label: '  Termo   com   espaço  ' }] }).nodes;
+
+    expect(node.label).toBe('Termo com espaço');
+  });
+
+  it.each([
+    ['null', null],
+    ['a list', []],
+    ['a text', 'x'],
+  ])('when the input is %s, should throw that the map is not valid', (_name, input) => {
+    expect(() => parseEditedMindMap(input)).toThrow(MindMapEditMessages.notAMap);
+  });
+
+  it.each([
+    ['no nodes', {}],
+    ['empty nodes', { nodes: [] }],
+    ['only empty labels', { nodes: [{ label: '  ' }, { label: 4 }] }],
+  ])('when there is %s, should throw that at least one branch is needed', (_name, input) => {
+    expect(() => parseEditedMindMap(input)).toThrow(InvalidMindMapError);
+    expect(() => parseEditedMindMap(input)).toThrow(MindMapEditMessages.empty);
+  });
+
+  it('when a node has no label, should drop it', () => {
+    expect(parseEditedMindMap({ nodes: [{ label: '' }, { label: 'Fica' }] }).nodes).toHaveLength(1);
+  });
+
+  it('when the note repeats the label or is empty, should drop it', () => {
+    const { nodes: parsed } = parseEditedMindMap({
+      nodes: [
+        { label: 'A', note: 'a' },
+        { label: 'B', note: '   ' },
+      ],
+    });
+
+    expect(parsed.every((node) => !('note' in node))).toBe(true);
+  });
+
+  it('when texts are too long, should cut them with the edit limits (more room than the AI)', () => {
+    const [node] = parseEditedMindMap({
+      subtitle: 'x '.repeat(200),
+      nodes: [{ label: 'palavra '.repeat(40), note: 'frase '.repeat(80) }],
+    }).nodes;
+
+    expect(node.label.length).toBeLessThanOrEqual(MIND_MAP_EDIT_LIMITS.maxLabelChars);
+    expect(node.label.length).toBeGreaterThan(50);
+    expect(node.note!.length).toBeLessThanOrEqual(MIND_MAP_EDIT_LIMITS.maxNoteChars);
+    expect(node.note!.length).toBeGreaterThan(100);
+  });
+
+  it('when the subtitle is too long, should cut it', () => {
+    const { subtitle } = parseEditedMindMap({ subtitle: 'texto '.repeat(60), nodes: nodes(1) });
+
+    expect(subtitle!.length).toBeLessThanOrEqual(MIND_MAP_EDIT_LIMITS.maxSubtitleChars);
+  });
+
+  it('when there are too many branches, should keep only the first ones', () => {
+    expect(parseEditedMindMap({ nodes: nodes(50) }).nodes).toHaveLength(
+      MIND_MAP_EDIT_LIMITS.maxBranches,
+    );
+  });
+
+  it('when the tree is deeper than the edit limit, should cut the extra levels', () => {
+    let deep: Record<string, unknown> = { label: 'n6' };
+
+    for (const label of ['n5', 'n4', 'n3', 'n2', 'n1']) {
+      deep = { label, children: [deep] };
+    }
+
+    let level = parseEditedMindMap({ nodes: [deep] }).nodes[0];
+    let depth = 1;
+
+    while (level.children.length > 0) {
+      level = level.children[0];
+      depth += 1;
+    }
+
+    expect(depth).toBe(MIND_MAP_EDIT_LIMITS.maxDepth);
+  });
+
+  it('when there are too many nodes in total, should stop at the limit', () => {
+    const wide = Array.from({ length: MIND_MAP_EDIT_LIMITS.maxBranches }, (_, i) => ({
+      label: `R${i}`,
+      children: Array.from({ length: 30 }, (_, j) => ({ label: `F${i}-${j}` })),
+    }));
+    const count = (list: { children: unknown[] }[]): number =>
+      list.reduce((sum, node) => sum + 1 + count(node.children as { children: unknown[] }[]), 0);
+
+    expect(count(parseEditedMindMap({ nodes: wide }).nodes)).toBe(MIND_MAP_EDIT_LIMITS.maxNodes);
   });
 });
 

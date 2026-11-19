@@ -83,6 +83,7 @@ export const IpcChannels = {
     mindMap: {
       get: 'library:mind-map:get',
       generate: 'library:mind-map:generate',
+      save: 'library:mind-map:save',
       saveImage: 'library:mind-map:save-image',
     },
     inbox: 'library:inbox',

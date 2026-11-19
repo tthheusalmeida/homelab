@@ -21,6 +21,7 @@ vi.mock("../api/library", () => ({
   getMindMap: vi.fn(),
   generateMindMap: vi.fn(),
   saveMindMapImage: vi.fn(),
+  saveMindMap: vi.fn(),
 }));
 
 import { createTestQueryClient } from "../../../test/utils";
@@ -39,6 +40,7 @@ import {
   useMindMap,
   usePublishDocument,
   useReindex,
+  useSaveMindMap,
   useSaveMindMapImage,
   useSuggestClassification,
   useTags,
@@ -291,7 +293,7 @@ describe("library mutation hooks", () => {
 });
 
 describe("mind map hooks", () => {
-  const map = { nodes: [], model: "m", createdAt: "d", stale: false };
+  const map = { nodes: [], model: "m", createdAt: "d", stale: false, edited: false };
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -373,5 +375,64 @@ describe('useSaveMindMapImage', () => {
     expect(library.saveMindMapImage).toHaveBeenCalledWith('Mapa', 'UE5H');
     expect(returned).toEqual({ saved: true, path: 'D:/m.png' });
     expect(invalidate).not.toHaveBeenCalled();
+  });
+});
+
+describe('useSaveMindMap', () => {
+  const edited = {
+    subtitle: 'Novo',
+    nodes: [{ label: 'Termo', children: [] }],
+    model: 'm',
+    createdAt: 'd',
+    stale: false,
+    edited: true,
+  };
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('when saving, should send the id and the map, and put the result in the map query', async () => {
+    vi.mocked(library.saveMindMap).mockResolvedValue(edited);
+    vi.mocked(library.getMindMap).mockResolvedValue(null);
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(() => ({ query: useMindMap('id1'), save: useSaveMindMap() }), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
+    expect(result.current.query.data).toBeNull();
+
+    await act(async () => {
+      await result.current.save.mutateAsync({
+        id: 'id1',
+        subtitle: 'Novo',
+        nodes: [{ label: 'Termo', children: [] }],
+      });
+    });
+
+    expect(library.saveMindMap).toHaveBeenCalledWith('id1', {
+      subtitle: 'Novo',
+      nodes: [{ label: 'Termo', children: [] }],
+    });
+    await waitFor(() => expect(result.current.query.data).toEqual(edited));
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it('when saving fails, should expose the error and keep the query as it was', async () => {
+    vi.mocked(library.saveMindMap).mockRejectedValue(new Error('falhou'));
+    vi.mocked(library.getMindMap).mockResolvedValue(null);
+    const { wrapper } = setup();
+    const { result } = renderHook(() => ({ query: useMindMap('id1'), save: useSaveMindMap() }), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
+    await act(async () => {
+      await result.current.save.mutateAsync({ id: 'id1', nodes: [] }).catch(() => undefined);
+    });
+
+    await waitFor(() => expect(result.current.save.error?.message).toBe('falhou'));
+    expect(result.current.query.data).toBeNull();
   });
 });

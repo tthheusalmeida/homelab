@@ -18,12 +18,19 @@ class HttpLikeError extends Error {
   }
 }
 
-const map = { nodes: [{ label: 'A', children: [] }], model: 'm', createdAt: 'd', stale: false };
+const map = {
+  nodes: [{ label: 'A', children: [] }],
+  model: 'm',
+  createdAt: 'd',
+  stale: false,
+  edited: false,
+};
 
-function setup(overrides: Partial<Record<'get' | 'generate', jest.Mock>> = {}) {
+function setup(overrides: Partial<Record<'get' | 'generate' | 'save', jest.Mock>> = {}) {
   const port = {
     get: jest.fn().mockResolvedValue(map),
     generate: jest.fn().mockResolvedValue(map),
+    save: jest.fn().mockResolvedValue({ ...map, edited: true }),
     ...overrides,
   };
   const images = { save: jest.fn().mockResolvedValue({ saved: true, path: 'D:/mapa.png' }) };
@@ -155,5 +162,69 @@ describe('MindMapHandler: save-image', () => {
       ok: false,
       error: { code: IpcErrorCode.PERSIST_FAILED, message: 'Disco cheio.' },
     });
+  });
+});
+
+describe('MindMapHandler: save', () => {
+  const nodes = [{ label: 'Termo', note: 'Frase', children: [{ label: 'Filho', children: [] }] }];
+
+  it('when library:mind-map:save is called, should hand the page, subtitle and branches to the service', async () => {
+    const { ipc, port } = setup();
+
+    await expect(
+      ipc.invoke(IpcChannels.library.mindMap.save, { id: '1', subtitle: 'Sobre redes', nodes }),
+    ).resolves.toEqual({ ok: true, data: { ...map, edited: true } });
+    expect(port.save).toHaveBeenCalledWith('1', { subtitle: 'Sobre redes', nodes });
+  });
+
+  it('when there is no subtitle, should save with only the branches', async () => {
+    const { ipc, port } = setup();
+
+    await ipc.invoke(IpcChannels.library.mindMap.save, { id: '1', nodes });
+
+    expect(port.save).toHaveBeenCalledWith('1', { subtitle: undefined, nodes });
+  });
+
+  it.each([
+    ['no branches', { id: '1' }],
+    ['branches that are not a list', { id: '1', nodes: 'x' }],
+    ['branches that are an object', { id: '1', nodes: {} }],
+  ])('when the payload has %s, should answer VALIDATION without saving', async (_name, payload) => {
+    const { ipc, port } = setup();
+
+    const result = await ipc.invoke(IpcChannels.library.mindMap.save, payload as never);
+
+    expect(result).toMatchObject({ ok: false, error: { code: IpcErrorCode.VALIDATION } });
+    expect(port.save).not.toHaveBeenCalled();
+  });
+
+  it('when the service rejects the map, should answer VALIDATION with its message', async () => {
+    const { ipc } = setup({
+      save: jest
+        .fn()
+        .mockRejectedValue(
+          new HttpLikeError('O mapa precisa ter pelo menos um ramo com texto.', 400),
+        ),
+    });
+
+    await expect(
+      ipc.invoke(IpcChannels.library.mindMap.save, { id: '1', nodes: [] }),
+    ).resolves.toMatchObject({
+      ok: false,
+      error: {
+        code: IpcErrorCode.VALIDATION,
+        message: 'O mapa precisa ter pelo menos um ramo com texto.',
+      },
+    });
+  });
+
+  it('when the page does not exist, should answer NOT_FOUND', async () => {
+    const { ipc } = setup({
+      save: jest.fn().mockRejectedValue(new HttpLikeError('sem página', 404)),
+    });
+
+    await expect(
+      ipc.invoke(IpcChannels.library.mindMap.save, { id: 'x', nodes }),
+    ).resolves.toMatchObject({ ok: false, error: { code: IpcErrorCode.NOT_FOUND } });
   });
 });

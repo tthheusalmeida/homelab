@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { useState } from 'react';
+
 import type { MindMap } from '#lib/mind-map';
+import { draftFromMap, type MindMapDraft } from '#lib/mind-map-edit';
+import { MIND_MAP_EDIT_LIMITS } from '#shared/mind-map-limits';
 
 const capture = vi.hoisted(() => vi.fn());
 
@@ -801,5 +805,259 @@ describe('MindMapView PNG without background', () => {
 
     expect(await screen.findByRole('button', { name: /sem fundo/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Baixar o mapa como PNG com fundo' })).toBeEnabled();
+  });
+});
+
+describe('MindMapView edit mode', () => {
+  /** Um pai que guarda o rascunho, como o `SummaryMindMap` faz. */
+  function Harness({
+    initial = draftFromMap(map),
+    onDraft,
+  }: {
+    initial?: MindMapDraft;
+    onDraft?: (draft: MindMapDraft) => void;
+  }) {
+    const [draft, setDraft] = useState(initial);
+
+    return (
+      <MindMapView
+        map={map}
+        edit={{
+          draft,
+          onChange: (next) => {
+            setDraft(next);
+            onDraft?.(next);
+          },
+        }}
+      />
+    );
+  }
+
+  it('when not editing, should have no text fields at all', () => {
+    render(<MindMapView map={map} />);
+
+    expect(screen.queryAllByRole('textbox')).toHaveLength(0);
+  });
+
+  it('when editing, should show a field for the term and the note of every node and one for the subtitle', () => {
+    render(<Harness />);
+
+    expect(screen.getByRole('textbox', { name: 'Subtítulo do mapa' })).toHaveValue(
+      'Estuda a hereditariedade',
+    );
+    expect(screen.getByRole('textbox', { name: 'Termo do ramo 1' })).toHaveValue('DNA');
+    expect(screen.getByRole('textbox', { name: 'Frase do ramo 1' })).toHaveValue(
+      'Material genético do indivíduo.',
+    );
+    expect(screen.getByRole('textbox', { name: 'Termo do subtópico 1.1' })).toHaveValue('Genes');
+    expect(screen.getByRole('textbox', { name: 'Frase do subtópico 1.1' })).toHaveValue(
+      'Segmento de DNA.',
+    );
+    expect(screen.getByRole('textbox', { name: 'Termo do subtópico 1.1.1' })).toHaveValue('Alelos');
+    expect(screen.getByRole('textbox', { name: 'Termo do ramo 3' })).toHaveValue('Haploide');
+    expect(screen.getByRole('textbox', { name: 'Frase do ramo 3' })).toHaveValue('');
+  });
+
+  it('when editing, should keep the title as the page title (not editable) and say where to change it', () => {
+    render(<Harness />);
+
+    expect(screen.getByRole('heading', { name: 'Genética' })).toBeInTheDocument();
+    expect(screen.getByText(/O título é o da página/)).toBeInTheDocument();
+  });
+
+  it('when the user types in the term of a branch, should report the draft with the new term', async () => {
+    const onDraft = vi.fn();
+
+    render(<Harness onDraft={onDraft} />);
+
+    const field = screen.getByRole('textbox', { name: 'Termo do ramo 2' });
+
+    await userEvent.clear(field);
+    await userEvent.type(field, 'Centro');
+
+    expect(field).toHaveValue('Centro');
+    expect(onDraft.mock.lastCall?.[0].nodes[1].label).toBe('Centro');
+    expect(onDraft.mock.lastCall?.[0].nodes[0].label).toBe('DNA');
+  });
+
+  it('when the user types in the note, a deep term and the subtitle, should update each one', async () => {
+    const onDraft = vi.fn();
+
+    render(<Harness onDraft={onDraft} />);
+
+    await userEvent.type(screen.getByRole('textbox', { name: 'Frase do ramo 3' }), 'Metade');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Termo do subtópico 1.1.1' }), 's');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Subtítulo do mapa' }), '!');
+
+    const last: MindMapDraft = onDraft.mock.lastCall?.[0];
+
+    expect(last.nodes[2].note).toBe('Metade');
+    expect(last.nodes[0].children[0].children[0].label).toBe('Alelos' + 's');
+    expect(last.subtitle).toBe('Estuda a hereditariedade!');
+  });
+
+  it('when the user adds a subtopic, should add an empty node inside it and put the focus on its term', async () => {
+    render(<Harness />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Adicionar subtópico ao ramo 2' }));
+
+    const field = screen.getByRole('textbox', { name: 'Termo do subtópico 2.1' });
+
+    expect(field).toHaveValue('');
+    expect(field).toHaveAttribute('placeholder', 'Escreva o termo');
+    expect(field).toHaveFocus();
+  });
+
+  it('when the user adds a branch from the bar, should add an empty branch at the end and focus it', async () => {
+    render(<Harness />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Adicionar ramo' }));
+
+    const field = screen.getByRole('textbox', { name: 'Termo do ramo 4' });
+
+    expect(field).toHaveValue('');
+    expect(field).toHaveFocus();
+  });
+
+  it('when the user deletes a node, should remove it and everything inside it', async () => {
+    const onDraft = vi.fn();
+
+    render(<Harness onDraft={onDraft} />);
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Excluir o ramo 1 e o que está dentro dele' }),
+    );
+
+    expect(screen.queryByRole('textbox', { name: 'Termo do subtópico 1.1' })).toBeNull();
+    expect(screen.getByRole('textbox', { name: 'Termo do ramo 1' })).toHaveValue('Núcleo');
+    expect(onDraft.mock.lastCall?.[0].nodes).toHaveLength(2);
+  });
+
+  it('when a node has no children, the delete button should not mention them', () => {
+    render(<Harness />);
+
+    expect(screen.getByRole('button', { name: 'Excluir o ramo 3' })).toBeInTheDocument();
+  });
+
+  it('when the map is at the depth limit, should not offer to add a subtopic there', async () => {
+    let initial = draftFromMap({ ...map, nodes: [{ label: 'n1', children: [] }] });
+    let node = initial.nodes[0];
+
+    for (let level = 1; level < MIND_MAP_EDIT_LIMITS.maxDepth; level += 1) {
+      const child = { label: `n${level + 1}`, children: [] };
+
+      node.children.push(child);
+      node = child;
+    }
+
+    initial = { ...initial };
+    render(<Harness initial={initial} />);
+
+    expect(
+      screen.getByRole('button', { name: 'Adicionar subtópico ao subtópico 1.1.1.1' }),
+    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Adicionar subtópico ao ramo 1' })).toBeEnabled();
+  });
+
+  it('when there are the maximum branches, should not offer to add another', () => {
+    const full: MindMapDraft = {
+      subtitle: '',
+      nodes: Array.from({ length: MIND_MAP_EDIT_LIMITS.maxBranches }, (_, i) => ({
+        label: `R${i}`,
+        children: [],
+      })),
+    };
+
+    render(<Harness initial={full} />);
+
+    expect(screen.getByRole('button', { name: 'Adicionar ramo' })).toBeDisabled();
+  });
+
+  it('when editing, should limit the size of each field to the edit limits', () => {
+    render(<Harness />);
+
+    expect(screen.getByRole('textbox', { name: 'Termo do ramo 1' })).toHaveAttribute(
+      'maxlength',
+      String(MIND_MAP_EDIT_LIMITS.maxLabelChars),
+    );
+    expect(screen.getByRole('textbox', { name: 'Frase do ramo 1' })).toHaveAttribute(
+      'maxlength',
+      String(MIND_MAP_EDIT_LIMITS.maxNoteChars),
+    );
+    expect(screen.getByRole('textbox', { name: 'Subtítulo do mapa' })).toHaveAttribute(
+      'maxlength',
+      String(MIND_MAP_EDIT_LIMITS.maxSubtitleChars),
+    );
+  });
+
+  it('when editing, should not offer to collapse the branches (everything stays open)', async () => {
+    render(<Harness />);
+
+    expect(screen.getByRole('button', { name: 'Recolher todos os ramos' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /^DNA/ })).toBeNull();
+  });
+
+  it('when editing a large map, should still show every branch open', () => {
+    render(
+      <MindMapView
+        map={{ ...map, size: 200 }}
+        edit={{ draft: draftFromMap(map), onChange: vi.fn() }}
+      />,
+    );
+
+    expect(screen.getByRole('textbox', { name: 'Termo do subtópico 1.1' })).toBeInTheDocument();
+  });
+
+  it('when the user presses a text field and moves, should select text instead of moving the map', () => {
+    render(<Harness />);
+
+    const field = screen.getByRole('textbox', { name: 'Termo do ramo 1' });
+    const stage = screen.getByRole('group');
+
+    fireEvent.pointerDown(field, { clientX: 100, clientY: 100, button: 0, pointerId: 1 });
+    fireEvent.pointerMove(field, { clientX: 300, clientY: 300, pointerId: 1 });
+
+    expect(stage.style.transform).toContain('translate(32px, 32px)');
+  });
+
+  it('when the user drags the empty area while editing, should still move the map', () => {
+    render(<Harness />);
+
+    const frame = screen.getByRole('group').parentElement as HTMLElement;
+
+    fireEvent.pointerDown(frame, { clientX: 100, clientY: 100, button: 0, pointerId: 1 });
+    fireEvent.pointerMove(frame, { clientX: 150, clientY: 130, pointerId: 1 });
+
+    expect(screen.getByRole('group').style.transform).toContain('translate(82px, 62px)');
+  });
+
+  it('when editing in the wide drawing, should keep one arrow per branch', () => {
+    mockWidth(1400);
+
+    const { container } = render(<Harness />);
+
+    expect(container.querySelectorAll('svg path[marker-end]')).toHaveLength(3);
+  });
+
+  it('when a toolbar is given while editing, should keep it first, then Adicionar ramo', () => {
+    render(
+      <MindMapView
+        map={map}
+        toolbar={<button type="button">Salvar alterações</button>}
+        edit={{ draft: draftFromMap(map), onChange: vi.fn() }}
+      />,
+    );
+
+    const bar = screen.getByRole('toolbar');
+    const buttons = within(bar).getAllByRole('button');
+
+    expect(buttons[0]).toHaveAccessibleName('Salvar alterações');
+    expect(buttons[1]).toHaveAccessibleName('Adicionar ramo');
+  });
+
+  it('when not editing, should not show the Adicionar ramo button', () => {
+    render(<MindMapView map={map} />);
+
+    expect(screen.queryByRole('button', { name: 'Adicionar ramo' })).not.toBeInTheDocument();
   });
 });

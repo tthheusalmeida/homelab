@@ -14,6 +14,7 @@ import {
   getInbox,
   getIndexStatus,
   getMindMap,
+  saveMindMap,
   saveMindMapImage,
   getTags,
   publishDocument,
@@ -288,5 +289,40 @@ describe('mind map image api', () => {
     });
 
     await expect(saveMindMapImage('a', 'b')).rejects.toThrow('Não foi possível salvar a imagem.');
+  });
+});
+
+describe('mind map save api', () => {
+  const nodes = [{ label: 'Termo', note: 'Frase', children: [{ label: 'Filho', children: [] }] }];
+
+  it('when saving the edited map, should send the page id, the subtitle and the branches', async () => {
+    const saved = { subtitle: 'Sobre redes', nodes, model: 'm', createdAt: 'd', stale: false, edited: true };
+    const invoke = mockApi({ [IpcChannels.library.mindMap.save]: () => ok(saved) });
+
+    await expect(saveMindMap('1', { subtitle: 'Sobre redes', nodes })).resolves.toEqual(saved);
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.mindMap.save, {
+      id: '1',
+      subtitle: 'Sobre redes',
+      nodes,
+    });
+  });
+
+  it('when there is no subtitle, should send only the id and the branches', async () => {
+    const invoke = mockApi({ [IpcChannels.library.mindMap.save]: () => ok({}) });
+
+    await saveMindMap('1', { nodes });
+
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.mindMap.save, { id: '1', nodes });
+  });
+
+  it('when the main rejects the map, should reject with its message', async () => {
+    mockApi({
+      [IpcChannels.library.mindMap.save]: () =>
+        failure('VALIDATION', 'O mapa precisa ter pelo menos um ramo com texto.'),
+    });
+
+    await expect(saveMindMap('1', { nodes: [] })).rejects.toThrow(
+      'O mapa precisa ter pelo menos um ramo com texto.',
+    );
   });
 });

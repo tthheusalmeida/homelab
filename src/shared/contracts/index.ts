@@ -76,6 +76,7 @@ import type {
   LibraryMindMapImageRequest,
   LibraryMindMapImageResult,
   LibraryMindMapRequest,
+  LibraryMindMapSaveRequest,
   LibraryPublishRequest,
   LibraryRebuildResult,
   LibrarySuggestRequest,
@@ -242,6 +243,10 @@ export interface IpcContracts {
   };
   [IpcChannels.library.mindMap.generate]: {
     request: LibraryMindMapRequest;
+    response: LibraryMindMap;
+  };
+  [IpcChannels.library.mindMap.save]: {
+    request: LibraryMindMapSaveRequest;
     response: LibraryMindMap;
   };
   [IpcChannels.library.mindMap.saveImage]: {

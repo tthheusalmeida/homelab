@@ -100,3 +100,29 @@ describe('IconButton', () => {
     expect(screen.getByRole('button', { name: 'Ajustar' })).toHaveClass('size-8');
   });
 });
+
+describe('IconButton size and variant', () => {
+  it('when the small size is asked, should render the tiny button', () => {
+    render(
+      <IconButton label="Pequeno" size="icon-xs">
+        <Download />
+      </IconButton>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Pequeno' })).toHaveClass('size-6');
+  });
+
+  it('when another variant is asked, should use it', () => {
+    render(
+      <IconButton label="Salvar" variant="ghost">
+        <Download />
+      </IconButton>,
+    );
+
+    // o "fantasma" não tem o fundo escuro do botão padrão nem a borda do contorno
+    const classes = screen.getByRole('button', { name: 'Salvar' }).className;
+
+    expect(classes).not.toContain('bg-primary ');
+    expect(classes).not.toContain('bg-background');
+  });
+});

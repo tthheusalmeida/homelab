@@ -135,8 +135,17 @@ export interface LibraryMindMap {
   /** Modelo do Gemini que gerou o mapa. */
   model: string;
   createdAt: string;
-  /** O texto do resumo mudou depois que o mapa foi gerado. */
+  /** O texto do resumo mudou depois que o mapa foi gerado (ou editado). */
   stale: boolean;
+  /** O usuário editou o mapa à mão: gerar de novo com a IA apagaria as edições. */
+  edited: boolean;
+}
+
+/** O mapa como o usuário o deixou na edição, para guardar. */
+export interface LibraryMindMapSaveRequest {
+  id: string;
+  subtitle?: string;
+  nodes: LibraryMindMapNode[];
 }
 
 /** Imagem PNG do mapa mental, para o usuário salvar num arquivo. */

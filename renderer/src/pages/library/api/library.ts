@@ -16,6 +16,7 @@ import type {
   LibraryListFilters,
   LibraryMindMap,
   LibraryMindMapImageResult,
+  LibraryMindMapNode,
 } from '#shared/contracts/library';
 import { ipc } from '#lib/ipc';
 
@@ -103,6 +104,14 @@ export function getMindMap(id: string): Promise<LibraryMindMap | null> {
 /** Pede à IA o mapa mental do resumo (gera de novo se já havia um). */
 export function generateMindMap(id: string, modelId?: string): Promise<LibraryMindMap> {
   return ipc.invoke(IpcChannels.library.mindMap.generate, modelId ? { id, modelId } : { id });
+}
+
+/** Guarda o mapa como o usuário o editou (termos, frases, subtítulo, nós a mais ou a menos). */
+export function saveMindMap(
+  id: string,
+  map: { subtitle?: string; nodes: LibraryMindMapNode[] },
+): Promise<LibraryMindMap> {
+  return ipc.invoke(IpcChannels.library.mindMap.save, { id, ...map });
 }
 
 /** Pede ao main o diálogo "Salvar como" e grava a imagem PNG do mapa (`saved: false` se o usuário cancelou). */
