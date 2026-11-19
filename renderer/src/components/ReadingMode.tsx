@@ -28,7 +28,7 @@ interface ReadingModeProps {
 /**
  * Modo leitura: cobre a tela com só o texto (sem botões de ação nem cabeçalhos da página). O que
  * acompanha a leitura (`follow`) e as opções (`options`) ficam separados como na página, sem
- * moldura de painel, só os cartões: acompanhamento à esquerda do texto e opções à direita (ou o contrário, com "Inverter os lados" em Configurações > Leitura). Com o
+ * moldura de painel, só os cartões: acompanhamento à esquerda do texto e opções à direita (ou o contrário, com "Acompanhamento à direita e opções à esquerda" em Configurações > Leitura). Com o
  * painel fixo (Configurações > Leitura) ficam sempre visíveis; senão aparecem ao passar o mouse na
  * margem vazia de cada lado (`ReadingSidePanel`), sem botão. Esc sai. Usa fonte, tamanho, zoom e
  * cores das preferências de leitura. O texto é desenhado só aqui, nunca junto com a página normal,
@@ -44,7 +44,7 @@ export function ReadingMode({
 }: ReadingModeProps) {
   const { reading } = useReadingPreferences();
   const pinned = reading.pinSidebar;
-  // "Inverter os lados": o acompanhamento vai para a direita e as opções para a esquerda.
+  // "Acompanhamento à direita e opções à esquerda": o acompanhamento vai para a direita e as opções para a esquerda.
   const swapped = reading.swapSides;
   const followSide = swapped ? 'right' : 'left';
   const optionsSide = swapped ? 'left' : 'right';

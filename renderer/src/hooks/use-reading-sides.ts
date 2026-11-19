@@ -2,7 +2,7 @@ import { useReadingPreferences } from '#hooks/use-appearance';
 
 /**
  * Em que lado ficam o acompanhamento (sumário, linha do tempo) e as opções na página. Por padrão
- * o acompanhamento fica à esquerda do texto e as opções à direita; com "Inverter os lados"
+ * o acompanhamento fica à esquerda do texto e as opções à direita; com "Acompanhamento à direita e opções à esquerda"
  * (Configurações > Leitura) trocam. Devolve as classes de ordem (a ordem do HTML não muda) e as
  * colunas do grid, que dependem de existir ou não a coluna de acompanhamento.
  */

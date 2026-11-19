@@ -81,7 +81,7 @@ function PreviewSide({ side, pinned }: { side: Side; pinned: boolean }) {
  * os mesmos cartões (`sidebar-card`) e o texto no mesmo desenho (módulo, capítulo, título e texto).
  * Os dois lados seguem as opções: com o painel fixo os cartões ficam sempre visíveis; senão
  * aparecem ao passar o mouse na margem (acompanhamento à esquerda e opções à direita, ou o
- * contrário com "Inverter os lados"). Tem **altura fixa** e corta o que passar (com um esmaecido
+ * contrário com "Acompanhamento à direita e opções à esquerda"). Tem **altura fixa** e corta o que passar (com um esmaecido
  * embaixo): fonte, tamanho e zoom grandes não podem esticar o quadro nem empurrar o que vem abaixo.
  */
 export function ReadingPreview() {

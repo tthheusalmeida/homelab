@@ -289,12 +289,12 @@ describe('ReadingSettings', () => {
     expect(document.querySelector('[data-slot=preview-hover-area]')).toBeInTheDocument();
   });
 
-  it('when opened, should leave the sides as they are and show follow on the left in the preview', () => {
+  it('when opened, should leave the follow on the left and show it so in the preview', () => {
     mockSaved();
 
     renderSettings();
 
-    expect(screen.getByRole('checkbox', { name: 'Inverter os lados' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Acompanhamento à direita e opções à esquerda' })).not.toBeChecked();
     expect(
       [...document.querySelectorAll('[data-slot=preview-hover-area]')].map((n) =>
         n.getAttribute('data-side'),
@@ -307,12 +307,12 @@ describe('ReadingSettings', () => {
     const invoke = mockSaved();
     renderSettings();
 
-    await user.click(screen.getByRole('checkbox', { name: 'Inverter os lados' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Acompanhamento à direita e opções à esquerda' }));
 
     expect(payloadsOf(invoke, IpcChannels.appearance.update)).toEqual([
       { reading: { swapSides: true } },
     ]);
-    expect(screen.getByRole('checkbox', { name: 'Inverter os lados' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Acompanhamento à direita e opções à esquerda' })).toBeChecked();
     expect(
       [...document.querySelectorAll('[data-slot=preview-hover-area]')].map((n) =>
         n.getAttribute('data-side'),

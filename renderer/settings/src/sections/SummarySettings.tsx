@@ -3,6 +3,7 @@ import { RotateCcw } from 'lucide-react';
 
 import { Button } from '#ui/button';
 import { Label } from '#ui/label';
+import { SummaryPreview } from '#components/SummaryPreview';
 import { SettingsGroup, SettingsPanel, SettingsRow } from '#components/SettingsGroup';
 import { useAppearance } from '#hooks/use-appearance';
 import { DEFAULT_SUMMARY, type SummaryPreferences } from '#shared/contracts/document-views';
@@ -34,6 +35,8 @@ export function SummarySettings() {
   return (
     <SettingsGroup title={text.title} hint={text.hint}>
       <SettingsPanel className="gap-2.5 p-3">
+        <SummaryPreview />
+
         <SettingsRow label={text.outline} hint={text.outlineHint}>
           <div className="flex items-center gap-2">
             <input
