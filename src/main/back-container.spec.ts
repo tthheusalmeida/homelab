@@ -37,6 +37,7 @@ describe('BackContainer', () => {
     usageFile: null,
     jobsFile: null,
     chatsFile: null,
+    mindMapsFile: null,
   });
 
   beforeAll(async () => {

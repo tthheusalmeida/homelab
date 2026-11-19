@@ -99,3 +99,32 @@ describe("MarkdownMessage tone", () => {
     expect(container.querySelector(".prose")).not.toHaveClass("dark:prose-invert");
   });
 });
+
+describe("OptionToggle with labels", () => {
+  it("when showLabels is on, should show the name of each option beside the icon", () => {
+    render(
+      <OptionToggle
+        label="Forma de ver"
+        options={options}
+        value="pages"
+        onChange={() => undefined}
+        showLabels
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Quadros" })).toHaveTextContent("Quadros");
+  });
+
+  it("when showLabels is off, should keep icon-only buttons", () => {
+    render(
+      <OptionToggle
+        label="Forma de ver"
+        options={options}
+        value="pages"
+        onChange={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Quadros" })).toHaveTextContent("");
+  });
+});

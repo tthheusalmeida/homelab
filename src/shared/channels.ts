@@ -80,6 +80,12 @@ export const IpcChannels = {
       archive: 'library:documents:archive',
       delete: 'library:documents:delete',
     },
+    mindMap: {
+      get: 'library:mind-map:get',
+      generate: 'library:mind-map:generate',
+      save: 'library:mind-map:save',
+      saveImage: 'library:mind-map:save-image',
+    },
     inbox: 'library:inbox',
     categories: 'library:categories',
     tags: 'library:tags',

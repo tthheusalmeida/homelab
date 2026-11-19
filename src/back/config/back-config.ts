@@ -35,6 +35,9 @@ export abstract class BackConfig {
   /** Arquivo das conversas do chat; `null` guarda só em memória (testes). */
   abstract readonly chatsFile: string | null;
 
+  /** Arquivo dos mapas mentais gerados pela IA; sem valor, ficam só em memória (testes). */
+  abstract readonly mindMapsFile: string | null;
+
   /** Chave do Gemini; `null` quando não configurada (o provider responde `NOT_CONFIGURED`). */
   abstract readonly geminiApiKey: string | null;
 }

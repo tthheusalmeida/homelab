@@ -48,3 +48,23 @@ describe("Callout", () => {
     expect(container.firstChild).toHaveClass("mt-3");
   });
 });
+
+describe("Callout action", () => {
+  it("when an action is given, should show it inside the callout next to the message", () => {
+    const { container } = render(
+      <Callout tone="danger" action={<button type="button">Tentar de novo</button>}>
+        Deu errado.
+      </Callout>,
+    );
+
+    expect(container.firstChild).toContainElement(
+      screen.getByRole("button", { name: "Tentar de novo" }),
+    );
+  });
+
+  it("when no action is given, should not reserve space for one", () => {
+    const { container } = render(<Callout>texto</Callout>);
+
+    expect(container.querySelector("button")).toBeNull();
+  });
+});

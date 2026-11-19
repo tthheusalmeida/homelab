@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { Loader2 } from "lucide-react";
 
 import { Button } from "#ui/button";
@@ -18,6 +20,8 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   destructive?: boolean;
   isPending?: boolean;
+  /** Conteúdo extra abaixo da descrição (ex.: a lista do que será apagado). */
+  details?: ReactNode;
   /** Mensagem de erro mostrada abaixo da descrição (ex.: falha ao confirmar). */
   errorMessage?: string;
   onConfirm: () => void;
@@ -31,6 +35,7 @@ export function ConfirmDialog({
   confirmLabel = "Confirmar",
   destructive,
   isPending,
+  details,
   errorMessage,
   onConfirm,
 }: ConfirmDialogProps) {
@@ -42,6 +47,8 @@ export function ConfirmDialog({
 
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
+
+        {details && <div className="space-y-3 text-sm">{details}</div>}
 
         {errorMessage && (
           <p role="alert" className="animate-enter-fade text-sm text-destructive">

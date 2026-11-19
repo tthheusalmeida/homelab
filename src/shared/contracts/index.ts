@@ -72,6 +72,11 @@ import type {
   LibraryDocumentSummary,
   LibraryIndexStatus,
   LibraryListFilters,
+  LibraryMindMap,
+  LibraryMindMapImageRequest,
+  LibraryMindMapImageResult,
+  LibraryMindMapRequest,
+  LibraryMindMapSaveRequest,
   LibraryPublishRequest,
   LibraryRebuildResult,
   LibrarySuggestRequest,
@@ -232,6 +237,22 @@ export interface IpcContracts {
     response: LibraryDocumentDetail;
   };
   [IpcChannels.library.documents.delete]: { request: LibraryDocumentRequest; response: void };
+  [IpcChannels.library.mindMap.get]: {
+    request: LibraryDocumentRequest;
+    response: LibraryMindMap | null;
+  };
+  [IpcChannels.library.mindMap.generate]: {
+    request: LibraryMindMapRequest;
+    response: LibraryMindMap;
+  };
+  [IpcChannels.library.mindMap.save]: {
+    request: LibraryMindMapSaveRequest;
+    response: LibraryMindMap;
+  };
+  [IpcChannels.library.mindMap.saveImage]: {
+    request: LibraryMindMapImageRequest;
+    response: LibraryMindMapImageResult;
+  };
   [IpcChannels.library.reindex]: { request: void; response: LibraryRebuildResult };
   [IpcChannels.library.books.list]: { request: BookListRequest; response: BookSummary[] };
   [IpcChannels.library.books.get]: { request: BookRequest; response: BookDetail };

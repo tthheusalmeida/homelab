@@ -24,6 +24,7 @@ import { ChatService } from '../back/modules/chat/chat.service';
 import { BackupService } from '../backup/backup.service';
 import { WindowEventPublisher } from '../ipc/event-publisher';
 import { DialogFilePicker } from '../ipc/file-picker';
+import { MindMapImageSaver } from '../library/mind-map-image-saver';
 import { createHandlers } from '../ipc/handlers';
 import { IpcRegistrar } from '../ipc/ipc-registrar';
 import { createAppPaths } from '../settings/app-paths';
@@ -415,6 +416,20 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
   }).forEach((notice) => notices.add(notice));
 
   const backServices = new BackServices(<T>(token: unknown) => container.get<T>(token));
+  const filePicker = new DialogFilePicker({
+    showSave: (options) => {
+      const parent = BrowserWindow.getFocusedWindow();
+
+      return parent ? dialog.showSaveDialog(parent, options) : dialog.showSaveDialog(options);
+    },
+    showOpen: (options) => {
+      const parent = BrowserWindow.getFocusedWindow();
+      const config = { ...options, properties: ['openFile' as const] };
+
+      return parent ? dialog.showOpenDialog(parent, config) : dialog.showOpenDialog(config);
+    },
+  });
+
   const backup = new BackupService({
     appVersion: app.getVersion(),
     tempDir: path.join(services.appPaths.rootDir, 'temp'),
@@ -424,25 +439,14 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     settings: services.settings,
     reindexLibrary: () => backServices.reindexLibrary(),
     events,
-    filePicker: new DialogFilePicker({
-      showSave: (options) => {
-        const parent = BrowserWindow.getFocusedWindow();
-
-        return parent ? dialog.showSaveDialog(parent, options) : dialog.showSaveDialog(options);
-      },
-      showOpen: (options) => {
-        const parent = BrowserWindow.getFocusedWindow();
-        const config = { ...options, properties: ['openFile' as const] };
-
-        return parent ? dialog.showOpenDialog(parent, config) : dialog.showOpenDialog(config);
-      },
-    }),
+    filePicker,
   });
 
   new IpcRegistrar(ipcMain).register(
     createHandlers({
       platformLogin: platformSessions,
       platformLogins: platformSessions,
+      mindMapImages: new MindMapImageSaver(filePicker),
       appInfo: {
         version: () => app.getVersion(),
         // No modo dev o Vite morre junto com o app, então só fecha (rode `npm run dev` de novo).

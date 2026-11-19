@@ -30,6 +30,7 @@ Estado: app instalável e em uso (versão `0.1.x`). Todas as fases da migração
 | `docs/atualizacoes.md` | Atualização do app: consulta aos Releases do GitHub, cartão na barra lateral, seção em Configurações, download com checksum e instalação |
 | `docs/empacotamento.md` | Instalador Windows e AppImage Linux (`electron-builder`), release na CI, como rodar no Linux, binários, caminhos empacotados, ícone |
 | `docs/transcricao.md` | Transcrição com tempo: formato `[HH:MM:SS]`, linha do tempo lateral, progresso de cada trecho, horário como link para o vídeo e ajustes em Configurações > Aparência |
+| `docs/mapa-mental.md` | Aba "Mapa mental" do resumo: gerado pela IA com prompt próprio ao abrir a aba, guardado em disco, mapa simples de reserva, desenho próprio em colmeia |
 | `docs/persistencia.md` | Jobs e chats em disco, pasta-raiz única para backup, exclusão de jobs, seção de Chats |
 | `docs/regras-de-negocio.md` | Onde ficam as regras que **não mudam** (`docs/regras/back`, `docs/regras/front`) |
 

@@ -51,6 +51,10 @@ export class SettingsBackConfig extends BackConfig {
     return this.appPaths.jobsFile;
   }
 
+  get mindMapsFile(): string {
+    return this.appPaths.mindMapsFile;
+  }
+
   get chatsFile(): string {
     return this.appPaths.chatsFile;
   }

@@ -11,6 +11,7 @@ import { VideoToSummaryJobProcessor } from '../back/modules/jobs/processors/vide
 import { VideoToTranscriptJobProcessor } from '../back/modules/jobs/processors/video-to-transcript/processor';
 import { BookService } from '../back/modules/library/application/book.service';
 import { LibraryClassifier } from '../back/modules/library/application/library-classifier';
+import { MindMapService } from '../back/modules/library/application/mind-map.service';
 import { LibraryService } from '../back/modules/library/application/library.service';
 import type { BackupCollection } from '../backup/backup.service';
 import type { BackReaders } from '../ipc/handlers';
@@ -37,6 +38,7 @@ export class BackServices {
       chat: this.get(ChatService),
       library: this.get(LibraryService),
       libraryClassifier: this.get(LibraryClassifier),
+      mindMaps: this.get(MindMapService),
       books: this.get(BookService),
       jobs: this.jobs(),
     };

@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
   OnModuleInit,
+  Optional,
 } from '@nestjs/common';
 
 import { uuidv7 } from 'uuidv7';
@@ -24,6 +25,7 @@ import {
   type RebuildResult,
 } from '../infrastructure/library-index';
 import { LibraryStorage } from '../infrastructure/library-storage';
+import { MindMapStore } from '../infrastructure/mind-map-store';
 import {
   LibrarySearch,
   toSummary,
@@ -74,6 +76,8 @@ export class LibraryService implements OnModuleInit {
     private readonly storage: LibraryStorage,
     private readonly index: LibraryIndex,
     private readonly search: LibrarySearch,
+    /** Mapas mentais guardados: sair da biblioteca de vez leva o mapa da página junto. */
+    @Optional() private readonly mindMaps?: MindMapStore,
   ) {}
 
   /** Na inicialização, reconstrói o índice a partir dos arquivos. */
@@ -227,16 +231,17 @@ export class LibraryService implements OnModuleInit {
     return { meta, content: body };
   }
 
-  /** Apaga de verdade. Só pendentes e arquivados (publicado: arquive antes). */
+  /**
+   * Exclui de verdade, em qualquer status (pendente, publicado ou arquivado): apaga o arquivo, tira
+   * do índice e apaga o mapa mental da página, se houver. Não há como desfazer.
+   */
   async discard(id: string): Promise<void> {
     const indexed = this.find(id);
 
-    if (indexed.meta.status === DocumentStatusOptions.PUBLISHED) {
-      throw new BadRequestException('Remova o documento da biblioteca antes de descartá-lo.');
-    }
-
     await this.storage.remove(indexed.path);
     this.index.remove(id);
+    // O mapa mental (e as edições do usuário) pertence ao texto: apagou o texto, apaga o mapa.
+    this.mindMaps?.delete(id);
   }
 
   /** Cria um artigo escrito manualmente, já publicado. */

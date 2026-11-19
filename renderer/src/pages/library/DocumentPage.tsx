@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText, Network } from "lucide-react";
 
 import { InboxStrings } from "#lib/inbox-text";
 import { Button } from "#ui/button";
@@ -11,6 +11,7 @@ import { BackToTopButton } from "#components/BackToTopButton";
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { ErrorState } from "#components/ErrorState";
 import { LoadingState } from "#components/LoadingState";
+import { OptionToggle, type ToggleOption } from "#components/OptionToggle";
 import { DocumentBody } from "#components/DocumentBody";
 import { ReadingMode } from "#components/ReadingMode";
 import { ReadingSection } from "#components/ReadingSection";
@@ -24,16 +25,31 @@ import { scrollToId } from "#lib/scroll";
 import { parseTimedTranscript } from "#shared/transcript";
 
 import { CategoryBreadcrumb } from "./components/CategoryBreadcrumb";
+import { DeleteDocumentDialog, deletedMessage } from "./components/DeleteDocumentDialog";
+import { DocumentActions } from "./components/DocumentActions";
 import { DocumentAboutDialog } from "./components/DocumentAboutDialog";
 import { DocumentOutline, OUTLINE_MIN_HEADINGS } from "./components/DocumentOutline";
 import { DocumentSidebar } from "./components/DocumentSidebar";
+import { SummaryMindMap } from "./components/SummaryMindMap";
 import { EditDocumentDialog } from "./components/EditDocumentDialog";
 import { AddToBookDialog } from "./books/components/AddToBookDialog";
-import { useArchiveDocument, useDocument } from "./hooks/useLibrary";
+import {
+  useArchiveDocument,
+  useDiscardDocument,
+  useDocument,
+} from "./hooks/useLibrary";
 import { documentTypeLabels } from "./types/library.types";
 import { useSnackbar } from "#components/Snackbar";
 
-type Modal = "about" | "edit" | "remove" | "book" | null;
+type Modal = "about" | "edit" | "remove" | "book" | "delete" | null;
+
+/** Formas de ver o mesmo resumo: o texto ou o mapa mental feito a partir dele. */
+type SummaryView = "text" | "mindmap";
+
+const SUMMARY_VIEWS: readonly ToggleOption<SummaryView>[] = [
+  { id: "text", label: "Resumo", icon: FileText },
+  { id: "mindmap", label: "Mapa mental", icon: Network },
+];
 
 export function DocumentPage() {
   const { id } = useParams();
@@ -42,11 +58,13 @@ export function DocumentPage() {
   // Uma janela por vez: Editar e Remover fecham a "Sobre" e devolvem para ela.
   const [modal, setModal] = useState<Modal>(null);
   const [reading, setReading] = useState(false);
+  const [view, setView] = useState<SummaryView>("text");
   const [container, setContainer] = useState<HTMLElement | null>(null);
   const [railSlot, setRailSlot] = useState<HTMLElement | null>(null);
 
   const { data, isLoading, isError } = useDocument(id);
   const archive = useArchiveDocument();
+  const discard = useDiscardDocument();
   const snackbar = useSnackbar();
 
   const headings = useMemo(
@@ -70,7 +88,10 @@ export function DocumentPage() {
     data?.meta.type === "summary" && !summary.outline ? [] : headings;
 
   // Coluna da esquerda: a barra de trechos (transcrição com tempo) ou o Sumário, se houver.
-  const hasLeftColumn = Boolean(excerpts) || sidebarHeadings.length >= OUTLINE_MIN_HEADINGS;
+  const mindMapOpen = view === "mindmap" && data?.meta.type === "summary";
+  const hasLeftColumn =
+    !mindMapOpen &&
+    (Boolean(excerpts) || sidebarHeadings.length >= OUTLINE_MIN_HEADINGS);
   const sides = useReadingSides(hasLeftColumn);
 
   // Título em leitura agora (destacado no sumário).
@@ -113,7 +134,16 @@ export function DocumentPage() {
     });
   }
 
-  // As janelas da página (Sobre, Editar, Remover, Adicionar ao livro) valem também no modo leitura.
+  function handleDelete() {
+    discard.mutate(meta.id, {
+      onSuccess: () => {
+        snackbar.success(deletedMessage(meta.type));
+        navigate("/library");
+      },
+    });
+  }
+
+  // As janelas da página (Sobre, Editar, Remover, Excluir, Adicionar ao livro) valem também no modo leitura.
   const dialogs = (
     <>
       <DocumentAboutDialog
@@ -123,6 +153,24 @@ export function DocumentPage() {
         onEdit={published ? () => setModal("edit") : undefined}
         onRemove={published ? () => setModal("remove") : undefined}
         onAddToBook={published ? () => setModal("book") : undefined}
+        onDelete={() => setModal("delete")}
+      />
+
+      <DeleteDocumentDialog
+        open={modal === "delete"}
+        onOpenChange={(open) => {
+          if (!open) {
+            discard.reset();
+          }
+
+          setModal(open ? "delete" : "about");
+        }}
+        meta={meta}
+        isPending={discard.isPending}
+        errorMessage={
+          discard.isError ? "Não foi possível excluir. Tente novamente." : undefined
+        }
+        onConfirm={handleDelete}
       />
 
       <AddToBookDialog
@@ -155,6 +203,28 @@ export function DocumentPage() {
     </>
   );
 
+  // Resumo ou Mapa mental: a mesma escolha na página e no modo leitura (a que estiver aberta se mantém).
+  const viewToggle =
+    meta.type === "summary" ? (
+      <OptionToggle
+        label="Forma de ver o resumo"
+        value={view}
+        options={SUMMARY_VIEWS}
+        onChange={setView}
+        showLabels
+      />
+    ) : undefined;
+
+  // O mapa mental ocupa toda a área (na página e no modo leitura), com os controles numa barra embaixo.
+  const mindMap = (
+    <SummaryMindMap
+      key={meta.id}
+      documentId={meta.id}
+      title={meta.title}
+      content={content}
+    />
+  );
+
   // O mesmo desenho na página e no modo leitura (só muda o que cerca o texto).
   const article = (
     <ReadingSection
@@ -175,9 +245,13 @@ export function DocumentPage() {
       <>
         <ReadingMode
           title={meta.title}
+          actions={viewToggle}
+          // Mapa mental: tela cheia, sem sumário nem opções (elas são ajustes de leitura de texto,
+          // e mexer nelas ao alternar entre Resumo e Mapa mental seria mudar a leitura sem querer).
+          canvas={mindMapOpen}
           onExit={() => setReading(false)}
           follow={
-            excerpts ? (
+            mindMapOpen ? undefined : excerpts ? (
               <div ref={setRailSlot} />
             ) : (
               hasLeftColumn && (
@@ -186,27 +260,41 @@ export function DocumentPage() {
             )
           }
           options={
-            <DocumentSidebar
-              embedded
-              hideOutline
-              headings={sidebarHeadings}
-              activeId={activeId}
-              onOpenAbout={() => setModal("about")}
-              onStartReading={() => undefined}
-            />
+            mindMapOpen ? undefined : (
+              <DocumentSidebar
+                embedded
+                hideOutline
+                headings={sidebarHeadings}
+                activeId={activeId}
+                onOpenAbout={() => setModal("about")}
+              />
+            )
           }
         >
-          <div ref={setContainer} className="reading-column">
-            {article}
+          {mindMapOpen ? (
+            mindMap
+          ) : (
+            <div ref={setContainer} className="reading-column">
+              {article}
 
-            <BackToTopButton container={container} />
-          </div>
+              <BackToTopButton container={container} />
+            </div>
+          )}
         </ReadingMode>
 
         {dialogs}
       </>
     );
   }
+
+  // Modo leitura e Sobre a página ficam na linha de cima, em todo tipo de página (com abas, ao lado
+  // delas; sem abas, na linha do "Voltar"). O painel lateral fica só com os ajustes de leitura.
+  const actions = (
+    <DocumentActions
+      onStartReading={() => setReading(true)}
+      onOpenAbout={() => setModal("about")}
+    />
+  );
 
   return (
     <article className="animate-enter-fade space-y-6">
@@ -216,49 +304,65 @@ export function DocumentPage() {
         </Button>
 
         <CategoryBreadcrumb category={meta.category} />
+
+        {!viewToggle && <div className="ml-auto">{actions}</div>}
       </div>
 
-      <div className={cn("grid gap-8", sides.columns)}>
-        {excerpts ? (
+      {viewToggle && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {viewToggle}
+
+          {actions}
+        </div>
+      )}
+
+      {mindMapOpen ? (
+        // Mapa mental: ocupa toda a área da página, sem o sumário nem as opções de leitura (são
+        // ajustes de leitura de texto).
+        <div className="h-[calc(100svh-13rem)] min-h-96 animate-enter-fade overflow-hidden rounded-lg border">
+          {mindMap}
+        </div>
+      ) : (
+        <div className={cn("grid gap-8", sides.columns)}>
+          {excerpts ? (
+            <div
+              ref={setRailSlot}
+              className={cn("hidden lg:block", sides.followOrder)}
+            />
+          ) : (
+            hasLeftColumn && (
+              <aside
+                aria-label="Onde você está"
+                className={cn(
+                  "hidden lg:sticky lg:top-4 lg:block lg:self-start",
+                  sides.followOrder,
+                )}
+              >
+                <DocumentOutline headings={sidebarHeadings} activeId={activeId} />
+              </aside>
+            )
+          )}
+
           <div
-            ref={setRailSlot}
-            className={cn("hidden lg:block", sides.followOrder)}
-          />
-        ) : (
-          hasLeftColumn && (
-            <aside
-              aria-label="Onde você está"
-              className={cn(
-                "hidden lg:sticky lg:top-4 lg:block lg:self-start",
-                sides.followOrder,
-              )}
-            >
-              <DocumentOutline headings={sidebarHeadings} activeId={activeId} />
-            </aside>
-          )
-        )}
+            ref={setContainer}
+            className={cn("min-w-0 space-y-6", sides.textOrder)}
+          >
+            <ReadingSurface>
+              <div className="reading-column">{article}</div>
+            </ReadingSurface>
 
-        <div
-          ref={setContainer}
-          className={cn("min-w-0 space-y-6", sides.textOrder)}
-        >
-          <ReadingSurface>
-            <div className="reading-column">{article}</div>
-          </ReadingSurface>
+            <BackToTopButton container={container} />
+          </div>
 
-          <BackToTopButton container={container} />
+          <div className={cn("min-w-0", sides.optionsOrder)}>
+            <DocumentSidebar
+              headings={sidebarHeadings}
+              hideOutline
+              activeId={activeId}
+            />
+          </div>
         </div>
-
-        <div className={cn("min-w-0", sides.optionsOrder)}>
-          <DocumentSidebar
-            headings={sidebarHeadings}
-            hideOutline
-            activeId={activeId}
-            onOpenAbout={() => setModal("about")}
-            onStartReading={() => setReading(true)}
-          />
-        </div>
-      </div>
+      )}
 
       {dialogs}
     </article>

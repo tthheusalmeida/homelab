@@ -27,6 +27,8 @@ const TONES: Record<CalloutTone, { icon: LucideIcon; box: string; iconColor: str
 interface CalloutProps {
   tone?: CalloutTone;
   children: ReactNode;
+  /** Ação do aviso (ex.: "Tentar de novo"), no fim da faixa: assim o erro e o que fazer ficam juntos. */
+  action?: ReactNode;
   /** `alert` para erro que interrompe, `status` para aviso que muda com a ação do usuário. */
   role?: "alert" | "status" | "note";
   className?: string;
@@ -37,7 +39,7 @@ interface CalloutProps {
  * usuário quase não lê quando vem em texto pequeno e cinza: algo foi desabilitado, ignorado ou
  * limitado. Texto discreto continua para dicas que não mudam nada.
  */
-export function Callout({ tone = "info", children, role, className }: CalloutProps) {
+export function Callout({ tone = "info", children, action, role, className }: CalloutProps) {
   const { icon: Icon, box, iconColor } = TONES[tone];
 
   return (
@@ -53,6 +55,8 @@ export function Callout({ tone = "info", children, role, className }: CalloutPro
       <Icon aria-hidden="true" className={cn("mt-0.5 size-4 shrink-0", iconColor)} />
 
       <div className="min-w-0 flex-1">{children}</div>
+
+      {action && <div className="shrink-0 self-center">{action}</div>}
     </div>
   );
 }

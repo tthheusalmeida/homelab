@@ -6,6 +6,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { createTmpLibrary, type TmpLibrary } from '../../../testing/tmp-library';
 import { newPendingMeta } from '../domain/document';
 import type { DocumentMeta } from '../domain/library.types';
+import { MindMapStore } from '../infrastructure/mind-map-store';
 import { LibraryIndex } from '../infrastructure/library-index';
 import { LibrarySearch } from './library-search';
 import { LibraryService } from './library.service';
@@ -415,12 +416,57 @@ describe('LibraryService', () => {
       expect(fs.readdirSync(tmp.lib)).toEqual([]);
     });
 
-    it('when the document is published, should refuse and keep it', async () => {
+    it('when the document is published, should delete it too: the file, the index entry and its folders', async () => {
       await seedPending();
       await service.publish('job1', publishInput);
 
-      await expect(service.discard('job1')).rejects.toThrow('antes de descartá-lo');
-      expect(index.get('job1')).toBeDefined();
+      await service.discard('job1');
+
+      expect(index.get('job1')).toBeUndefined();
+      expect(await tmp.storage.listMarkdownFiles(tmp.lib)).toEqual([]);
+      expect(fs.readdirSync(tmp.lib)).toEqual([]);
+      expect(service.categories()).toEqual([]);
+    });
+
+    it('when the document is deleted, should delete its mind map too', async () => {
+      const mindMaps = new MindMapStore();
+      const withMaps = new LibraryService(
+        tmp.storage,
+        index,
+        new LibrarySearch(index, tmp.storage),
+        mindMaps,
+      );
+
+      await seedPending();
+      await withMaps.publish('job1', publishInput);
+      mindMaps.set('job1', { contentHash: 'h', model: 'm', createdAt: 'd', nodes: [] });
+      mindMaps.set('outra', { contentHash: 'h', model: 'm', createdAt: 'd', nodes: [] });
+
+      await withMaps.discard('job1');
+
+      expect(mindMaps.get('job1')).toBeUndefined();
+      expect(mindMaps.get('outra')).toBeDefined();
+    });
+
+    it('when the mind map store is not available, should still delete the document', async () => {
+      await seedPending();
+
+      await expect(service.discard('job1')).resolves.toBeUndefined();
+    });
+
+    it('when the document does not exist, should not touch any mind map', async () => {
+      const mindMaps = new MindMapStore();
+      const withMaps = new LibraryService(
+        tmp.storage,
+        index,
+        new LibrarySearch(index, tmp.storage),
+        mindMaps,
+      );
+
+      mindMaps.set('job1', { contentHash: 'h', model: 'm', createdAt: 'd', nodes: [] });
+
+      await expect(withMaps.discard('nope')).rejects.toThrow(NotFoundException);
+      expect(mindMaps.get('job1')).toBeDefined();
     });
 
     it('when the id does not exist, should throw NotFoundException', async () => {
