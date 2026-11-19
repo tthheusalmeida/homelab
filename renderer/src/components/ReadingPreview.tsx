@@ -3,6 +3,7 @@ import { ModuleDivider } from '#components/ModuleDivider';
 import { ReadingSection } from '#components/ReadingSection';
 import { ReadingSurface } from '#components/ReadingSurface';
 import { useReadingPreferences } from '#hooks/use-appearance';
+import { cn } from '#lib/utils';
 
 const SAMPLE = `Uma boa leitura começa por um texto **confortável**: letra no tamanho certo, cores que descansam a vista e uma coluna nem estreita nem larga demais.
 
@@ -44,7 +45,16 @@ function SideCards({ side }: { side: Side }) {
  * Um lado da miniatura. Com o painel fixo mostra os cartões; senão é a margem que, ao passar o
  * mouse, revela os cartões (como o modo leitura de verdade, sem botão).
  */
-function PreviewSide({ side, pinned }: { side: Side; pinned: boolean }) {
+function PreviewSide({
+  side,
+  edge,
+  pinned,
+}: {
+  side: Side;
+  /** Borda em que a margem fica: os cartões abrem para dentro, sem passar do quadro. */
+  edge: 'left' | 'right';
+  pinned: boolean;
+}) {
   const label = side === 'follow' ? 'Acompanhamento' : 'Opções';
 
   if (pinned) {
@@ -69,7 +79,12 @@ function PreviewSide({ side, pinned }: { side: Side; pinned: boolean }) {
         {label}
       </span>
 
-      <div className="absolute top-1 left-1 z-10 w-24 space-y-1.5 p-1 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+      <div
+        className={cn(
+          'absolute top-1 z-10 w-24 space-y-1.5 p-1 opacity-0 transition-opacity duration-300 group-hover:opacity-100',
+          edge === 'left' ? 'left-1' : 'right-1',
+        )}
+      >
         <SideCards side={side} />
       </div>
     </div>
@@ -103,7 +118,7 @@ export function ReadingPreview() {
       </div>
 
       <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
-        <PreviewSide side={left} pinned={reading.pinSidebar} />
+        <PreviewSide side={left} edge="left" pinned={reading.pinSidebar} />
 
         <div className="reading-column min-w-0 flex-1 space-y-5 overflow-hidden py-4">
           <ModuleDivider title="Módulo 1" />
@@ -113,7 +128,7 @@ export function ReadingPreview() {
           </ReadingSection>
         </div>
 
-        <PreviewSide side={right} pinned={reading.pinSidebar} />
+        <PreviewSide side={right} edge="right" pinned={reading.pinSidebar} />
       </div>
 
       <div

@@ -104,6 +104,15 @@ describe('ReadingPreview', () => {
     expect(area.querySelector('.sidebar-card')).toBeInTheDocument();
   });
 
+  it('when a margin is revealed, should open its cards inward so none is cut off by the frame', async () => {
+    const { container } = render(<ReadingPreview />);
+    const [left, right] = [...container.querySelectorAll('[data-slot=preview-hover-area]')];
+
+    expect(left.querySelector('.sidebar-card')?.parentElement).toHaveClass('left-1');
+    expect(right.querySelector('.sidebar-card')?.parentElement).toHaveClass('right-1');
+    expect(right.querySelector('.sidebar-card')?.parentElement).not.toHaveClass('left-1');
+  });
+
   describe('fidelity to the real reading mode', () => {
     it('when shown, should draw a header with the same soft chrome as the real one', () => {
       render(<ReadingPreview />);
