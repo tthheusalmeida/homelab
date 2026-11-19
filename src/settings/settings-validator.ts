@@ -22,6 +22,8 @@ export const SettingsMessages = {
   readingZoomInvalid: 'O zoom deve ser de 70% a 200%, de 10 em 10.',
   readingColorInvalid: 'Escolha uma das cores de leitura disponíveis.',
   readingPinInvalid: 'A opção do painel lateral deve ser ligada ou desligada.',
+  transcriptOptionInvalid: 'As opções da transcrição devem ser ligadas ou desligadas.',
+  summaryOptionInvalid: 'As opções do resumo devem ser ligadas ou desligadas.',
   readingShadeInvalid: 'Escolha uma das intensidades de cor disponíveis.',
   updatesAutoCheckInvalid: 'A verificação automática de atualizações deve ser ligada ou desligada.',
 } as const;
@@ -94,6 +96,16 @@ export function validateSettings(settings: SettingsData): void {
 
   if (typeof reading.pinSidebar !== 'boolean') {
     fail(SettingsMessages.readingPinInvalid);
+  }
+
+  const { transcript, summary } = settings.appearance;
+
+  if (typeof transcript?.preview !== 'boolean' || typeof transcript.progress !== 'boolean') {
+    fail(SettingsMessages.transcriptOptionInvalid);
+  }
+
+  if (typeof summary?.outline !== 'boolean') {
+    fail(SettingsMessages.summaryOptionInvalid);
   }
 
   const { ollama } = settings.local;

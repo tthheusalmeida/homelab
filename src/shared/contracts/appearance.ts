@@ -1,3 +1,9 @@
+import {
+  DEFAULT_SUMMARY,
+  DEFAULT_TRANSCRIPT,
+  type SummaryPreferences,
+  type TranscriptPreferences,
+} from './document-views';
 import { DEFAULT_READING, type ReadingPreferences } from './reading';
 
 /** Modos de tema: `system` acompanha o tema do sistema operacional. */
@@ -30,15 +36,23 @@ export interface Appearance {
   accent: AccentId;
   /** Como o texto aparece nas páginas e nos livros (fonte, tamanho, largura e cores). */
   reading: ReadingPreferences;
+  /** Ajustes só das transcrições com tempo (no mesmo nível de `reading`). */
+  transcript: TranscriptPreferences;
+  /** Ajustes só dos resumos (no mesmo nível de `reading`). */
+  summary: SummaryPreferences;
 }
 
-/** Parte da aparência: `reading` também pode vir parcial (só o que mudou). */
-export type AppearancePatch = Partial<Omit<Appearance, 'reading'>> & {
+/** Parte da aparência: `reading`, `transcript` e `summary` também podem vir parciais (só o que mudou). */
+export type AppearancePatch = Partial<Omit<Appearance, 'reading' | 'transcript' | 'summary'>> & {
   reading?: Partial<ReadingPreferences>;
+  transcript?: Partial<TranscriptPreferences>;
+  summary?: Partial<SummaryPreferences>;
 };
 
 export const DEFAULT_APPEARANCE: Appearance = {
   theme: 'system',
   accent: 'cyan',
   reading: DEFAULT_READING,
+  transcript: DEFAULT_TRANSCRIPT,
+  summary: DEFAULT_SUMMARY,
 };

@@ -77,6 +77,8 @@ export class SettingsStore {
         ...base.appearance,
         ...patch.appearance,
         reading: { ...base.appearance.reading, ...patch.appearance?.reading },
+        transcript: { ...base.appearance.transcript, ...patch.appearance?.transcript },
+        summary: { ...base.appearance.summary, ...patch.appearance?.summary },
       },
       updates: { autoCheck: patch.updates?.autoCheck ?? base.updates.autoCheck },
       local: {

@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { ACCENT_IDS, DEFAULT_APPEARANCE } from "#shared/contracts/appearance";
+import { DEFAULT_SUMMARY, DEFAULT_TRANSCRIPT } from "#shared/contracts/document-views";
 import { DEFAULT_READING } from "#shared/contracts/reading";
 
 import {
@@ -43,7 +44,7 @@ describe("applyAppearance", () => {
   it("when the theme resolves to dark, should add the dark class and the dark color scheme", () => {
     applyAppearance(
       document.documentElement,
-      { theme: "dark", accent: "cyan", reading: DEFAULT_READING },
+      { theme: "dark", accent: "cyan", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY },
       false,
     );
 
@@ -56,7 +57,7 @@ describe("applyAppearance", () => {
 
     applyAppearance(
       document.documentElement,
-      { theme: "system", accent: "cyan", reading: DEFAULT_READING },
+      { theme: "system", accent: "cyan", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY },
       false,
     );
 
@@ -67,7 +68,7 @@ describe("applyAppearance", () => {
   it("when an accent is chosen, should expose it in data-accent", () => {
     applyAppearance(
       document.documentElement,
-      { theme: "light", accent: "violet", reading: DEFAULT_READING },
+      { theme: "light", accent: "violet", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY },
       true,
     );
 
@@ -77,10 +78,10 @@ describe("applyAppearance", () => {
 
 describe("parseAppearance", () => {
   it("when the value is valid, should return it", () => {
-    expect(parseAppearance({ theme: "dark", accent: "rose", reading: DEFAULT_READING })).toEqual({
+    expect(parseAppearance({ theme: "dark", accent: "rose", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY })).toEqual({
       theme: "dark",
       accent: "rose",
-      reading: DEFAULT_READING,
+      reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY,
     });
   });
 
@@ -89,8 +90,8 @@ describe("parseAppearance", () => {
     undefined,
     "dark",
     {},
-    { theme: "sepia", accent: "cyan", reading: DEFAULT_READING },
-    { theme: "dark", accent: "brown", reading: DEFAULT_READING },
+    { theme: "sepia", accent: "cyan", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY },
+    { theme: "dark", accent: "brown", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY },
   ])("when the value is %j, should return null", (value) => {
     expect(parseAppearance(value)).toBeNull();
   });
@@ -101,7 +102,7 @@ describe("parseAppearance reading", () => {
     expect(parseAppearance({ theme: "dark", accent: "rose" })).toEqual({
       theme: "dark",
       accent: "rose",
-      reading: DEFAULT_READING,
+      reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY,
     });
   });
 
@@ -152,13 +153,13 @@ describe("cached appearance", () => {
       setItem: (key: string, value: string) => void store.set(key, value),
     };
 
-    writeCachedAppearance({ theme: "light", accent: "orange", reading: DEFAULT_READING }, storage);
+    writeCachedAppearance({ theme: "light", accent: "orange", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY }, storage);
 
     expect(store.has(APPEARANCE_CACHE_KEY)).toBe(true);
     expect(readCachedAppearance(storage)).toEqual({
       theme: "light",
       accent: "orange",
-      reading: DEFAULT_READING,
+      reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY,
     });
   });
 
@@ -289,5 +290,35 @@ describe("readable secondary text in the reading environment", () => {
 
   it("when the chrome shows secondary text, should keep it at 70% of the text color or more", () => {
     expect(rule(".reading-chrome {")).toMatch(/--muted-foreground: color-mix\(in oklab, var\(--foreground\) (7\d|[89]\d)%/);
+  });
+});
+
+describe("parseAppearance transcript and summary", () => {
+  const base = { theme: "dark", accent: "cyan" };
+
+  it("when an old copy has no transcript or summary, should use the defaults", () => {
+    expect(parseAppearance(base)).toMatchObject({
+      transcript: DEFAULT_TRANSCRIPT,
+      summary: DEFAULT_SUMMARY,
+    });
+  });
+
+  it("when transcript and summary are saved, should keep them", () => {
+    expect(
+      parseAppearance({
+        ...base,
+        transcript: { preview: false, progress: false },
+        summary: { outline: false },
+      }),
+    ).toMatchObject({
+      transcript: { preview: false, progress: false },
+      summary: { outline: false },
+    });
+  });
+
+  it("when transcript or summary is invalid, should fall back to the defaults", () => {
+    expect(
+      parseAppearance({ ...base, transcript: { preview: "x" }, summary: { outline: 1 } }),
+    ).toMatchObject({ transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY });
   });
 });

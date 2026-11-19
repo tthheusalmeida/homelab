@@ -104,6 +104,32 @@ describe('validateSettings', () => {
     expect(() => validateSettings(settings)).not.toThrow();
   });
 
+  it.each(['yes', 1, null])('when the transcript preview option is %j, should reject', (value) => {
+    expectValidation(
+      (s) => (s.appearance.transcript.preview = value as never),
+      /opções da transcrição/,
+    );
+  });
+
+  it.each(['yes', 1, null])('when the transcript progress option is %j, should reject', (value) => {
+    expectValidation(
+      (s) => (s.appearance.transcript.progress = value as never),
+      /opções da transcrição/,
+    );
+  });
+
+  it.each(['yes', 1, null])('when the summary outline option is %j, should reject', (value) => {
+    expectValidation((s) => (s.appearance.summary.outline = value as never), /opções do resumo/);
+  });
+
+  it('when the transcript and summary options are turned off, should accept', () => {
+    const settings = testDefaults();
+    settings.appearance.transcript = { preview: false, progress: false };
+    settings.appearance.summary = { outline: false };
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
   it('when the separator color is unknown, should reject', () => {
     expectValidation(
       (s) => (s.appearance.reading.separator = 'brown' as never),
