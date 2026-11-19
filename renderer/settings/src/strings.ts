@@ -43,7 +43,11 @@ export const Strings = {
       sidePanel: 'Painel lateral',
       sidePanelOption: 'Sempre visível na leitura',
       sidePanelHint:
-        'Desmarcado, o sumário e os ajustes só abrem ao clicar na aba da borda direita, e o texto fica sozinho no centro.',
+        'Desmarcado, o acompanhamento (sumário, linha do tempo) e as opções só aparecem ao passar o mouse na margem de cada lado, e o texto fica sozinho no centro.',
+      sides: 'Lados',
+      swapOption: 'Inverter os lados',
+      sidesHint:
+        'Por padrão o acompanhamento fica à esquerda e as opções à direita. Marcado, trocam de lado em páginas, transcrições e livros.',
       restore: 'Restaurar leitura',
     },
     transcript: {

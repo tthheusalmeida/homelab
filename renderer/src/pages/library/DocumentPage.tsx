@@ -18,6 +18,7 @@ import { ReadingSurface } from "#components/ReadingSurface";
 import { cn } from "#lib/utils";
 import { useSummaryPreferences } from "#hooks/use-appearance";
 import { useActiveSection } from "#hooks/use-active-section";
+import { useReadingSides } from "#hooks/use-reading-sides";
 import { extractHeadings } from "#lib/markdown";
 import { scrollToId } from "#lib/scroll";
 import { parseTimedTranscript } from "#shared/transcript";
@@ -70,6 +71,7 @@ export function DocumentPage() {
 
   // Coluna da esquerda: a barra de trechos (transcrição com tempo) ou o Sumário, se houver.
   const hasLeftColumn = Boolean(excerpts) || sidebarHeadings.length >= OUTLINE_MIN_HEADINGS;
+  const sides = useReadingSides(hasLeftColumn);
 
   // Título em leitura agora (destacado no sumário).
   const activeId = useActiveSection(headings.map((heading) => heading.id));
@@ -216,28 +218,30 @@ export function DocumentPage() {
         <CategoryBreadcrumb category={meta.category} />
       </div>
 
-      <div
-        className={cn(
-          "grid gap-8",
-          hasLeftColumn
-            ? "lg:grid-cols-[16rem_minmax(0,1fr)_16rem]"
-            : "lg:grid-cols-[minmax(0,1fr)_16rem]",
-        )}
-      >
+      <div className={cn("grid gap-8", sides.columns)}>
         {excerpts ? (
-          <div ref={setRailSlot} className="hidden lg:block" />
+          <div
+            ref={setRailSlot}
+            className={cn("hidden lg:block", sides.followOrder)}
+          />
         ) : (
           hasLeftColumn && (
             <aside
               aria-label="Onde você está"
-              className="hidden lg:sticky lg:top-4 lg:block lg:self-start"
+              className={cn(
+                "hidden lg:sticky lg:top-4 lg:block lg:self-start",
+                sides.followOrder,
+              )}
             >
               <DocumentOutline headings={sidebarHeadings} activeId={activeId} />
             </aside>
           )
         )}
 
-        <div ref={setContainer} className="min-w-0 space-y-6">
+        <div
+          ref={setContainer}
+          className={cn("min-w-0 space-y-6", sides.textOrder)}
+        >
           <ReadingSurface>
             <div className="reading-column">{article}</div>
           </ReadingSurface>
@@ -245,13 +249,15 @@ export function DocumentPage() {
           <BackToTopButton container={container} />
         </div>
 
-        <DocumentSidebar
-          headings={sidebarHeadings}
-          hideOutline
-          activeId={activeId}
-          onOpenAbout={() => setModal("about")}
-          onStartReading={() => setReading(true)}
-        />
+        <div className={cn("min-w-0", sides.optionsOrder)}>
+          <DocumentSidebar
+            headings={sidebarHeadings}
+            hideOutline
+            activeId={activeId}
+            onOpenAbout={() => setModal("about")}
+            onStartReading={() => setReading(true)}
+          />
+        </div>
       </div>
 
       {dialogs}

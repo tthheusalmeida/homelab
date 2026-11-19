@@ -35,6 +35,8 @@ import { LoadingState } from "#components/LoadingState";
 import { ReadingMode } from "#components/ReadingMode";
 import { ReadingSurface } from "#components/ReadingSurface";
 import { useActiveSection } from "#hooks/use-active-section";
+import { useReadingSides } from "#hooks/use-reading-sides";
+import { cn } from "#lib/utils";
 import { useDebouncedValue } from "#hooks/use-debounced-value";
 import { useTextHighlight } from "#hooks/use-text-highlight";
 
@@ -82,6 +84,7 @@ export function BookPage() {
   const setRead = useSetChapterRead();
   const resetProgress = useResetBookProgress();
   const snackbar = useSnackbar();
+  const sides = useReadingSides(true);
   const { mutate: persistPosition } = useSaveBookPosition();
 
   const [modal, setModal] = useState<Modal>(null);
@@ -489,10 +492,13 @@ export function BookPage() {
           }
         />
       ) : (
-        <div className="grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)_16rem]">
+        <div className={cn("grid gap-8", sides.columns)}>
           <aside
             aria-label="Onde você está"
-            className="hidden lg:sticky lg:top-4 lg:block lg:self-start"
+            className={cn(
+              "hidden lg:sticky lg:top-4 lg:block lg:self-start",
+              sides.followOrder,
+            )}
           >
             <BookOutlineCard
               modules={modules}
@@ -505,7 +511,7 @@ export function BookPage() {
 
           <div
             ref={setContainer}
-            className="min-w-0"
+            className={cn("min-w-0", sides.textOrder)}
           >
             <ReadingSurface>
               <div className="reading-column">
@@ -521,21 +527,23 @@ export function BookPage() {
             <BackToTopButton container={container} />
           </div>
 
-          <BookSidebar
-            hideOutline
-            modules={modules}
-            activeChapterId={activeChapterId}
-            readIds={readIds}
-            readCount={readCount}
-            completedAt={book.completedAt}
-            query={search}
-            findBar={findBar}
-            hits={results.data}
-            isSearching={results.isFetching}
-            onSelectChapter={goToChapter}
-            onSelectHit={handleHit}
-            onToggleRead={handleToggleRead}
-          />
+          <div className={cn("min-w-0", sides.optionsOrder)}>
+            <BookSidebar
+              hideOutline
+              modules={modules}
+              activeChapterId={activeChapterId}
+              readIds={readIds}
+              readCount={readCount}
+              completedAt={book.completedAt}
+              query={search}
+              findBar={findBar}
+              hits={results.data}
+              isSearching={results.isFetching}
+              onSelectChapter={goToChapter}
+              onSelectHit={handleHit}
+              onToggleRead={handleToggleRead}
+            />
+          </div>
         </div>
       )}
 

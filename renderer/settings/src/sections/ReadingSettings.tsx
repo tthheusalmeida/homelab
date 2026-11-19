@@ -175,6 +175,22 @@ export function ReadingSettings() {
           </div>
         </SettingsRow>
 
+        <SettingsRow label={text.sides} hint={text.sidesHint}>
+          <div className="flex items-center gap-2">
+            <input
+              id="reading-swap-sides"
+              type="checkbox"
+              className="size-4 shrink-0 cursor-pointer accent-primary"
+              checked={reading.swapSides}
+              onChange={(event) => change({ swapSides: event.target.checked })}
+            />
+
+            <Label htmlFor="reading-swap-sides" className="cursor-pointer text-sm font-normal">
+              {text.swapOption}
+            </Label>
+          </div>
+        </SettingsRow>
+
         {error && (
           <p role="alert" className="animate-enter-fade text-sm text-destructive">
             {error}

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { IpcChannels } from '#shared/channels';
@@ -237,5 +237,61 @@ describe('ReadingMode — follow and options', () => {
     expect(within(right).getByText('ajustes')).toBeInTheDocument();
     expect(left.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(text.compareDocumentPosition(right) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe('ReadingMode — swapped sides', () => {
+  const swapped = () =>
+    mockApi({
+      [IpcChannels.appearance.get]: () =>
+        ok({ ...DEFAULT_APPEARANCE, reading: { ...DEFAULT_READING, swapSides: true } }),
+    });
+
+  it('when the sides are swapped and the panels are hidden, should show the follow on the right and the options on the left', async () => {
+    swapped();
+    render(
+      <AppearanceProvider>
+        <ReadingMode title="T" follow={<p>onde estou</p>} options={<p>ajustes</p>} onExit={() => {}}>
+          <p>texto</p>
+        </ReadingMode>
+      </AppearanceProvider>,
+    );
+    const user = userEvent.setup();
+
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="reading-edge-right"]')).not.toBeNull(),
+    );
+    await user.hover(document.querySelector('[data-slot="reading-edge-left"]') as HTMLElement);
+    await waitFor(() => expect(screen.getByText('ajustes')).toBeInTheDocument());
+    await user.hover(document.querySelector('[data-slot="reading-edge-right"]') as HTMLElement);
+
+    expect(screen.getByRole('complementary', { name: 'Opções da leitura' })).toHaveClass('left-4');
+    expect(
+      screen.getByRole('complementary', { name: 'Acompanhamento da leitura' }),
+    ).toHaveClass('right-6');
+  });
+
+  it('when the sides are swapped and the panel is pinned, should order the options before the text and the follow after it', async () => {
+    mockApi({
+      [IpcChannels.appearance.get]: () =>
+        ok({
+          ...DEFAULT_APPEARANCE,
+          reading: { ...DEFAULT_READING, pinSidebar: true, swapSides: true },
+        }),
+    });
+
+    render(
+      <AppearanceProvider>
+        <ReadingMode title="T" follow={<p>onde estou</p>} options={<p>ajustes</p>} onExit={() => {}}>
+          <p>texto</p>
+        </ReadingMode>
+      </AppearanceProvider>,
+    );
+
+    const options = await screen.findByRole('complementary', { name: 'Opções da leitura' });
+    const follow = screen.getByRole('complementary', { name: 'Acompanhamento da leitura' });
+
+    expect(options).toHaveClass('lg:order-1');
+    expect(follow).toHaveClass('lg:order-3');
   });
 });

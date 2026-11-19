@@ -61,6 +61,8 @@ export interface ReadingPreferences {
   separatorShade: ReadingShade;
   /** Modo leitura: `true` deixa o painel lateral sempre visível; `false` (padrão) só abre ao passar o mouse na borda. */
   pinSidebar: boolean;
+  /** `true` troca os lados: o acompanhamento (sumário, linha do tempo) vai para a direita e as opções para a esquerda. */
+  swapSides: boolean;
 }
 
 export const DEFAULT_READING: ReadingPreferences = {
@@ -74,6 +76,7 @@ export const DEFAULT_READING: ReadingPreferences = {
   separator: 'default',
   separatorShade: DEFAULT_SEPARATOR_SHADE,
   pinSidebar: false,
+  swapSides: false,
 };
 
 function isStep(
@@ -96,7 +99,7 @@ export const isReadingShade = (value: unknown): value is ReadingShade =>
 
 /**
  * Aceita só preferências válidas; qualquer outra coisa vira `null`. Cópias antigas sem as
- * intensidades (`backgroundShade`, `textShade`), sem separadores, ou sem `pinSidebar` ficam com o padrão.
+ * intensidades (`backgroundShade`, `textShade`), sem separadores, ou sem `pinSidebar` ou `swapSides` ficam com o padrão.
  */
 export function parseReading(value: unknown): ReadingPreferences | null {
   const candidate = value as Partial<ReadingPreferences> | null;
@@ -117,6 +120,7 @@ export function parseReading(value: unknown): ReadingPreferences | null {
       candidate.separatorShade === undefined ? DEFAULT_SEPARATOR_SHADE : candidate.separatorShade,
     pinSidebar:
       candidate.pinSidebar === undefined ? DEFAULT_READING.pinSidebar : candidate.pinSidebar,
+    swapSides: candidate.swapSides === undefined ? DEFAULT_READING.swapSides : candidate.swapSides,
   };
 
   if (
@@ -129,7 +133,8 @@ export function parseReading(value: unknown): ReadingPreferences | null {
     isReadingShade(reading.textShade) &&
     READING_COLOR_IDS.includes(reading.separator) &&
     isReadingShade(reading.separatorShade) &&
-    typeof reading.pinSidebar === 'boolean'
+    typeof reading.pinSidebar === 'boolean' &&
+    typeof reading.swapSides === 'boolean'
   ) {
     return reading as ReadingPreferences;
   }

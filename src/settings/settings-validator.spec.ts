@@ -104,6 +104,17 @@ describe('validateSettings', () => {
     expect(() => validateSettings(settings)).not.toThrow();
   });
 
+  it.each(['yes', 1, null])('when the swap sides option is %j, should reject', (value) => {
+    expectValidation((s) => (s.appearance.reading.swapSides = value as never), /inverter os lados/);
+  });
+
+  it('when the sides are swapped, should accept', () => {
+    const settings = testDefaults();
+    settings.appearance.reading.swapSides = true;
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
   it.each(['yes', 1, null])('when the transcript preview option is %j, should reject', (value) => {
     expectValidation(
       (s) => (s.appearance.transcript.preview = value as never),

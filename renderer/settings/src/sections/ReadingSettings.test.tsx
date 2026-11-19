@@ -289,6 +289,37 @@ describe('ReadingSettings', () => {
     expect(document.querySelector('[data-slot=preview-hover-area]')).toBeInTheDocument();
   });
 
+  it('when opened, should leave the sides as they are and show follow on the left in the preview', () => {
+    mockSaved();
+
+    renderSettings();
+
+    expect(screen.getByRole('checkbox', { name: 'Inverter os lados' })).not.toBeChecked();
+    expect(
+      [...document.querySelectorAll('[data-slot=preview-hover-area]')].map((n) =>
+        n.getAttribute('data-side'),
+      ),
+    ).toEqual(['follow', 'options']);
+  });
+
+  it('when swap sides is checked, should save it and mirror the preview', async () => {
+    const user = userEvent.setup();
+    const invoke = mockSaved();
+    renderSettings();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Inverter os lados' }));
+
+    expect(payloadsOf(invoke, IpcChannels.appearance.update)).toEqual([
+      { reading: { swapSides: true } },
+    ]);
+    expect(screen.getByRole('checkbox', { name: 'Inverter os lados' })).toBeChecked();
+    expect(
+      [...document.querySelectorAll('[data-slot=preview-hover-area]')].map((n) =>
+        n.getAttribute('data-side'),
+      ),
+    ).toEqual(['options', 'follow']);
+  });
+
   it('when everything is the default, should disable restoring the reading', async () => {
     mockSaved();
 
