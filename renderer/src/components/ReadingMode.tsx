@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import { Button } from '#ui/button';
 
 import { useReadingPreferences } from '#hooks/use-appearance';
+import { cn } from '#lib/utils';
 
 import { ReadingSidePanel } from './ReadingSidePanel';
 import { ReadingSurface } from './ReadingSurface';
@@ -13,8 +14,10 @@ import { ReadingSurface } from './ReadingSurface';
 interface ReadingModeProps {
   /** Título mostrado na barra de cima (o que está sendo lido). */
   title: string;
-  /** Sumário que fica na lateral. */
-  toc: ReactNode;
+  /** Acompanhamento ("onde você está": sumário, linha do tempo). Opcional: nem todo texto tem. */
+  follow?: ReactNode;
+  /** Opções (ajustes de leitura, progresso, ações). */
+  options: ReactNode;
   /** Controles na barra de cima (ex.: busca no texto). */
   actions?: ReactNode;
   /** O texto a ler. */
@@ -23,16 +26,28 @@ interface ReadingModeProps {
 }
 
 /**
- * Modo leitura: cobre a tela com só o texto e o sumário na lateral (sem
- * botões de ação nem cabeçalhos da página). O painel lateral (sumário e ajustes)
- * fica escondido e abre ao passar o mouse na borda direita, a menos que o usuário
- * o fixe em Configurações > Leitura. Esc sai. Usa fonte, tamanho,
- * zoom e cores das preferências de leitura. O texto é desenhado só
- * aqui, nunca junto com a página normal, para não repetir ids de título.
+ * Modo leitura: cobre a tela com só o texto (sem botões de ação nem cabeçalhos da página). O que
+ * acompanha a leitura (`follow`) e as opções (`options`) ficam separados como na página, sem
+ * moldura de painel, só os cartões: acompanhamento à esquerda do texto e opções à direita (ou o contrário, com "Acompanhamento à direita e opções à esquerda" em Configurações > Leitura). Com o
+ * painel fixo (Configurações > Leitura) ficam sempre visíveis; senão aparecem ao passar o mouse na
+ * margem vazia de cada lado (`ReadingSidePanel`), sem botão. Esc sai. Usa fonte, tamanho, zoom e
+ * cores das preferências de leitura. O texto é desenhado só aqui, nunca junto com a página normal,
+ * para não repetir ids de título.
  */
-export function ReadingMode({ title, toc, actions, children, onExit }: ReadingModeProps) {
+export function ReadingMode({
+  title,
+  follow,
+  options,
+  actions,
+  children,
+  onExit,
+}: ReadingModeProps) {
   const { reading } = useReadingPreferences();
   const pinned = reading.pinSidebar;
+  // "Acompanhamento à direita e opções à esquerda": o acompanhamento vai para a direita e as opções para a esquerda.
+  const swapped = reading.swapSides;
+  const followSide = swapped ? 'right' : 'left';
+  const optionsSide = swapped ? 'left' : 'right';
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -64,14 +79,44 @@ export function ReadingMode({ title, toc, actions, children, onExit }: ReadingMo
       </div>
 
       {pinned ? (
-        <div className="mx-auto grid w-full max-w-[calc(24rem+48rem*var(--reading-zoom,1))] gap-10 px-4 py-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
-          <div className="min-w-0">{children}</div>
+        <div
+          className={cn(
+            'mx-auto grid w-full gap-10 px-4 py-10',
+            follow
+              ? 'max-w-[calc(45rem+48rem*var(--reading-zoom,1))]'
+              : 'max-w-[calc(24rem+48rem*var(--reading-zoom,1))]',
+            // O que está à esquerda vem primeiro; as colunas seguem a largura de cada lado.
+            follow
+              ? swapped
+                ? 'lg:grid-cols-[18rem_minmax(0,1fr)_21rem]'
+                : 'lg:grid-cols-[21rem_minmax(0,1fr)_18rem]'
+              : swapped
+                ? 'lg:grid-cols-[18rem_minmax(0,1fr)]'
+                : 'lg:grid-cols-[minmax(0,1fr)_18rem]',
+          )}
+        >
+          {follow && (
+            <aside
+              aria-label="Acompanhamento da leitura"
+              className={cn(
+                'reading-chrome space-y-2 font-sans lg:sticky lg:top-24 lg:self-start !bg-transparent',
+                swapped ? 'lg:order-3' : 'lg:order-1',
+              )}
+            >
+              {follow}
+            </aside>
+          )}
+
+          <div className="min-w-0 lg:order-2">{children}</div>
 
           <aside
-            aria-label="Sumário da leitura"
-            className="reading-chrome rounded-xl p-3 font-sans lg:sticky lg:top-24 lg:self-start"
+            aria-label="Opções da leitura"
+            className={cn(
+              'reading-chrome space-y-2 font-sans lg:sticky lg:top-24 lg:self-start !bg-transparent',
+              swapped ? 'lg:order-1' : 'lg:order-3',
+            )}
           >
-            {toc}
+            {options}
           </aside>
         </div>
       ) : (
@@ -80,7 +125,19 @@ export function ReadingMode({ title, toc, actions, children, onExit }: ReadingMo
             <div className="min-w-0">{children}</div>
           </div>
 
-          <ReadingSidePanel>{toc}</ReadingSidePanel>
+          {follow && (
+            <ReadingSidePanel
+              side={followSide}
+              label="Acompanhamento da leitura"
+              width="w-[19rem]"
+            >
+              {follow}
+            </ReadingSidePanel>
+          )}
+
+          <ReadingSidePanel side={optionsSide} label={follow ? 'Opções da leitura' : undefined}>
+            {options}
+          </ReadingSidePanel>
         </>
       )}
     </ReadingSurface>,

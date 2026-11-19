@@ -112,10 +112,19 @@ describe("DocumentPage — transcription with time", () => {
       .setup()
       .click(screen.getByRole("button", { name: /Modo leitura/ }));
 
+    await userEvent
+      .setup()
+      .hover(document.querySelector('[data-slot="reading-edge-left"]') as HTMLElement);
+
     const region = screen.getByRole("region", { name: "Modo leitura" });
 
+    // A linha do tempo é o acompanhamento e fica no painel da esquerda.
     expect(
-      within(region).getByRole("complementary", { name: "Trechos da transcrição" }),
+      within(
+        within(region).getByRole("complementary", {
+          name: "Acompanhamento da leitura",
+        }),
+      ).getByRole("complementary", { name: "Trechos da transcrição" }),
     ).toBeInTheDocument();
     expect(
       within(

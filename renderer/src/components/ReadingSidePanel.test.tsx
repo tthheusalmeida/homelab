@@ -1,18 +1,20 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
 import { ReadingSidePanel } from './ReadingSidePanel';
 
-const tab = () => screen.getByRole('button', { name: 'Mostrar painel lateral' });
-const panel = () => screen.queryByRole('complementary', { name: 'Sumário da leitura' });
+const edge = (side: 'left' | 'right' = 'right') =>
+  document.querySelector(`[data-slot="reading-edge-${side}"]`) as HTMLElement;
+const panel = (name = 'Sumário da leitura') => screen.queryByRole('complementary', { name });
 
-const setup = () => {
+const setup = (props: Partial<React.ComponentProps<typeof ReadingSidePanel>> = {}) => {
   render(
     <div>
       <p>texto fora do painel</p>
 
-      <ReadingSidePanel>
+      <ReadingSidePanel {...props}>
         <p>itens do sumário</p>
       </ReadingSidePanel>
     </div>,
@@ -22,192 +24,130 @@ const setup = () => {
 };
 
 describe('ReadingSidePanel', () => {
-  it('when idle, should show only the hexagonal tab and keep the panel hidden', () => {
+  it('when idle, should show no button and keep the items hidden', () => {
     setup();
 
-    expect(tab()).toHaveAttribute('aria-expanded', 'false');
-    expect(tab().querySelector('svg')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(panel()).not.toBeInTheDocument();
     expect(screen.queryByText('itens do sumário')).not.toBeInTheDocument();
   });
 
-  it('when the tab is placed, should leave the scrollbar free on the right edge', () => {
+  it('when idle, should keep an invisible hover strip that leaves the scrollbar free on the right', () => {
     setup();
 
-    expect(tab()).toHaveClass('right-5');
-    expect(tab()).toHaveAttribute('title', 'Clique para abrir o painel');
+    expect(edge()).toHaveClass('fixed', 'right-4');
+    expect(edge()).toBeEmptyDOMElement();
   });
 
-  it('when only hovering the tab, should not open the panel (it opens by click)', async () => {
+  it('when the mouse enters the strip, should show the items with the entrance transition', async () => {
     const user = setup();
 
-    await user.hover(tab());
+    await user.hover(edge());
 
-    expect(panel()).not.toBeInTheDocument();
-  });
-
-  it('when the tab is clicked, should open the panel and keep it open', async () => {
-    const user = setup();
-
-    await user.click(tab());
-
-    expect(panel()).toBeInTheDocument();
     expect(screen.getByText('itens do sumário')).toBeInTheDocument();
-    expect(tab()).toHaveAttribute('aria-expanded', 'true');
-
-    await user.unhover(tab());
-
-    expect(panel()).toBeInTheDocument();
-  });
-
-  it('when the panel is open and the mouse leaves it, should keep it open', async () => {
-    const user = setup();
-
-    await user.click(tab());
-    await user.hover(screen.getByText('texto fora do painel'));
-
-    expect(panel()).toBeInTheDocument();
-  });
-
-  it('when the tab is clicked again, should close the panel', async () => {
-    const user = setup();
-
-    await user.click(tab());
-    await user.click(tab());
-
-    await waitFor(() => expect(panel()).not.toBeInTheDocument());
-  });
-
-  it('when the tab is clicked while the panel is open, should close it', async () => {
-    const user = setup();
-
-    await user.click(tab());
-    await user.click(tab());
-
-    await waitFor(() => expect(panel()).not.toBeInTheDocument());
-  });
-
-  it('when clicking outside the panel, should close it', async () => {
-    const user = setup();
-
-    await user.click(tab());
-    await user.click(screen.getByText('texto fora do painel'));
-
-    await waitFor(() => expect(panel()).not.toBeInTheDocument());
-  });
-
-  it('when clicking inside the panel, should keep it open', async () => {
-    const user = setup();
-
-    await user.click(tab());
-    await user.click(screen.getByText('itens do sumário'));
-
-    expect(panel()).toBeInTheDocument();
-  });
-
-  it('when the panel is open, should leave the scrollbar free too', async () => {
-    const user = setup();
-
-    await user.click(tab());
-
-    expect(panel()).toHaveClass('right-3');
-  });
-
-  it('when closed after being open, should stop listening to outside clicks', async () => {
-    const user = setup();
-
-    await user.click(tab());
-    await user.click(tab());
-    await user.click(screen.getByText('texto fora do painel'));
-
-    await waitFor(() => expect(panel()).not.toBeInTheDocument());
-  });
-
-  it('when the panel opens, should enter with the entrance transition', async () => {
-    const user = setup();
-
-    await user.click(tab());
-
     expect(panel()).toHaveClass('animate-enter-right');
     expect(panel()).toHaveAttribute('data-state', 'open');
   });
 
-  it('when the tab is clicked to close, should keep the panel on screen while it leaves with the exit transition', async () => {
+  it('when shown, should have no panel background or border, only the cards inside', async () => {
     const user = setup();
 
-    await user.click(tab());
-    await user.click(tab());
+    await user.hover(edge());
 
-    expect(panel()).toBeInTheDocument();
+    expect(panel()).toHaveClass('!bg-transparent', 'border-0', 'reading-chrome');
+  });
+
+  it('when shown, should live inside the strip so moving the mouse onto the cards never closes and reopens it', async () => {
+    const user = setup();
+
+    await user.hover(edge());
+
+    expect(edge()).toContainElement(panel());
+  });
+
+  it('when the mouse moves from the strip onto the items, should keep them open', async () => {
+    const user = setup();
+
+    await user.hover(edge());
+    await user.unhover(edge());
+    await user.hover(panel() as HTMLElement);
+    await new Promise((resolve) => setTimeout(resolve, 350));
+
+    expect(panel()).toHaveAttribute('data-state', 'open');
+  });
+
+  it('when the mouse leaves, should close with the exit transition and then remove the items', async () => {
+    const user = setup();
+
+    await user.hover(edge());
+    await user.unhover(edge());
+
+    await waitFor(() => expect(panel()).toHaveAttribute('data-state', 'closing'));
     expect(panel()).toHaveClass('animate-exit-right', 'pointer-events-none');
-    expect(panel()).not.toHaveClass('animate-enter-right');
-    expect(panel()).toHaveAttribute('data-state', 'closing');
-    expect(tab()).toHaveAttribute('aria-expanded', 'false');
+    await waitFor(() => expect(panel()).not.toBeInTheDocument(), { timeout: 1500 });
   });
 
-  it('when the animation event never comes, should still remove the panel after the exit time', async () => {
+  it('when the mouse comes back while the items are leaving, should open them again', async () => {
     const user = setup();
 
-    await user.click(tab());
-    await user.click(tab());
-
-    await waitFor(() => expect(panel()).not.toBeInTheDocument(), { timeout: 1000 });
-  });
-
-  it('when the tab is clicked while the panel is leaving, should open it again', async () => {
-    const user = setup();
-
-    await user.click(tab());
-    await user.click(tab());
-    await user.click(tab());
+    await user.hover(edge());
+    await user.unhover(edge());
+    await waitFor(() => expect(panel()).toHaveAttribute('data-state', 'closing'));
+    await act(async () => {
+      await user.hover(edge());
+    });
 
     expect(panel()).toHaveAttribute('data-state', 'open');
-    expect(panel()).toHaveClass('animate-enter-right');
   });
 
-  it('when rendered, should use the soft chrome colors, less emphasized than the text', async () => {
-    const user = setup();
+  it('when side is left, should use the left strip, position and transitions, with the given name', async () => {
+    const user = setup({ side: 'left', label: 'Acompanhamento da leitura' });
 
-    await user.click(tab());
+    expect(edge('left')).toHaveClass('left-0');
+    expect(edge('right')).toBeNull();
 
-    expect(panel()).toHaveClass('reading-chrome');
+    await user.hover(edge('left'));
+
+    expect(panel('Acompanhamento da leitura')).toHaveClass('left-4', 'animate-enter-left', 'w-56');
   });
+});
 
-  it('when the panel is open, should move the tab to the panel edge so it never hides under it', async () => {
-    const user = setup();
+describe('ReadingSidePanel — width', () => {
+  it('when a width is given, should use it instead of the default', async () => {
+    const user = setup({ width: 'w-[19rem]' });
 
-    expect(tab()).toHaveClass('right-5');
+    await user.hover(edge());
 
-    await user.click(tab());
-
-    expect(tab()).toHaveClass('right-[21.25rem]');
-    expect(tab()).not.toHaveClass('right-5');
+    expect(panel()).toHaveClass('w-[19rem]');
+    expect(panel()).not.toHaveClass('w-56');
   });
+});
 
-  it('when idle, should place the tab at the top, right below the header, not in the middle', () => {
-    setup();
+describe('ReadingSidePanel — portaled content', () => {
+  it('when the mouse moves over content portaled into the panel, should not count as leaving', async () => {
+    const user = userEvent.setup();
+    let slot: HTMLElement | null = null;
+    const { createPortal } = await import('react-dom');
 
-    expect(tab()).toHaveClass('top-[4.5rem]');
-    expect(tab().className).not.toContain('top-1/2');
-    expect(tab().className).not.toContain('-translate-y-1/2');
-  });
+    function Host() {
+      const [target, setTarget] = useState<HTMLElement | null>(null);
 
-  it('when the panel is open, should not repeat a close button inside it (the tab already closes it)', async () => {
-    const user = setup();
+      return (
+        <>
+          <ReadingSidePanel>
+            <div ref={(node) => { slot = node; setTarget(node); }} />
+          </ReadingSidePanel>
+          {target && createPortal(<p>item do portal</p>, target)}
+        </>
+      );
+    }
 
-    await user.click(tab());
+    render(<Host />);
+    await user.hover(edge());
+    await user.hover(screen.getByText('item do portal'));
+    await new Promise((resolve) => setTimeout(resolve, 350));
 
-    expect(screen.queryByRole('button', { name: /Fechar painel/ })).not.toBeInTheDocument();
-    expect(tab()).toHaveAttribute('title', 'Clique para fechar o painel');
-  });
-
-  it('when the panel is open, should rotate the tab arrow to indicate closing', async () => {
-    const user = setup();
-
-    expect(tab().querySelector('svg')).not.toHaveClass('rotate-180');
-
-    await user.click(tab());
-
-    expect(tab().querySelector('svg')).toHaveClass('rotate-180');
+    expect(slot).not.toBeNull();
+    expect(panel()).toHaveAttribute('data-state', 'open');
   });
 });

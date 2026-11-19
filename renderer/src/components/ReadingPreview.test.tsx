@@ -8,7 +8,6 @@ import { mockApi, ok } from '#test/api-mock';
 
 import { AppearanceProvider } from './AppearanceProvider';
 import { ReadingPreview } from './ReadingPreview';
-import { ReadingSideToggle } from './ReadingSideToggle';
 
 describe('ReadingPreview', () => {
   it('when shown, should use the same layout as the reading mode: module divider, chapter label, title and text', () => {
@@ -42,32 +41,76 @@ describe('ReadingPreview', () => {
     expect(preview).toHaveAttribute('data-custom-bg');
   });
 
-  it('when the side panel is not pinned (default), should show only the hover area on the right', () => {
-    const { container } = render(<ReadingPreview />);
-
-    expect(container.querySelector('[data-slot=preview-hover-area]')).toBeInTheDocument();
-    expect(container.querySelector('[data-slot=preview-side-panel]')).toBeNull();
-  });
-
-  it('when the side panel is pinned, should show a mini panel instead of the hover area', async () => {
+  const renderWith = (reading: Partial<typeof DEFAULT_READING>) => {
     mockApi({
       [IpcChannels.appearance.get]: () =>
-        ok({
-          ...DEFAULT_APPEARANCE,
-          reading: { ...DEFAULT_READING, pinSidebar: true },
-        }),
+        ok({ ...DEFAULT_APPEARANCE, reading: { ...DEFAULT_READING, ...reading } }),
     });
 
-    const { container } = render(
+    return render(
       <AppearanceProvider>
         <ReadingPreview />
       </AppearanceProvider>,
     );
+  };
+
+  const sides = (container: HTMLElement, slot: string) =>
+    [...container.querySelectorAll(`[data-slot=${slot}]`)].map((node) =>
+      node.getAttribute('data-side'),
+    );
+
+  it('when the side panel is not pinned (default), should show a hover margin on each side and no button', () => {
+    const { container } = render(<ReadingPreview />);
+
+    expect(sides(container, 'preview-hover-area')).toEqual(['follow', 'options']);
+    expect(container.querySelector('[data-slot=preview-side-panel]')).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('when the side panel is pinned, should show both sides with their cards instead of the hover margins', async () => {
+    const { container } = renderWith({ pinSidebar: true });
 
     await waitFor(() =>
-      expect(container.querySelector('[data-slot=preview-side-panel]')).toBeInTheDocument(),
+      expect(sides(container, 'preview-side-panel')).toEqual(['follow', 'options']),
     );
     expect(container.querySelector('[data-slot=preview-hover-area]')).toBeNull();
+    expect(screen.getByText('Sumário')).toBeInTheDocument();
+    expect(screen.getByText('Leitura')).toBeInTheDocument();
+    expect(screen.getByText('Sobre a página')).toBeInTheDocument();
+  });
+
+  it('when the sides are swapped, should put the options on the left and the follow on the right', async () => {
+    const { container } = renderWith({ swapSides: true });
+
+    await waitFor(() =>
+      expect(sides(container, 'preview-hover-area')).toEqual(['options', 'follow']),
+    );
+  });
+
+  it('when pinned and swapped, should mirror the cards too', async () => {
+    const { container } = renderWith({ pinSidebar: true, swapSides: true });
+
+    await waitFor(() =>
+      expect(sides(container, 'preview-side-panel')).toEqual(['options', 'follow']),
+    );
+  });
+
+  it('when not pinned, should reveal the cards only by hovering the margin, with a label while hidden', () => {
+    const { container } = render(<ReadingPreview />);
+    const area = container.querySelector('[data-slot=preview-hover-area]') as HTMLElement;
+
+    expect(area).toHaveClass('group');
+    expect(area.querySelector('.group-hover\\:opacity-0')).toHaveTextContent('Acompanhamento');
+    expect(area.querySelector('.sidebar-card')).toBeInTheDocument();
+  });
+
+  it('when a margin is revealed, should open its cards inward so none is cut off by the frame', async () => {
+    const { container } = render(<ReadingPreview />);
+    const [left, right] = [...container.querySelectorAll('[data-slot=preview-hover-area]')];
+
+    expect(left.querySelector('.sidebar-card')?.parentElement).toHaveClass('left-1');
+    expect(right.querySelector('.sidebar-card')?.parentElement).toHaveClass('right-1');
+    expect(right.querySelector('.sidebar-card')?.parentElement).not.toHaveClass('left-1');
   });
 
   describe('fidelity to the real reading mode', () => {
@@ -78,35 +121,6 @@ describe('ReadingPreview', () => {
 
       expect(header).toHaveClass('reading-chrome', 'border-b');
       expect(screen.getByText('Sair do modo leitura')).toBeInTheDocument();
-    });
-
-    it('when the side panel is not pinned, should show the very same button as the real one, at the top right', () => {
-      const { container } = render(<ReadingPreview />);
-
-      const area = container.querySelector('[data-slot=preview-hover-area]') as HTMLElement;
-      const button = area.firstElementChild as HTMLElement;
-      const tab = button.firstElementChild as HTMLElement;
-
-      expect(area).toHaveClass('top-9', 'right-5');
-      expect(button).toHaveClass('pointer-events-none');
-      expect(tab.className).toContain('bg-[var(--reading-tab-bg,var(--foreground))]');
-      expect(tab.className).toContain('clip-path:polygon(50%_0');
-    });
-
-    it('when shown, should have exactly the same markup as the real toggle button', () => {
-      const { container } = render(
-        <>
-          <ReadingPreview />
-          <ReadingSideToggle />
-        </>,
-      );
-
-      const preview = container.querySelector(
-        '[data-slot=preview-hover-area] button',
-      ) as HTMLElement;
-      const real = container.querySelector('button:not([aria-hidden])') as HTMLElement;
-
-      expect(preview.innerHTML).toBe(real.innerHTML);
     });
 
     it('when shown, should not scroll: everything is visible at once', () => {
@@ -129,42 +143,12 @@ describe('ReadingPreview', () => {
       expect(surface.querySelector('.reading-column')).toHaveClass('overflow-hidden', 'min-w-0');
     });
 
-    it('when the panel is hidden, should leave room for the button so it does not cover the text', () => {
-      render(<ReadingPreview />);
+    it('when the cards are drawn, should use the same sidebar cards as the real reading mode', async () => {
+      const { container } = renderWith({ pinSidebar: true });
 
-      const column = screen.getByText('Texto de exemplo').closest('.reading-column') as HTMLElement;
-
-      expect(column).toHaveClass('pr-14');
-    });
-
-    it('when the side panel is pinned, should mirror it with the chrome and the sidebar cards of the real one', async () => {
-      mockApi({
-        [IpcChannels.appearance.get]: () =>
-          ok({
-            ...DEFAULT_APPEARANCE,
-            reading: { ...DEFAULT_READING, pinSidebar: true },
-          }),
-      });
-
-      const { container } = render(
-        <AppearanceProvider>
-          <ReadingPreview />
-        </AppearanceProvider>,
+      await waitFor(() =>
+        expect(container.querySelectorAll('[data-slot=preview-side-panel] .sidebar-card')).toHaveLength(3),
       );
-
-      const panel = await waitFor(() => {
-        const found = container.querySelector('[data-slot=preview-side-panel]');
-
-        expect(found).toBeInTheDocument();
-
-        return found as HTMLElement;
-      });
-
-      expect(panel).toHaveClass('reading-chrome');
-      expect(panel.querySelectorAll('.sidebar-card')).toHaveLength(3);
-      expect(screen.getByText('Conclusão')).toBeInTheDocument();
-      expect(screen.getByText('Leitura')).toBeInTheDocument();
-      expect(screen.getByText('Sumário')).toBeInTheDocument();
     });
   });
 });

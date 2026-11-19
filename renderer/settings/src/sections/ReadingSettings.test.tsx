@@ -289,6 +289,37 @@ describe('ReadingSettings', () => {
     expect(document.querySelector('[data-slot=preview-hover-area]')).toBeInTheDocument();
   });
 
+  it('when opened, should leave the follow on the left and show it so in the preview', () => {
+    mockSaved();
+
+    renderSettings();
+
+    expect(screen.getByRole('checkbox', { name: 'Acompanhamento à direita e opções à esquerda' })).not.toBeChecked();
+    expect(
+      [...document.querySelectorAll('[data-slot=preview-hover-area]')].map((n) =>
+        n.getAttribute('data-side'),
+      ),
+    ).toEqual(['follow', 'options']);
+  });
+
+  it('when swap sides is checked, should save it and mirror the preview', async () => {
+    const user = userEvent.setup();
+    const invoke = mockSaved();
+    renderSettings();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Acompanhamento à direita e opções à esquerda' }));
+
+    expect(payloadsOf(invoke, IpcChannels.appearance.update)).toEqual([
+      { reading: { swapSides: true } },
+    ]);
+    expect(screen.getByRole('checkbox', { name: 'Acompanhamento à direita e opções à esquerda' })).toBeChecked();
+    expect(
+      [...document.querySelectorAll('[data-slot=preview-hover-area]')].map((n) =>
+        n.getAttribute('data-side'),
+      ),
+    ).toEqual(['options', 'follow']);
+  });
+
   it('when everything is the default, should disable restoring the reading', async () => {
     mockSaved();
 

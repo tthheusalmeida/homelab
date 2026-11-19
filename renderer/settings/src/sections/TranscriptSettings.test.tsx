@@ -35,6 +35,32 @@ describe('TranscriptSettings', () => {
     localStorage.clear();
   });
 
+  it('when opened, should show the transcript preview with the timeline', async () => {
+    mockSaved();
+
+    renderSettings();
+
+    expect(screen.getByRole('region', { name: 'Pré-visualização da transcrição' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot=transcript-rail-preview]')).toBeInTheDocument(),
+    );
+  });
+
+  it('when "Mostrar o começo dos trechos" is unchecked, should hide the excerpt starts in the preview', async () => {
+    const user = userEvent.setup();
+    mockSaved();
+    renderSettings();
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot=transcript-rail-preview]')).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: 'Mostrar o começo dos trechos' }));
+
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot=transcript-rail-preview]')).toBeNull(),
+    );
+  });
+
   it('when opened, should have the "Mostrar o começo dos trechos" option on by default', () => {
     mockSaved();
 

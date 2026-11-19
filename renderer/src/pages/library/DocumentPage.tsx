@@ -11,14 +11,14 @@ import { BackToTopButton } from "#components/BackToTopButton";
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { ErrorState } from "#components/ErrorState";
 import { LoadingState } from "#components/LoadingState";
-import { MarkdownMessage } from "#components/MarkdownMessage";
+import { DocumentBody } from "#components/DocumentBody";
 import { ReadingMode } from "#components/ReadingMode";
 import { ReadingSection } from "#components/ReadingSection";
 import { ReadingSurface } from "#components/ReadingSurface";
 import { cn } from "#lib/utils";
-import { TranscriptView } from "#components/TranscriptView";
 import { useSummaryPreferences } from "#hooks/use-appearance";
 import { useActiveSection } from "#hooks/use-active-section";
+import { useReadingSides } from "#hooks/use-reading-sides";
 import { extractHeadings } from "#lib/markdown";
 import { scrollToId } from "#lib/scroll";
 import { parseTimedTranscript } from "#shared/transcript";
@@ -71,6 +71,7 @@ export function DocumentPage() {
 
   // Coluna da esquerda: a barra de trechos (transcrição com tempo) ou o Sumário, se houver.
   const hasLeftColumn = Boolean(excerpts) || sidebarHeadings.length >= OUTLINE_MIN_HEADINGS;
+  const sides = useReadingSides(hasLeftColumn);
 
   // Título em leitura agora (destacado no sumário).
   const activeId = useActiveSection(headings.map((heading) => heading.id));
@@ -160,15 +161,12 @@ export function DocumentPage() {
       label={documentTypeLabels[meta.type]}
       title={meta.title}
     >
-      {excerpts ? (
-        <TranscriptView
-          excerpts={excerpts}
-          sourceUrl={meta.sourceUrl}
-          railSlot={reading ? undefined : railSlot}
-        />
-      ) : (
-        <MarkdownMessage content={content} headingIds size="inherit" />
-      )}
+      <DocumentBody
+        content={content}
+        isTranscription={meta.type === "transcription"}
+        sourceUrl={meta.sourceUrl}
+        railSlot={railSlot}
+      />
     </ReadingSection>
   );
 
@@ -178,9 +176,19 @@ export function DocumentPage() {
         <ReadingMode
           title={meta.title}
           onExit={() => setReading(false)}
-          toc={
+          follow={
+            excerpts ? (
+              <div ref={setRailSlot} />
+            ) : (
+              hasLeftColumn && (
+                <DocumentOutline headings={sidebarHeadings} activeId={activeId} />
+              )
+            )
+          }
+          options={
             <DocumentSidebar
               embedded
+              hideOutline
               headings={sidebarHeadings}
               activeId={activeId}
               onOpenAbout={() => setModal("about")}
@@ -210,28 +218,30 @@ export function DocumentPage() {
         <CategoryBreadcrumb category={meta.category} />
       </div>
 
-      <div
-        className={cn(
-          "grid gap-8",
-          hasLeftColumn
-            ? "lg:grid-cols-[16rem_minmax(0,1fr)_16rem]"
-            : "lg:grid-cols-[minmax(0,1fr)_16rem]",
-        )}
-      >
+      <div className={cn("grid gap-8", sides.columns)}>
         {excerpts ? (
-          <div ref={setRailSlot} className="hidden lg:block" />
+          <div
+            ref={setRailSlot}
+            className={cn("hidden lg:block", sides.followOrder)}
+          />
         ) : (
           hasLeftColumn && (
             <aside
               aria-label="Onde você está"
-              className="hidden lg:sticky lg:top-4 lg:block lg:self-start"
+              className={cn(
+                "hidden lg:sticky lg:top-4 lg:block lg:self-start",
+                sides.followOrder,
+              )}
             >
               <DocumentOutline headings={sidebarHeadings} activeId={activeId} />
             </aside>
           )
         )}
 
-        <div ref={setContainer} className="min-w-0 space-y-6">
+        <div
+          ref={setContainer}
+          className={cn("min-w-0 space-y-6", sides.textOrder)}
+        >
           <ReadingSurface>
             <div className="reading-column">{article}</div>
           </ReadingSurface>
@@ -239,13 +249,15 @@ export function DocumentPage() {
           <BackToTopButton container={container} />
         </div>
 
-        <DocumentSidebar
-          headings={sidebarHeadings}
-          hideOutline
-          activeId={activeId}
-          onOpenAbout={() => setModal("about")}
-          onStartReading={() => setReading(true)}
-        />
+        <div className={cn("min-w-0", sides.optionsOrder)}>
+          <DocumentSidebar
+            headings={sidebarHeadings}
+            hideOutline
+            activeId={activeId}
+            onOpenAbout={() => setModal("about")}
+            onStartReading={() => setReading(true)}
+          />
+        </div>
       </div>
 
       {dialogs}

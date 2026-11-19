@@ -164,11 +164,12 @@ describe("BookSidebar — read chapters", () => {
         findBar={null}
         onSelectChapter={() => {}}
         onSelectHit={() => {}}
+        onToggleRead={() => {}}
       />,
     );
 
     expect(
-      screen.getByRole("button", { name: "1. Docker, lido" }),
+      screen.getByRole("button", { name: 'Desmarcar "Docker" como lido' }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "2. Redes" }),

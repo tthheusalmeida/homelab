@@ -35,6 +35,27 @@ describe('SummarySettings', () => {
     localStorage.clear();
   });
 
+  it('when opened, should show the summary preview with its outline', () => {
+    mockSaved();
+
+    renderSettings();
+
+    expect(screen.getByRole('region', { name: 'Pré-visualização do resumo' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Sumário do exemplo' })).toBeInTheDocument();
+  });
+
+  it('when "Mostrar o sumário ao lado do texto" is unchecked, should hide the outline in the preview', async () => {
+    const user = userEvent.setup();
+    mockSaved();
+    renderSettings();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Mostrar o sumário ao lado do texto' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('navigation', { name: 'Sumário do exemplo' })).toBeNull(),
+    );
+  });
+
   it('when opened, should have the "Mostrar o sumário ao lado do texto" option on by default', () => {
     mockSaved();
 

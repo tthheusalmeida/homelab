@@ -70,7 +70,7 @@ describe('BookOutline', () => {
     expect(document.querySelector('[aria-current]')).not.toBeInTheDocument();
   });
 
-  it('when rendered, should make the module a strong title and the chapters lighter and indented under it', () => {
+  it('when rendered, should make the module a strong title and the chapters lighter under it', () => {
     renderOutline();
 
     const module = screen.getByText('Módulo 1');
@@ -79,7 +79,7 @@ describe('BookOutline', () => {
     expect(module).toHaveClass('font-bold', 'uppercase', 'text-foreground');
     expect(module.className).not.toContain('text-muted-foreground');
     expect(chapter).toHaveClass('font-normal', 'text-muted-foreground');
-    expect(chapter.closest('ul')).toHaveClass('border-l', 'pl-3');
+    expect(chapter.closest('ul')?.className).not.toContain('border-l');
   });
 
   it('when a chapter is the one being read, should highlight it over the light chapter style', () => {

@@ -63,6 +63,23 @@ describe('parseReading side panel', () => {
   });
 });
 
+describe('parseReading swapped sides', () => {
+  it('when an old copy has no swap option, should keep the sides as they are by default', () => {
+    const { swapSides, ...old } = DEFAULT_READING;
+
+    expect(swapSides).toBe(false);
+    expect(parseReading(old)?.swapSides).toBe(false);
+  });
+
+  it('when the sides are swapped, should keep it', () => {
+    expect(parseReading({ ...DEFAULT_READING, swapSides: true })?.swapSides).toBe(true);
+  });
+
+  it.each(['true', 1, null])('when the swap option is %j, should return null', (value) => {
+    expect(parseReading({ ...DEFAULT_READING, swapSides: value })).toBeNull();
+  });
+});
+
 describe('parseReading separators', () => {
   it('when an old copy has no separator, should use the default (derived from the text)', () => {
     const { separator, separatorShade, ...old } = DEFAULT_READING;

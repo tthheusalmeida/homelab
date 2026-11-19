@@ -46,6 +46,17 @@ describe('OutlineNav', () => {
     expect(screen.getByRole('button', { name: 'Fim' })).not.toHaveClass('bg-foreground/12');
   });
 
+  it('when an item is active, should color earlier markers green and the current one with the accent', () => {
+    renderNav({ activeId: 'b' });
+
+    const marker = (name: string) =>
+      screen.getByRole('button', { name }).querySelector('span[aria-hidden]');
+
+    expect(marker('Introdução')).toHaveClass('bg-emerald-500');
+    expect(marker('Detalhes')).toHaveClass('bg-primary');
+    expect(marker('Fim')).not.toHaveClass('bg-emerald-500', 'bg-primary');
+  });
+
   it('when no item is active, should mark none', () => {
     renderNav();
 

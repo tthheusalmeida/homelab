@@ -1,90 +1,111 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ReadingSideToggle } from './ReadingSideToggle';
+
+import { cn } from '#lib/utils';
 
 /** Duração da saída (a mesma de `--duration-exit`): depois dela o painel sai da árvore. */
 const EXIT_MS = 240;
+/** Tempo de tolerância ao sair com o mouse, para ir da margem até os itens sem fechar. */
+const LEAVE_MS = 200;
 
 /**
- * Painel lateral do modo leitura quando ele não está fixo: só uma aba hexagonal com ícone de
- * painel fica à mostra, no topo da borda direita (logo abaixo do cabeçalho) mas à esquerda da barra de rolagem (não fica por cima
- * dela); com o painel aberto ela acompanha a borda dele, sem sumir por baixo. Clicar na aba abre o painel por cima do texto (`animate-enter-right`); ele fecha
- * clicando na aba de novo (a seta gira e indica "fechar") ou clicando fora, sempre com a transição de saída
- * (`animate-exit-right`). A barra de rolagem continua livre nos dois estados.
+ * Itens laterais do modo leitura quando não estão fixos. Não há botão nem moldura de painel: só os
+ * próprios cartões, que aparecem quando o mouse passa na margem vazia ao lado do texto (a faixa
+ * `data-slot="reading-edge-*"`, invisível) e somem quando o mouse sai. A margem acompanha o espaço
+ * livre ao lado do texto (que muda com o zoom) e deixa a barra de rolagem livre. Entram e saem com as
+ * transições `animate-enter-*` e `animate-exit-*`.
  */
-export function ReadingSidePanel({ children }: { children: ReactNode }) {
+export function ReadingSidePanel({
+  children,
+  side = 'right',
+  label = 'Sumário da leitura',
+  width = 'w-56',
+}: {
+  children: ReactNode;
+  /** Margem em que os itens aparecem. O acompanhamento usa a esquerda. */
+  side?: 'left' | 'right';
+  /** Nome dos itens abertos (marco de navegação). */
+  label?: string;
+  /** Largura dos itens (classe do Tailwind). */
+  width?: string;
+}) {
+  const left = side === 'left';
   const [open, setOpen] = useState(false);
-  // Fechando: o painel ainda está na tela, saindo com a transição.
+  // Fechando: os itens ainda estão na tela, saindo com a transição.
   const [leaving, setLeaving] = useState(false);
-  const panel = useRef<HTMLElement>(null);
-  const tab = useRef<HTMLButtonElement>(null);
   const timer = useRef<number | undefined>(undefined);
-
-  const openPanel = () => {
-    window.clearTimeout(timer.current);
-    setLeaving(false);
-    setOpen(true);
-  };
-
-  const closePanel = () => {
-    setOpen(false);
-    setLeaving(true);
-    window.clearTimeout(timer.current);
-    // Reserva para quando o navegador não dispara o fim da animação (movimento reduzido).
-    timer.current = window.setTimeout(() => setLeaving(false), EXIT_MS + 60);
-  };
+  const strip = useRef<HTMLDivElement>(null);
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  // Clique fora do painel fecha (a aba fica de fora de propósito: ela mesma alterna).
+  // Eventos nativos de propósito: o `onMouseEnter/Leave` do React segue a árvore do React, e itens
+  // desenhados por portal (como a linha do tempo da transcrição) estão dentro da faixa no DOM mas
+  // fora dela no React. Com ele, passar o mouse sobre eles contava como "sair" e a faixa piscava.
   useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node;
-
-      // A aba alterna sozinha (no clique); se o pointerdown também fechasse, ela reabriria.
-      if (!panel.current?.contains(target) && !tab.current?.contains(target)) {
-        closePanel();
-      }
+    const element = strip.current;
+    const clear = () => window.clearTimeout(timer.current);
+    const enter = () => {
+      clear();
+      setLeaving(false);
+      setOpen(true);
+    };
+    const leave = () => {
+      clear();
+      timer.current = window.setTimeout(() => {
+        setOpen(false);
+        setLeaving(true);
+        // Reserva para quando o navegador não dispara o fim da animação (movimento reduzido).
+        timer.current = window.setTimeout(() => setLeaving(false), EXIT_MS + 60);
+      }, LEAVE_MS);
     };
 
-    document.addEventListener('pointerdown', onPointerDown);
+    element?.addEventListener('mouseenter', enter);
+    element?.addEventListener('mouseleave', leave);
 
-    return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [open]);
+    return () => {
+      element?.removeEventListener('mouseenter', enter);
+      element?.removeEventListener('mouseleave', leave);
+    };
+  }, []);
 
+  // Os itens ficam DENTRO da faixa: o mouse indo da faixa para eles não "sai" dela, então não há
+  // fecha-e-abre (pisca) ao mexer o mouse sobre os cartões.
   return (
-    <>
-      <ReadingSideToggle
-        ref={tab}
-        open={open}
-        // No topo, logo abaixo do cabeçalho; com o painel aberto acompanha a borda dele.
-        className={`fixed top-[4.5rem] transition-[right] duration-300 ease-out ${
-          open ? 'right-[21.25rem]' : 'right-5'
-        }`}
-        onClick={() => (open ? closePanel() : openPanel())}
-      />
-
+    <div
+      ref={strip}
+      data-slot={`reading-edge-${side}`}
+      className={cn(
+        'fixed top-14 bottom-0 z-10 w-[max(5rem,calc((100vw_-_8rem_-_48rem*var(--reading-zoom,1))/2))]',
+        left ? 'left-0' : 'right-4',
+      )}
+    >
       {(open || leaving) && (
         <aside
-          ref={panel}
-          aria-label="Sumário da leitura"
+          aria-label={label}
           data-state={open ? 'open' : 'closing'}
-          className={`fixed top-14 right-3 bottom-0 z-20 w-80 max-w-[85vw] reading-chrome overflow-y-auto border-l p-4 font-sans shadow-xl ${
-            open ? 'animate-enter-right' : 'pointer-events-none animate-exit-right'
-          }`}
-          onAnimationEnd={() => {
-            if (!open) {
+          onAnimationEnd={(event) => {
+            // Só o fim da animação do próprio painel (as dos cartões de dentro também sobem até aqui).
+            if (event.target === event.currentTarget && !open) {
               window.clearTimeout(timer.current);
               setLeaving(false);
             }
           }}
+          // Sem fundo nem borda: só os cartões. `reading-chrome` traz as cores suaves deles.
+          className={cn(
+            'reading-chrome fixed top-14 bottom-0 z-20 max-w-[85vw] overflow-y-auto border-0 !bg-transparent p-3 font-sans',
+            width,
+            left ? 'left-4' : 'right-6',
+            open
+              ? left
+                ? 'animate-enter-left'
+                : 'animate-enter-right'
+              : left
+                ? 'pointer-events-none animate-exit-left'
+                : 'pointer-events-none animate-exit-right',
+          )}
         >
-          {children}
+          <div className="space-y-2">{children}</div>
         </aside>
       )}
-    </>
+    </div>
   );
 }

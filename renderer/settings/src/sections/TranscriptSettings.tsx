@@ -3,6 +3,7 @@ import { RotateCcw } from 'lucide-react';
 
 import { Button } from '#ui/button';
 import { Label } from '#ui/label';
+import { TranscriptPreview } from '#components/TranscriptPreview';
 import { SettingsGroup, SettingsPanel, SettingsRow } from '#components/SettingsGroup';
 import { useAppearance } from '#hooks/use-appearance';
 import { DEFAULT_TRANSCRIPT, type TranscriptPreferences } from '#shared/contracts/document-views';
@@ -34,6 +35,8 @@ export function TranscriptSettings() {
   return (
     <SettingsGroup title={text.title} hint={text.hint}>
       <SettingsPanel className="gap-2.5 p-3">
+        <TranscriptPreview />
+
         <SettingsRow label={text.preview} hint={text.previewHint}>
           <div className="flex items-center gap-2">
             <input

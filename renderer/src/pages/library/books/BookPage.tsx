@@ -35,6 +35,8 @@ import { LoadingState } from "#components/LoadingState";
 import { ReadingMode } from "#components/ReadingMode";
 import { ReadingSurface } from "#components/ReadingSurface";
 import { useActiveSection } from "#hooks/use-active-section";
+import { useReadingSides } from "#hooks/use-reading-sides";
+import { cn } from "#lib/utils";
 import { useDebouncedValue } from "#hooks/use-debounced-value";
 import { useTextHighlight } from "#hooks/use-text-highlight";
 
@@ -46,7 +48,7 @@ import { BookFindBar } from "./components/BookFindBar";
 import { BookFormDialog } from "./components/BookFormDialog";
 import { BookOrganizerDialog } from "./components/BookOrganizerDialog";
 import { BookPrintView } from "./components/BookPrintView";
-import { BookSidebar } from "./components/BookSidebar";
+import { BookOutlineCard, BookSidebar } from "./components/BookSidebar";
 import {
   useBook,
   useBookReading,
@@ -82,6 +84,7 @@ export function BookPage() {
   const setRead = useSetChapterRead();
   const resetProgress = useResetBookProgress();
   const snackbar = useSnackbar();
+  const sides = useReadingSides(true);
   const { mutate: persistPosition } = useSaveBookPosition();
 
   const [modal, setModal] = useState<Modal>(null);
@@ -335,9 +338,19 @@ export function BookPage() {
           title={book.title}
           onExit={() => setReader(false)}
           actions={findBar}
-          toc={
+          follow={
+            <BookOutlineCard
+              modules={modules}
+              activeChapterId={activeChapterId}
+              readIds={readIds}
+              onSelectChapter={goToChapter}
+              onToggleRead={handleToggleRead}
+            />
+          }
+          options={
             <BookSidebar
               embedded
+              hideOutline
               modules={modules}
               activeChapterId={activeChapterId}
               readIds={readIds}
@@ -348,6 +361,7 @@ export function BookPage() {
               isSearching={results.isFetching}
               onSelectChapter={goToChapter}
               onSelectHit={handleHit}
+              onToggleRead={handleToggleRead}
             />
           }
         >
@@ -478,10 +492,26 @@ export function BookPage() {
           }
         />
       ) : (
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <div className={cn("grid gap-8", sides.columns)}>
+          <aside
+            aria-label="Onde você está"
+            className={cn(
+              "hidden lg:sticky lg:top-4 lg:block lg:self-start",
+              sides.followOrder,
+            )}
+          >
+            <BookOutlineCard
+              modules={modules}
+              activeChapterId={activeChapterId}
+              readIds={readIds}
+              onSelectChapter={goToChapter}
+              onToggleRead={handleToggleRead}
+            />
+          </aside>
+
           <div
             ref={setContainer}
-            className="min-w-0"
+            className={cn("min-w-0", sides.textOrder)}
           >
             <ReadingSurface>
               <div className="reading-column">
@@ -497,19 +527,23 @@ export function BookPage() {
             <BackToTopButton container={container} />
           </div>
 
-          <BookSidebar
-            modules={modules}
-            activeChapterId={activeChapterId}
-            readIds={readIds}
-            readCount={readCount}
-            completedAt={book.completedAt}
-            query={search}
-            findBar={findBar}
-            hits={results.data}
-            isSearching={results.isFetching}
-            onSelectChapter={goToChapter}
-            onSelectHit={handleHit}
-          />
+          <div className={cn("min-w-0", sides.optionsOrder)}>
+            <BookSidebar
+              hideOutline
+              modules={modules}
+              activeChapterId={activeChapterId}
+              readIds={readIds}
+              readCount={readCount}
+              completedAt={book.completedAt}
+              query={search}
+              findBar={findBar}
+              hits={results.data}
+              isSearching={results.isFetching}
+              onSelectChapter={goToChapter}
+              onSelectHit={handleHit}
+              onToggleRead={handleToggleRead}
+            />
+          </div>
         </div>
       )}
 

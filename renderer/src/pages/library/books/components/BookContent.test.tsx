@@ -35,6 +35,28 @@ const renderContent = (
     </MemoryRouter>,
   );
 
+describe("BookContent — transcription chapters", () => {
+  it("when a chapter is a timed transcript, should show each time and paragraph without rail, progress or hover", () => {
+    renderContent({
+      modules: [
+        {
+          id: "m1",
+          title: "",
+          chapters: [
+            chapter("t1", "Aula", "[00:00:05] Boas-vindas.\n\n[00:01:10] Segundo ponto."),
+          ],
+        },
+      ],
+    });
+
+    expect(screen.getByText("0:05")).toBeInTheDocument();
+    expect(screen.getByText("Segundo ponto.")).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="transcript-rail"]')).toBeNull();
+    expect(screen.queryByRole("progressbar", { name: /trecho/i })).toBeNull();
+    expect(document.querySelector("[data-excerpt]")?.className).not.toContain("hover:bg-");
+  });
+});
+
 describe("BookContent", () => {
   it("when rendered, should label each chapter above its centered title and close it with a footer", () => {
     renderContent();

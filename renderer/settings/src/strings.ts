@@ -43,7 +43,11 @@ export const Strings = {
       sidePanel: 'Painel lateral',
       sidePanelOption: 'Sempre visível na leitura',
       sidePanelHint:
-        'Desmarcado, o sumário e os ajustes só abrem ao clicar na aba da borda direita, e o texto fica sozinho no centro.',
+        'Desmarcado, o acompanhamento (sumário, linha do tempo) e as opções só aparecem ao passar o mouse na margem de cada lado, e o texto fica sozinho no centro.',
+      sides: 'Acompanhamento e opções',
+      swapOption: 'Acompanhamento à direita e opções à esquerda',
+      sidesHint:
+        'O acompanhamento (sumário, linha do tempo) fica à esquerda do texto e as opções (letra, zoom, "Sobre a página", progresso do livro) à direita. Marcado, os dois trocam de lado em páginas, transcrições, resumos e livros.',
       restore: 'Restaurar leitura',
     },
     transcript: {
@@ -65,7 +69,7 @@ export const Strings = {
       outline: 'Sumário',
       outlineOption: 'Mostrar o sumário ao lado do texto',
       outlineHint:
-        'Lista os títulos do resumo à esquerda do texto, com o trecho em leitura em destaque.',
+        'Lista os títulos do resumo ao lado do texto (o lado segue o ajuste da Leitura), com o trecho em leitura em destaque.',
       restore: 'Restaurar resumo',
     },
   },

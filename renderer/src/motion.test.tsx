@@ -179,7 +179,7 @@ describe("small state changes", () => {
 
   it("when the reading mode opens, should fade in over the page", () => {
     render(
-      <ReadingMode title="Livro" onExit={() => undefined} toc={null}>
+      <ReadingMode title="Livro" onExit={() => undefined} options={null}>
         <p>texto</p>
       </ReadingMode>,
     );

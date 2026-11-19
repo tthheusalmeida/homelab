@@ -195,6 +195,12 @@ describe('TranscriptView', () => {
     expect(within(rail()).getByRole('heading', { name: 'Linha do tempo' })).toBeInTheDocument();
   });
 
+  it('when an excerpt is shown, should highlight its background on hover', () => {
+    render(<TranscriptView excerpts={excerpts} />);
+
+    expect(document.querySelector('[data-excerpt]')).toHaveClass('hover:bg-foreground/8');
+  });
+
   it('when a rail slot is given, should render the rail inside it instead of beside the text', () => {
     const slot = document.createElement('div');
     document.body.appendChild(slot);

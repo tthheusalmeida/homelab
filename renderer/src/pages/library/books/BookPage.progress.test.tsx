@@ -141,28 +141,32 @@ describe("BookPage — progress, continue, find, export", () => {
       expect(screen.getAllByRole("progressbar")).toHaveLength(1);
     });
 
-    it("when in reading mode, should show the progress above the summary", async () => {
+    it("when in reading mode, should keep the summary in the left panel and the progress in the right one", async () => {
       reading.data = readingData({ readDocumentIds: ["d1"] });
       const user = userEvent.setup();
       renderPage();
 
       await user.click(screen.getByRole("button", { name: /Modo leitura/ }));
-      await user.click(
-        screen.getByRole("button", { name: "Mostrar painel lateral" }),
+      await user.hover(document.querySelector('[data-slot="reading-edge-left"]') as HTMLElement);
+      await user.hover(document.querySelector('[data-slot="reading-edge-right"]') as HTMLElement);
+
+      const follow = within(
+        screen.getByRole("complementary", { name: "Acompanhamento da leitura" }),
+      );
+      const options = within(
+        screen.getByRole("complementary", { name: "Opções da leitura" }),
       );
 
-      const aside = screen.getByRole("complementary", {
-        name: "Sumário da leitura",
-      });
-      const bar = within(aside).getByRole("progressbar");
-      const summary = within(aside).getByRole("navigation", {
-        name: "Sumário do livro",
-      });
-
-      expect(bar).toHaveAttribute("aria-valuenow", "1");
       expect(
-        bar.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy();
+        follow.getByRole("navigation", { name: "Sumário do livro" }),
+      ).toBeInTheDocument();
+      expect(options.getByRole("progressbar")).toHaveAttribute(
+        "aria-valuenow",
+        "1",
+      );
+      expect(
+        options.queryByRole("navigation", { name: "Sumário do livro" }),
+      ).not.toBeInTheDocument();
     });
 
     it("when a read chapter is no longer in the book, should not count it", () => {
@@ -213,12 +217,10 @@ describe("BookPage — progress, continue, find, export", () => {
       renderPage();
 
       await user.click(screen.getByRole("button", { name: /Modo leitura/ }));
-      await user.click(
-        screen.getByRole("button", { name: "Mostrar painel lateral" }),
-      );
+      await user.hover(document.querySelector('[data-slot="reading-edge-right"]') as HTMLElement);
 
       const aside = screen.getByRole("complementary", {
-        name: "Sumário da leitura",
+        name: "Opções da leitura",
       });
 
       expect(
@@ -363,8 +365,8 @@ describe("BookPage — progress, continue, find, export", () => {
       renderPage();
 
       expect(
-        screen.getByRole("button", { name: "1. Docker, lido" }),
-      ).toBeInTheDocument();
+        screen.getByRole("button", { name: 'Desmarcar "Docker" como lido' }),
+      ).toHaveAttribute("aria-pressed", "true");
     });
   });
 
@@ -902,7 +904,7 @@ describe("BookPage — back to top", () => {
     });
   });
 
-  it("when the button is shown, should keep the summary, progress and search in the side panel", () => {
+  it("when the button is shown, should keep the progress and search in the side panel and the summary in the left column", () => {
     renderPage();
 
     scrollDocument(900);
@@ -913,7 +915,12 @@ describe("BookPage — back to top", () => {
 
     expect(panel.getByRole("progressbar")).toBeInTheDocument();
     expect(
-      panel.getByRole("navigation", { name: "Sumário do livro" }),
+      panel.queryByRole("navigation", { name: "Sumário do livro" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("complementary", { name: "Onde você está" }),
+      ).getByRole("navigation", { name: "Sumário do livro" }),
     ).toBeInTheDocument();
     expect(panel.getByLabelText("Pesquisar no livro")).toBeInTheDocument();
   });

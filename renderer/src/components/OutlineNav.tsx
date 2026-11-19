@@ -1,5 +1,7 @@
 import { cn } from '#lib/utils';
 
+import { HexDot } from './Hex';
+
 export interface OutlineItem {
   id: string;
   label: string;
@@ -25,7 +27,9 @@ export function OutlineNav({ items, activeId, onSelect, ariaLabel, className }: 
   return (
     <nav aria-label={ariaLabel}>
       <ul className={cn('space-y-1 overflow-y-auto pr-1', className)}>
-        {items.map((item) => {
+        {items.map((item, index) => {
+          const activeIndex = items.findIndex((candidate) => candidate.id === activeId);
+          const read = activeIndex >= 0 && index < activeIndex;
           const active = item.id === activeId;
           const level = Math.min(item.level ?? 1, 3);
 
@@ -42,12 +46,20 @@ export function OutlineNav({ items, activeId, onSelect, ariaLabel, className }: 
                 aria-current={active ? 'location' : undefined}
                 onClick={() => onSelect(item.id)}
                 className={cn(
-                  'w-full rounded-md px-2 py-0.5 text-left hover:underline',
+                  'flex w-full items-center gap-1.5 rounded-md px-2 py-0.5 text-left hover:underline',
                   levelStyle[level],
                   active && OUTLINE_ACTIVE,
                 )}
               >
-                {item.label}
+                <HexDot
+                  className={cn(
+                    'h-2.5 w-2 transition-[background-color,transform]',
+                    read && 'bg-emerald-500',
+                    active && 'scale-125 bg-primary',
+                    !read && !active && 'bg-muted-foreground/40',
+                  )}
+                />
+                <span className="min-w-0">{item.label}</span>
               </button>
             </li>
           );
