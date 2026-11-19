@@ -6,6 +6,12 @@ import {
   type Appearance,
   type ThemeMode,
 } from "#shared/contracts/appearance";
+import {
+  DEFAULT_SUMMARY,
+  DEFAULT_TRANSCRIPT,
+  parseSummary,
+  parseTranscript,
+} from "#shared/contracts/document-views";
 import { DEFAULT_READING, parseReading } from "#shared/contracts/reading";
 
 /** Cópia local da aparência: o tema certo aparece antes do primeiro quadro (ver public/theme-init.js). */
@@ -71,6 +77,8 @@ export function parseAppearance(value: unknown): Appearance | null {
       accent: candidate.accent as AccentId,
       // Cópias antigas não têm `reading`: vale o padrão.
       reading: parseReading(candidate.reading) ?? DEFAULT_READING,
+      transcript: parseTranscript(candidate.transcript) ?? DEFAULT_TRANSCRIPT,
+      summary: parseSummary(candidate.summary) ?? DEFAULT_SUMMARY,
     };
   }
 

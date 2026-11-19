@@ -1,6 +1,7 @@
-import type { WhisperService } from '../back/modules/ai/whisper/whisper.service';
+import type { TranscriptSegment, WhisperService } from '../back/modules/ai/whisper/whisper.service';
 
 import type { WhisperBinaryResolver, WhisperLocation } from './whisper-binary-resolver';
+import { parseWhisperJson } from './whisper-json';
 
 export const WhisperServiceMessages = {
   audioMissing: (file: string) => `Arquivo de áudio não encontrado: ${file}`,
@@ -34,6 +35,20 @@ export class DesktopWhisperService implements WhisperService {
   constructor(private readonly deps: DesktopWhisperDeps) {}
 
   async transcribe(audioPath: string): Promise<string> {
+    return this.runWhisper(audioPath, '--output-txt', '.txt', (raw) => raw.trim());
+  }
+
+  /** Mesma execução, mas pedindo o JSON para obter o tempo de cada trecho. */
+  async transcribeSegments(audioPath: string): Promise<TranscriptSegment[]> {
+    return this.runWhisper(audioPath, '--output-json', '.json', parseWhisperJson);
+  }
+
+  private async runWhisper<T>(
+    audioPath: string,
+    outputFlag: '--output-txt' | '--output-json',
+    extension: '.txt' | '.json',
+    parse: (raw: string) => T,
+  ): Promise<T> {
     const config = this.deps.config();
     const executable = this.deps.resolver.resolveExecutable(config);
     const model = this.deps.resolver.resolveModel(config);
@@ -42,7 +57,7 @@ export class DesktopWhisperService implements WhisperService {
       throw new Error(WhisperServiceMessages.audioMissing(audioPath));
     }
 
-    const outputPath = `${audioPath}.txt`;
+    const outputPath = `${audioPath}${extension}`;
 
     try {
       await this.deps.run(executable, [
@@ -53,12 +68,12 @@ export class DesktopWhisperService implements WhisperService {
         '-l',
         'pt',
         '--no-prints',
-        '--output-txt',
+        outputFlag,
         '-of',
-        outputPath.replace(/\.txt$/, ''),
+        audioPath,
       ]);
 
-      return (await this.deps.files.readText(outputPath)).trim();
+      return parse(await this.deps.files.readText(outputPath));
     } catch (error) {
       throw new Error(WhisperServiceMessages.transcribeFailed, { cause: error });
     } finally {

@@ -22,6 +22,12 @@ import {
   type AppearancePatch,
 } from "#shared/contracts/appearance";
 import {
+  DEFAULT_SUMMARY,
+  DEFAULT_TRANSCRIPT,
+  type SummaryPreferences,
+  type TranscriptPreferences,
+} from "#shared/contracts/document-views";
+import {
   DEFAULT_READING,
   type ReadingPreferences,
 } from "#shared/contracts/reading";
@@ -34,6 +40,12 @@ export interface AppearanceApi {
   updateReading(patch: Partial<ReadingPreferences>): Promise<void>;
   reset(): Promise<void>;
   resetReading(): Promise<void>;
+  /** Muda só parte dos ajustes das transcrições. */
+  updateTranscript(patch: Partial<TranscriptPreferences>): Promise<void>;
+  resetTranscript(): Promise<void>;
+  /** Muda só parte dos ajustes dos resumos. */
+  updateSummary(patch: Partial<SummaryPreferences>): Promise<void>;
+  resetSummary(): Promise<void>;
 }
 
 export const AppearanceContext = createContext<AppearanceApi | null>(null);
@@ -125,6 +137,8 @@ export function useAppearanceState(): AppearanceApi {
         ...previous,
         ...patch,
         reading: { ...previous.reading, ...patch.reading },
+        transcript: { ...previous.transcript, ...patch.transcript },
+        summary: { ...previous.summary, ...patch.summary },
       };
 
       adopt(next);
@@ -159,7 +173,37 @@ export function useAppearanceState(): AppearanceApi {
     [update],
   );
 
-  return { appearance, update, updateReading, reset, resetReading };
+  const updateTranscript = useCallback(
+    (patch: Partial<TranscriptPreferences>) => update({ transcript: patch }),
+    [update],
+  );
+
+  const resetTranscript = useCallback(
+    () => update({ transcript: DEFAULT_TRANSCRIPT }),
+    [update],
+  );
+
+  const updateSummary = useCallback(
+    (patch: Partial<SummaryPreferences>) => update({ summary: patch }),
+    [update],
+  );
+
+  const resetSummary = useCallback(
+    () => update({ summary: DEFAULT_SUMMARY }),
+    [update],
+  );
+
+  return {
+    appearance,
+    update,
+    updateReading,
+    reset,
+    resetReading,
+    updateTranscript,
+    resetTranscript,
+    updateSummary,
+    resetSummary,
+  };
 }
 
 /**
@@ -176,6 +220,16 @@ export function useReadingPreferences(): {
     reading: api?.appearance.reading ?? DEFAULT_READING,
     updateReading: api?.updateReading ?? null,
   };
+}
+
+/** Ajustes das transcrições com tempo (padrão fora de um `AppearanceProvider`). */
+export function useTranscriptPreferences(): TranscriptPreferences {
+  return useContext(AppearanceContext)?.appearance.transcript ?? DEFAULT_TRANSCRIPT;
+}
+
+/** Ajustes dos resumos (padrão fora de um `AppearanceProvider`). */
+export function useSummaryPreferences(): SummaryPreferences {
+  return useContext(AppearanceContext)?.appearance.summary ?? DEFAULT_SUMMARY;
 }
 
 export function useAppearance(): AppearanceApi {

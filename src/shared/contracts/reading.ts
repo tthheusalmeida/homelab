@@ -96,7 +96,7 @@ export const isReadingShade = (value: unknown): value is ReadingShade =>
 
 /**
  * Aceita só preferências válidas; qualquer outra coisa vira `null`. Cópias antigas sem as
- * intensidades (`backgroundShade`, `textShade`), sem separadores ou sem `pinSidebar` ficam com o padrão.
+ * intensidades (`backgroundShade`, `textShade`), sem separadores, ou sem `pinSidebar` ficam com o padrão.
  */
 export function parseReading(value: unknown): ReadingPreferences | null {
   const candidate = value as Partial<ReadingPreferences> | null;

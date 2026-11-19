@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 
+import { DEFAULT_SUMMARY, DEFAULT_TRANSCRIPT } from '../shared/contracts/document-views';
 import { DEFAULT_READING } from '../shared/contracts/reading';
 import { JsonFile } from '../storage/json-file';
 import { SettingsService } from './settings.service';
@@ -40,6 +41,8 @@ describe('SettingsService', () => {
       theme: 'system',
       accent: 'cyan',
       reading: DEFAULT_READING,
+      transcript: DEFAULT_TRANSCRIPT,
+      summary: DEFAULT_SUMMARY,
     });
   });
 
@@ -50,11 +53,15 @@ describe('SettingsService', () => {
       theme: 'dark',
       accent: 'cyan',
       reading: DEFAULT_READING,
+      transcript: DEFAULT_TRANSCRIPT,
+      summary: DEFAULT_SUMMARY,
     });
     expect(service.updateAppearance({ accent: 'rose' })).toEqual({
       theme: 'dark',
       accent: 'rose',
       reading: DEFAULT_READING,
+      transcript: DEFAULT_TRANSCRIPT,
+      summary: DEFAULT_SUMMARY,
     });
   });
 

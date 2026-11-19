@@ -15,6 +15,8 @@ import {
 
 import { Strings } from '../strings';
 import { ReadingSettings } from './ReadingSettings';
+import { SummarySettings } from './SummarySettings';
+import { TranscriptSettings } from './TranscriptSettings';
 
 /**
  * Tema e cor de destaque. Diferente das outras seções, vale na hora e não pede reinício:
@@ -90,6 +92,8 @@ export function AppearanceSection() {
       </SettingsGroup>
 
       <ReadingSettings />
+      <TranscriptSettings />
+      <SummarySettings />
 
       {error && (
         <p role="alert" className="animate-enter-fade text-sm text-destructive">

@@ -7,7 +7,7 @@ import type { WhisperService } from '../../../ai/whisper/whisper.service';
 
 describe('VideoToTranscriptJobProcessor', () => {
   let video: Record<'download' | 'toAudio' | 'deleteVideo' | 'saveFile' | 'deleteAudio', jest.Mock>;
-  let whisper: { transcribe: jest.Mock };
+  let whisper: { transcribeSegments: jest.Mock };
   let processor: VideoToTranscriptJobProcessor;
   let job: Job;
   let calls: string[];
@@ -28,7 +28,11 @@ describe('VideoToTranscriptJobProcessor', () => {
       deleteAudio: track('deleteAudio'),
     };
     whisper = {
-      transcribe: track('transcribe', 'texto\n  cru Legenda por Sônia Ruberti.'),
+      transcribeSegments: track('transcribe', [
+        { startMs: 0, endMs: 4000, text: ' texto\n  cru' },
+        { startMs: 4100, endMs: 9000, text: 'seguido. Legenda por Sônia Ruberti.' },
+        { startMs: 20_000, endMs: 25_000, text: 'Depois da pausa.' },
+      ]),
     };
 
     processor = new VideoToTranscriptJobProcessor(
@@ -67,11 +71,19 @@ describe('VideoToTranscriptJobProcessor', () => {
     );
   });
 
-  it('when processing, should save the normalized transcript without the signature as the body', async () => {
+  it('when processing, should save paragraphs with the start time of each one as the body', async () => {
     await processor.process(job, 'http://x/v.mp4');
 
     const content = video.saveFile.mock.calls[0][0] as string;
-    expect(parseDocument(content).body).toBe('texto cru\n');
+    expect(parseDocument(content).body).toBe(
+      '[00:00:00] texto cru seguido. Legenda por Sônia Ruberti.\n\n[00:00:20] Depois da pausa.\n',
+    );
+  });
+
+  it('when processing, should ask whisper for the timed segments of the audio', async () => {
+    await processor.process(job, 'http://x/v.mp4');
+
+    expect(whisper.transcribeSegments).toHaveBeenCalledWith('/tmp/a.wav');
   });
 
   it('when processing, should add a pending transcription frontmatter with the video url', async () => {
@@ -118,7 +130,7 @@ describe('VideoToTranscriptJobProcessor', () => {
   });
 
   it('when a step fails, should mark it FAILED, rethrow and skip the next steps', async () => {
-    whisper.transcribe.mockRejectedValue(new Error('whisper off'));
+    whisper.transcribeSegments.mockRejectedValue(new Error('whisper off'));
 
     await expect(processor.process(job, 'http://x/v.mp4')).rejects.toThrow('whisper off');
 

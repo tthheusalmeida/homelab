@@ -46,6 +46,28 @@ export const Strings = {
         'Desmarcado, o sumário e os ajustes só abrem ao clicar na aba da borda direita, e o texto fica sozinho no centro.',
       restore: 'Restaurar leitura',
     },
+    transcript: {
+      title: 'Transcrição',
+      hint: 'Ajustes só das transcrições com tempo. Fonte, tamanho, zoom e cores seguem a Leitura.',
+      preview: 'Começo dos trechos',
+      previewOption: 'Mostrar o começo dos trechos',
+      previewHint:
+        'Mostra o começo de cada trecho ao lado do horário, na barra lateral. Desmarcado, fica só o horário.',
+      progress: 'Progresso do trecho',
+      progressOption: 'Mostrar a barra de progresso de cada trecho',
+      progressHint:
+        'Ao lado do horário, mostra onde o trecho começa e termina na linha do tempo do áudio.',
+      restore: 'Restaurar transcrição',
+    },
+    summary: {
+      title: 'Resumo',
+      hint: 'Ajustes só dos resumos. Fonte, tamanho, zoom e cores seguem a Leitura.',
+      outline: 'Sumário',
+      outlineOption: 'Mostrar o sumário ao lado do texto',
+      outlineHint:
+        'Lista os títulos do resumo à esquerda do texto, com o trecho em leitura em destaque.',
+      restore: 'Restaurar resumo',
+    },
   },
   library: {
     groupTitle: 'Pasta de documentos',

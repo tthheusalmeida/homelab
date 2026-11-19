@@ -310,10 +310,10 @@ describe("DocumentPage", () => {
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
 
     expect(archive.mutate).not.toHaveBeenCalled();
-    expect(
-      screen.queryByText("Remover da biblioteca?"),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("Situação")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText("Remover da biblioteca?")).not.toBeInTheDocument(),
+    );
+    expect(await screen.findByText("Situação")).toBeInTheDocument();
   });
 
   it("when removal is confirmed, should archive and return to the library on the document category", async () => {
@@ -358,6 +358,27 @@ describe("DocumentPage", () => {
       "id",
       "detalhes",
     );
+  });
+
+  it("when the text has a Sumário, should keep it on the left and out of the right panel", () => {
+    const value = detail();
+    value.content = "# Introdução\n\ntexto\n\n## Detalhes\n\nmais texto";
+    documentQuery.data = value;
+    renderPage();
+
+    const where = screen.getByRole("complementary", { name: "Onde você está" });
+    const actions = screen.getByRole("complementary", { name: "Informações da página" });
+
+    expect(within(where).getByRole("navigation", { name: "Sumário" })).toBeInTheDocument();
+    expect(within(actions).queryByRole("navigation", { name: "Sumário" })).toBeNull();
+    expect(within(actions).getByRole("button", { name: /Sobre a página/ })).toBeInTheDocument();
+  });
+
+  it("when the text has no Sumário, should not render the left column", () => {
+    documentQuery.data = detail();
+    renderPage();
+
+    expect(screen.queryByRole("complementary", { name: "Onde você está" })).toBeNull();
   });
 
   it("when the text has fewer than two headings, should not show the Sumário", () => {

@@ -15,12 +15,17 @@ import { MarkdownMessage } from "#components/MarkdownMessage";
 import { ReadingMode } from "#components/ReadingMode";
 import { ReadingSection } from "#components/ReadingSection";
 import { ReadingSurface } from "#components/ReadingSurface";
+import { cn } from "#lib/utils";
+import { TranscriptView } from "#components/TranscriptView";
+import { useSummaryPreferences } from "#hooks/use-appearance";
 import { useActiveSection } from "#hooks/use-active-section";
 import { extractHeadings } from "#lib/markdown";
 import { scrollToId } from "#lib/scroll";
+import { parseTimedTranscript } from "#shared/transcript";
 
 import { CategoryBreadcrumb } from "./components/CategoryBreadcrumb";
 import { DocumentAboutDialog } from "./components/DocumentAboutDialog";
+import { DocumentOutline, OUTLINE_MIN_HEADINGS } from "./components/DocumentOutline";
 import { DocumentSidebar } from "./components/DocumentSidebar";
 import { EditDocumentDialog } from "./components/EditDocumentDialog";
 import { AddToBookDialog } from "./books/components/AddToBookDialog";
@@ -38,6 +43,7 @@ export function DocumentPage() {
   const [modal, setModal] = useState<Modal>(null);
   const [reading, setReading] = useState(false);
   const [container, setContainer] = useState<HTMLElement | null>(null);
+  const [railSlot, setRailSlot] = useState<HTMLElement | null>(null);
 
   const { data, isLoading, isError } = useDocument(id);
   const archive = useArchiveDocument();
@@ -47,6 +53,24 @@ export function DocumentPage() {
     () => extractHeadings(data?.content ?? ""),
     [data?.content],
   );
+
+  // Transcrição com tempo (`[HH:MM:SS] texto`): ganha a barra lateral e o link do horário.
+  // As antigas, sem tempo, continuam como texto corrido.
+  const excerpts = useMemo(
+    () =>
+      data?.meta.type === "transcription"
+        ? parseTimedTranscript(data.content)
+        : null,
+    [data],
+  );
+
+  // Resumos podem esconder o sumário do painel (Configurações > Aparência > Resumo).
+  const summary = useSummaryPreferences();
+  const sidebarHeadings =
+    data?.meta.type === "summary" && !summary.outline ? [] : headings;
+
+  // Coluna da esquerda: a barra de trechos (transcrição com tempo) ou o Sumário, se houver.
+  const hasLeftColumn = Boolean(excerpts) || sidebarHeadings.length >= OUTLINE_MIN_HEADINGS;
 
   // Título em leitura agora (destacado no sumário).
   const activeId = useActiveSection(headings.map((heading) => heading.id));
@@ -136,7 +160,15 @@ export function DocumentPage() {
       label={documentTypeLabels[meta.type]}
       title={meta.title}
     >
-      <MarkdownMessage content={content} headingIds size="inherit" />
+      {excerpts ? (
+        <TranscriptView
+          excerpts={excerpts}
+          sourceUrl={meta.sourceUrl}
+          railSlot={reading ? undefined : railSlot}
+        />
+      ) : (
+        <MarkdownMessage content={content} headingIds size="inherit" />
+      )}
     </ReadingSection>
   );
 
@@ -149,7 +181,7 @@ export function DocumentPage() {
           toc={
             <DocumentSidebar
               embedded
-              headings={headings}
+              headings={sidebarHeadings}
               activeId={activeId}
               onOpenAbout={() => setModal("about")}
               onStartReading={() => undefined}
@@ -178,7 +210,27 @@ export function DocumentPage() {
         <CategoryBreadcrumb category={meta.category} />
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_26rem]">
+      <div
+        className={cn(
+          "grid gap-8",
+          hasLeftColumn
+            ? "lg:grid-cols-[16rem_minmax(0,1fr)_16rem]"
+            : "lg:grid-cols-[minmax(0,1fr)_16rem]",
+        )}
+      >
+        {excerpts ? (
+          <div ref={setRailSlot} className="hidden lg:block" />
+        ) : (
+          hasLeftColumn && (
+            <aside
+              aria-label="Onde você está"
+              className="hidden lg:sticky lg:top-4 lg:block lg:self-start"
+            >
+              <DocumentOutline headings={sidebarHeadings} activeId={activeId} />
+            </aside>
+          )
+        )}
+
         <div ref={setContainer} className="min-w-0 space-y-6">
           <ReadingSurface>
             <div className="reading-column">{article}</div>
@@ -188,7 +240,8 @@ export function DocumentPage() {
         </div>
 
         <DocumentSidebar
-          headings={headings}
+          headings={sidebarHeadings}
+          hideOutline
           activeId={activeId}
           onOpenAbout={() => setModal("about")}
           onStartReading={() => setReading(true)}
