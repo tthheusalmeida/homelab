@@ -1,13 +1,12 @@
 import { BookOpenText, ChevronRight, Info } from "lucide-react";
 
 import { Button } from "#ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "#ui/card";
-import { scrollToId } from "#lib/scroll";
 import { cn } from "#lib/utils";
 import type { Heading } from "#lib/markdown";
 
-import { OutlineNav } from "#components/OutlineNav";
 import { ReadingQuickControls } from "#components/ReadingQuickControls";
+
+import { DocumentOutline } from "./DocumentOutline";
 
 interface DocumentSidebarProps {
   /** Títulos do texto, para o "Sumário". */
@@ -24,12 +23,15 @@ interface DocumentSidebarProps {
    * marco de navegação (o painel já é um).
    */
   embedded?: boolean;
+  /** Não mostra o "Sumário" aqui (na página ele fica na coluna da esquerda, ver `DocumentOutline`). */
+  hideOutline?: boolean;
 }
 
 /**
- * Painel fixo ao lado do texto: "Sumário" dos títulos (com o trecho em leitura
- * em destaque), os ajustes rápidos de leitura (letra e zoom), o botão do modo leitura e o botão que abre a janela "Sobre a
- * página". Fica visível enquanto o texto rola (em telas largas).
+ * Painel fixo ao lado do texto: o que você aciona (ajustes rápidos de leitura, botão do modo
+ * leitura e botão que abre a janela "Sobre a página"). Fica visível enquanto o texto rola (em telas
+ * largas). O "Sumário", que mostra onde você está, fica na coluna da esquerda na página (e aqui
+ * dentro só no painel do modo leitura).
  */
 export function DocumentSidebar({
   headings,
@@ -37,6 +39,7 @@ export function DocumentSidebar({
   onOpenAbout,
   onStartReading,
   embedded = false,
+  hideOutline = false,
 }: DocumentSidebarProps) {
   const Root = embedded ? "div" : "aside";
 
@@ -47,27 +50,7 @@ export function DocumentSidebar({
         embedded ? "space-y-2" : "space-y-4 lg:sticky lg:top-4 lg:self-start",
       )}
     >
-      {headings.length >= 2 && (
-        <Card className="sidebar-card">
-          <CardHeader>
-            <CardTitle className="text-sm">Sumário</CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            <OutlineNav
-              ariaLabel="Sumário"
-              className="max-h-[60dvh]"
-              items={headings.map((heading) => ({
-                id: heading.id,
-                label: heading.text,
-                level: heading.level,
-              }))}
-              activeId={activeId}
-              onSelect={scrollToId}
-            />
-          </CardContent>
-        </Card>
-      )}
+      {!hideOutline && <DocumentOutline headings={headings} activeId={activeId} />}
 
       <ReadingQuickControls />
 

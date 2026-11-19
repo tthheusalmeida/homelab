@@ -69,3 +69,23 @@ describe("SetupGuide", () => {
     );
   });
 });
+
+describe("ExternalLink bare", () => {
+  it("when bare, should open outside the app without the link look or the arrow icon", () => {
+    render(
+      <ExternalLink bare href="https://exemplo.com/v?t=9s" className="chip" title="Abrir">
+        0:09
+      </ExternalLink>,
+    );
+
+    const link = screen.getByRole("link", { name: "0:09" });
+
+    expect(link).toHaveAttribute("href", "https://exemplo.com/v?t=9s");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    expect(link).toHaveAttribute("title", "Abrir");
+    expect(link).toHaveClass("chip");
+    expect(link).not.toHaveClass("underline");
+    expect(link.querySelector("svg")).toBeNull();
+  });
+});
