@@ -71,6 +71,9 @@ Toda seção usa `SettingsGroup` (título mono em maiúsculas, dica e conteúdo)
 - **Barra de ações fixa** (ex.: Nova página): `sticky bottom-0` com `-mb-4` (o respiro do layout), para não subir ao chegar ao fim do scroll.
 - **Item de job** (`JobPipeline`): o interior é um pipeline em estilo terminal, com um marcador hexagonal por etapa (verde, cor de destaque pulsando, vermelho ou neutro), estado ao lado, barra fina na etapa em execução, erro em destaque e início, fim e duração.
 
+## Botão só com ícone (`IconButton`)
+Ações que o ícone já diz (zoom, ajustar, baixar, modo leitura...) usam `components/IconButton.tsx`: botão `icon-sm` outline com o **tooltip da ação** (150 ms de espera; também ao focar com o teclado) e o mesmo texto como nome acessível. Não monte `Button` + `title` à mão. Botão desabilitado não mostra o tooltip. Chamadas para ação dentro de avisos (ex.: "Tentar de novo") continuam com texto.
+
 ## Ao criar componente novo
 1. Cor de ação: `bg-primary`, `text-primary`, `ring-ring` (ou o `Button` padrão). Texto em destaque sobre fundo: `text-brand-text`. Marca: `text-brand`, `fill-brand`.
 2. Status: `HexDot` com a cor do estado (verde, âmbar e vermelho não mudam com o destaque).

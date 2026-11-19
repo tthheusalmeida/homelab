@@ -295,3 +295,47 @@ describe('ReadingMode — swapped sides', () => {
     expect(follow).toHaveClass('lg:order-3');
   });
 });
+
+describe('ReadingMode canvas', () => {
+  const renderCanvas = (extra: Partial<Parameters<typeof ReadingMode>[0]> = {}) =>
+    render(
+      <ReadingMode title="Mapa" canvas onExit={vi.fn()} {...extra}>
+        <p>área toda</p>
+      </ReadingMode>,
+    );
+
+  it('when canvas is on, should give the whole area below the top bar to the content', () => {
+    renderCanvas();
+
+    const region = screen.getByRole('region', { name: 'Modo leitura' });
+    const area = within(region).getByText('área toda').parentElement;
+
+    expect(area).toHaveClass('flex-1');
+    expect(region).toHaveClass('overflow-hidden');
+    expect(within(region).getByText('Mapa')).toBeInTheDocument();
+    expect(
+      within(region).getByRole('button', { name: /Sair do modo leitura/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('when canvas is on, should not show the side panels even if options are given', () => {
+    renderCanvas({ options: <p>ajustes de leitura</p>, follow: <p>sumário</p> });
+
+    expect(screen.queryByText('ajustes de leitura')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-slot="reading-edge-right"]')).toBeNull();
+    expect(document.querySelector('[data-slot="reading-edge-left"]')).toBeNull();
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+  });
+
+  it('when canvas is on, should keep the actions in the top bar and Esc to leave', async () => {
+    const onExit = vi.fn();
+
+    renderCanvas({ actions: <button type="button">Resumo</button>, onExit });
+
+    expect(screen.getByRole('button', { name: 'Resumo' })).toBeInTheDocument();
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(onExit).toHaveBeenCalled();
+  });
+});

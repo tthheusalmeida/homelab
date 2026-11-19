@@ -16,8 +16,14 @@ interface ReadingModeProps {
   title: string;
   /** Acompanhamento ("onde você está": sumário, linha do tempo). Opcional: nem todo texto tem. */
   follow?: ReactNode;
-  /** Opções (ajustes de leitura, progresso, ações). */
-  options: ReactNode;
+  /** Opções (ajustes de leitura, progresso, ações). Não usadas no modo `canvas`. */
+  options?: ReactNode;
+  /**
+   * Em vez de uma coluna de texto, o conteúdo ocupa **toda a área** abaixo da barra de cima, sem
+   * painéis laterais nem rolagem própria (ex.: o mapa mental, que tem a sua barra de controles). As
+   * opções de leitura (fonte, tamanho, zoom) não valem para ele, então não há `follow` nem `options`.
+   */
+  canvas?: boolean;
   /** Controles na barra de cima (ex.: busca no texto). */
   actions?: ReactNode;
   /** O texto a ler. */
@@ -39,6 +45,7 @@ export function ReadingMode({
   follow,
   options,
   actions,
+  canvas = false,
   children,
   onExit,
 }: ReadingModeProps) {
@@ -66,9 +73,12 @@ export function ReadingMode({
       framed={false}
       role="region"
       aria-label="Modo leitura"
-      className="fixed inset-0 z-50 animate-enter-fade overflow-y-auto bg-background"
+      className={cn(
+        'fixed inset-0 z-50 animate-enter-fade bg-background',
+        canvas ? 'flex flex-col overflow-hidden' : 'overflow-y-auto',
+      )}
     >
-      <div className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 reading-chrome border-b px-4 font-sans">
+      <div className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-3 reading-chrome border-b px-4 font-sans">
         <p className="min-w-0 flex-1 truncate text-sm font-medium">{title}</p>
 
         {actions && <div className="w-full max-w-sm">{actions}</div>}
@@ -78,7 +88,9 @@ export function ReadingMode({
         </Button>
       </div>
 
-      {pinned ? (
+      {canvas ? (
+        <div className="min-h-0 flex-1">{children}</div>
+      ) : pinned ? (
         <div
           className={cn(
             'mx-auto grid w-full gap-10 px-4 py-10',

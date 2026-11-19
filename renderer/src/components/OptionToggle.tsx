@@ -14,6 +14,8 @@ interface OptionToggleProps<T extends string> {
   onChange: (value: T) => void;
   /** Nome do grupo para leitores de tela (ex.: "Modo de visualização"). */
   label: string;
+  /** Mostra o nome ao lado do ícone (abas de visualização); sem isso, só o ícone. */
+  showLabels?: boolean;
 }
 
 /**
@@ -25,6 +27,7 @@ export function OptionToggle<T extends string>({
   options,
   onChange,
   label,
+  showLabels = false,
 }: OptionToggleProps<T>) {
   return (
     <div role="group" aria-label={label} className="inline-flex gap-1">
@@ -32,7 +35,7 @@ export function OptionToggle<T extends string>({
         <Button
           key={id}
           type="button"
-          size="icon-sm"
+          size={showLabels ? "sm" : "icon-sm"}
           variant={value === id ? "default" : "outline"}
           aria-label={optionLabel}
           aria-pressed={value === id}
@@ -40,6 +43,7 @@ export function OptionToggle<T extends string>({
           onClick={() => onChange(id)}
         >
           <Icon />
+          {showLabels && optionLabel}
         </Button>
       ))}
     </div>
