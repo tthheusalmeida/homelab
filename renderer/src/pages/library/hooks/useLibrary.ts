@@ -13,10 +13,13 @@ import {
   getDocument,
   getDocuments,
   getIndexStatus,
+  generateMindMap,
   getInbox,
+  getMindMap,
   getTags,
   publishDocument,
   reindex,
+  saveMindMapImage,
   suggestClassification,
   updateDocument,
 } from "../api/library";
@@ -38,6 +41,38 @@ export function useDocuments(
     enabled: options.enabled ?? true,
     // Mantém a lista anterior na tela enquanto a nova pesquisa carrega.
     placeholderData: keepPreviousData,
+  });
+}
+
+/** O mapa mental guardado de um resumo (`null` enquanto não foi gerado). */
+export function useMindMap(id: string, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: [...LIBRARY_KEY, "mind-map", id],
+    queryFn: () => getMindMap(id),
+    enabled: options.enabled ?? true,
+  });
+}
+
+/**
+ * Gera o mapa mental com a IA. Guarda o resultado direto na consulta do mapa (não invalida a
+ * biblioteca toda); isso vale mesmo se a aba do mapa for fechada antes de a IA responder.
+ */
+export function useGenerateMindMap() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, modelId }: { id: string; modelId?: string }) =>
+      generateMindMap(id, modelId),
+    onSuccess: (map, { id }) =>
+      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map),
+  });
+}
+
+/** Salva a imagem PNG do mapa onde o usuário escolher; não mexe na biblioteca, então não invalida nada. */
+export function useSaveMindMapImage() {
+  return useMutation({
+    mutationFn: ({ fileName, dataBase64 }: { fileName: string; dataBase64: string }) =>
+      saveMindMapImage(fileName, dataBase64),
   });
 }
 

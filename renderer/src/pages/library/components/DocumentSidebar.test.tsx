@@ -20,7 +20,6 @@ describe("DocumentSidebar", () => {
         <DocumentSidebar
           headings={headings}
           onOpenAbout={() => {}}
-          onStartReading={() => {}}
         />,
       );
 
@@ -37,7 +36,6 @@ describe("DocumentSidebar", () => {
           <DocumentSidebar
             headings={list}
             onOpenAbout={() => {}}
-            onStartReading={() => {}}
           />,
         );
 
@@ -58,7 +56,6 @@ describe("DocumentSidebar", () => {
         <DocumentSidebar
           headings={headings}
           onOpenAbout={() => {}}
-          onStartReading={() => {}}
         />,
       );
 
@@ -76,7 +73,6 @@ describe("DocumentSidebar", () => {
         <DocumentSidebar
           headings={headings}
           onOpenAbout={() => {}}
-          onStartReading={() => {}}
         />,
       );
 
@@ -92,7 +88,6 @@ describe("DocumentSidebar", () => {
         <DocumentSidebar
           headings={headings}
           onOpenAbout={() => {}}
-          onStartReading={() => {}}
         />,
       );
 
@@ -104,20 +99,28 @@ describe("DocumentSidebar", () => {
     });
   });
 
-  it("when Sobre a página is clicked, should ask to open the about window", async () => {
+  it("when embedded in reading mode, Sobre a página should ask to open the about window", async () => {
     const onOpenAbout = vi.fn();
     const user = userEvent.setup();
-    render(
-      <DocumentSidebar
-        headings={[]}
-        onOpenAbout={onOpenAbout}
-        onStartReading={() => {}}
-      />,
-    );
+    render(<DocumentSidebar embedded headings={[]} onOpenAbout={onOpenAbout} />);
 
     await user.click(screen.getByRole("button", { name: /Sobre a página/ }));
 
     expect(onOpenAbout).toHaveBeenCalledTimes(1);
+  });
+
+  it("when on the page, should have only the reading adjustments (no Modo leitura or Sobre a página buttons)", () => {
+    render(<DocumentSidebar headings={[]} onOpenAbout={() => {}} />);
+
+    expect(screen.queryByRole("button", { name: /Modo leitura/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Sobre a página/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Informações da página" })).toBeInTheDocument();
+  });
+
+  it("when embedded without an about handler, should not show Sobre a página", () => {
+    render(<DocumentSidebar embedded headings={[]} />);
+
+    expect(screen.queryByRole("button", { name: /Sobre a página/ })).not.toBeInTheDocument();
   });
 
   it("when rendered, should not show the document information", () => {
@@ -125,7 +128,6 @@ describe("DocumentSidebar", () => {
       <DocumentSidebar
         headings={[]}
         onOpenAbout={() => {}}
-        onStartReading={() => {}}
       />,
     );
 
@@ -133,14 +135,8 @@ describe("DocumentSidebar", () => {
     expect(screen.queryByText("Tags")).not.toBeInTheDocument();
   });
 
-  it("when there is a Sumário, should show it before the Sobre a página button", () => {
-    render(
-      <DocumentSidebar
-        headings={headings}
-        onOpenAbout={() => {}}
-        onStartReading={() => {}}
-      />,
-    );
+  it("when there is a Sumário in reading mode, should show it before the Sobre a página button", () => {
+    render(<DocumentSidebar embedded headings={headings} onOpenAbout={() => {}} />);
 
     const index = screen.getByText("Sumário", {
       selector: "[data-slot=card-title]",
@@ -157,7 +153,6 @@ describe("DocumentSidebar", () => {
       <DocumentSidebar
         headings={[]}
         onOpenAbout={() => {}}
-        onStartReading={() => {}}
       />,
     );
 
@@ -168,29 +163,12 @@ describe("DocumentSidebar", () => {
 });
 
 describe("DocumentSidebar — reading", () => {
-  it("when Modo leitura is clicked, should ask to start the reading mode", async () => {
-    const onStartReading = vi.fn();
-    const user = userEvent.setup();
-    render(
-      <DocumentSidebar
-        headings={[]}
-        onOpenAbout={() => {}}
-        onStartReading={onStartReading}
-      />,
-    );
-
-    await user.click(screen.getByRole("button", { name: /Modo leitura/ }));
-
-    expect(onStartReading).toHaveBeenCalledTimes(1);
-  });
-
   it("when a heading is the active one, should highlight only it in the Sumário", () => {
     render(
       <DocumentSidebar
         headings={headings}
         activeId="detalhes"
         onOpenAbout={() => {}}
-        onStartReading={() => {}}
       />,
     );
 

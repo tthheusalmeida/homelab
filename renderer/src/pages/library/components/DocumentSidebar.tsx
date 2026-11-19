@@ -1,4 +1,4 @@
-import { BookOpenText, ChevronRight, Info } from "lucide-react";
+import { ChevronRight, Info } from "lucide-react";
 
 import { Button } from "#ui/button";
 import { cn } from "#lib/utils";
@@ -13,14 +13,11 @@ interface DocumentSidebarProps {
   headings: Heading[];
   /** Título sendo lido agora (destacado no sumário). */
   activeId?: string;
-  /** Abre a janela "Sobre a página". */
-  onOpenAbout: () => void;
-  /** Entra no modo leitura. */
-  onStartReading: () => void;
+  /** Abre a janela "Sobre a página" (só no painel do modo leitura; na página ele fica na linha de cima). */
+  onOpenAbout?: () => void;
   /**
-   * Dentro do painel do modo leitura: o mesmo conteúdo (sumário, ajustes de leitura e "Sobre a
-   * página"), sem o botão "Modo leitura" (já estamos nele), sem fixar no topo e sem repetir o
-   * marco de navegação (o painel já é um).
+   * Dentro do painel do modo leitura: o sumário, os ajustes de leitura e "Sobre a página", sem
+   * fixar no topo e sem repetir o marco de navegação (o painel já é um).
    */
   embedded?: boolean;
   /** Não mostra o "Sumário" aqui (na página ele fica na coluna da esquerda, ver `DocumentOutline`). */
@@ -28,16 +25,15 @@ interface DocumentSidebarProps {
 }
 
 /**
- * Painel fixo ao lado do texto: o que você aciona (ajustes rápidos de leitura, botão do modo
- * leitura e botão que abre a janela "Sobre a página"). Fica visível enquanto o texto rola (em telas
- * largas). O "Sumário", que mostra onde você está, fica na coluna da esquerda na página (e aqui
- * dentro só no painel do modo leitura).
+ * Painel fixo ao lado do texto, **só com os ajustes rápidos de leitura** (letra e zoom). Fica visível
+ * enquanto o texto rola (em telas largas). "Modo leitura" e "Sobre a página" ficam na linha de cima
+ * da página (`DocumentActions`); o "Sumário", que mostra onde você está, na coluna da esquerda (e
+ * aqui dentro só no painel do modo leitura, que também traz o "Sobre a página").
  */
 export function DocumentSidebar({
   headings,
   activeId,
   onOpenAbout,
-  onStartReading,
   embedded = false,
   hideOutline = false,
 }: DocumentSidebarProps) {
@@ -54,29 +50,20 @@ export function DocumentSidebar({
 
       <ReadingQuickControls />
 
-      {!embedded && (
+      {embedded && onOpenAbout && (
         <Button
           type="button"
           variant="outline"
-          className="w-full justify-start"
-          onClick={onStartReading}
+          className="w-full justify-between"
+          onClick={onOpenAbout}
         >
-          <BookOpenText /> Modo leitura
+          <span className="inline-flex items-center gap-2">
+            <Info /> Sobre a página
+          </span>
+
+          <ChevronRight />
         </Button>
       )}
-
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full justify-between"
-        onClick={onOpenAbout}
-      >
-        <span className="inline-flex items-center gap-2">
-          <Info /> Sobre a página
-        </span>
-
-        <ChevronRight />
-      </Button>
     </Root>
   );
 }

@@ -18,6 +18,9 @@ vi.mock("../api/library", () => ({
   createArticle: vi.fn(),
   suggestClassification: vi.fn(),
   updateDocument: vi.fn(),
+  getMindMap: vi.fn(),
+  generateMindMap: vi.fn(),
+  saveMindMapImage: vi.fn(),
 }));
 
 import { createTestQueryClient } from "../../../test/utils";
@@ -30,10 +33,13 @@ import {
   useDiscardDocument,
   useDocument,
   useDocuments,
+  useGenerateMindMap,
   useIndexStatus,
   useInbox,
+  useMindMap,
   usePublishDocument,
   useReindex,
+  useSaveMindMapImage,
   useSuggestClassification,
   useTags,
   useUpdateDocument,
@@ -280,6 +286,92 @@ describe("library mutation hooks", () => {
       await result.current.mutateAsync("id1").catch(() => {});
     });
 
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+});
+
+describe("mind map hooks", () => {
+  const map = { nodes: [], model: "m", createdAt: "d", stale: false };
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it("when useMindMap mounts, should fetch the saved map of the page", async () => {
+    vi.mocked(library.getMindMap).mockResolvedValue(map);
+    const { wrapper } = setup();
+
+    const { result } = renderHook(() => useMindMap("id1"), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(library.getMindMap).toHaveBeenCalledWith("id1");
+    expect(result.current.data).toEqual(map);
+  });
+
+  it("when useMindMap is disabled, should not fetch", () => {
+    const { wrapper } = setup();
+
+    renderHook(() => useMindMap("id1", { enabled: false }), { wrapper });
+
+    expect(library.getMindMap).not.toHaveBeenCalled();
+  });
+
+  it("when the map is generated, should store it in the map query without invalidating the library", async () => {
+    vi.mocked(library.generateMindMap).mockResolvedValue(map);
+    vi.mocked(library.getMindMap).mockResolvedValue(null);
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(() => ({ query: useMindMap("id1"), generate: useGenerateMindMap() }), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
+    expect(result.current.query.data).toBeNull();
+
+    await act(async () => {
+      await result.current.generate.mutateAsync({ id: "id1" });
+    });
+
+    expect(library.generateMindMap).toHaveBeenCalledWith("id1", undefined);
+    await waitFor(() => expect(result.current.query.data).toEqual(map));
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it("when generating fails, should expose the error and keep the query as it was", async () => {
+    vi.mocked(library.generateMindMap).mockRejectedValue(new Error("falhou"));
+    vi.mocked(library.getMindMap).mockResolvedValue(null);
+    const { wrapper } = setup();
+    const { result } = renderHook(() => ({ query: useMindMap("id1"), generate: useGenerateMindMap() }), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
+    await act(async () => {
+      await result.current.generate.mutateAsync({ id: "id1" }).catch(() => undefined);
+    });
+
+    await waitFor(() => expect(result.current.generate.error?.message).toBe("falhou"));
+    expect(result.current.query.data).toBeNull();
+  });
+});
+
+describe('useSaveMindMapImage', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('when saving, should send the name and the PNG and not invalidate the library', async () => {
+    vi.mocked(library.saveMindMapImage).mockResolvedValue({ saved: true, path: 'D:/m.png' });
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(() => useSaveMindMapImage(), { wrapper });
+
+    let returned: unknown;
+
+    await act(async () => {
+      returned = await result.current.mutateAsync({ fileName: 'Mapa', dataBase64: 'UE5H' });
+    });
+
+    expect(library.saveMindMapImage).toHaveBeenCalledWith('Mapa', 'UE5H');
+    expect(returned).toEqual({ saved: true, path: 'D:/m.png' });
     expect(invalidate).not.toHaveBeenCalled();
   });
 });

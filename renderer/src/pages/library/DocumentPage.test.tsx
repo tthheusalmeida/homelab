@@ -130,7 +130,11 @@ describe("DocumentPage", () => {
     expect(
       screen.getByRole("navigation", { name: "Categoria" }),
     ).toHaveTextContent("CiênciaDevOps");
-    expect(screen.getByText("Resumo")).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("region", { name: "Práticas da Primeira Maneira" }),
+      ).getByText("Resumo"),
+    ).toBeInTheDocument();
   });
 
   it("when loaded, should keep the document information out of the page until requested", () => {
@@ -371,7 +375,9 @@ describe("DocumentPage", () => {
 
     expect(within(where).getByRole("navigation", { name: "Sumário" })).toBeInTheDocument();
     expect(within(actions).queryByRole("navigation", { name: "Sumário" })).toBeNull();
-    expect(within(actions).getByRole("button", { name: /Sobre a página/ })).toBeInTheDocument();
+    // O painel da direita tem só os ajustes de leitura; "Sobre a página" fica na linha de cima.
+    expect(within(actions).queryByRole("button", { name: /Sobre a página/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Sobre a página" })).toBeInTheDocument();
   });
 
   it("when the text has no Sumário, should not render the left column", () => {

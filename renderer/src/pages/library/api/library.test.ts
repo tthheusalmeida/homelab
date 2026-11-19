@@ -7,11 +7,14 @@ import {
   archiveDocument,
   createArticle,
   discardDocument,
+  generateMindMap,
   getCategories,
   getDocument,
   getDocuments,
   getInbox,
   getIndexStatus,
+  getMindMap,
+  saveMindMapImage,
   getTags,
   publishDocument,
   reindex,
@@ -215,5 +218,75 @@ describe('library api: escrita por IPC', () => {
     await expect(updateDocument('1', { content: ' ' })).rejects.toThrow(
       'O conteúdo não pode ficar vazio.',
     );
+  });
+});
+
+describe('mind map api', () => {
+  const map = { nodes: [], model: 'm', createdAt: 'd', stale: false };
+
+  it('when reading the saved map, should send the page id and return the map or null', async () => {
+    const invoke = mockApi({ [IpcChannels.library.mindMap.get]: () => ok(null) });
+
+    await expect(getMindMap('1')).resolves.toBeNull();
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.mindMap.get, { id: '1' });
+  });
+
+  it('when generating without a model, should send only the id', async () => {
+    const invoke = mockApi({ [IpcChannels.library.mindMap.generate]: () => ok(map) });
+
+    await expect(generateMindMap('1')).resolves.toEqual(map);
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.mindMap.generate, { id: '1' });
+  });
+
+  it('when generating with a model, should send id and modelId', async () => {
+    const invoke = mockApi({ [IpcChannels.library.mindMap.generate]: () => ok(map) });
+
+    await generateMindMap('1', 'gemini-x');
+
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.mindMap.generate, {
+      id: '1',
+      modelId: 'gemini-x',
+    });
+  });
+
+  it('when the AI fails to generate, should reject with the message from the main', async () => {
+    mockApi({
+      [IpcChannels.library.mindMap.generate]: () =>
+        failure('PROVIDER_FAILED', 'O limite de uso do Gemini foi atingido.'),
+    });
+
+    await expect(generateMindMap('1')).rejects.toThrow('O limite de uso do Gemini foi atingido.');
+  });
+});
+
+describe('mind map image api', () => {
+  it('when saving the image, should send the name and the PNG and return the result', async () => {
+    const invoke = mockApi({
+      [IpcChannels.library.mindMap.saveImage]: () => ok({ saved: true, path: 'D:/mapa.png' }),
+    });
+
+    await expect(saveMindMapImage('Mapa mental - Redes', 'UE5H')).resolves.toEqual({
+      saved: true,
+      path: 'D:/mapa.png',
+    });
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.mindMap.saveImage, {
+      fileName: 'Mapa mental - Redes',
+      dataBase64: 'UE5H',
+    });
+  });
+
+  it('when the user cancels the save dialog, should resolve with saved false', async () => {
+    mockApi({ [IpcChannels.library.mindMap.saveImage]: () => ok({ saved: false }) });
+
+    await expect(saveMindMapImage('a', 'b')).resolves.toEqual({ saved: false });
+  });
+
+  it('when the main fails to save, should reject with its message', async () => {
+    mockApi({
+      [IpcChannels.library.mindMap.saveImage]: () =>
+        failure('PERSIST_FAILED', 'Não foi possível salvar a imagem.'),
+    });
+
+    await expect(saveMindMapImage('a', 'b')).rejects.toThrow('Não foi possível salvar a imagem.');
   });
 });
