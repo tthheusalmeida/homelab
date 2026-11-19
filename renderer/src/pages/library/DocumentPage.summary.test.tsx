@@ -12,6 +12,7 @@ const idle = { mutate: vi.fn(), isPending: false, isError: false };
 vi.mock('./hooks/useLibrary', () => ({
   useDocument: () => documentQuery,
   useArchiveDocument: () => idle,
+  useDiscardDocument: () => idle,
   useCategories: () => ({ data: [] }),
   useUpdateDocument: () => idle,
 }));

@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 
-import { BookPlus, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { ArchiveX, BookPlus, ExternalLink, Pencil, Trash2 } from "lucide-react";
 
 import { Badge } from "#ui/badge";
-import { Button } from "#ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +11,8 @@ import {
   DialogTitle,
 } from "#ui/dialog";
 import { formatDateTime } from "#lib/format";
+
+import { IconButton } from "#components/IconButton";
 
 import {
   documentSourceLabels,
@@ -30,6 +31,8 @@ interface DocumentAboutDialogProps {
   onRemove?: () => void;
   /** Sem esta função o botão "Adicionar a um livro" não aparece. */
   onAddToBook?: () => void;
+  /** Exclui a página de vez (qualquer situação). Sem esta função o botão Excluir não aparece. */
+  onDelete?: () => void;
 }
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -44,7 +47,8 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 /**
  * Janela "Sobre a página": informações separadas por rótulo e, em documento
- * publicado, as ações Editar e Remover (cada uma abre a sua própria janela).
+ * publicado, as ações Editar e Remover (cada uma abre a sua própria janela) e, em qualquer
+ * situação, Excluir (apaga de vez, com confirmação). As ações são só ícones, com tooltip.
  */
 export function DocumentAboutDialog({
   open,
@@ -53,6 +57,7 @@ export function DocumentAboutDialog({
   onEdit,
   onRemove,
   onAddToBook,
+  onDelete,
 }: DocumentAboutDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -100,24 +105,30 @@ export function DocumentAboutDialog({
           )}
         </dl>
 
-        {(onEdit || onRemove || onAddToBook) && (
+        {(onEdit || onRemove || onAddToBook || onDelete) && (
           <DialogFooter className="sm:flex-wrap">
             {onAddToBook && (
-              <Button variant="outline" onClick={onAddToBook}>
-                <BookPlus /> Adicionar a um livro
-              </Button>
+              <IconButton label="Adicionar a um livro" onClick={onAddToBook}>
+                <BookPlus />
+              </IconButton>
             )}
 
             {onEdit && (
-              <Button variant="outline" onClick={onEdit}>
-                <Pencil /> Editar
-              </Button>
+              <IconButton label="Editar" onClick={onEdit}>
+                <Pencil />
+              </IconButton>
             )}
 
             {onRemove && (
-              <Button variant="destructive" onClick={onRemove}>
-                <Trash2 /> Remover da biblioteca
-              </Button>
+              <IconButton label="Remover da biblioteca" onClick={onRemove}>
+                <ArchiveX />
+              </IconButton>
+            )}
+
+            {onDelete && (
+              <IconButton label="Excluir" variant="destructive" onClick={onDelete}>
+                <Trash2 />
+              </IconButton>
             )}
           </DialogFooter>
         )}

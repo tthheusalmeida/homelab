@@ -138,3 +138,63 @@ describe("DocumentAboutDialog", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("DocumentAboutDialog — icon actions with tooltips", () => {
+  const all = () =>
+    renderDialog({
+      onAddToBook: vi.fn(),
+      onEdit: vi.fn(),
+      onRemove: vi.fn(),
+      onDelete: vi.fn(),
+    });
+  const names = ["Adicionar a um livro", "Editar", "Remover da biblioteca", "Excluir"];
+
+  it("when all the actions are given, should show each one as an icon only", () => {
+    all();
+
+    for (const name of names) {
+      const button = screen.getByRole("button", { name });
+
+      expect(button).toHaveTextContent("");
+      expect(button.querySelector("svg")).not.toBeNull();
+    }
+  });
+
+  it.each(names)("when the mouse goes over %s, should show a tooltip with the action", async (name) => {
+    all();
+
+    await userEvent.hover(screen.getByRole("button", { name }));
+
+    expect(
+      await screen.findByText(name, { selector: '[data-slot="tooltip-content"]' }),
+    ).toBeInTheDocument();
+  });
+
+  it("when onDelete is given, should show Excluir as a destructive icon and call it on click", async () => {
+    const onDelete = vi.fn();
+
+    renderDialog({ onDelete });
+
+    const button = screen.getByRole("button", { name: "Excluir" });
+
+    expect(button.className).toContain("text-destructive");
+
+    await userEvent.click(button);
+
+    expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it("when only onDelete is given (a page that is not published), should show only Excluir", () => {
+    renderDialog({ onDelete: vi.fn() });
+
+    expect(screen.getByRole("button", { name: "Excluir" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Editar" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Remover da biblioteca" })).toBeNull();
+  });
+
+  it("when onDelete is not given, should not show Excluir", () => {
+    renderDialog({ onEdit: vi.fn() });
+
+    expect(screen.queryByRole("button", { name: "Excluir" })).toBeNull();
+  });
+});

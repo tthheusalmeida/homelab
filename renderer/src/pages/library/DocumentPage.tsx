@@ -25,6 +25,7 @@ import { scrollToId } from "#lib/scroll";
 import { parseTimedTranscript } from "#shared/transcript";
 
 import { CategoryBreadcrumb } from "./components/CategoryBreadcrumb";
+import { DeleteDocumentDialog, deletedMessage } from "./components/DeleteDocumentDialog";
 import { DocumentActions } from "./components/DocumentActions";
 import { DocumentAboutDialog } from "./components/DocumentAboutDialog";
 import { DocumentOutline, OUTLINE_MIN_HEADINGS } from "./components/DocumentOutline";
@@ -32,11 +33,15 @@ import { DocumentSidebar } from "./components/DocumentSidebar";
 import { SummaryMindMap } from "./components/SummaryMindMap";
 import { EditDocumentDialog } from "./components/EditDocumentDialog";
 import { AddToBookDialog } from "./books/components/AddToBookDialog";
-import { useArchiveDocument, useDocument } from "./hooks/useLibrary";
+import {
+  useArchiveDocument,
+  useDiscardDocument,
+  useDocument,
+} from "./hooks/useLibrary";
 import { documentTypeLabels } from "./types/library.types";
 import { useSnackbar } from "#components/Snackbar";
 
-type Modal = "about" | "edit" | "remove" | "book" | null;
+type Modal = "about" | "edit" | "remove" | "book" | "delete" | null;
 
 /** Formas de ver o mesmo resumo: o texto ou o mapa mental feito a partir dele. */
 type SummaryView = "text" | "mindmap";
@@ -59,6 +64,7 @@ export function DocumentPage() {
 
   const { data, isLoading, isError } = useDocument(id);
   const archive = useArchiveDocument();
+  const discard = useDiscardDocument();
   const snackbar = useSnackbar();
 
   const headings = useMemo(
@@ -128,7 +134,16 @@ export function DocumentPage() {
     });
   }
 
-  // As janelas da página (Sobre, Editar, Remover, Adicionar ao livro) valem também no modo leitura.
+  function handleDelete() {
+    discard.mutate(meta.id, {
+      onSuccess: () => {
+        snackbar.success(deletedMessage(meta.type));
+        navigate("/library");
+      },
+    });
+  }
+
+  // As janelas da página (Sobre, Editar, Remover, Excluir, Adicionar ao livro) valem também no modo leitura.
   const dialogs = (
     <>
       <DocumentAboutDialog
@@ -138,6 +153,24 @@ export function DocumentPage() {
         onEdit={published ? () => setModal("edit") : undefined}
         onRemove={published ? () => setModal("remove") : undefined}
         onAddToBook={published ? () => setModal("book") : undefined}
+        onDelete={() => setModal("delete")}
+      />
+
+      <DeleteDocumentDialog
+        open={modal === "delete"}
+        onOpenChange={(open) => {
+          if (!open) {
+            discard.reset();
+          }
+
+          setModal(open ? "delete" : "about");
+        }}
+        meta={meta}
+        isPending={discard.isPending}
+        errorMessage={
+          discard.isError ? "Não foi possível excluir. Tente novamente." : undefined
+        }
+        onConfirm={handleDelete}
       />
 
       <AddToBookDialog

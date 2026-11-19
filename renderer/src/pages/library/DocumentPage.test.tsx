@@ -9,6 +9,7 @@ const documentQuery = {
   isError: false,
 };
 const archive = { mutate: vi.fn(), isPending: false, isError: false };
+const discard = { mutate: vi.fn(), reset: vi.fn(), isPending: false, isError: false };
 const update = { mutate: vi.fn(), isPending: false, isError: false };
 const useDocumentSpy = vi.fn();
 
@@ -18,6 +19,7 @@ vi.mock("./hooks/useLibrary", () => ({
     return documentQuery;
   },
   useArchiveDocument: () => archive,
+  useDiscardDocument: () => discard,
   useCategories: () => ({ data: [] }),
   useUpdateDocument: () => update,
 }));
@@ -85,6 +87,10 @@ describe("DocumentPage", () => {
     archive.mutate.mockReset();
     archive.isPending = false;
     archive.isError = false;
+    discard.mutate.mockReset();
+    discard.reset.mockReset();
+    discard.isPending = false;
+    discard.isError = false;
     update.mutate.mockReset();
     update.isPending = false;
     update.isError = false;
@@ -347,6 +353,76 @@ describe("DocumentPage", () => {
 
     expect(screen.getByText(/Não foi possível remover/)).toBeInTheDocument();
     expect(screen.getByText("Remover da biblioteca?")).toBeInTheDocument();
+  });
+
+  describe("excluir", () => {
+    const openDelete = async () => {
+      const user = await openAbout();
+
+      await user.click(screen.getByRole("button", { name: /Excluir/ }));
+
+      return user;
+    };
+
+    it("when the page is published, should offer Excluir next to Remover da biblioteca", async () => {
+      await openAbout();
+
+      expect(screen.getByRole("button", { name: /Excluir/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Remover da biblioteca/ })).toBeInTheDocument();
+    });
+
+    it.each(["pending", "archived"])(
+      "when the page is %s, should still offer Excluir but not Remover nor Editar",
+      async (status) => {
+        documentQuery.data = detail(status);
+
+        await openAbout();
+
+        expect(screen.getByRole("button", { name: /Excluir/ })).toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: /Remover da biblioteca/ })).toBeNull();
+        expect(screen.queryByRole("button", { name: /Editar/ })).toBeNull();
+      },
+    );
+
+    it("when Excluir is clicked, should ask to confirm saying the summary and its mind map are deleted for good", async () => {
+      await openDelete();
+
+      expect(screen.getByText("Excluir o resumo?")).toBeInTheDocument();
+      expect(screen.getByText(/Esta ação não pode ser desfeita/)).toBeInTheDocument();
+      expect(screen.getByText(/O mapa mental deste resumo/)).toBeInTheDocument();
+      expect(discard.mutate).not.toHaveBeenCalled();
+    });
+
+    it("when the delete is cancelled, should return to the about window without deleting", async () => {
+      const user = await openDelete();
+
+      await user.click(screen.getByRole("button", { name: "Cancelar" }));
+
+      expect(discard.mutate).not.toHaveBeenCalled();
+      expect(discard.reset).toHaveBeenCalled();
+      expect(await screen.findByText("Situação")).toBeInTheDocument();
+    });
+
+    it("when the delete is confirmed, should delete the page and go back to the library", async () => {
+      discard.mutate.mockImplementation(
+        (_id: string, options: { onSuccess: () => void }) => options.onSuccess(),
+      );
+      const user = await openDelete();
+
+      await user.click(screen.getByRole("button", { name: "Excluir resumo e mapa mental" }));
+
+      expect(discard.mutate).toHaveBeenCalledWith("id1", expect.any(Object));
+      expect(screen.getByText(/^biblioteca/)).toBeInTheDocument();
+    });
+
+    it("when deleting fails, should show the error in the confirmation and stay on it", async () => {
+      discard.isError = true;
+
+      await openDelete();
+
+      expect(screen.getByText(/Não foi possível excluir/)).toBeInTheDocument();
+      expect(screen.getByText("Excluir o resumo?")).toBeInTheDocument();
+    });
   });
 
   it("when the text has two or more headings, should show the Sumário and give the headings ids", () => {
