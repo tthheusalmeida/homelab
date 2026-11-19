@@ -20,6 +20,7 @@ Status: **implementado** (ver "Como ficou" no fim; o smoke E2E fica para o usuá
 | Inbox e temporários | `settings.paths.inboxDir`, `videoTempDir`, `audioTempDir` | Sim |
 | Configurações / segredos | `userData/settings.json`, `userData/secrets.json` | Sim |
 | Consumo de IA | `userData/ai-usage.json` (limite de 5.000 registros) | Sim |
+| Mapas mentais gerados pela IA | `data/mind-maps.json` (um por resumo; ver `mapa-mental.md`) | Sim (é cache: fora do backup, pode ser gerado de novo) |
 | Aparência (tema, cor e leitura) | `localStorage` + `settings.json` (duplicada) | Sim |
 
 ## Estrutura nova
@@ -31,7 +32,8 @@ Documentos/HomeLab/                  raiz FIXA (não é configurável)
 ├─ data/
 │  ├─ jobs.json                      histórico de jobs
 │  ├─ chats.json                     todas as conversas
-│  └─ ai-usage.json                  consumo de IA (move de userData)
+│  ├─ ai-usage.json                  consumo de IA (move de userData)
+│  └─ mind-maps.json                 mapas mentais gerados pela IA (cache; fora do backup)
 ├─ config/
 │  └─ settings.json                  configurações (move de userData)
 └─ temp/{video,audio}/               temporários (nunca entram no backup)

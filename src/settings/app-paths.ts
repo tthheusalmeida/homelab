@@ -19,6 +19,7 @@ export const StateFiles = {
   jobs: 'jobs.json',
   chats: 'chats.json',
   usage: 'ai-usage.json',
+  mindMaps: 'mind-maps.json',
 } as const;
 
 /**
@@ -37,6 +38,7 @@ export interface AppPaths {
   jobsFile: string;
   chatsFile: string;
   usageFile: string;
+  mindMapsFile: string;
 }
 
 export function createAppPaths(rootDir: string): AppPaths {
@@ -56,6 +58,7 @@ export function createAppPaths(rootDir: string): AppPaths {
     jobsFile: path.join(dataDir, StateFiles.jobs),
     chatsFile: path.join(dataDir, StateFiles.chats),
     usageFile: path.join(dataDir, StateFiles.usage),
+    mindMapsFile: path.join(dataDir, StateFiles.mindMaps),
   };
 }
 

@@ -28,6 +28,7 @@ import {
   type LibraryWriter,
 } from './library.handler';
 import { LocalProvidersHandler } from './local-providers.handler';
+import { MindMapHandler, type MindMapImagePort, type MindMapPort } from './mind-map.handler';
 import { UpdatesHandler, type NotesTranslatorPort, type UpdatesPort } from './updates.handler';
 import { SettingsHandler, type FolderPicker, type LibraryFolderPort } from './settings.handler';
 
@@ -40,6 +41,7 @@ export interface BackReaders {
   chat: ChatSource;
   library: LibraryReader & LibraryWriter;
   libraryClassifier: LibraryClassifierPort;
+  mindMaps: MindMapPort;
   books: BookReader & BookWriter;
   jobs: {
     catalog: JobCatalogPort;
@@ -62,6 +64,8 @@ export interface HandlerDeps {
   /** Janela de login dos sites de vídeo (acesso a vídeos que exigem entrar). */
   platformLogin: PlatformLogin;
   platformLogins: PlatformLoginsPort;
+  /** Salva a imagem PNG do mapa mental (diálogo "Salvar como" do sistema). */
+  mindMapImages: MindMapImagePort;
   settings: SettingsService;
   externalProviders: ExternalProvidersService;
   localProviders: LocalProvidersService;
@@ -79,6 +83,7 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
     new AiHandler(deps.back.ai, deps.back.aiUsage),
     new ChatHandler(deps.back.chat),
     new LibraryHandler(deps.back.library, deps.back.libraryClassifier),
+    new MindMapHandler(deps.back.mindMaps, deps.mindMapImages),
     new BookHandler(deps.back.books),
     new BackupHandler(deps.backup),
     new NoticeHandler(deps.notices),

@@ -20,13 +20,20 @@ describe('createAppPaths', () => {
       jobsFile: path.join(root, 'data', 'jobs.json'),
       chatsFile: path.join(root, 'data', 'chats.json'),
       usageFile: path.join(root, 'data', 'ai-usage.json'),
+      mindMapsFile: path.join(root, 'data', 'mind-maps.json'),
     });
   });
 
   it('when building the state files, should keep every one of them out of temp (temp never goes into a backup)', () => {
     const paths = createAppPaths(root);
 
-    for (const file of [paths.jobsFile, paths.chatsFile, paths.usageFile, paths.settingsFile]) {
+    for (const file of [
+      paths.jobsFile,
+      paths.chatsFile,
+      paths.usageFile,
+      paths.mindMapsFile,
+      paths.settingsFile,
+    ]) {
       expect(file.startsWith(path.join(root, 'temp'))).toBe(false);
     }
   });

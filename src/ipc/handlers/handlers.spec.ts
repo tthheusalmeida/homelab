@@ -50,6 +50,7 @@ describe('createHandlers', () => {
         localProviders: {} as LocalProvidersService,
         platformLogin: { openLogin: jest.fn() },
         platformLogins: { forgetLogins: jest.fn() },
+        mindMapImages: { save: jest.fn() },
         back: {
           healthSystem: { check: jest.fn() },
           healthAi: { check: jest.fn() },
@@ -77,6 +78,7 @@ describe('createHandlers', () => {
             discard: jest.fn(),
           },
           libraryClassifier: { suggest: jest.fn() },
+          mindMaps: { get: jest.fn(), generate: jest.fn() },
           jobs: {
             catalog: { list: jest.fn(), get: jest.fn(), listTypes: jest.fn() },
             launcher: {
