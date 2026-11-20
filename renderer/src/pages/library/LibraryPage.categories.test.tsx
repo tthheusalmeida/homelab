@@ -1,15 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Route, Routes } from 'react-router';
 
 const state = vi.hoisted(() => ({
   filters: vi.fn(),
   rename: vi.fn(),
+  updatePage: vi.fn(),
   create: vi.fn(),
   remove: vi.fn(),
   pending: false,
+  updating: false,
   tree: [] as unknown[],
+  pages: [] as unknown[],
 }));
 const snackbar = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
@@ -24,7 +27,15 @@ vi.mock('./hooks/useLibrary', () => ({
   useDocuments: (filters: unknown) => {
     state.filters(filters);
 
-    return { isLoading: false, isError: false, data: [], refetch: vi.fn() };
+    // a consulta da árvore (só ordenada por título) traz as páginas; a da lista fica vazia
+    const forTree = Object.keys(filters as object).join() === 'sort';
+
+    return {
+      isLoading: false,
+      isError: false,
+      data: forTree ? state.pages : [],
+      refetch: vi.fn(),
+    };
   },
   useCategories: () => ({
     isLoading: false,
@@ -47,6 +58,7 @@ vi.mock('./hooks/useLibrary', () => ({
     isError: false,
     error: null,
   }),
+  useUpdateDocument: () => ({ mutate: state.updatePage, isPending: state.updating }),
   useRenameCategory: () => ({
     mutate: state.rename,
     reset: vi.fn(),
@@ -90,9 +102,15 @@ function drag(from: HTMLElement, to: HTMLElement) {
 beforeEach(() => {
   state.filters.mockReset();
   state.rename.mockReset();
+  state.updatePage.mockReset();
   state.create.mockReset();
   state.remove.mockReset();
   state.pending = false;
+  state.updating = false;
+  state.pages = [
+    { id: 'p1', title: 'Algoritmos', category: ['Tecnologia'] },
+    { id: 'p2', title: 'Compose', category: ['Tecnologia', 'Docker'] },
+  ];
   state.tree = [
     node('Tecnologia', ['Tecnologia'], 1, [node('Docker', ['Tecnologia', 'Docker'], 1)]),
     node('Culinária', ['Culinária'], 2),
@@ -325,5 +343,93 @@ describe('LibraryPage: criar e excluir categoria', () => {
 
     expect(state.remove).toHaveBeenCalledWith(['Vazia'], expect.any(Object));
     expect(lastCategory()).toEqual([]);
+  });
+});
+
+describe('LibraryPage: páginas na árvore', () => {
+  const pageRow = (name: string) =>
+    screen.getByRole('button', { name }).parentElement as HTMLElement;
+
+  it('when a category is open, should show its pages in the tree', async () => {
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^Tecnologias*1$/ }));
+
+    expect(screen.getByRole('button', { name: 'Algoritmos' })).toBeInTheDocument();
+  });
+
+  it('when the tree asks for the pages, should ask for all of them, apart from the list filters', () => {
+    setup();
+
+    expect(
+      state.filters.mock.calls.some(([filters]) => Object.keys(filters).join() === 'sort'),
+    ).toBe(true);
+    // a lista continua sendo a última consulta de cada renderização
+    expect(lastCategory()).toEqual([]);
+  });
+
+  it('when a page is dropped on a category, should change its category and say so', async () => {
+    state.updatePage.mockImplementation((_input: unknown, options: { onSuccess: () => void }) =>
+      options.onSuccess(),
+    );
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^Tecnologias*1$/ }));
+
+    drag(pageRow('Algoritmos'), rowOf(/^Culinária/));
+
+    expect(state.updatePage).toHaveBeenCalledWith(
+      { id: 'p1', input: { category: ['Culinária'] } },
+      expect.any(Object),
+    );
+    expect(snackbar.success).toHaveBeenCalledWith('“Algoritmos” movida para Culinária.');
+  });
+
+  it('when moving the page fails, should show the reason', async () => {
+    state.updatePage.mockImplementation(
+      (_input: unknown, options: { onError: (error: Error) => void }) =>
+        options.onError(new Error('Documento não encontrado.')),
+    );
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^Tecnologias*1$/ }));
+
+    drag(pageRow('Algoritmos'), rowOf(/^Culinária/));
+
+    expect(snackbar.error).toHaveBeenCalledWith('Documento não encontrado.');
+  });
+
+  it('when a page is dropped on a subcategory, should use the whole path', async () => {
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^Tecnologias*1$/ }));
+
+    drag(pageRow('Algoritmos'), rowOf(/^Docker/));
+
+    expect(state.updatePage).toHaveBeenCalledWith(
+      { id: 'p1', input: { category: ['Tecnologia', 'Docker'] } },
+      expect.any(Object),
+    );
+  });
+
+  it('when a page is being moved, should lock the tree', () => {
+    state.updating = true;
+    setup();
+
+    expect(screen.getByRole('navigation', { name: 'Categorias' })).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
+  });
+
+  it('when a page of the tree is clicked, should open that page', async () => {
+    render(
+      <MemoryRouter initialEntries={['/library']}>
+        <Routes>
+          <Route path="/library" element={<LibraryPage />} />
+          <Route path="/library/:id" element={<p>aberta</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /^Tecnologias*1$/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Algoritmos' }));
+
+    expect(screen.getByText('aberta')).toBeInTheDocument();
   });
 });

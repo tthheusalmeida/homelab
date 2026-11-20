@@ -1,6 +1,6 @@
-import { useEffect, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useState, type DragEvent } from "react";
 
-import { ChevronRight, Pencil, Plus } from "lucide-react";
+import { ChevronRight, FileText, Pencil, Plus } from "lucide-react";
 
 import { Button } from "#ui/button";
 import { HexDot, Logo } from "#components/Hex";
@@ -8,14 +8,26 @@ import { IconButton } from "#components/IconButton";
 import { cn } from "#lib/utils";
 import { normalizeKey } from "#lib/text";
 
-import { canMoveInto, MAX_CATEGORY_LEVELS } from "../categories";
+import { canMoveInto, MAX_CATEGORY_LEVELS, sameKeys } from "../categories";
 import type { CategoryNode } from "../types/library.types";
+
+/** Uma página que aparece na árvore, dentro da categoria dela. */
+export interface TreePage {
+  id: string;
+  title: string;
+  /** A categoria onde a página está (caminho de cima para baixo). */
+  category: string[];
+}
 
 interface CategoryTreeProps {
   nodes: CategoryNode[];
   /** Caminho selecionado; vazio = todas as categorias. */
   selected: string[];
   onSelect: (path: string[]) => void;
+  /** As páginas (publicadas) para mostrar dentro das categorias, como arquivos dentro das pastas. */
+  pages?: TreePage[];
+  /** Clicar numa página: abrir. */
+  onOpenPage?: (page: TreePage) => void;
   /** Com isso, cada categoria ganha um lápis (ao passar o mouse ou focar) que pede para editá-la. */
   onEdit?: (node: CategoryNode) => void;
   /**
@@ -28,9 +40,16 @@ interface CategoryTreeProps {
    * categorias", que é o nível principal). `parent` vazio = nível principal.
    */
   onMove?: (node: CategoryNode, parent: string[]) => void;
-  /** Travada enquanto as páginas estão sendo movidas: nada é arrastado nem editado. */
+  /** Com isso, as páginas podem ser **arrastadas** para dentro de uma categoria. */
+  onMovePage?: (page: TreePage, parent: string[]) => void;
+  /** Travada enquanto algo está sendo movido: nada é arrastado nem editado. */
   disabled?: boolean;
 }
+
+/** O que está sendo arrastado: uma categoria (pasta) ou uma página (arquivo). */
+type Dragged =
+  | { kind: "category"; node: CategoryNode }
+  | { kind: "page"; page: TreePage };
 
 const pathKey = (path: string[]) => path.map(normalizeKey).join("\u0000");
 
@@ -42,34 +61,59 @@ function prefixKeys(path: string[]): string[] {
 /** Linha escolhida: o mesmo realce do item ativo da barra lateral (`primary/15`). */
 const ACTIVE_ROW = "bg-primary/15 text-foreground hover:bg-primary/20";
 
-/** Lugar onde a categoria arrastada vai cair, se soltar agora. */
+/** Lugar onde o que está sendo arrastado vai cair, se soltar agora. */
 const DROP_TARGET = "bg-primary/10 ring-1 ring-primary";
 
 const ROOT_KEY = "\u0000root";
 
+/** Os botões de uma categoria (+ e lápis) só aparecem ao passar o mouse ou focar com o teclado. */
+const HIDDEN_ACTIONS =
+  "shrink-0 opacity-0 transition-opacity group-hover/cat:opacity-100 focus-visible:opacity-100";
+
 /**
- * Árvore de categorias no visual Colmeia: o painel ganha o rótulo mono ("categorias"), a raiz é o
- * conjunto de três hexágonos da marca, cada categoria tem um hexágono (cheio quando tem
- * subcategorias, vazado quando não, na cor de destaque quando escolhida) e os níveis ficam ligados
- * por um fio tracejado. A contagem é mono, como os rótulos de comando do resto do app.
+ * Árvore de categorias no visual Colmeia, como um explorador de arquivos: as **categorias** são as
+ * pastas (hexágono, contagem em mono, setinha) e as **páginas** são os arquivos dentro delas (ícone de
+ * documento, texto mais leve, sem contagem). O painel ganha o rótulo mono ("categorias"), a raiz é o
+ * conjunto de três hexágonos da marca e os níveis ficam ligados por um fio tracejado.
  *
  * Abrir e fechar é livre: a seta recolhe ou expande qualquer categoria, e clicar numa categoria já
- * escolhida também a recolhe ou expande. Escolher uma categoria abre os níveis de cima dela.
+ * escolhida também a recolhe ou expande. Escolher uma categoria abre os níveis de cima dela. Dá para
+ * arrastar categorias e páginas para dentro de outra categoria.
  */
 export function CategoryTree({
   nodes,
   selected,
   onSelect,
+  pages = [],
+  onOpenPage,
   onEdit,
   onCreate,
   onMove,
+  onMovePage,
   disabled = false,
 }: CategoryTreeProps) {
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set(prefixKeys(selected)),
   );
-  const [dragging, setDragging] = useState<CategoryNode | null>(null);
+  const [dragging, setDragging] = useState<Dragged | null>(null);
   const [over, setOver] = useState<string | null>(null);
+
+  // As páginas de cada categoria, em ordem alfabética.
+  const pagesByCategory = useMemo(() => {
+    const groups = new Map<string, TreePage[]>();
+
+    for (const page of pages) {
+      const key = pathKey(page.category);
+
+      groups.set(key, [...(groups.get(key) ?? []), page]);
+    }
+
+    for (const list of groups.values()) {
+      list.sort((a, b) => a.title.localeCompare(b.title, "pt-BR", { numeric: true }));
+    }
+
+    return groups;
+  }, [pages]);
 
   // Quando a escolha muda (aqui ou em outro lugar da tela), os níveis de cima dela se abrem.
   useEffect(() => {
@@ -99,7 +143,21 @@ export function CategoryTree({
     setExpanded((current) => new Set(current).add(pathKey(path)));
   }
 
-  const canDrag = Boolean(onMove) && !disabled;
+  const canDrag = (Boolean(onMove) || Boolean(onMovePage)) && !disabled;
+
+  /** O que está sendo arrastado pode cair em `parent` (vazio = nível principal)? */
+  function canDrop(item: Dragged, parent: string[]): boolean {
+    if (item.kind === "category") {
+      return Boolean(onMove) && canMoveInto(item.node, parent);
+    }
+
+    // uma página sempre fica dentro de uma categoria (nunca no nível principal)
+    return (
+      Boolean(onMovePage) &&
+      parent.length > 0 &&
+      !sameKeys(item.page.category, parent)
+    );
+  }
 
   /** Props de "soltar aqui" para um lugar (uma categoria ou o nível principal). */
   function dropProps(parent: string[], key: string) {
@@ -109,7 +167,7 @@ export function CategoryTree({
 
     return {
       onDragOver: (event: DragEvent) => {
-        if (dragging && canMoveInto(dragging, parent)) {
+        if (dragging && canDrop(dragging, parent)) {
           event.preventDefault();
           event.dataTransfer.dropEffect = "move";
           setOver(key);
@@ -124,23 +182,78 @@ export function CategoryTree({
         setDragging(null);
         setOver(null);
 
-        if (moved && canMoveInto(moved, parent)) {
-          onMove?.(moved, parent);
+        if (!moved || !canDrop(moved, parent)) {
+          return;
+        }
+
+        // a categoria de destino se abre, para ver o que chegou
+        if (parent.length > 0) {
+          open(parent);
+        }
+
+        if (moved.kind === "category") {
+          onMove?.(moved.node, parent);
+        } else {
+          onMovePage?.(moved.page, parent);
         }
       },
     };
   }
 
+  function renderPage(page: TreePage) {
+    const beingDragged = dragging?.kind === "page" && dragging.page.id === page.id;
+
+    return (
+      <li key={page.id}>
+        <div
+          className={cn(
+            "flex items-center gap-0.5 rounded-md",
+            beingDragged && "opacity-50",
+          )}
+          draggable={canDrag && Boolean(onMovePage)}
+          onDragStart={(event) => {
+            event.dataTransfer.setData("text/plain", page.title);
+            event.dataTransfer.effectAllowed = "move";
+            setDragging({ kind: "page", page });
+          }}
+          onDragEnd={() => {
+            setDragging(null);
+            setOver(null);
+          }}
+        >
+          <span className="size-6 shrink-0" />
+
+          <Button
+            variant="ghost"
+            size="sm"
+            title={page.title}
+            className="min-w-0 flex-1 justify-start gap-2 font-normal text-muted-foreground hover:text-foreground"
+            onClick={() => onOpenPage?.(page)}
+          >
+            <FileText className="size-3.5 shrink-0" aria-hidden />
+
+            <span className="truncate text-[13px]">{page.title}</span>
+          </Button>
+        </div>
+      </li>
+    );
+  }
+
   function renderNode(node: CategoryNode) {
-    const hasChildren = node.children.length > 0;
     const key = pathKey(node.path);
+    const nodePages = pagesByCategory.get(key) ?? [];
+    const hasChildren = node.children.length > 0;
+    // Tem o que mostrar dentro: subcategorias ou páginas.
+    const hasContent = hasChildren || nodePages.length > 0;
     const isOpen = expanded.has(key);
     const isSelected = key === pathKey(selected);
+    const beingDragged =
+      dragging?.kind === "category" && pathKey(dragging.node.path) === key;
 
     function choose() {
       onSelect(node.path);
 
-      if (hasChildren) {
+      if (hasContent) {
         // Já escolhida: o clique abre ou fecha. Outra: ela é escolhida e abre.
         if (isSelected) {
           toggle(node.path);
@@ -156,13 +269,13 @@ export function CategoryTree({
           className={cn(
             "group/cat flex items-center gap-0.5 rounded-md transition-colors",
             over === key && DROP_TARGET,
-            dragging && pathKey(dragging.path) === key && "opacity-50",
+            beingDragged && "opacity-50",
           )}
-          draggable={canDrag}
+          draggable={canDrag && Boolean(onMove)}
           onDragStart={(event) => {
             event.dataTransfer.setData("text/plain", node.name);
             event.dataTransfer.effectAllowed = "move";
-            setDragging(node);
+            setDragging({ kind: "category", node });
           }}
           onDragEnd={() => {
             setDragging(null);
@@ -170,7 +283,7 @@ export function CategoryTree({
           }}
           {...dropProps(node.path, key)}
         >
-          {hasChildren ? (
+          {hasContent ? (
             <Button
               variant="ghost"
               size="icon-xs"
@@ -191,7 +304,7 @@ export function CategoryTree({
             size="sm"
             aria-current={isSelected ? "true" : undefined}
             className={cn(
-              "min-w-0 flex-1 justify-start gap-2",
+              "min-w-0 flex-1 justify-start gap-2 font-medium",
               isSelected && ACTIVE_ROW,
             )}
             onClick={choose}
@@ -201,7 +314,7 @@ export function CategoryTree({
                 "transition-colors",
                 isSelected
                   ? "bg-primary"
-                  : hasChildren
+                  : hasContent
                     ? "bg-muted-foreground"
                     : "bg-muted-foreground/35",
               )}
@@ -209,7 +322,7 @@ export function CategoryTree({
 
             <span className="truncate">{node.name}</span>
 
-            <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">
+            <span className="ml-auto font-mono text-xs font-normal text-muted-foreground tabular-nums">
               {node.count}
             </span>
           </Button>
@@ -220,7 +333,7 @@ export function CategoryTree({
               variant="ghost"
               size="icon-xs"
               disabled={disabled}
-              className="shrink-0 opacity-0 transition-opacity group-hover/cat:opacity-100 focus-visible:opacity-100"
+              className={HIDDEN_ACTIONS}
               onClick={() => onCreate(node.path)}
             >
               <Plus />
@@ -233,7 +346,7 @@ export function CategoryTree({
               variant="ghost"
               size="icon-xs"
               disabled={disabled}
-              className="shrink-0 opacity-0 transition-opacity group-hover/cat:opacity-100 focus-visible:opacity-100"
+              className={HIDDEN_ACTIONS}
               onClick={() => onEdit(node)}
             >
               <Pencil />
@@ -241,9 +354,10 @@ export function CategoryTree({
           )}
         </div>
 
-        {hasChildren && isOpen && (
+        {hasContent && isOpen && (
           <ul className="animate-enter-fade ml-3 border-l border-dashed border-border pl-0.5">
             {node.children.map((child) => renderNode(child))}
+            {nodePages.map((page) => renderPage(page))}
           </ul>
         )}
       </li>
@@ -255,7 +369,7 @@ export function CategoryTree({
       aria-label="Categorias"
       aria-busy={disabled || undefined}
       className={cn(
-        "rounded-lg border bg-card p-2 transition-opacity",
+        "max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-lg border bg-card p-2 transition-opacity",
         disabled && "pointer-events-none opacity-60",
       )}
     >
@@ -301,7 +415,9 @@ export function CategoryTree({
 
       {canDrag && dragging && (
         <p className="px-2 pt-1 text-[11px] text-muted-foreground">
-          Solte em uma categoria (ou em Todas as categorias) para mover.
+          {dragging.kind === "page"
+            ? "Solte em uma categoria para mover a página."
+            : "Solte em uma categoria (ou em Todas as categorias) para mover."}
         </p>
       )}
 

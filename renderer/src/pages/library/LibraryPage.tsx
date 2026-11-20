@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react";
 
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { Inbox, SearchX, Library as LibraryIcon } from "lucide-react";
 
 import { InboxStrings } from "#lib/inbox-text";
@@ -22,7 +22,7 @@ import {
   CategoryEditDialog,
   CategoryEditStrings,
 } from "./components/CategoryEditDialog";
-import { CategoryTree } from "./components/CategoryTree";
+import { CategoryTree, type TreePage } from "./components/CategoryTree";
 import { DocumentCard } from "./components/DocumentCard";
 import { TagFilter } from "./components/TagFilter";
 import { ViewToggle, viewModes, type ViewMode } from "./components/ViewToggle";
@@ -31,6 +31,7 @@ import {
   useDocuments,
   useRenameCategory,
   useTags,
+  useUpdateDocument,
 } from "./hooks/useLibrary";
 import {
   findCategory,
@@ -91,6 +92,9 @@ export function LibraryPage() {
 
   const q = useDebouncedValue(search);
 
+  // Todas as páginas publicadas, para mostrar na árvore (sem os filtros da lista ao lado). Vem antes
+  // da lista para não mudar a ordem das consultas.
+  const treePages = useDocuments({ sort: "title" });
   const documents = useDocuments({
     q,
     category,
@@ -102,6 +106,9 @@ export function LibraryPage() {
   });
   const categories = useCategories();
   const renameCategory = useRenameCategory();
+  const updatePage = useUpdateDocument();
+  const navigate = useNavigate();
+  const moving = renameCategory.isPending || updatePage.isPending;
   const snackbar = useSnackbar();
   // Mover arrastando para uma categoria que já tem uma com esse nome pergunta antes de juntar.
   const [joining, setJoining] = useState<{
@@ -126,6 +133,21 @@ export function LibraryPage() {
             snackbar.error(error.message || CategoryEditStrings.failed);
           }
         },
+      },
+    );
+  }
+
+  // Arrastar uma página para uma categoria: troca a categoria dela (o arquivo vai para a pasta).
+  function movePage(page: TreePage, parent: string[]) {
+    updatePage.mutate(
+      { id: page.id, input: { category: parent } },
+      {
+        onSuccess: () =>
+          snackbar.success(
+            `“${page.title}” movida para ${parent.join(" › ")}.`,
+          ),
+        onError: (error) =>
+          snackbar.error(error.message || "Não foi possível mover a página."),
       },
     );
   }
@@ -300,8 +322,11 @@ export function LibraryPage() {
             onSelect={setCategory}
             onEdit={setEditing}
             onCreate={setCreating}
+            pages={treePages.data}
+            onOpenPage={(page) => navigate(`/library/${page.id}`)}
             onMove={moveCategory}
-            disabled={renameCategory.isPending}
+            onMovePage={movePage}
+            disabled={moving}
           />
         </aside>
 

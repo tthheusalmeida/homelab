@@ -5,7 +5,7 @@ import type { CategoryNode } from './types/library.types';
 /** Máximo de níveis de uma categoria (pastas dentro de pastas). */
 export const MAX_CATEGORY_LEVELS = 4;
 
-const sameKeys = (a: string[], b: string[]) =>
+export const sameKeys = (a: string[], b: string[]) =>
   a.length === b.length && a.every((name, level) => normalizeKey(name) === normalizeKey(b[level]));
 
 /** `prefix` é o começo de `path` (ou ele inteiro), sem diferenciar maiúscula, acento e espaços? */
