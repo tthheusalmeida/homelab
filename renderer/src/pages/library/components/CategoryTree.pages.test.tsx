@@ -97,7 +97,9 @@ describe('CategoryTree: páginas como arquivos', () => {
     expect(page.querySelector('.font-mono')).toBeNull();
     expect(page).toHaveClass('font-normal', 'text-muted-foreground');
     expect(folder).toHaveClass('font-medium');
-    expect(folder.querySelector('.font-mono')).toHaveTextContent('1');
+    expect((folder.parentElement as HTMLElement).querySelector('.font-mono')).toHaveTextContent(
+      '1',
+    );
   });
 
   it('when a page is clicked, should open it and not select any category', async () => {
@@ -118,17 +120,6 @@ describe('CategoryTree: páginas como arquivos', () => {
 
     expect(onOpenPage).toHaveBeenCalledWith(pages[3]);
     expect(onSelect).not.toHaveBeenCalled();
-  });
-
-  it('when a long title is shown, should keep it whole in the tooltip', () => {
-    render(
-      <CategoryTree nodes={tree} selected={['Culinária']} onSelect={() => {}} pages={pages} />,
-    );
-
-    expect(screen.getByRole('button', { name: 'Bolo de cenoura' })).toHaveAttribute(
-      'title',
-      'Bolo de cenoura',
-    );
   });
 });
 
@@ -211,7 +202,7 @@ describe('CategoryTree: arrastar páginas', () => {
     fireEvent.dragStart(row('Algoritmos'), { dataTransfer: data });
     fireEvent.dragOver(row(/^Culinária/), { dataTransfer: data });
 
-    expect(screen.getByText('Solte em uma categoria para mover a página.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Solte em uma categoria');
     expect(row(/^Culinária/)).toHaveClass('ring-primary');
     expect(row('Algoritmos')).toHaveClass('opacity-50');
   });

@@ -5,6 +5,7 @@ import { ChevronRight, FileText, Pencil, Plus } from "lucide-react";
 import { Button } from "#ui/button";
 import { HexDot, Logo } from "#components/Hex";
 import { IconButton } from "#components/IconButton";
+import { TruncatedText } from "#components/TruncatedText";
 import { cn } from "#lib/utils";
 import { normalizeKey } from "#lib/text";
 
@@ -66,9 +67,15 @@ const DROP_TARGET = "bg-primary/10 ring-1 ring-primary";
 
 const ROOT_KEY = "\u0000root";
 
-/** Os botões de uma categoria (+ e lápis) só aparecem ao passar o mouse ou focar com o teclado. */
-const HIDDEN_ACTIONS =
-  "shrink-0 opacity-0 transition-opacity group-hover/cat:opacity-100 focus-visible:opacity-100";
+/** O que o rótulo do painel diz enquanto algo é arrastado (curto, para caber numa linha). */
+const DROP_HINT = "Solte em uma categoria";
+
+/**
+ * Os botões de uma categoria (+ e lápis) ficam à esquerda do contador e só aparecem ao passar o mouse
+ * ou ao focar a linha com o teclado; escondidos, não ocupam lugar, e o nome usa a largura toda.
+ */
+const ACTIONS =
+  "hidden shrink-0 items-center group-hover/cat:flex group-focus-within/cat:flex";
 
 /**
  * Árvore de categorias no visual Colmeia, como um explorador de arquivos: as **categorias** são as
@@ -226,13 +233,12 @@ export function CategoryTree({
           <Button
             variant="ghost"
             size="sm"
-            title={page.title}
             className="min-w-0 flex-1 justify-start gap-2 font-normal text-muted-foreground hover:text-foreground"
             onClick={() => onOpenPage?.(page)}
           >
             <FileText className="size-3.5 shrink-0" aria-hidden />
 
-            <span className="truncate text-[13px]">{page.title}</span>
+            <TruncatedText className="text-[13px]">{page.title}</TruncatedText>
           </Button>
         </div>
       </li>
@@ -268,6 +274,7 @@ export function CategoryTree({
         <div
           className={cn(
             "group/cat flex items-center gap-0.5 rounded-md transition-colors",
+            isSelected && ACTIVE_ROW,
             over === key && DROP_TARGET,
             beingDragged && "opacity-50",
           )}
@@ -303,10 +310,7 @@ export function CategoryTree({
             variant="ghost"
             size="sm"
             aria-current={isSelected ? "true" : undefined}
-            className={cn(
-              "min-w-0 flex-1 justify-start gap-2 font-medium",
-              isSelected && ACTIVE_ROW,
-            )}
+            className="min-w-0 flex-1 justify-start gap-2 font-medium hover:bg-transparent"
             onClick={choose}
           >
             <HexDot
@@ -320,38 +324,48 @@ export function CategoryTree({
               )}
             />
 
-            <span className="truncate">{node.name}</span>
+            <TruncatedText>{node.name}</TruncatedText>
 
-            <span className="ml-auto font-mono text-xs font-normal text-muted-foreground tabular-nums">
-              {node.count}
-            </span>
+            {/* A contagem fica fora do botão, na ponta direita; aqui ela só compõe o nome acessível. */}
+            <span className="sr-only">{node.count}</span>
           </Button>
 
-          {onCreate && node.path.length < MAX_CATEGORY_LEVELS && (
-            <IconButton
-              label={`Nova categoria dentro de ${node.name}`}
-              variant="ghost"
-              size="icon-xs"
-              disabled={disabled}
-              className={HIDDEN_ACTIONS}
-              onClick={() => onCreate(node.path)}
-            >
-              <Plus />
-            </IconButton>
+          {((onCreate && node.path.length < MAX_CATEGORY_LEVELS) || onEdit) && (
+            <div className={ACTIONS}>
+              {onCreate && node.path.length < MAX_CATEGORY_LEVELS && (
+                <IconButton
+                  label={`Nova categoria dentro de ${node.name}`}
+                  variant="ghost"
+                  size="icon-xs"
+                  disabled={disabled}
+                  onClick={() => onCreate(node.path)}
+                >
+                  <Plus />
+                </IconButton>
+              )}
+
+              {onEdit && (
+                <IconButton
+                  label={`Editar a categoria ${node.name}`}
+                  variant="ghost"
+                  size="icon-xs"
+                  disabled={disabled}
+                  onClick={() => onEdit(node)}
+                >
+                  <Pencil />
+                </IconButton>
+              )}
+            </div>
           )}
 
-          {onEdit && (
-            <IconButton
-              label={`Editar a categoria ${node.name}`}
-              variant="ghost"
-              size="icon-xs"
-              disabled={disabled}
-              className={HIDDEN_ACTIONS}
-              onClick={() => onEdit(node)}
-            >
-              <Pencil />
-            </IconButton>
-          )}
+          {/* A contagem fica na ponta direita, depois das ações; clicar nela escolhe a categoria. */}
+          <span
+            aria-hidden="true"
+            className="w-7 shrink-0 cursor-pointer pr-2 text-right font-mono text-xs text-muted-foreground tabular-nums"
+            onClick={choose}
+          >
+            {node.count}
+          </span>
         </div>
 
         {hasContent && isOpen && (
@@ -373,12 +387,17 @@ export function CategoryTree({
         disabled && "pointer-events-none opacity-60",
       )}
     >
-      <div className="flex items-center justify-between pb-1.5 pl-2">
+      <div className="flex min-h-6 items-center justify-between gap-2 pb-1.5 pl-2">
+        {/* Ao arrastar, o aviso troca o rótulo na mesma linha: nada na tela muda de lugar. */}
         <p
-          aria-hidden="true"
-          className="font-mono text-[11px] tracking-wider text-muted-foreground uppercase"
+          role={dragging ? "status" : undefined}
+          aria-hidden={dragging ? undefined : "true"}
+          className={cn(
+            "truncate font-mono text-[11px] tracking-wider uppercase",
+            dragging ? "text-primary" : "text-muted-foreground",
+          )}
         >
-          categorias
+          {canDrag && dragging ? DROP_HINT : "categorias"}
         </p>
 
         {onCreate && (
@@ -412,14 +431,6 @@ export function CategoryTree({
           Todas as categorias
         </Button>
       </div>
-
-      {canDrag && dragging && (
-        <p className="px-2 pt-1 text-[11px] text-muted-foreground">
-          {dragging.kind === "page"
-            ? "Solte em uma categoria para mover a página."
-            : "Solte em uma categoria (ou em Todas as categorias) para mover."}
-        </p>
-      )}
 
       <ul className="mt-1">{nodes.map((node) => renderNode(node))}</ul>
     </nav>

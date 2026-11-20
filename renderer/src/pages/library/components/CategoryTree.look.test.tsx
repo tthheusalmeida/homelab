@@ -39,8 +39,8 @@ describe('CategoryTree: visual Colmeia', () => {
     render(<CategoryTree nodes={tree} selected={['Culinária']} onSelect={() => {}} />);
 
     expect(hexOf(row(/^Culinária/))).toHaveClass('bg-primary');
-    expect(row(/^Culinária/)).toHaveClass('bg-primary/15');
-    expect(row(/^Tecnologia/)).not.toHaveClass('bg-primary/15');
+    expect(row(/^Culinária/).parentElement).toHaveClass('bg-primary/15');
+    expect(row(/^Tecnologia/).parentElement).not.toHaveClass('bg-primary/15');
   });
 
   it('when all categories are the choice, should highlight that row', () => {
@@ -62,6 +62,8 @@ describe('CategoryTree: visual Colmeia', () => {
   it('when showing the count, should write it in mono', () => {
     render(<CategoryTree nodes={tree} selected={[]} onSelect={() => {}} />);
 
-    expect(row(/^Tecnologia/).querySelector('.font-mono')).toHaveTextContent('2');
+    expect(
+      (row(/^Tecnologia/).parentElement as HTMLElement).querySelector('.font-mono'),
+    ).toHaveTextContent('2');
   });
 });
