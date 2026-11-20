@@ -106,7 +106,8 @@ describe('CategoryTree: páginas mais perto da esquerda', () => {
     );
     const nested = container.querySelector('li ul') as HTMLElement;
 
-    expect(nested).toHaveClass('ml-2.5', 'pl-0');
+    expect(nested).toHaveClass('ml-2.5');
+    expect(nested.firstElementChild).toHaveClass('pl-1.5');
   });
 });
 

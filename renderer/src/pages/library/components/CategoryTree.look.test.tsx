@@ -50,16 +50,6 @@ describe('CategoryTree: visual Colmeia', () => {
     expect(row(/^Todas as categorias/)).toHaveClass('bg-primary/15');
   });
 
-  it('when a level is open, should join it to its parent with a dashed line', () => {
-    const { container } = render(
-      <CategoryTree nodes={tree} selected={['Tecnologia']} onSelect={() => {}} />,
-    );
-    const nested = container.querySelector('li ul') as HTMLElement;
-
-    expect(nested).toHaveClass('border-l', 'border-dashed');
-    expect(nested).toContainElement(row(/^Docker/));
-  });
-
   it('when showing the count, should write it in mono', () => {
     render(<CategoryTree nodes={tree} selected={[]} onSelect={() => {}} />);
 

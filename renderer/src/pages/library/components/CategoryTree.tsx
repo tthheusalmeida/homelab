@@ -116,6 +116,30 @@ function FolderHex({
   );
 }
 
+/** Onde um item está na lista de um nível aberto (o primeiro nível não tem traço). */
+type Branch = "middle" | "last";
+
+/**
+ * O traço que liga um item aninhado à categoria de cima: nos do meio, uma linha reta que desce pela
+ * altura toda do item (e dos subníveis dele); no **último**, a linha desce só até o meio da linha do
+ * item e faz uma **curva** para dentro (o canto de uma árvore de pastas). A altura `h-4` é a metade
+ * da linha (`h-8`).
+ */
+function BranchLine({ branch }: { branch: Branch }) {
+  return (
+    <span
+      aria-hidden="true"
+      data-branch={branch}
+      className={cn(
+        "pointer-events-none absolute left-0 border-border",
+        branch === "last"
+          ? "top-0 h-4 w-1.5 rounded-bl-md border-b border-l"
+          : "inset-y-0 border-l",
+      )}
+    />
+  );
+}
+
 /** Linha escolhida: o mesmo realce do item ativo da barra lateral (`primary/15`). */
 const ACTIVE_ROW = "bg-primary/15 text-foreground hover:bg-primary/20";
 
@@ -138,7 +162,7 @@ const ACTIONS =
  * Árvore de categorias no visual Colmeia, como um explorador de arquivos: as **categorias** são as
  * pastas (um hexágono que abre e fecha, contagem em mono) e as **páginas** são os arquivos dentro delas
  * (ícone de documento, texto mais leve, sem contagem, mais perto da borda esquerda). O painel ganha o rótulo mono ("categorias"), a raiz é o
- * conjunto de três hexágonos da marca e os níveis ficam ligados por um fio tracejado.
+ * conjunto de três hexágonos da marca e os níveis ficam ligados por um traço fino que termina numa curva no último item de cada nível.
  *
  * Abrir e fechar é livre: o hexágono recolhe ou expande qualquer categoria, e clicar numa categoria já
  * escolhida também a recolhe ou expande. Escolher uma categoria abre os níveis de cima dela. Dá para
@@ -278,11 +302,13 @@ export function CategoryTree({
     };
   }
 
-  function renderPage(page: TreePage) {
+  function renderPage(page: TreePage, branch: Branch) {
     const beingDragged = dragging?.kind === "page" && dragging.page.id === page.id;
 
     return (
-      <li key={page.id}>
+      <li key={page.id} className="relative pl-1.5">
+        <BranchLine branch={branch} />
+
         <div
           className={cn(
             "flex items-center gap-0.5 rounded-md",
@@ -314,7 +340,7 @@ export function CategoryTree({
     );
   }
 
-  function renderNode(node: CategoryNode) {
+  function renderNode(node: CategoryNode, branch?: Branch) {
     const key = pathKey(node.path);
     const nodePages = pagesByCategory.get(key) ?? [];
     const hasChildren = node.children.length > 0;
@@ -338,8 +364,17 @@ export function CategoryTree({
       }
     }
 
+    // Dentro de uma categoria aberta: primeiro as subcategorias, depois as páginas; o último da lista
+    // (seja pasta ou página) é o que leva a curva.
+    const entries = [
+      ...node.children.map((child) => ({ child }) as const),
+      ...nodePages.map((page) => ({ page }) as const),
+    ];
+
     return (
-      <li key={key}>
+      <li key={key} className={cn(branch && "relative pl-1.5")}>
+        {branch && <BranchLine branch={branch} />}
+
         <div
           className={cn(
             "group/cat flex items-center gap-0.5 rounded-md transition-colors",
@@ -427,9 +462,14 @@ export function CategoryTree({
         </div>
 
         {hasContent && isOpen && (
-          <ul className="animate-enter-fade ml-2.5 border-l border-dashed border-border pl-0">
-            {node.children.map((child) => renderNode(child))}
-            {nodePages.map((page) => renderPage(page))}
+          <ul className="animate-enter-fade ml-2.5">
+            {entries.map((entry, index) => {
+              const position: Branch = index === entries.length - 1 ? "last" : "middle";
+
+              return "child" in entry
+                ? renderNode(entry.child, position)
+                : renderPage(entry.page, position);
+            })}
           </ul>
         )}
       </li>
