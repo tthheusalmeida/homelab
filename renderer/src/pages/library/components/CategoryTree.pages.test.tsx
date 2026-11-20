@@ -58,18 +58,21 @@ describe('CategoryTree: páginas como arquivos', () => {
     expect(screen.queryByRole('button', { name: 'Algoritmos' })).not.toBeInTheDocument();
   });
 
-  it('when the category is opened with its arrow, should reveal the pages', async () => {
+  it('when the category is clicked, should open it and reveal the pages', async () => {
     render(<CategoryTree nodes={tree} selected={[]} onSelect={() => {}} pages={pages} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Expandir Culinária' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Culinária/ }));
 
     expect(screen.getByRole('button', { name: 'Bolo de cenoura' })).toBeInTheDocument();
   });
 
-  it('when a category has only pages, should offer the arrow and draw a filled hexagon', () => {
+  it('when a category has only pages, should be openable and draw a filled hexagon', () => {
     render(<CategoryTree nodes={tree} selected={[]} onSelect={() => {}} pages={pages} />);
 
-    expect(screen.getByRole('button', { name: 'Expandir Culinária' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Culinária/ })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
     expect(
       (
         screen.getByRole('button', { name: /^Culinária/ }).parentElement as HTMLElement
@@ -100,6 +103,8 @@ describe('CategoryTree: páginas como arquivos', () => {
     expect(page.querySelector('[data-state]')).toBeNull();
     expect(page.querySelector('.font-mono')).toBeNull();
     expect(page).toHaveClass('font-normal', 'text-muted-foreground');
+    expect(page.parentElement).toHaveClass('hover:bg-primary/10');
+    expect(page.className).not.toMatch(/hover:bg-/);
     expect(folder).toHaveClass('font-medium');
     expect((folder.parentElement as HTMLElement).querySelector('.font-mono')).toHaveTextContent(
       '1',

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 
 import { FileText, Pencil, Plus } from "lucide-react";
 
@@ -143,6 +143,17 @@ function BranchLine({ branch }: { branch: Branch }) {
 /** Linha escolhida: o mesmo realce do item ativo da barra lateral (`primary/15`). */
 const ACTIVE_ROW = "bg-primary/15 text-foreground hover:bg-primary/20";
 
+/** Passar o mouse numa linha: uma variante mais clara da cor de destaque (a da linha escolhida é mais forte). */
+const ROW_HOVER = "hover:bg-primary/10";
+
+/**
+ * A área clicável de uma linha (ícone e nome): um elemento nu, **sem visual próprio** (sem fundo,
+ * sem hover, sem estado aberto). Quem desenha o fundo, o hover e a escolha é a linha inteira; assim
+ * o ícone, o nome e o contador reagem juntos, como uma coisa só. Só o anel de foco do teclado é dele.
+ */
+const ROW_CLICK =
+  "flex h-8 min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-2.5 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+
 /** Lugar onde o que está sendo arrastado vai cair, se soltar agora. */
 const DROP_TARGET = "bg-primary/10 ring-1 ring-primary";
 
@@ -160,12 +171,11 @@ const ACTIONS =
 
 /**
  * Árvore de categorias no visual Colmeia, como um explorador de arquivos: as **categorias** são as
- * pastas (um hexágono que abre e fecha, contagem em mono) e as **páginas** são os arquivos dentro delas
+ * pastas (uma linha só, clicável inteira: hexágono, nome e contagem; botão separado só nas ações) e as **páginas** são os arquivos dentro delas
  * (ícone de documento, texto mais leve, sem contagem, mais perto da borda esquerda). O painel ganha o rótulo mono ("categorias"), a raiz é o
  * conjunto de três hexágonos da marca e os níveis ficam ligados por um traço fino que termina numa curva no último item de cada nível.
  *
- * Abrir e fechar é livre: o hexágono recolhe ou expande qualquer categoria, e clicar numa categoria já
- * escolhida também a recolhe ou expande. Escolher uma categoria abre os níveis de cima dela. Dá para
+ * Abrir e fechar é livre: clicar numa pasta a escolhe e a abre ou fecha, esteja ela escolhida ou não. Escolher uma categoria abre os níveis de cima dela. Dá para
  * arrastar categorias e páginas para dentro de outra categoria.
  */
 export function CategoryTree({
@@ -184,6 +194,8 @@ export function CategoryTree({
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set([...readOpen(persistKey), ...prefixKeys(selected)]),
   );
+  // A pasta em que o usuário acabou de clicar (para a escolha não reabrir o que o clique fechou).
+  const clicked = useRef<string | null>(null);
   const [dragging, setDragging] = useState<Dragged | null>(null);
   const [over, setOver] = useState<string | null>(null);
 
@@ -217,10 +229,16 @@ export function CategoryTree({
     return groups;
   }, [pages]);
 
-  // Quando a escolha muda (aqui ou em outro lugar da tela), os níveis de cima dela se abrem.
+  // Quando a escolha muda (aqui ou em outro lugar da tela), os níveis de cima dela se abrem, e ela
+  // também, se a mudança não veio de um clique nela (o clique já abriu ou fechou a pasta).
   useEffect(() => {
+    const keys = prefixKeys(selected);
+    const wanted = clicked.current === keys[keys.length - 1] ? keys.slice(0, -1) : keys;
+
+    clicked.current = null;
+
     setExpanded((current) => {
-      const missing = prefixKeys(selected).filter((key) => !current.has(key));
+      const missing = wanted.filter((key) => !current.has(key));
 
       return missing.length === 0 ? current : new Set([...current, ...missing]);
     });
@@ -311,7 +329,8 @@ export function CategoryTree({
 
         <div
           className={cn(
-            "flex items-center gap-0.5 rounded-md",
+            "group/page flex items-center gap-0.5 rounded-md transition-colors",
+            ROW_HOVER,
             beingDragged && "opacity-50",
           )}
           draggable={canDrag && Boolean(onMovePage)}
@@ -325,16 +344,18 @@ export function CategoryTree({
             setOver(null);
           }}
         >
-          <Button
-            variant="ghost"
-            size="sm"
-            className="min-w-0 flex-1 justify-start gap-2 font-normal text-muted-foreground hover:text-foreground"
+          <button
+            type="button"
+            className={cn(
+              ROW_CLICK,
+              "font-normal text-muted-foreground group-hover/page:text-foreground",
+            )}
             onClick={() => onOpenPage?.(page)}
           >
             <FileText className="size-3.5 shrink-0" aria-hidden />
 
             <TruncatedText className="text-[13px]">{page.title}</TruncatedText>
-          </Button>
+          </button>
         </div>
       </li>
     );
@@ -351,16 +372,14 @@ export function CategoryTree({
     const beingDragged =
       dragging?.kind === "category" && pathKey(dragging.node.path) === key;
 
+    // Clicar na pasta (o ícone, o nome ou o contador: é uma coisa só) escolhe a categoria e, se ela
+    // tem o que mostrar, abre ou fecha.
     function choose() {
+      clicked.current = key;
       onSelect(node.path);
 
       if (hasContent) {
-        // Já escolhida: o clique abre ou fecha. Outra: ela é escolhida e abre.
-        if (isSelected) {
-          toggle(node.path);
-        } else {
-          open(node.path);
-        }
+        toggle(node.path);
       }
     }
 
@@ -378,7 +397,7 @@ export function CategoryTree({
         <div
           className={cn(
             "group/cat flex items-center gap-0.5 rounded-md transition-colors",
-            isSelected && ACTIVE_ROW,
+            isSelected ? ACTIVE_ROW : ROW_HOVER,
             over === key && DROP_TARGET,
             beingDragged && "opacity-50",
           )}
@@ -394,34 +413,23 @@ export function CategoryTree({
           }}
           {...dropProps(node.path, key)}
         >
-          {hasContent ? (
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label={`${isOpen ? "Recolher" : "Expandir"} ${node.name}`}
-              aria-expanded={isOpen}
-              onClick={() => toggle(node.path)}
-            >
-              <FolderHex open={isOpen} tone={isSelected ? "selected" : "normal"} />
-            </Button>
-          ) : (
-            <span className="flex size-6 shrink-0 items-center justify-center">
-              <FolderHex open={false} tone={isSelected ? "selected" : "empty"} />
-            </span>
-          )}
-
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
             aria-current={isSelected ? "true" : undefined}
-            className="min-w-0 flex-1 justify-start gap-2 pl-1 font-medium hover:bg-transparent"
+            aria-expanded={hasContent ? isOpen : undefined}
+            className={cn(ROW_CLICK, "font-medium")}
             onClick={choose}
           >
+            <FolderHex
+              open={hasContent && isOpen}
+              tone={isSelected ? "selected" : hasContent ? "normal" : "empty"}
+            />
+
             <TruncatedText>{node.name}</TruncatedText>
 
-            {/* A contagem fica fora do botão, na ponta direita; aqui ela só compõe o nome acessível. */}
+            {/* A contagem aparece na ponta direita da linha; aqui ela só compõe o nome acessível. */}
             <span className="sr-only">{node.count}</span>
-          </Button>
+          </button>
 
           {((onCreate && node.path.length < MAX_CATEGORY_LEVELS) || onEdit) && (
             <div className={ACTIONS}>
@@ -512,22 +520,22 @@ export function CategoryTree({
       </div>
 
       <div
-        className={cn("rounded-md transition-colors", over === ROOT_KEY && DROP_TARGET)}
+        className={cn(
+          "flex items-center rounded-md transition-colors",
+          selected.length === 0 ? ACTIVE_ROW : ROW_HOVER,
+          over === ROOT_KEY && DROP_TARGET,
+        )}
         {...dropProps([], ROOT_KEY)}
       >
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
+          type="button"
           aria-current={selected.length === 0 ? "true" : undefined}
-          className={cn(
-            "w-full justify-start gap-2",
-            selected.length === 0 && ACTIVE_ROW,
-          )}
+          className={ROW_CLICK}
           onClick={() => onSelect([])}
         >
           <Logo className="size-4" />
           Todas as categorias
-        </Button>
+        </button>
       </div>
 
       <ul className="mt-1">{nodes.map((node) => renderNode(node))}</ul>

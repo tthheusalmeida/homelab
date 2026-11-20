@@ -448,7 +448,7 @@ describe('LibraryPage: lembrar as categorias abertas', () => {
     );
     const first = render(tree);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Expandir Tecnologia' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Tecnologia\s*1$/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Algoritmos' }));
 
     expect(screen.getByText('aberta')).toBeInTheDocument();
@@ -456,7 +456,10 @@ describe('LibraryPage: lembrar as categorias abertas', () => {
     first.unmount();
     render(tree);
 
-    expect(screen.getByRole('button', { name: 'Recolher Tecnologia' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Tecnologia\s*1$/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
     expect(screen.getByRole('button', { name: 'Algoritmos' })).toBeInTheDocument();
   });
 });

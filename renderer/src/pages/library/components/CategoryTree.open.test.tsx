@@ -26,84 +26,87 @@ const KEY = 'test:tree:open';
 
 afterEach(() => window.localStorage.clear());
 
-const iconOf = (name: RegExp | string) =>
-  (screen.getByRole('button', { name }).parentElement as HTMLElement).querySelector(
-    '[data-state]',
-  ) as SVGElement;
+const folder = (name: RegExp | string) => screen.getByRole('button', { name });
+const iconOf = (name: RegExp | string) => folder(name).querySelector('[data-state]') as SVGElement;
+const isOpen = (name: RegExp | string) => folder(name).getAttribute('aria-expanded') === 'true';
+
+function tree$(extra: Partial<Parameters<typeof CategoryTree>[0]> = {}) {
+  return <CategoryTree nodes={tree} selected={[]} onSelect={() => {}} pages={pages} {...extra} />;
+}
 
 describe('CategoryTree: um ícone só por pasta', () => {
-  it('when a folder has content, should have only the hexagon (no separate arrow)', () => {
-    render(<CategoryTree nodes={tree} selected={[]} onSelect={() => {}} pages={pages} />);
+  it('when a folder has content, should have only the hexagon inside its one button (no separate arrow)', () => {
+    render(tree$());
 
-    const row = screen.getByRole('button', { name: /^Culinária/ }).parentElement as HTMLElement;
+    const row = folder(/^Culinária/).parentElement as HTMLElement;
 
     expect(row.querySelectorAll('svg')).toHaveLength(1);
-    expect(screen.getByRole('button', { name: 'Expandir Culinária' }).querySelector('svg')).toBe(
-      row.querySelector('svg'),
-    );
+    expect(folder(/^Culinária/).querySelector('svg')).toBe(row.querySelector('svg'));
   });
 
   it('when the folder is closed, should draw the hexagon filled; open, hollow', async () => {
-    render(<CategoryTree nodes={tree} selected={[]} onSelect={() => {}} pages={pages} />);
+    render(tree$());
 
-    expect(iconOf('Expandir Culinária')).toHaveAttribute('data-state', 'closed');
-    expect(iconOf('Expandir Culinária').querySelector('path')).toHaveAttribute(
-      'fill',
-      'currentColor',
-    );
+    expect(iconOf(/^Culinária/)).toHaveAttribute('data-state', 'closed');
+    expect(iconOf(/^Culinária/).querySelector('path')).toHaveAttribute('fill', 'currentColor');
 
-    await userEvent.click(screen.getByRole('button', { name: 'Expandir Culinária' }));
+    await userEvent.click(folder(/^Culinária/));
 
-    expect(iconOf('Recolher Culinária')).toHaveAttribute('data-state', 'open');
-    expect(iconOf('Recolher Culinária').querySelector('path')).toHaveAttribute('fill', 'none');
+    expect(iconOf(/^Culinária/)).toHaveAttribute('data-state', 'open');
+    expect(iconOf(/^Culinária/).querySelector('path')).toHaveAttribute('fill', 'none');
   });
 
-  it('when the hexagon is clicked, should open and close the folder without choosing it', async () => {
+  it('when the hexagon is clicked, should do the same as clicking the name (it is one thing)', async () => {
     const onSelect = vi.fn();
 
-    render(<CategoryTree nodes={tree} selected={[]} onSelect={onSelect} pages={pages} />);
+    render(tree$({ onSelect }));
 
-    await userEvent.click(screen.getByRole('button', { name: 'Expandir Culinária' }));
+    await userEvent.click(iconOf(/^Culinária/));
 
-    expect(screen.getByRole('button', { name: 'Bolo' })).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: 'Recolher Culinária' }));
-
-    expect(screen.queryByRole('button', { name: 'Bolo' })).not.toBeInTheDocument();
-    expect(onSelect).not.toHaveBeenCalled();
+    expect(onSelect).toHaveBeenCalledWith(['Culinária']);
+    expect(isOpen(/^Culinária/)).toBe(true);
   });
 
-  it('when a folder is empty, should draw a faded hexagon that is not a button', () => {
-    render(<CategoryTree nodes={tree} selected={[]} onSelect={() => {}} pages={pages} />);
+  it('when the count is clicked, should do the same as clicking the name', async () => {
+    const onSelect = vi.fn();
 
-    expect(screen.queryByRole('button', { name: 'Expandir Vazia' })).not.toBeInTheDocument();
+    render(tree$({ onSelect }));
+
+    await userEvent.click(
+      (folder(/^Culinária/).parentElement as HTMLElement).querySelector(
+        '.font-mono',
+      ) as HTMLElement,
+    );
+
+    expect(onSelect).toHaveBeenCalledWith(['Culinária']);
+    expect(isOpen(/^Culinária/)).toBe(true);
+  });
+
+  it('when a folder is empty, should draw a faded hexagon and have nothing to open', () => {
+    render(tree$());
+
     expect(iconOf(/^Vazia/)).toHaveClass('text-muted-foreground/35');
+    expect(folder(/^Vazia/)).not.toHaveAttribute('aria-expanded');
   });
 
   it('when the folder is chosen, should paint its hexagon in the accent color', () => {
-    render(
-      <CategoryTree nodes={tree} selected={['Culinária']} onSelect={() => {}} pages={pages} />,
-    );
+    render(tree$({ selected: ['Culinária'] }));
 
-    expect(iconOf('Recolher Culinária')).toHaveClass('text-primary');
+    expect(iconOf(/^Culinária/)).toHaveClass('text-primary');
   });
 });
 
 describe('CategoryTree: páginas mais perto da esquerda', () => {
-  it('when drawing a page, should not leave the empty space of the arrow before it', () => {
-    render(
-      <CategoryTree nodes={tree} selected={['Culinária']} onSelect={() => {}} pages={pages} />,
-    );
+  it('when drawing a page, should not leave an empty space before it', () => {
+    render(tree$({ selected: ['Culinária'] }));
 
     const row = screen.getByRole('button', { name: 'Bolo' }).parentElement as HTMLElement;
 
     expect(row.children).toHaveLength(1);
   });
 
-  it('when a level is open, should hug the guide line with its content', () => {
-    const { container } = render(
-      <CategoryTree nodes={tree} selected={['Culinária']} onSelect={() => {}} pages={pages} />,
-    );
+  it('when a level is open, should keep the content close to the line', () => {
+    const { container } = render(tree$({ selected: ['Culinária'] }));
     const nested = container.querySelector('li ul') as HTMLElement;
 
     expect(nested).toHaveClass('ml-2.5');
@@ -113,138 +116,79 @@ describe('CategoryTree: páginas mais perto da esquerda', () => {
 
 describe('CategoryTree: lembrar o que está aberto', () => {
   it('when a folder is opened, should keep it open after the tree is drawn again (leaving the screen and coming back)', async () => {
-    const first = render(
-      <CategoryTree
-        nodes={tree}
-        selected={[]}
-        onSelect={() => {}}
-        pages={pages}
-        persistKey={KEY}
-      />,
-    );
+    const first = render(tree$({ persistKey: KEY }));
 
-    await userEvent.click(screen.getByRole('button', { name: 'Expandir Tecnologia' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Expandir Docker' }));
+    await userEvent.click(folder(/^Tecnologia/));
+    await userEvent.click(folder(/^Docker/));
     first.unmount();
 
-    render(
-      <CategoryTree
-        nodes={tree}
-        selected={[]}
-        onSelect={() => {}}
-        pages={pages}
-        persistKey={KEY}
-      />,
-    );
+    render(tree$({ persistKey: KEY }));
 
-    expect(screen.getByRole('button', { name: 'Recolher Tecnologia' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Recolher Docker' })).toBeInTheDocument();
+    expect(isOpen(/^Tecnologia/)).toBe(true);
+    expect(isOpen(/^Docker/)).toBe(true);
     expect(screen.getByRole('button', { name: 'Compose' })).toBeInTheDocument();
   });
 
   it('when a page is clicked, should keep the open folders open', async () => {
     const onOpenPage = vi.fn();
-    const first = render(
-      <CategoryTree
-        nodes={tree}
-        selected={[]}
-        onSelect={() => {}}
-        pages={pages}
-        onOpenPage={onOpenPage}
-        persistKey={KEY}
-      />,
-    );
+    const first = render(tree$({ onOpenPage, persistKey: KEY }));
 
-    await userEvent.click(screen.getByRole('button', { name: 'Expandir Tecnologia' }));
+    await userEvent.click(folder(/^Tecnologia/));
     await userEvent.click(screen.getByRole('button', { name: 'Algoritmos' }));
     first.unmount();
 
-    render(
-      <CategoryTree
-        nodes={tree}
-        selected={[]}
-        onSelect={() => {}}
-        pages={pages}
-        persistKey={KEY}
-      />,
-    );
+    render(tree$({ persistKey: KEY }));
 
     expect(onOpenPage).toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Algoritmos' })).toBeInTheDocument();
   });
 
   it('when a folder is closed, should keep it closed the next time', async () => {
-    const first = render(
-      <CategoryTree
-        nodes={tree}
-        selected={[]}
-        onSelect={() => {}}
-        pages={pages}
-        persistKey={KEY}
-      />,
-    );
+    const first = render(tree$({ persistKey: KEY }));
 
-    await userEvent.click(screen.getByRole('button', { name: 'Expandir Tecnologia' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Recolher Tecnologia' }));
+    await userEvent.click(folder(/^Tecnologia/));
+    await userEvent.click(folder(/^Tecnologia/));
     first.unmount();
 
-    render(
-      <CategoryTree
-        nodes={tree}
-        selected={[]}
-        onSelect={() => {}}
-        pages={pages}
-        persistKey={KEY}
-      />,
-    );
+    render(tree$({ persistKey: KEY }));
 
-    expect(screen.getByRole('button', { name: 'Expandir Tecnologia' })).toBeInTheDocument();
+    expect(isOpen(/^Tecnologia/)).toBe(false);
   });
 
   it('when there is no key, should not keep anything', async () => {
-    const first = render(
-      <CategoryTree nodes={tree} selected={[]} onSelect={() => {}} pages={pages} />,
-    );
+    const first = render(tree$());
 
-    await userEvent.click(screen.getByRole('button', { name: 'Expandir Tecnologia' }));
+    await userEvent.click(folder(/^Tecnologia/));
     first.unmount();
 
-    render(<CategoryTree nodes={tree} selected={[]} onSelect={() => {}} pages={pages} />);
+    render(tree$());
 
-    expect(screen.getByRole('button', { name: 'Expandir Tecnologia' })).toBeInTheDocument();
+    expect(isOpen(/^Tecnologia/)).toBe(false);
     expect(window.localStorage.length).toBe(0);
   });
 
-  it('when what was saved is corrupted or not a list, should start closed', () => {
+  it('when what was saved is corrupted, should start closed', () => {
     window.localStorage.setItem(KEY, '{nao e lista');
 
-    render(
-      <CategoryTree
-        nodes={tree}
-        selected={[]}
-        onSelect={() => {}}
-        pages={pages}
-        persistKey={KEY}
-      />,
-    );
+    render(tree$({ persistKey: KEY }));
 
-    expect(screen.getByRole('button', { name: 'Expandir Tecnologia' })).toBeInTheDocument();
+    expect(isOpen(/^Tecnologia/)).toBe(false);
+  });
+
+  it('when what was saved is not a list, should start closed', () => {
+    window.localStorage.setItem(KEY, JSON.stringify({ a: 1 }));
+
+    render(tree$({ persistKey: KEY }));
+
+    expect(isOpen(/^Tecnologia/)).toBe(false);
   });
 
   it('when the saved list has other types, should ignore them', () => {
     window.localStorage.setItem(KEY, JSON.stringify([3, null, 'tecnologia']));
 
-    render(
-      <CategoryTree
-        nodes={tree}
-        selected={[]}
-        onSelect={() => {}}
-        pages={pages}
-        persistKey={KEY}
-      />,
-    );
+    render(tree$({ persistKey: KEY }));
 
-    expect(screen.getByRole('button', { name: 'Recolher Tecnologia' })).toBeInTheDocument();
+    expect(isOpen(/^Tecnologia/)).toBe(true);
   });
 
   it('when the storage is not available, should work anyway', async () => {
@@ -252,46 +196,22 @@ describe('CategoryTree: lembrar o que está aberto', () => {
       throw new Error('cheio');
     });
 
-    render(
-      <CategoryTree
-        nodes={tree}
-        selected={[]}
-        onSelect={() => {}}
-        pages={pages}
-        persistKey={KEY}
-      />,
-    );
+    render(tree$({ persistKey: KEY }));
 
-    await userEvent.click(screen.getByRole('button', { name: 'Expandir Tecnologia' }));
+    await userEvent.click(folder(/^Tecnologia/));
 
-    expect(screen.getByRole('button', { name: 'Recolher Tecnologia' })).toBeInTheDocument();
+    expect(isOpen(/^Tecnologia/)).toBe(true);
 
     vi.restoreAllMocks();
   });
 
-  it('when a category is chosen, should open it and keep that too', async () => {
-    const first = render(
-      <CategoryTree
-        nodes={tree}
-        selected={['Tecnologia', 'Docker']}
-        onSelect={() => {}}
-        pages={pages}
-        persistKey={KEY}
-      />,
-    );
+  it('when a category was chosen, should open it and keep that too', () => {
+    const first = render(tree$({ selected: ['Tecnologia', 'Docker'], persistKey: KEY }));
 
     first.unmount();
 
-    render(
-      <CategoryTree
-        nodes={tree}
-        selected={[]}
-        onSelect={() => {}}
-        pages={pages}
-        persistKey={KEY}
-      />,
-    );
+    render(tree$({ persistKey: KEY }));
 
-    expect(screen.getByRole('button', { name: 'Recolher Tecnologia' })).toBeInTheDocument();
+    expect(isOpen(/^Tecnologia/)).toBe(true);
   });
 });

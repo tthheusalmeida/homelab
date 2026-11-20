@@ -47,7 +47,7 @@ describe('CategoryTree: visual Colmeia', () => {
   it('when all categories are the choice, should highlight that row', () => {
     render(<CategoryTree nodes={tree} selected={[]} onSelect={() => {}} />);
 
-    expect(row(/^Todas as categorias/)).toHaveClass('bg-primary/15');
+    expect(row(/^Todas as categorias/).parentElement).toHaveClass('bg-primary/15');
   });
 
   it('when showing the count, should write it in mono', () => {
