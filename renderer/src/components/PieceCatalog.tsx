@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { InfographicPiece } from '#components/InfographicPiece';
+import { LazyRender } from '#components/LazyRender';
 import { SearchInput } from '#components/SearchInput';
 import { cn } from '#lib/utils';
 import { INFOGRAPHIC_PIECES, INFOGRAPHIC_THEMES } from '#shared/infographic-pieces';
@@ -94,7 +95,10 @@ export function PieceCatalog({
             {group.pieces.map((piece) => {
               const content = (
                 <>
-                  <InfographicPiece pieceKey={piece.key} className="w-16" />
+                  {/* O desenho só é montado perto da tela; a busca e a contagem usam os dados, não o desenho. */}
+                  <LazyRender className="aspect-square w-16">
+                    <InfographicPiece pieceKey={piece.key} className="w-16" />
+                  </LazyRender>
 
                   {/* Duas linhas de altura fixa: todos os cartões ficam do mesmo tamanho, e nome maior que isso vira reticências (o nome inteiro fica no tooltip). */}
                   <span className="flex h-9 w-full items-center justify-center">

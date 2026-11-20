@@ -12,6 +12,19 @@ class ResizeObserverStub {
 
 vi.stubGlobal("ResizeObserver", ResizeObserverStub);
 
+// Never reports anything as visible (as if every item were off screen), so `LazyRender` keeps lists
+// of heavy items light in tests; tests that need the content stub their own observer.
+class IntersectionObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+}
+
+vi.stubGlobal("IntersectionObserver", IntersectionObserverStub);
+
 Element.prototype.scrollIntoView = () => {};
 Element.prototype.getAnimations = () => [];
 

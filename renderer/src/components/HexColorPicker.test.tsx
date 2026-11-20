@@ -26,11 +26,13 @@ describe('HexColorPicker', () => {
   });
 
   it('when the value is undefined, should leave every option unmarked', () => {
-    render(<HexColorPicker label="Cor" options={accentOptions} value={undefined} onChange={() => {}} />);
-
-    expect(screen.getAllByRole('radio').every((r) => r.getAttribute('aria-checked') === 'false')).toBe(
-      true,
+    render(
+      <HexColorPicker label="Cor" options={accentOptions} value={undefined} onChange={() => {}} />,
     );
+
+    expect(
+      screen.getAllByRole('radio').every((r) => r.getAttribute('aria-checked') === 'false'),
+    ).toBe(true);
   });
 
   it('when an option is clicked, should call onChange with its id', async () => {

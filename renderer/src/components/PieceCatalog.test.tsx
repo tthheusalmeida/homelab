@@ -67,6 +67,31 @@ describe('PieceCatalog', () => {
     expect(screen.queryByText('jogos.controle')).not.toBeInTheDocument();
   });
 
+  it('when the drawings are still waiting to be shown, should still list, count and search every piece', async () => {
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        observe = vi.fn();
+        disconnect = vi.fn();
+      },
+    );
+
+    const { container } = render(<PieceCatalog />);
+
+    expect(container.querySelectorAll('[data-slot="lazy-render"][data-ready="false"]').length).toBe(
+      INFOGRAPHIC_PIECES.length,
+    );
+    expect(screen.getByText(`${INFOGRAPHIC_PIECES.length} peças em 21 grupos`)).toBeInTheDocument();
+
+    await userEvent.type(screen.getByRole('searchbox'), 'orcamento');
+
+    expect(screen.getByText('financas.calculadora')).toBeInTheDocument();
+    expect(screen.getByText('negocios.calculadora')).toBeInTheDocument();
+    expect(screen.queryByText('jogos.controle')).not.toBeInTheDocument();
+
+    vi.unstubAllGlobals();
+  });
+
   it('when nothing matches, should say so', async () => {
     render(<PieceCatalog />);
 
