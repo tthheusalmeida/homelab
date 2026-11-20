@@ -16,7 +16,8 @@ const tree: CategoryNode[] = [
   { name: 'Culinária', path: ['Culinária'], count: 1, children: [] },
 ];
 
-const hexOf = (button: HTMLElement) => button.querySelector('[class*="clip-path"]') as HTMLElement;
+const hexOf = (button: HTMLElement) =>
+  (button.parentElement as HTMLElement).querySelector('svg') as SVGElement;
 const row = (name: RegExp) => screen.getByRole('button', { name });
 
 describe('CategoryTree: visual Colmeia', () => {
@@ -31,14 +32,14 @@ describe('CategoryTree: visual Colmeia', () => {
   it('when a category has subcategories, should draw its hexagon filled; without them, faded', () => {
     render(<CategoryTree nodes={tree} selected={[]} onSelect={() => {}} />);
 
-    expect(hexOf(row(/^Tecnologia/))).toHaveClass('bg-muted-foreground');
-    expect(hexOf(row(/^Culinária/))).toHaveClass('bg-muted-foreground/35');
+    expect(hexOf(row(/^Tecnologia/))).toHaveClass('text-muted-foreground');
+    expect(hexOf(row(/^Culinária/))).toHaveClass('text-muted-foreground/35');
   });
 
   it('when a category is selected, should paint its hexagon in the accent color and highlight the row', () => {
     render(<CategoryTree nodes={tree} selected={['Culinária']} onSelect={() => {}} />);
 
-    expect(hexOf(row(/^Culinária/))).toHaveClass('bg-primary');
+    expect(hexOf(row(/^Culinária/))).toHaveClass('text-primary');
     expect(row(/^Culinária/).parentElement).toHaveClass('bg-primary/15');
     expect(row(/^Tecnologia/).parentElement).not.toHaveClass('bg-primary/15');
   });

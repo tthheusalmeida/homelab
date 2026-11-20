@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -98,6 +98,8 @@ function drag(from: HTMLElement, to: HTMLElement) {
   fireEvent.dragOver(to, { dataTransfer: transfer });
   fireEvent.drop(to, { dataTransfer: transfer });
 }
+
+afterEach(() => window.localStorage.clear());
 
 beforeEach(() => {
   state.filters.mockReset();
@@ -431,5 +433,30 @@ describe('LibraryPage: páginas na árvore', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Algoritmos' }));
 
     expect(screen.getByText('aberta')).toBeInTheDocument();
+  });
+});
+
+describe('LibraryPage: lembrar as categorias abertas', () => {
+  it('when a category is opened, should keep it open after leaving for a page and coming back', async () => {
+    const tree = (
+      <MemoryRouter initialEntries={['/library']}>
+        <Routes>
+          <Route path="/library" element={<LibraryPage />} />
+          <Route path="/library/:id" element={<p>aberta</p>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    const first = render(tree);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Expandir Tecnologia' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Algoritmos' }));
+
+    expect(screen.getByText('aberta')).toBeInTheDocument();
+
+    first.unmount();
+    render(tree);
+
+    expect(screen.getByRole('button', { name: 'Recolher Tecnologia' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Algoritmos' })).toBeInTheDocument();
   });
 });

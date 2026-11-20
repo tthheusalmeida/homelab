@@ -91,7 +91,9 @@ describe('CategoryTree: criar', () => {
 
     const row = screen.getByRole('button', { name: /^Vazia/ });
 
-    expect(row.querySelector('[class*="clip-path"]')).toHaveClass('bg-muted-foreground/35');
+    expect((row.parentElement as HTMLElement).querySelector('svg')).toHaveClass(
+      'text-muted-foreground/35',
+    );
     expect((row.parentElement as HTMLElement).querySelector('.font-mono')).toHaveTextContent('0');
   });
 });

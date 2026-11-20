@@ -71,8 +71,10 @@ describe('CategoryTree: páginas como arquivos', () => {
 
     expect(screen.getByRole('button', { name: 'Expandir Culinária' })).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /^Culinária/ }).querySelector('[class*="clip-path"]'),
-    ).toHaveClass('bg-muted-foreground');
+      (
+        screen.getByRole('button', { name: /^Culinária/ }).parentElement as HTMLElement
+      ).querySelector('svg'),
+    ).toHaveClass('text-muted-foreground');
   });
 
   it('when a category has no pages and no subcategories, should keep it as a faded empty one', () => {
@@ -80,8 +82,10 @@ describe('CategoryTree: páginas como arquivos', () => {
 
     expect(screen.queryByRole('button', { name: 'Expandir Vazia' })).not.toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /^Vazia/ }).querySelector('[class*="clip-path"]'),
-    ).toHaveClass('bg-muted-foreground/35');
+      (screen.getByRole('button', { name: /^Vazia/ }).parentElement as HTMLElement).querySelector(
+        'svg',
+      ),
+    ).toHaveClass('text-muted-foreground/35');
   });
 
   it('when drawing a page, should look different from a folder: document icon, lighter text, no count', () => {
@@ -93,7 +97,7 @@ describe('CategoryTree: páginas como arquivos', () => {
     const folder = screen.getByRole('button', { name: /^Culinária/ });
 
     expect(page.querySelector('svg')).not.toBeNull();
-    expect(page.querySelector('[class*="clip-path"]')).toBeNull();
+    expect(page.querySelector('[data-state]')).toBeNull();
     expect(page.querySelector('.font-mono')).toBeNull();
     expect(page).toHaveClass('font-normal', 'text-muted-foreground');
     expect(folder).toHaveClass('font-medium');

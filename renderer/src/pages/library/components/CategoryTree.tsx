@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, type DragEvent } from "react";
 
-import { ChevronRight, FileText, Pencil, Plus } from "lucide-react";
+import { FileText, Pencil, Plus } from "lucide-react";
 
 import { Button } from "#ui/button";
-import { HexDot, Logo } from "#components/Hex";
+import { hexPath, Logo } from "#components/Hex";
 import { IconButton } from "#components/IconButton";
 import { TruncatedText } from "#components/TruncatedText";
 import { cn } from "#lib/utils";
@@ -45,6 +45,11 @@ interface CategoryTreeProps {
   onMovePage?: (page: TreePage, parent: string[]) => void;
   /** Travada enquanto algo está sendo movido: nada é arrastado nem editado. */
   disabled?: boolean;
+  /**
+   * Com isso, o que está **aberto** fica guardado no navegador (localStorage) com esse nome: abrir uma
+   * página sai desta tela, e ao voltar as categorias que estavam abertas continuam abertas.
+   */
+  persistKey?: string;
 }
 
 /** O que está sendo arrastado: uma categoria (pasta) ou uma página (arquivo). */
@@ -57,6 +62,58 @@ const pathKey = (path: string[]) => path.map(normalizeKey).join("\u0000");
 /** O caminho e todos os caminhos de cima dele ("A", "A/B" para "A/B"), para abrir os ancestrais. */
 function prefixKeys(path: string[]): string[] {
   return path.map((_, index) => pathKey(path.slice(0, index + 1)));
+}
+
+/** O que estava aberto, lido do navegador (vazio se não há nada ou se está ilegível). */
+function readOpen(key: string | undefined): string[] {
+  if (!key) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(key) ?? "[]");
+
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * O hexágono da pasta, que é também a seta de abrir e fechar (um ícone só): **cheio** quando a pasta
+ * está fechada, **vazado** quando está aberta, na cor de destaque quando é a escolhida e esmaecido
+ * quando a pasta está vazia.
+ */
+function FolderHex({
+  open,
+  tone,
+}: {
+  open: boolean;
+  tone: "selected" | "normal" | "empty";
+}) {
+  return (
+    <svg
+      viewBox="0 0 12 14"
+      aria-hidden="true"
+      data-state={open ? "open" : "closed"}
+      className={cn(
+        "h-3.5 w-3 shrink-0 transition-colors",
+        tone === "selected" && "text-primary",
+        tone === "normal" && "text-muted-foreground",
+        tone === "empty" && "text-muted-foreground/35",
+      )}
+    >
+      <path
+        d={hexPath(6, 7, 5.6)}
+        fill={open ? "none" : "currentColor"}
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 /** Linha escolhida: o mesmo realce do item ativo da barra lateral (`primary/15`). */
@@ -79,11 +136,11 @@ const ACTIONS =
 
 /**
  * Árvore de categorias no visual Colmeia, como um explorador de arquivos: as **categorias** são as
- * pastas (hexágono, contagem em mono, setinha) e as **páginas** são os arquivos dentro delas (ícone de
- * documento, texto mais leve, sem contagem). O painel ganha o rótulo mono ("categorias"), a raiz é o
+ * pastas (um hexágono que abre e fecha, contagem em mono) e as **páginas** são os arquivos dentro delas
+ * (ícone de documento, texto mais leve, sem contagem, mais perto da borda esquerda). O painel ganha o rótulo mono ("categorias"), a raiz é o
  * conjunto de três hexágonos da marca e os níveis ficam ligados por um fio tracejado.
  *
- * Abrir e fechar é livre: a seta recolhe ou expande qualquer categoria, e clicar numa categoria já
+ * Abrir e fechar é livre: o hexágono recolhe ou expande qualquer categoria, e clicar numa categoria já
  * escolhida também a recolhe ou expande. Escolher uma categoria abre os níveis de cima dela. Dá para
  * arrastar categorias e páginas para dentro de outra categoria.
  */
@@ -98,12 +155,26 @@ export function CategoryTree({
   onMove,
   onMovePage,
   disabled = false,
+  persistKey,
 }: CategoryTreeProps) {
   const [expanded, setExpanded] = useState<Set<string>>(
-    () => new Set(prefixKeys(selected)),
+    () => new Set([...readOpen(persistKey), ...prefixKeys(selected)]),
   );
   const [dragging, setDragging] = useState<Dragged | null>(null);
   const [over, setOver] = useState<string | null>(null);
+
+  // O que está aberto fica guardado para quando a tela voltar (abrir uma página sai dela).
+  useEffect(() => {
+    if (!persistKey) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(persistKey, JSON.stringify([...expanded]));
+    } catch {
+      // sem armazenamento: vale só enquanto a tela está aberta
+    }
+  }, [expanded, persistKey]);
 
   // As páginas de cada categoria, em ordem alfabética.
   const pagesByCategory = useMemo(() => {
@@ -228,8 +299,6 @@ export function CategoryTree({
             setOver(null);
           }}
         >
-          <span className="size-6 shrink-0" />
-
           <Button
             variant="ghost"
             size="sm"
@@ -298,32 +367,21 @@ export function CategoryTree({
               aria-expanded={isOpen}
               onClick={() => toggle(node.path)}
             >
-              <ChevronRight
-                className={cn("transition-transform", isOpen && "rotate-90")}
-              />
+              <FolderHex open={isOpen} tone={isSelected ? "selected" : "normal"} />
             </Button>
           ) : (
-            <span className="size-6 shrink-0" />
+            <span className="flex size-6 shrink-0 items-center justify-center">
+              <FolderHex open={false} tone={isSelected ? "selected" : "empty"} />
+            </span>
           )}
 
           <Button
             variant="ghost"
             size="sm"
             aria-current={isSelected ? "true" : undefined}
-            className="min-w-0 flex-1 justify-start gap-2 font-medium hover:bg-transparent"
+            className="min-w-0 flex-1 justify-start gap-2 pl-1 font-medium hover:bg-transparent"
             onClick={choose}
           >
-            <HexDot
-              className={cn(
-                "transition-colors",
-                isSelected
-                  ? "bg-primary"
-                  : hasContent
-                    ? "bg-muted-foreground"
-                    : "bg-muted-foreground/35",
-              )}
-            />
-
             <TruncatedText>{node.name}</TruncatedText>
 
             {/* A contagem fica fora do botão, na ponta direita; aqui ela só compõe o nome acessível. */}
@@ -369,7 +427,7 @@ export function CategoryTree({
         </div>
 
         {hasContent && isOpen && (
-          <ul className="animate-enter-fade ml-3 border-l border-dashed border-border pl-0.5">
+          <ul className="animate-enter-fade ml-2.5 border-l border-dashed border-border pl-0">
             {node.children.map((child) => renderNode(child))}
             {nodePages.map((page) => renderPage(page))}
           </ul>

@@ -327,6 +327,7 @@ export function LibraryPage() {
             onMove={moveCategory}
             onMovePage={movePage}
             disabled={moving}
+            persistKey="library:categories:open"
           />
         </aside>
 
