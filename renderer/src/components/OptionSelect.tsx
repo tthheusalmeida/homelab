@@ -52,8 +52,9 @@ export function OptionSelect({
         data-active={active ? "true" : undefined}
         className={cn(
           "h-8 border-0 bg-muted/50 shadow-none",
-          // Lista aberta: contorno na cor de destaque, como o campo de texto em foco (sem borda, para o botão não mudar de tamanho).
-          "data-popup-open:ring-2 data-popup-open:ring-ring",
+          // Lista aberta: o mesmo contorno do campo de texto em foco (linha fina por dentro + halo de 3 px por fora),
+          // feito com sombras e não com borda, para o botão não mudar de tamanho.
+          "data-popup-open:inset-ring-1 data-popup-open:inset-ring-ring data-popup-open:ring-3 data-popup-open:ring-ring/50",
           triggerWidth,
           // Filtro aplicado: fundo e texto na cor de destaque, com um anel fino, nos dois temas.
           active &&
