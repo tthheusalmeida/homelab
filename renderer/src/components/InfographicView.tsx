@@ -7,7 +7,16 @@ import { cn } from '#lib/utils';
 
 import { CycleLayout } from './infographic/CycleLayout';
 import { FunnelLayout } from './infographic/FunnelLayout';
-import { HexMark, HexRule, HighlightedTitle, Kicker, PieceBox } from './infographic/common';
+import {
+  HexMark,
+  HexRule,
+  HighlightedTitle,
+  Kicker,
+  PieceBox,
+  PieceEditProvider,
+  SectionProvider,
+  type PieceTarget,
+} from './infographic/common';
 import { MosaicLayout } from './infographic/MosaicLayout';
 import { MythsLayout } from './infographic/MythsLayout';
 import { NumbersLayout } from './infographic/NumbersLayout';
@@ -34,6 +43,11 @@ const LAYOUTS: Record<InfographicLayoutId, (props: LayoutProps) => React.ReactNo
 interface InfographicViewProps {
   data: LibraryInfographic;
   className?: string;
+  /**
+   * Liga a edição das peças: cada peça vira um botão e clicar nela chama esta função com o lugar da
+   * peça. Sem isso o infográfico só é desenhado.
+   */
+  onPickPiece?: (target: PieceTarget) => void;
 }
 
 /** Capa: assunto, título, promessa, abertura (a definição ou o gancho) e a peça que resume o tema. */
@@ -56,7 +70,7 @@ function Cover({ data }: { data: LibraryInfographic }) {
         )}
       </div>
 
-      <PieceBox pieceKey={data.piece} className="mx-auto w-full max-w-64" />
+      <PieceBox pieceKey={data.piece} slot="cover" className="mx-auto w-full max-w-64" />
     </header>
   );
 }
@@ -86,45 +100,49 @@ function Takeaways({ items }: { items: string[] }) {
  * tema e cor de destaque. O quadro (`ref`) é o que a imagem PNG fotografa.
  */
 export const InfographicView = forwardRef<HTMLDivElement, InfographicViewProps>(
-  function InfographicView({ data, className }, ref) {
+  function InfographicView({ data, className, onPickPiece }, ref) {
     const total = data.sections.length;
 
     return (
-      <div
-        ref={ref}
-        className={cn(
-          '@container space-y-10 rounded-lg border bg-card p-5 text-card-foreground sm:p-6',
-          className,
-        )}
-      >
-        <Cover data={data} />
+      <PieceEditProvider value={onPickPiece ?? null}>
+        <div
+          ref={ref}
+          className={cn(
+            '@container space-y-10 rounded-lg border bg-card p-5 text-card-foreground sm:p-6',
+            className,
+          )}
+        >
+          <Cover data={data} />
 
-        {data.sections.map((section, index) => {
-          const Layout = LAYOUTS[section.layout];
+          {data.sections.map((section, index) => {
+            const Layout = LAYOUTS[section.layout];
 
-          return (
-            <section key={index} className="space-y-3" aria-label={section.title}>
-              <HexRule className="my-0" />
+            return (
+              <section key={index} className="space-y-3" aria-label={section.title}>
+                <HexRule className="my-0" />
 
-              {total > 1 && (
-                <Kicker className="text-brand-text">
-                  Parte {index + 1} de {total}
-                </Kicker>
-              )}
+                {total > 1 && (
+                  <Kicker className="text-brand-text">
+                    Parte {index + 1} de {total}
+                  </Kicker>
+                )}
 
-              <Layout data={section} />
-            </section>
-          );
-        })}
+                <SectionProvider value={index}>
+                  <Layout data={section} />
+                </SectionProvider>
+              </section>
+            );
+          })}
 
-        {data.takeaways && data.takeaways.length > 0 && (
-          <>
-            <HexRule className="my-0 mb-6" />
+          {data.takeaways && data.takeaways.length > 0 && (
+            <>
+              <HexRule className="my-0 mb-6" />
 
-            <Takeaways items={data.takeaways} />
-          </>
-        )}
-      </div>
+              <Takeaways items={data.takeaways} />
+            </>
+          )}
+        </div>
+      </PieceEditProvider>
     );
   },
 );

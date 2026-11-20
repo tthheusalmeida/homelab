@@ -16,6 +16,7 @@ const del = vi.hoisted(() => ({
   reset: vi.fn(),
   state: { isPending: false, error: null as Error | null },
 }));
+const saveInfo = vi.hoisted(() => ({ mutateAsync: vi.fn(), isPending: false }));
 const saveImage = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
 const snackbar = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 const capture = vi.hoisted(() => vi.fn());
@@ -25,6 +26,7 @@ vi.mock('../hooks/useLibrary', () => ({
   useGenerateInfographic: () => ({ mutate: generate.mutate, ...generate.state }),
   useSaveMindMapImage: () => ({ mutateAsync: saveImage.mutateAsync }),
   useDeleteInfographic: () => ({ mutate: del.mutate, reset: del.reset, ...del.state }),
+  useSaveInfographic: () => ({ mutateAsync: saveInfo.mutateAsync, isPending: saveInfo.isPending }),
 }));
 vi.mock('#components/Snackbar', () => ({ useSnackbar: () => snackbar }));
 vi.mock('#lib/infographic-image', () => ({ captureInfographicPng: capture }));
@@ -87,6 +89,8 @@ beforeEach(() => {
       options?.onSuccess?.(),
     );
   del.reset.mockReset();
+  saveInfo.mutateAsync.mockReset().mockResolvedValue({});
+  saveInfo.isPending = false;
   del.state = { isPending: false, error: null };
   generate.state = { isPending: false, isError: false, error: null };
   saveImage.mutateAsync.mockReset().mockResolvedValue({ saved: true, path: 'D:/x.png' });
@@ -426,5 +430,211 @@ describe('SummaryInfographic delete', () => {
     renderTab();
 
     expect(deleteButton()).toBeDisabled();
+  });
+});
+
+describe('SummaryInfographic edit', () => {
+  const editButton = () => screen.getByRole('button', { name: 'Editar as peças' });
+  const pieceButtons = () => screen.getAllByRole('button', { name: /^Trocar a peça:/ });
+  const startEditing = async () => userEvent.click(editButton());
+  const swapFirstPiece = async (name: RegExp = /Cruz médica/) => {
+    await userEvent.click(pieceButtons()[0]);
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  };
+
+  it('when there is an infographic, should offer to edit the pieces', () => {
+    saved.state = { isPending: false, data: infographic };
+
+    renderTab();
+
+    expect(editButton()).toBeInTheDocument();
+  });
+
+  it('when there is no infographic, should not offer to edit', () => {
+    burnAutoRequest();
+
+    renderTab();
+
+    expect(screen.queryByRole('button', { name: 'Editar as peças' })).not.toBeInTheDocument();
+  });
+
+  it('when not editing, should not make the pieces clickable', () => {
+    saved.state = { isPending: false, data: infographic };
+
+    renderTab();
+
+    expect(screen.queryAllByRole('button', { name: /^Trocar a peça:/ })).toHaveLength(0);
+  });
+
+  it('when editing starts, should make the pieces buttons, show the hint and hide generating and downloading', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+
+    await startEditing();
+
+    expect(pieceButtons().length).toBeGreaterThan(3);
+    expect(screen.getByText(/Clique em uma peça para trocá-la/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Gerar de novo' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Estrutura do infográfico')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Baixar o infográfico/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeDisabled();
+  });
+
+  it('when a piece is clicked and another one is chosen, should show the new piece and allow saving', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await startEditing();
+
+    await swapFirstPiece();
+
+    expect(screen.getByRole('img', { name: 'Cruz médica' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeEnabled();
+  });
+
+  it('when saving, should send the edited content without the fields of the server and leave editing', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await startEditing();
+    await swapFirstPiece();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    await waitFor(() => expect(saveInfo.mutateAsync).toHaveBeenCalledTimes(1));
+
+    const [payload] = saveInfo.mutateAsync.mock.calls[0] as [
+      { id: string; infographic: Record<string, unknown> },
+    ];
+
+    expect(payload.id).toBe(currentId);
+    expect(payload.infographic.piece).toBe('saude.cruz');
+    expect(payload.infographic).not.toHaveProperty('model');
+    expect(payload.infographic).not.toHaveProperty('stale');
+    await waitFor(() => expect(snackbar.success).toHaveBeenCalledWith('Infográfico salvo.'));
+    expect(screen.getByRole('button', { name: 'Editar as peças' })).toBeInTheDocument();
+  });
+
+  it('when saving fails, should show the reason and stay in edition with the change', async () => {
+    saved.state = { isPending: false, data: infographic };
+    saveInfo.mutateAsync.mockRejectedValue(new Error('Não foi possível salvar.'));
+    renderTab();
+    await startEditing();
+    await swapFirstPiece();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    await waitFor(() => expect(snackbar.error).toHaveBeenCalledWith('Não foi possível salvar.'));
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Cruz médica' })).toBeInTheDocument();
+  });
+
+  it('when cancelling without changes, should leave editing at once', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await startEditing();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar edição' }));
+
+    expect(screen.getByRole('button', { name: 'Editar as peças' })).toBeInTheDocument();
+    expect(screen.queryByText('Descartar as alterações?')).not.toBeInTheDocument();
+  });
+
+  it('when cancelling after changes, should ask before throwing them away', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await startEditing();
+    await swapFirstPiece();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar edição' }));
+
+    expect(screen.getByText('Descartar as alterações?')).toBeInTheDocument();
+    expect(saveInfo.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('when the user confirms discarding, should go back to the saved pieces', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await startEditing();
+    await swapFirstPiece();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar edição' }));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Descartar alterações' }));
+
+    expect(screen.getByRole('button', { name: 'Editar as peças' })).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Cruz médica' })).not.toBeInTheDocument();
+    expect(saveInfo.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('when the user leaves the tab in the middle of an edit and comes back, should resume the same draft', async () => {
+    saved.state = { isPending: false, data: infographic };
+    const first = renderTab();
+    await startEditing();
+    await swapFirstPiece();
+    first.unmount();
+
+    renderTab();
+
+    expect(screen.getByRole('img', { name: 'Cruz médica' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeEnabled();
+  });
+
+  it('when the infographic was edited, should say so', () => {
+    saved.state = { isPending: false, data: { ...infographic, edited: true } };
+
+    renderTab();
+
+    expect(screen.getByText('Editado')).toBeInTheDocument();
+  });
+
+  it('when the infographic was not edited, should not say so', () => {
+    saved.state = { isPending: false, data: infographic };
+
+    renderTab();
+
+    expect(screen.queryByText('Editado')).not.toBeInTheDocument();
+  });
+
+  it('when generating again an edited infographic, should ask before losing the edits', async () => {
+    saved.state = { isPending: false, data: { ...infographic, edited: true } };
+    burnAutoRequest();
+    renderTab();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Gerar de novo' }));
+
+    expect(screen.getByText('Gerar de novo e perder as suas edições?')).toBeInTheDocument();
+    expect(generate.mutate).not.toHaveBeenCalled();
+  });
+
+  it('when the user confirms generating again, should ask the AI', async () => {
+    saved.state = { isPending: false, data: { ...infographic, edited: true } };
+    burnAutoRequest();
+    renderTab();
+    await userEvent.click(screen.getByRole('button', { name: 'Gerar de novo' }));
+
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Gerar de novo' }),
+    );
+
+    expect(generate.mutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('when generating again an infographic that was not edited, should not ask', async () => {
+    saved.state = { isPending: false, data: infographic };
+    burnAutoRequest();
+    renderTab();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Gerar de novo' }));
+
+    expect(screen.queryByText('Gerar de novo e perder as suas edições?')).not.toBeInTheDocument();
+    expect(generate.mutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('when the AI is generating, should not allow editing', () => {
+    saved.state = { isPending: false, data: infographic };
+    generate.state = { isPending: true, isError: false, error: null };
+
+    renderTab();
+
+    expect(editButton()).toBeDisabled();
   });
 });

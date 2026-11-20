@@ -3,10 +3,20 @@ import { cn } from '#lib/utils';
 import { HexMark, HexNum, HighlightedTitle, Kicker, PieceBox } from './common';
 import type { LayoutProps } from './types';
 
-function Side({ piece, title, label }: { piece: string; title: string; label: string }) {
+function Side({
+  piece,
+  title,
+  label,
+  side,
+}: {
+  piece: string;
+  title: string;
+  label: string;
+  side: number;
+}) {
   return (
     <div className="flex flex-col items-center gap-2 text-center">
-      <PieceBox pieceKey={piece} className="w-28" />
+      <PieceBox pieceKey={piece} slot={{ side }} className="w-28" />
 
       <div className="space-y-0.5">
         <Kicker>{label}</Kicker>
@@ -35,13 +45,13 @@ export function VersusLayout({ data }: LayoutProps) {
       </div>
 
       <div className="grid items-center gap-4 @2xl:grid-cols-[1fr_auto_1fr]">
-        {a && <Side piece={a.piece} title={a.title} label="Opção A" />}
+        {a && <Side piece={a.piece} title={a.title} label="Opção A" side={0} />}
 
         <div className="flex justify-center">
           <HexNum n="VS" large />
         </div>
 
-        {b && <Side piece={b.piece} title={b.title} label="Opção B" />}
+        {b && <Side piece={b.piece} title={b.title} label="Opção B" side={1} />}
       </div>
 
       <div className="space-y-2">

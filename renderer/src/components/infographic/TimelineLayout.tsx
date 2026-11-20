@@ -36,7 +36,7 @@ export function TimelineLayout({ data }: LayoutProps) {
                     : '@2xl:col-start-3',
                 )}
               >
-                <PieceBox pieceKey={item.piece} className="w-20 shrink-0" />
+                <PieceBox pieceKey={item.piece} slot={{ item: index }} className="w-20 shrink-0" />
 
                 <div className="min-w-0 space-y-1">
                   {item.tag && <TagChip>{item.tag}</TagChip>}

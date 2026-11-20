@@ -240,6 +240,19 @@ export interface LibraryInfographic {
   createdAt: string;
   /** O texto do resumo mudou depois que o infográfico foi gerado. */
   stale: boolean;
+  /** O usuário editou o infográfico à mão (trocou peças): gerar de novo com a IA apagaria as edições. */
+  edited?: boolean;
+}
+
+/** O que o usuário envia ao salvar um infográfico editado (o servidor cuida do resto). */
+export type LibraryInfographicInput = Omit<
+  LibraryInfographic,
+  'model' | 'createdAt' | 'stale' | 'edited'
+>;
+
+export interface LibraryInfographicSaveRequest {
+  id: string;
+  infographic: LibraryInfographicInput;
 }
 
 export interface LibraryInfographicRequest {

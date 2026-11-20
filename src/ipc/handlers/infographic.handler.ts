@@ -1,5 +1,10 @@
 import { IpcChannels } from '../../shared/channels';
-import type { LibraryInfographic, LibraryInfographicRequest } from '../../shared/contracts/library';
+import type {
+  LibraryInfographic,
+  LibraryInfographicInput,
+  LibraryInfographicRequest,
+  LibraryInfographicSaveRequest,
+} from '../../shared/contracts/library';
 import { IpcError, IpcErrorCode } from '../../shared/errors';
 import { isInfographicLayoutId } from '../../shared/infographic-layouts';
 import { IpcHandler, type IpcRoute } from '../ipc-handler';
@@ -11,12 +16,15 @@ export interface InfographicPort {
     id: string,
     options: Pick<LibraryInfographicRequest, 'modelId' | 'layout'>,
   ): Promise<LibraryInfographic>;
+  /** Guarda o infográfico como o usuário o editou. */
+  save(id: string, input: LibraryInfographicInput): Promise<LibraryInfographic>;
   /** Apaga só o infográfico da página (o resumo e o mapa mental ficam). */
   delete(id: string): Promise<void>;
 }
 
 export const InfographicPayloadMessages = {
   layout: 'Modelo de infográfico desconhecido.',
+  input: 'Informe o infográfico com as seções.',
 } as const;
 
 /**
@@ -32,6 +40,20 @@ export class InfographicHandler extends IpcHandler {
   routes(): IpcRoute[] {
     return [
       this.route(IpcChannels.library.infographic.get, ({ id }) => this.infographics.get(id)),
+      this.route(
+        IpcChannels.library.infographic.save,
+        ({ id, infographic }: LibraryInfographicSaveRequest) => {
+          if (
+            typeof infographic !== 'object' ||
+            infographic === null ||
+            !Array.isArray(infographic.sections)
+          ) {
+            throw new IpcError(IpcErrorCode.VALIDATION, InfographicPayloadMessages.input);
+          }
+
+          return this.infographics.save(id, infographic);
+        },
+      ),
       this.route(IpcChannels.library.infographic.delete, ({ id }) => this.infographics.delete(id)),
       this.route(
         IpcChannels.library.infographic.generate,

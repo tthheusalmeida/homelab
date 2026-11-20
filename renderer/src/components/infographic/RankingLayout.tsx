@@ -24,7 +24,7 @@ export function RankingLayout({ data }: LayoutProps) {
             <HexNum n={index + 1} large />
 
             <div className={cn('rounded-md', DOT_GRID)}>
-              <PieceBox pieceKey={item.piece} />
+              <PieceBox pieceKey={item.piece} slot={{ item: index }} />
             </div>
 
             <div className="min-w-0">

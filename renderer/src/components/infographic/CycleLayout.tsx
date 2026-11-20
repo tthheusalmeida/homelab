@@ -93,7 +93,7 @@ export function CycleLayout({ data }: LayoutProps) {
               <HexNum n={index + 1} />
             </span>
 
-            <PieceBox pieceKey={item.piece} className="w-14" />
+            <PieceBox pieceKey={item.piece} slot={{ item: index }} className="w-14" />
 
             <h4 className="text-[15px] font-semibold tracking-tight">{item.title}</h4>
 

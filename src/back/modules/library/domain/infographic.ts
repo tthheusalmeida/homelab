@@ -25,6 +25,8 @@ export interface StoredInfographic extends ParsedInfographic {
   contentHash: string;
   model: string;
   createdAt: string;
+  /** O usuário editou o infográfico à mão (trocou peças). */
+  edited?: boolean;
 }
 
 /** A resposta da IA não tem um infográfico utilizável. */

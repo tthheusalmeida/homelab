@@ -26,7 +26,7 @@ export function MythsLayout({ data }: LayoutProps) {
             key={index}
             className="grid items-stretch gap-2 @2xl:grid-cols-[76px_1fr_1fr] @2xl:gap-3"
           >
-            <PieceBox pieceKey={item.piece} className="w-[76px]" />
+            <PieceBox pieceKey={item.piece} slot={{ item: index }} className="w-[76px]" />
 
             <div
               data-myth="mito"

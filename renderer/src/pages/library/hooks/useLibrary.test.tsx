@@ -24,6 +24,7 @@ vi.mock("../api/library", () => ({
   generateInfographic: vi.fn(),
   deleteMindMap: vi.fn(),
   deleteInfographic: vi.fn(),
+  saveInfographic: vi.fn(),
   saveMindMapImage: vi.fn(),
   saveMindMap: vi.fn(),
 }));
@@ -48,6 +49,7 @@ import {
   useMindMap,
   usePublishDocument,
   useReindex,
+  useSaveInfographic,
   useSaveMindMap,
   useSaveMindMapImage,
   useSuggestClassification,
@@ -581,5 +583,57 @@ describe("delete generated content hooks", () => {
 
     await waitFor(() => expect(result.current.remove.isError).toBe(true));
     expect(result.current.query.data).toEqual(infographicSaved);
+  });
+});
+
+describe("save infographic hook", () => {
+  const before = { title: "T", piece: "a.b", sections: [], model: "m", createdAt: "d", stale: false };
+
+  it("when saving, should put the saved infographic in its query without refreshing the library", async () => {
+    vi.mocked(library.getInfographic).mockResolvedValue(before as never);
+    vi.mocked(library.saveInfographic).mockResolvedValue({ ...before, piece: "c.d", edited: true } as never);
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(
+      () => ({ query: useInfographic("id1"), save: useSaveInfographic() }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.query.data).toEqual(before));
+
+    await act(async () => {
+      await result.current.save.mutateAsync({
+        id: "id1",
+        infographic: { title: "T", piece: "c.d", sections: [] },
+      });
+    });
+
+    expect(library.saveInfographic).toHaveBeenCalledWith("id1", {
+      title: "T",
+      piece: "c.d",
+      sections: [],
+    });
+    await waitFor(() => expect(result.current.query.data).toMatchObject({ piece: "c.d", edited: true }));
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it("when saving fails, should keep what was saved before and expose the error", async () => {
+    vi.mocked(library.getInfographic).mockResolvedValue(before as never);
+    vi.mocked(library.saveInfographic).mockRejectedValue(new Error("Falha"));
+    const { wrapper } = setup();
+    const { result } = renderHook(
+      () => ({ query: useInfographic("id1"), save: useSaveInfographic() }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.query.data).toEqual(before));
+
+    await act(async () => {
+      await result.current
+        .save.mutateAsync({ id: "id1", infographic: { title: "T", piece: "c.d", sections: [] } })
+        .catch(() => undefined);
+    });
+
+    await waitFor(() => expect(result.current.save.isError).toBe(true));
+    expect(result.current.query.data).toEqual(before);
   });
 });

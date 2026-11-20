@@ -73,6 +73,7 @@ import type {
   LibraryIndexStatus,
   LibraryInfographic,
   LibraryInfographicRequest,
+  LibraryInfographicSaveRequest,
   LibraryListFilters,
   LibraryMindMap,
   LibraryMindMapImageRequest,
@@ -262,6 +263,10 @@ export interface IpcContracts {
   };
   [IpcChannels.library.infographic.generate]: {
     request: LibraryInfographicRequest;
+    response: LibraryInfographic;
+  };
+  [IpcChannels.library.infographic.save]: {
+    request: LibraryInfographicSaveRequest;
     response: LibraryInfographic;
   };
   [IpcChannels.library.infographic.delete]: { request: LibraryDocumentRequest; response: void };

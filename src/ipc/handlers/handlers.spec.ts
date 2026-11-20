@@ -79,7 +79,7 @@ describe('createHandlers', () => {
           },
           libraryClassifier: { suggest: jest.fn() },
           mindMaps: { get: jest.fn(), generate: jest.fn(), save: jest.fn(), delete: jest.fn() },
-          infographics: { get: jest.fn(), generate: jest.fn(), delete: jest.fn() },
+          infographics: { get: jest.fn(), generate: jest.fn(), save: jest.fn(), delete: jest.fn() },
           jobs: {
             catalog: { list: jest.fn(), get: jest.fn(), listTypes: jest.fn() },
             launcher: {

@@ -1,7 +1,13 @@
 import { BadGatewayException, BadRequestException, Injectable } from '@nestjs/common';
 
-import type { LibraryInfographic } from '../../../../shared/contracts/library';
-import type { InfographicLayoutId } from '../../../../shared/infographic-layouts';
+import type {
+  LibraryInfographic,
+  LibraryInfographicInput,
+} from '../../../../shared/contracts/library';
+import {
+  isInfographicLayoutId,
+  type InfographicLayoutId,
+} from '../../../../shared/infographic-layouts';
 import { AIService } from '../../ai/ai.service';
 import { buildInfographicPrompt } from '../../ai/prompts/infographic.prompt';
 import { cheapestModel } from '../../ai/providers/gemini/gemini.pricing';
@@ -56,6 +62,54 @@ export class InfographicService {
   async delete(id: string): Promise<void> {
     await this.library.get(id);
     this.store.delete(id);
+  }
+
+  /**
+   * Guarda o infográfico como o usuário o editou (hoje: peças trocadas). Passa pela mesma limpeza da
+   * resposta da IA (textos cortados nos limites, modelos e peças conferidos, peça vazia preenchida) e
+   * fica marcado como editado, para gerar de novo não apagar as edições sem perguntar. Não fica
+   * desatualizado: o usuário o conferiu com o texto de agora. Só para resumos.
+   */
+  async save(id: string, input: LibraryInfographicInput): Promise<LibraryInfographic> {
+    const { meta, content } = await this.library.get(id);
+
+    if (meta.type !== DocumentTypeOptions.SUMMARY) {
+      throw new BadRequestException('O infográfico só existe para resumos.');
+    }
+
+    const sections: unknown = input?.sections;
+    const only: unknown =
+      Array.isArray(sections) && sections.length === 1 ? (sections[0] as unknown) : null;
+    const layout: unknown = (only as { layout?: unknown } | null)?.layout;
+    let parsed;
+
+    try {
+      parsed = parseInfographic(
+        JSON.stringify(input),
+        isInfographicLayoutId(layout) ? layout : undefined,
+      );
+    } catch (error) {
+      if (error instanceof InvalidInfographicError) {
+        throw new BadRequestException(
+          'O infográfico editado precisa de título e de seções válidas.',
+        );
+      }
+
+      throw error;
+    }
+
+    const previous = this.store.get(id);
+    const stored: StoredInfographic = {
+      contentHash: hashContent(content),
+      model: previous?.model ?? 'manual',
+      createdAt: previous?.createdAt ?? new Date().toISOString(),
+      edited: true,
+      ...parsed,
+    };
+
+    this.store.set(id, stored);
+
+    return toView(stored, stored.contentHash);
   }
 
   /** Gera (ou gera de novo) o infográfico da página e o guarda. */

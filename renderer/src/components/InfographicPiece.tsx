@@ -168,6 +168,11 @@ function renderShape(
 
 const f = (n: number) => +n.toFixed(3);
 
+/** O nome da peça (o de leitores de tela); chave vazia ou desconhecida é só "Ilustração". */
+export function pieceName(key: string): string {
+  return PIECES.get(key)?.name ?? 'Ilustração';
+}
+
 /** Escala e deslocamento que centralizam a caixa da peça no quadro. */
 export function pieceFit(box: readonly [number, number, number, number]) {
   const [x, y, w, h] = box;

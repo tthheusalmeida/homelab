@@ -23,6 +23,7 @@ import {
   getTags,
   publishDocument,
   reindex,
+  saveInfographic,
   saveMindMap,
   saveMindMapImage,
   suggestClassification,
@@ -34,6 +35,7 @@ import type {
   UpdateDocumentInput,
 } from "../types/library.types";
 
+import type { LibraryInfographicInput } from "#shared/contracts/library";
 import type { InfographicLayoutId } from "#shared/infographic-layouts";
 
 export const LIBRARY_KEY = ["library"] as const;
@@ -117,6 +119,21 @@ export function useDeleteMindMap() {
       queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], null);
       await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
     },
+  });
+}
+
+/**
+ * Guarda o infográfico editado e o põe direto na consulta (não invalida a biblioteca toda), então a
+ * tela já mostra o que foi salvo.
+ */
+export function useSaveInfographic() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, infographic }: { id: string; infographic: LibraryInfographicInput }) =>
+      saveInfographic(id, infographic),
+    onSuccess: (infographic, { id }) =>
+      queryClient.setQueryData([...LIBRARY_KEY, "infographic", id], infographic),
   });
 }
 

@@ -30,14 +30,16 @@ export function StepsLayout({ data }: LayoutProps) {
 
           {data.subtitle && <p className="max-w-[52ch] text-muted-foreground">{data.subtitle}</p>}
         </div>
-        {data.piece && <PieceBox pieceKey={data.piece} className="mx-auto w-full max-w-44" />}
+        {data.piece && (
+          <PieceBox pieceKey={data.piece} slot="section" className="mx-auto w-full max-w-44" />
+        )}
       </div>
 
       <ol className={cn('grid gap-10 @lg:grid-cols-2', COLUMNS[items.length])}>
         {items.map((item, index) => (
           <li key={index} className="flex flex-col gap-2">
             <div className="relative">
-              <PieceBox pieceKey={item.piece} />
+              <PieceBox pieceKey={item.piece} slot={{ item: index }} />
 
               {index < items.length - 1 && (
                 <span

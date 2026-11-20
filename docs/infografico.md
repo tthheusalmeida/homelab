@@ -59,6 +59,13 @@ Campos de cada seção: `layout`, `title` (o que a seção explica), `subtitle`,
 - **Sem edição por enquanto:** o infográfico é o que a IA gerou. Para mudar, gere de novo (ou escolha um modelo só).
 - Um infográfico guardado no formato antigo (um modelo só, sem seções, de versões de teste) é tratado como não gerado.
 
+## Edição (trocar peças)
+- O ícone do lápis ("Editar as peças") ao lado do número de seções abre o **modo de edição**: cada peça do infográfico (a da capa, a da seção, a de cada item e os dois lados do comparativo) vira um botão com um lápis; clicar abre `PiecePickerDialog`, com o banco inteiro por tema e a busca (`PieceCatalog`, o mesmo catálogo da galeria), e escolher uma peça troca só aquele espaço. Enquanto edita, escolher o modelo, gerar de novo, baixar e excluir ficam fora da barra, que passa a ter só **Salvar alterações** (desabilitado sem mudança) e **Cancelar edição** (pergunta antes se há mudança). Uma dica diz "Clique em uma peça para trocá-la. As trocas só valem depois de salvar."
+- O rascunho vive só nesta sessão (por página): trocar de aba, entrar no modo leitura ou sair da página no meio da edição não perde as trocas; ao salvar ou descartar, ele sai.
+- **Salvar** envia o conteúdo ao `library:infographic:save` (`InfographicService.save`): passa pela mesma limpeza da resposta da IA, mantém o modelo e a data originais (ou "manual"), marca `edited: true` e **não fica desatualizado** (a pessoa o conferiu com o texto de agora). Um selo "Editado" aparece perto do número de seções.
+- **Gerar de novo um infográfico editado** (Gerar de novo, Atualizar com IA ou Tentar de novo) pergunta antes: "Gerar de novo e perder as suas edições?". Gerar substitui o infográfico inteiro e tira a marca de editado.
+- Código: `lib/infographic-edit.ts` (`pieceAt`, `withPiece`, `toSaveInput`, `isDraftDirty`, puros e testados); `PieceBox` em `components/infographic/common.tsx` vira botão quando há `PieceEditProvider` (passado por `InfographicView` via `onPickPiece`), e cada modelo informa o lugar da peça (`slot`). Os textos ainda não são editáveis por aqui.
+
 ## Galeria (Configurações > Infográfico)
 O resumo só **monta** o infográfico; para **conhecer** o que a IA tem à disposição existe a seção **Infográfico** das Configurações (`settings/src/sections/InfographicGallerySection.tsx`), com duas abas:
 - **Modelos:** um infográfico de exemplo (`lib/infographic-sample.ts`, tema economia) com os 10 modelos, um por seção, desenhado pelo mesmo `InfographicView` do resumo. Atalhos levam a cada modelo. Não gasta IA nem depende de um resumo.
@@ -69,7 +76,7 @@ A galeria usa o tema e a cor de destaque do app (mude em Aparência e volte para
 Dois ícones: **PNG com fundo** e **PNG sem fundo (transparente)**, com tooltip. O renderer fotografa o quadro (`lib/infographic-image.ts`, `html-to-image`, 2x; fixa o preenchimento e o traço das peças antes da foto, porque a biblioteca perderia o que vem de classe CSS) e envia o PNG em base64 pelo canal `library:mind-map:save-image` (o mesmo do mapa mental; o main confere que é um PNG e abre o diálogo "Salvar como"). Nome sugerido: "Infográfico - título da página.png" (e "(sem fundo)").
 
 ## Canais IPC
-`library:infographic:get` (`{ id }` → infográfico ou `null`), `library:infographic:generate` e `library:infographic:delete` (`{ id }` → nada; apaga só o infográfico) (`{ id, modelId?, layout? }` → infográfico). Página inexistente é `NOT_FOUND`, página que não é resumo ou modelo desconhecido é `VALIDATION` e falha da IA é `PROVIDER_FAILED`. **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`**: a lista de canais permitidos fica no preload, compilado na abertura.
+`library:infographic:get` (`{ id }` → infográfico ou `null`), `library:infographic:generate`, `library:infographic:save` (`{ id, infographic }` → o infográfico editado) e `library:infographic:delete` (`{ id }` → nada; apaga só o infográfico) (`{ id, modelId?, layout? }` → infográfico). Página inexistente é `NOT_FOUND`, página que não é resumo ou modelo desconhecido é `VALIDATION` e falha da IA é `PROVIDER_FAILED`. **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`**: a lista de canais permitidos fica no preload, compilado na abertura.
 
 ## Testes
 Back: `infographic.spec.ts` (validação), `infographic.prompt.spec.ts`, `infographic-store.spec.ts`, `infographic.service.spec.ts`, `infographic.handler.spec.ts`, `infographic-pieces.spec.ts` (catálogo e modelos) e a exclusão junto com a página em `library.service.spec.ts`. Renderer: `InfographicPiece` (selo, glifo, recorte e `glyphFit`), `InfographicView` (os 10 modelos), `InfographicGallerySection` e `lib/infographic-sample.test.ts` (a galeria e o exemplo), `SummaryInfographic`, `lib/infographic*.test.ts`, api, hooks e `DocumentPage.summary.test.tsx`.
@@ -77,4 +84,4 @@ Back: `infographic.spec.ts` (validação), `infographic.prompt.spec.ts`, `infogr
 ## O que ficou para as próximas fases
 - Testar a qualidade da escolha de modelo e de peças com resumos reais e ajustar o prompt e as palavras-chave do catálogo.
 - Refinar o desenho das peças (a primeira rodada foi feita por código, sem refino manual) e acrescentar peças sob demanda.
-- Editar textos e trocar peças à mão; escolher o modelo do Gemini.
+- Editar os textos à mão (trocar peças já existe); escolher o modelo do Gemini.

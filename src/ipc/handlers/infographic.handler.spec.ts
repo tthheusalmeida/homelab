@@ -30,10 +30,11 @@ const infographic = {
   stale: false,
 };
 
-function setup(overrides: Partial<Record<'get' | 'generate' | 'delete', jest.Mock>> = {}) {
+function setup(overrides: Partial<Record<'get' | 'generate' | 'save' | 'delete', jest.Mock>> = {}) {
   const port = {
     get: jest.fn().mockResolvedValue(infographic),
     generate: jest.fn().mockResolvedValue(infographic),
+    save: jest.fn().mockResolvedValue({ ...infographic, edited: true }),
     delete: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   };
@@ -53,6 +54,31 @@ describe('InfographicHandler', () => {
       data: infographic,
     });
     expect(port.get).toHaveBeenCalledWith('1');
+  });
+
+  it('when library:infographic:save is called, should save the infographic as the user edited it', async () => {
+    const { ipc, port } = setup();
+    const input = { title: 'T', piece: 'financas.moedas', sections: [{ layout: 'steps' }] };
+
+    await expect(
+      ipc.invoke(IpcChannels.library.infographic.save, { id: '1', infographic: input }),
+    ).resolves.toEqual({ ok: true, data: { ...infographic, edited: true } });
+    expect(port.save).toHaveBeenCalledWith('1', input);
+  });
+
+  it.each([
+    ['without the infographic', undefined],
+    ['with the infographic as text', 'x'],
+    ['with null', null],
+    ['without the sections', { title: 'T' }],
+    ['with the sections as text', { title: 'T', sections: 'x' }],
+  ])('when saving %s, should answer VALIDATION and not save', async (_name, value) => {
+    const { ipc, port } = setup();
+
+    await expect(
+      ipc.invoke(IpcChannels.library.infographic.save, { id: '1', infographic: value as never }),
+    ).resolves.toMatchObject({ ok: false, error: { code: IpcErrorCode.VALIDATION } });
+    expect(port.save).not.toHaveBeenCalled();
   });
 
   it('when library:infographic:delete is called, should delete only the infographic of that page', async () => {

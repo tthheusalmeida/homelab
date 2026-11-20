@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { Download, ImageOff, LayoutPanelTop, Trash2 } from 'lucide-react';
+import { Check, Download, ImageOff, LayoutPanelTop, Pencil, Trash2, X } from 'lucide-react';
 
+import { isDraftDirty, pieceAt, toSaveInput, withPiece } from '#lib/infographic-edit';
 import { captureInfographicPng } from '#lib/infographic-image';
 import {
   AUTO_LAYOUT,
@@ -12,6 +13,7 @@ import {
 import { cn } from '#lib/utils';
 
 import { Callout } from '#components/Callout';
+import { ConfirmDialog } from '#components/ConfirmDialog';
 import { EmptyState } from '#components/EmptyState';
 import { GenerateButton } from '#components/GenerateButton';
 import { HexLoader } from '#components/Hex';
@@ -19,16 +21,20 @@ import { IconButton } from '#components/IconButton';
 import { InfographicView } from '#components/InfographicView';
 import { LoadingState } from '#components/LoadingState';
 import { OptionSelect } from '#components/OptionSelect';
+import type { PieceTarget } from '#components/infographic/common';
 import { useSnackbar } from '#components/Snackbar';
+import type { LibraryInfographic } from '#shared/contracts/library';
 
 import {
   useDeleteInfographic,
   useGenerateInfographic,
   useInfographic,
+  useSaveInfographic,
   useSaveMindMapImage,
 } from '../hooks/useLibrary';
 
 import { DeleteGeneratedDialog } from './DeleteGeneratedDialog';
+import { PiecePickerDialog } from './PiecePickerDialog';
 
 interface SummaryInfographicProps {
   documentId: string;
@@ -46,6 +52,13 @@ const DOWNLOAD_FAILED = 'Não foi possível gerar a imagem do infográfico.';
 const requestedThisSession = new Set<string>();
 
 /**
+ * Rascunhos de edição em andamento, por página, nesta sessão. Trocar de aba, entrar no modo leitura
+ * ou sair da página no meio da edição não perde as trocas já feitas: ao voltar, a edição continua.
+ * Sai daqui ao salvar ou descartar.
+ */
+const draftsThisSession = new Map<string, LibraryInfographic>();
+
+/**
  * Aba "Infográfico" de um resumo. Como no mapa mental, **na primeira vez que a aba abre e o resumo
  * ainda não tem infográfico, a IA já gera um** (história completa: capa, seções e fechamento). Se já
  * existe um, ele aparece na hora e a IA só roda de novo quando a pessoa clica em Gerar de novo.
@@ -55,12 +68,19 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
   const saved = useInfographic(documentId);
   const generate = useGenerateInfographic();
   const deleteInfographic = useDeleteInfographic();
+  const saveInfographic = useSaveInfographic();
   const saveImage = useSaveMindMapImage();
   const snackbar = useSnackbar();
 
   const [choice, setChoice] = useState<LayoutChoice>(AUTO_LAYOUT);
   const [exporting, setExporting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // O rascunho da edição (`null` = não está editando), o lugar da peça que está sendo trocada e a pergunta aberta.
+  const [draft, setDraft] = useState<LibraryInfographic | null>(
+    () => draftsThisSession.get(documentId) ?? null,
+  );
+  const [picking, setPicking] = useState<PieceTarget | null>(null);
+  const [confirm, setConfirm] = useState<'discard' | 'regenerate' | null>(null);
   const stage = useRef<HTMLDivElement>(null);
 
   const pending = generate.isPending;
@@ -69,6 +89,48 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
 
   const generateNow = () =>
     generate.mutate({ id: documentId, layout: choice === AUTO_LAYOUT ? undefined : choice });
+  // Infográfico editado à mão: gerar de novo apagaria as edições, então pergunta antes.
+  const requestGenerate = () => (saved.data?.edited ? setConfirm('regenerate') : generateNow());
+
+  const editing = draft !== null;
+  const dirty = draft && data ? isDraftDirty(draft, data) : false;
+
+  const changeDraft = (next: LibraryInfographic) => {
+    draftsThisSession.set(documentId, next);
+    setDraft(next);
+  };
+
+  const startEditing = () => {
+    if (data) {
+      changeDraft(structuredClone(data));
+    }
+  };
+
+  const closeEditing = () => {
+    draftsThisSession.delete(documentId);
+    setDraft(null);
+    setPicking(null);
+  };
+
+  const cancelEditing = () => (dirty ? setConfirm('discard') : closeEditing());
+
+  const saveEditing = async () => {
+    if (!draft) {
+      return;
+    }
+
+    try {
+      await saveInfographic.mutateAsync({ id: documentId, infographic: toSaveInput(draft) });
+      snackbar.success('Infográfico salvo.');
+      closeEditing();
+    } catch (error) {
+      snackbar.error(
+        error instanceof Error && error.message
+          ? error.message
+          : 'Não foi possível salvar o infográfico.',
+      );
+    }
+  };
 
   const missing = !saved.isPending && saved.data === null;
 
@@ -128,13 +190,19 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
 
   let notice = null;
 
-  if (failed) {
+  if (editing) {
+    notice = (
+      <Callout role="note">
+        Clique em uma peça para trocá-la. As trocas só valem depois de salvar.
+      </Callout>
+    );
+  } else if (failed) {
     notice = (
       <Callout
         tone="danger"
         role="alert"
         action={
-          <GenerateButton pending={pending} onClick={generateNow} primary>
+          <GenerateButton pending={pending} onClick={requestGenerate} primary>
             Tentar de novo
           </GenerateButton>
         }
@@ -149,7 +217,7 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
         tone="warning"
         role="status"
         action={
-          <GenerateButton pending={pending} onClick={generateNow}>
+          <GenerateButton pending={pending} onClick={requestGenerate}>
             Atualizar com IA
           </GenerateButton>
         }
@@ -163,29 +231,67 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
     <div className={cn('space-y-4', className)} aria-live="polite">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <OptionSelect
-            label="Estrutura do infográfico"
-            value={choice}
-            options={LAYOUT_OPTIONS}
-            placeholder="Modelo"
-            triggerWidth="w-44"
-            contentWidth="w-56"
-            disabled={pending}
-            onValueChange={(value) => value && setChoice(value as LayoutChoice)}
-          />
+          {!editing && (
+            <OptionSelect
+              label="Estrutura do infográfico"
+              value={choice}
+              options={LAYOUT_OPTIONS}
+              placeholder="Modelo"
+              triggerWidth="w-44"
+              contentWidth="w-56"
+              disabled={pending}
+              onValueChange={(value) => value && setChoice(value as LayoutChoice)}
+            />
+          )}
 
-          {data && !notice && (
-            <GenerateButton pending={pending} onClick={generateNow}>
+          {data && !notice && !editing && (
+            <GenerateButton pending={pending} onClick={requestGenerate}>
               Gerar de novo
             </GenerateButton>
           )}
         </div>
 
-        {data && (
+        {data && editing && (
           <div className="flex items-center gap-2">
+            <IconButton
+              label={saveInfographic.isPending ? 'Salvando…' : 'Salvar alterações'}
+              variant="default"
+              disabled={!dirty || saveInfographic.isPending}
+              aria-busy={saveInfographic.isPending}
+              onClick={() => void saveEditing()}
+            >
+              {saveInfographic.isPending ? (
+                <HexLoader className="size-4" label="Salvando" />
+              ) : (
+                <Check />
+              )}
+            </IconButton>
+
+            <IconButton
+              label="Cancelar edição"
+              disabled={saveInfographic.isPending}
+              onClick={cancelEditing}
+            >
+              <X />
+            </IconButton>
+          </div>
+        )}
+
+        {data && !editing && (
+          <div className="flex items-center gap-2">
+            {data.edited && (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[11px] text-brand-text">
+                Editado
+              </span>
+            )}
+
             <span className="font-mono text-xs text-muted-foreground">
               {data.sections.length === 1 ? '1 seção' : `${data.sections.length} seções`}
             </span>
+
+            <IconButton label="Editar as peças" disabled={pending} onClick={startEditing}>
+              <Pencil />
+            </IconButton>
 
             <IconButton
               label={exporting ? 'Gerando imagem…' : 'Baixar o infográfico como PNG com fundo'}
@@ -226,7 +332,11 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
 
       {data ? (
         <div className={cn('transition-opacity', pending && 'opacity-50')}>
-          <InfographicView ref={stage} data={data} />
+          <InfographicView
+            ref={stage}
+            data={draft ?? data}
+            onPickPiece={draft ? setPicking : undefined}
+          />
         </div>
       ) : pending ? (
         <div className="flex min-h-60 items-center justify-center rounded-xl border border-dashed">
@@ -244,6 +354,45 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
           }
         />
       )}
+
+      <PiecePickerDialog
+        open={picking !== null && draft !== null}
+        onOpenChange={(open) => !open && setPicking(null)}
+        currentKey={draft && picking ? pieceAt(draft, picking) : ''}
+        onPick={(key) => {
+          if (draft && picking) {
+            changeDraft(withPiece(draft, picking, key));
+          }
+
+          setPicking(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirm === 'discard'}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        title="Descartar as alterações?"
+        description="As peças que você trocou e ainda não salvou voltam como estavam."
+        confirmLabel="Descartar alterações"
+        destructive
+        onConfirm={() => {
+          setConfirm(null);
+          closeEditing();
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirm === 'regenerate'}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        title="Gerar de novo e perder as suas edições?"
+        description="Você editou este infográfico à mão. Gerar de novo com a IA cria um infográfico novo a partir do resumo e apaga as suas edições. Não há como desfazer."
+        confirmLabel="Gerar de novo"
+        destructive
+        onConfirm={() => {
+          setConfirm(null);
+          generateNow();
+        }}
+      />
 
       <DeleteGeneratedDialog
         kind="infographic"

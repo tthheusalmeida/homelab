@@ -90,6 +90,7 @@ export const IpcChannels = {
     infographic: {
       get: 'library:infographic:get',
       generate: 'library:infographic:generate',
+      save: 'library:infographic:save',
       delete: 'library:infographic:delete',
     },
     inbox: 'library:inbox',

@@ -1,4 +1,4 @@
-import { InfographicPiece } from '#components/InfographicPiece';
+import { PieceBox } from './common';
 
 import { Kicker } from './common';
 import type { LayoutProps } from './types';
@@ -45,7 +45,7 @@ export function RadialLayout({ data }: LayoutProps) {
 
         <div className="col-span-2 mx-auto w-[min(14rem,70%)] text-center @2xl:absolute @2xl:top-1/2 @2xl:left-1/2 @2xl:w-[24%] @2xl:-translate-x-1/2 @2xl:-translate-y-1/2">
           <div className="rounded-full border border-brand bg-background bg-[radial-gradient(color-mix(in_oklab,var(--foreground)_9%,transparent)_1px,transparent_1.2px)] bg-[length:14px_14px]">
-            <InfographicPiece pieceKey={data.piece} />
+            <PieceBox pieceKey={data.piece} slot="section" />
           </div>
 
           <h3 className="mt-1 text-[clamp(0.9rem,2.4vw,1.25rem)] leading-tight font-extrabold tracking-tight">
@@ -59,7 +59,7 @@ export function RadialLayout({ data }: LayoutProps) {
             className="flex flex-col gap-0.5 text-center @2xl:absolute @2xl:w-[19%] @2xl:-translate-x-1/2 @2xl:-translate-y-1/2"
             style={{ left: `${positions[index][0]}%`, top: `${positions[index][1]}%` }}
           >
-            <InfographicPiece pieceKey={item.piece} />
+            <PieceBox pieceKey={item.piece} slot={{ item: index }} />
 
             <h4 className="text-sm font-semibold tracking-tight">{item.title}</h4>
 

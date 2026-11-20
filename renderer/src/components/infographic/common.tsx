@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 
-import { Check, X } from 'lucide-react';
+import { Check, Pencil, X } from 'lucide-react';
 
 import { cn } from '#lib/utils';
 
-import { InfographicPiece } from '#components/InfographicPiece';
+import { InfographicPiece, pieceName } from '#components/InfographicPiece';
 
 const HEX = '[clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]';
 
@@ -74,12 +74,91 @@ export function HexMark({ kind = 'ok' }: { kind?: 'ok' | 'bad' | 'true' }) {
   );
 }
 
-/** A peça (o selo com o glifo) no tamanho dado pelo `className` do pai. */
-export function PieceBox({ pieceKey, className }: { pieceKey: string; className?: string }) {
+/**
+ * Onde uma peça mora no infográfico (para a edição saber qual trocar): a da capa, a da seção, a de
+ * um item ou a de um lado do comparativo.
+ */
+export type PieceTarget =
+  | { section: null; part: 'piece' }
+  | { section: number; part: 'piece' }
+  | { section: number; part: 'item'; index: number }
+  | { section: number; part: 'side'; index: number };
+
+/** O espaço da peça dentro de um modelo (a seção em que está vem do contexto). */
+export type PieceSlot = 'cover' | 'section' | { item: number } | { side: number };
+
+const PieceEditContext = createContext<((target: PieceTarget) => void) | null>(null);
+const SectionContext = createContext<number | null>(null);
+
+/** Liga a edição de peças: com isso, clicar em uma peça chama `onPick` com o lugar dela. */
+export const PieceEditProvider = PieceEditContext.Provider;
+
+/** Diz às peças de dentro de uma seção qual é a seção (o índice dela no infográfico). */
+export const SectionProvider = SectionContext.Provider;
+
+function targetOf(slot: PieceSlot, section: number | null): PieceTarget | null {
+  if (slot === 'cover') {
+    return { section: null, part: 'piece' };
+  }
+
+  if (section === null) {
+    return null;
+  }
+
+  if (slot === 'section') {
+    return { section, part: 'piece' };
+  }
+
+  return 'item' in slot
+    ? { section, part: 'item', index: slot.item }
+    : { section, part: 'side', index: slot.side };
+}
+
+/**
+ * A peça (o selo com o glifo) no tamanho dado pelo `className` do pai. Em **edição** (quando o
+ * infográfico pede), a peça vira um botão: clicar nela pede para trocá-la.
+ */
+export function PieceBox({
+  pieceKey,
+  className,
+  slot,
+}: {
+  pieceKey: string;
+  className?: string;
+  /** Onde a peça está no infográfico; sem isso ela nunca é editável. */
+  slot?: PieceSlot;
+}) {
+  const onPick = useContext(PieceEditContext);
+  const section = useContext(SectionContext);
+  const target = onPick && slot !== undefined ? targetOf(slot, section) : null;
+
+  if (!onPick || !target) {
+    return (
+      <div className={className}>
+        <InfographicPiece pieceKey={pieceKey} />
+      </div>
+    );
+  }
+
   return (
-    <div className={className}>
+    <button
+      type="button"
+      aria-label={`Trocar a peça: ${pieceName(pieceKey)}`}
+      onClick={() => onPick(target)}
+      className={cn(
+        'group relative block cursor-pointer rounded-2xl outline-offset-4 transition focus-visible:outline-2 focus-visible:outline-brand hover:scale-[1.03]',
+        className,
+      )}
+    >
       <InfographicPiece pieceKey={pieceKey} />
-    </div>
+
+      <span
+        aria-hidden="true"
+        className="absolute top-1 right-1 grid size-6 place-items-center rounded-full bg-brand text-background opacity-80 shadow transition group-hover:opacity-100"
+      >
+        <Pencil className="size-3" />
+      </span>
+    </button>
   );
 }
 

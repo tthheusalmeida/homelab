@@ -106,10 +106,6 @@ export const Strings = {
     layoutsIndex: 'Ir para um modelo',
     piecesHint:
       'As peças do banco, por tema, com a chave que a IA usa e as palavras-chave que ajudam a escolher a peça certa para cada texto.',
-    search: 'Buscar peça por nome, chave ou palavra-chave',
-    count: (pieces: number, themes: number) =>
-      `${pieces} peça${pieces === 1 ? '' : 's'} em ${themes} grupo${themes === 1 ? '' : 's'}`,
-    empty: 'Nenhuma peça encontrada. Tente outra palavra.',
   },
 } as const;
 

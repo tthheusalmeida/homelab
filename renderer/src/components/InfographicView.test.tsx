@@ -1,7 +1,8 @@
 import { createRef } from 'react';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import type {
   LibraryInfographic,
@@ -560,4 +561,94 @@ describe('radialPositions', () => {
       }
     },
   );
+});
+
+describe('InfographicView: troca de peças', () => {
+  const buttons = () => screen.queryAllByRole('button', { name: /^Trocar a peça:/ });
+
+  it('when no edit is asked, should never draw buttons on the pieces', () => {
+    render(<InfographicView data={one('steps')} />);
+
+    expect(buttons()).toHaveLength(0);
+  });
+
+  it('when editing, should turn the cover piece into a button that asks for its place', async () => {
+    const onPick = vi.fn();
+
+    render(<InfographicView data={one('steps')} onPickPiece={onPick} />);
+    await userEvent.click(buttons()[0]);
+
+    expect(onPick).toHaveBeenCalledWith({ section: null, part: 'piece' });
+  });
+
+  it('when editing the steps, should ask for the piece of the section and of each item', async () => {
+    const onPick = vi.fn();
+
+    render(<InfographicView data={one('steps')} onPickPiece={onPick} />);
+
+    for (const button of buttons()) {
+      await userEvent.click(button);
+    }
+
+    const targets = onPick.mock.calls.map(([target]) => target);
+
+    expect(targets).toContainEqual({ section: 0, part: 'piece' });
+
+    for (let index = 0; index < 4; index += 1) {
+      expect(targets).toContainEqual({ section: 0, part: 'item', index });
+    }
+  });
+
+  it('when editing the second section, should name that section in the place', async () => {
+    const onPick = vi.fn();
+
+    render(<InfographicView data={story([SAMPLES.steps, SAMPLES.myths])} onPickPiece={onPick} />);
+
+    for (const button of buttons()) {
+      await userEvent.click(button);
+    }
+
+    const targets = onPick.mock.calls.map(([target]) => target);
+
+    expect(targets).toContainEqual({ section: 1, part: 'item', index: 3 });
+    expect(targets).toContainEqual({ section: 0, part: 'item', index: 3 });
+  });
+
+  it('when editing the comparison, should ask for each side of it', async () => {
+    const onPick = vi.fn();
+
+    render(<InfographicView data={one('versus')} onPickPiece={onPick} />);
+
+    for (const button of buttons()) {
+      await userEvent.click(button);
+    }
+
+    const targets = onPick.mock.calls.map(([target]) => target);
+
+    expect(targets).toContainEqual({ section: 0, part: 'side', index: 0 });
+    expect(targets).toContainEqual({ section: 0, part: 'side', index: 1 });
+  });
+
+  it.each(INFOGRAPHIC_LAYOUT_IDS)(
+    'when editing the %s layout, should make every piece of its items a button',
+    (layout) => {
+      const data = one(layout);
+
+      render(<InfographicView data={data} onPickPiece={vi.fn()} />);
+
+      // a capa mais ao menos um botão por item da seção (o comparativo tem os lados no lugar dos itens)
+      const expected = layout === 'versus' ? 1 + 2 : 1 + data.sections[0].items.length;
+
+      expect(buttons().length).toBeGreaterThanOrEqual(expected);
+    },
+  );
+
+  it('when a piece is a button, should name the piece it swaps and keep it keyboard reachable', () => {
+    render(<InfographicView data={one('steps')} onPickPiece={vi.fn()} />);
+
+    const first = buttons()[0];
+
+    expect(first).toHaveAccessibleName('Trocar a peça: Wi-Fi');
+    expect(first).toHaveAttribute('type', 'button');
+  });
 });

@@ -10,6 +10,7 @@ import {
   deleteInfographic,
   deleteMindMap,
   generateInfographic,
+  saveInfographic,
   generateMindMap,
   getCategories,
   getDocument,
@@ -361,6 +362,30 @@ describe('infographic api', () => {
 
     await expect(getInfographic('1')).resolves.toBeNull();
     expect(invoke).toHaveBeenCalledWith(IpcChannels.library.infographic.get, { id: '1' });
+  });
+
+  it('when saving the infographic, should send the id and the edited content', async () => {
+    const input = { title: 'T', piece: 'financas.moedas', sections: [] };
+    const invoke = mockApi({
+      [IpcChannels.library.infographic.save]: () => ok({ ...infographic, edited: true }),
+    });
+
+    await expect(saveInfographic('1', input)).resolves.toMatchObject({ edited: true });
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.infographic.save, {
+      id: '1',
+      infographic: input,
+    });
+  });
+
+  it('when saving fails, should reject with the message of the error', async () => {
+    mockApi({
+      [IpcChannels.library.infographic.save]: () =>
+        failure('VALIDATION', 'O infográfico editado precisa de título e de seções válidas.'),
+    });
+
+    await expect(saveInfographic('1', { title: '', piece: '', sections: [] })).rejects.toThrow(
+      'precisa de título',
+    );
   });
 
   it('when deleting the infographic, should send only the id of the page', async () => {

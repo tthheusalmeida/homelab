@@ -14,6 +14,7 @@ import type {
 import { IpcChannels } from '#shared/channels';
 import type {
   LibraryInfographic,
+  LibraryInfographicInput,
   LibraryListFilters,
   LibraryMindMap,
   LibraryMindMapImageResult,
@@ -107,6 +108,14 @@ export function getMindMap(id: string): Promise<LibraryMindMap | null> {
 /** Apaga só o mapa mental do resumo (o resumo e o infográfico ficam). */
 export function deleteMindMap(id: string): Promise<void> {
   return ipc.invoke(IpcChannels.library.mindMap.delete, { id });
+}
+
+/** Guarda o infográfico como o usuário o editou (peças trocadas); volta o que ficou guardado. */
+export function saveInfographic(
+  id: string,
+  infographic: LibraryInfographicInput,
+): Promise<LibraryInfographic> {
+  return ipc.invoke(IpcChannels.library.infographic.save, { id, infographic });
 }
 
 /** Apaga só o infográfico do resumo (o resumo e o mapa mental ficam). */
