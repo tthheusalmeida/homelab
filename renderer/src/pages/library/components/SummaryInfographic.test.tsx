@@ -21,6 +21,8 @@ const saveInfo = vi.hoisted(() => ({ mutateAsync: vi.fn(), isPending: false }));
 const saveImage = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
 const snackbar = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 const capture = vi.hoisted(() => vi.fn());
+const capturePdf = vi.hoisted(() => vi.fn());
+const captureSvg = vi.hoisted(() => vi.fn());
 
 vi.mock('../hooks/useLibrary', () => ({
   useInfographic: () => saved.state,
@@ -30,7 +32,11 @@ vi.mock('../hooks/useLibrary', () => ({
   useSaveInfographic: () => ({ mutateAsync: saveInfo.mutateAsync, isPending: saveInfo.isPending }),
 }));
 vi.mock('#components/Snackbar', () => ({ useSnackbar: () => snackbar }));
-vi.mock('#lib/infographic-image', () => ({ captureInfographicPng: capture }));
+vi.mock('#lib/infographic-image', () => ({
+  captureInfographicPng: capture,
+  captureInfographicPdf: capturePdf,
+  captureInfographicSvg: captureSvg,
+}));
 
 import { SummaryInfographic } from './SummaryInfographic';
 
@@ -96,6 +102,8 @@ beforeEach(() => {
   generate.state = { isPending: false, isError: false, error: null };
   saveImage.mutateAsync.mockReset().mockResolvedValue({ saved: true, path: 'D:/x.png' });
   capture.mockReset().mockResolvedValue('QUJD');
+  capturePdf.mockReset().mockResolvedValue('UERG');
+  captureSvg.mockReset().mockResolvedValue('U1ZH');
   snackbar.success.mockReset();
   snackbar.error.mockReset();
 });
@@ -275,7 +283,52 @@ describe('SummaryInfographic', () => {
       expect(saveImage.mutateAsync).toHaveBeenCalledWith({
         fileName: 'Infográfico - Redes de computadores',
         dataBase64: 'QUJD',
+        format: 'png',
       });
+    });
+
+    it('when downloading the PDF, should build it from the frame and save it as a PDF', async () => {
+      renderTab();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Baixar o infográfico como PDF' }));
+
+      await waitFor(() =>
+        expect(snackbar.success).toHaveBeenCalledWith('PDF do infográfico salvo.'),
+      );
+      expect(capturePdf).toHaveBeenCalledWith(expect.any(HTMLElement));
+      expect(saveImage.mutateAsync).toHaveBeenCalledWith({
+        fileName: 'Infográfico - Redes de computadores',
+        dataBase64: 'UERG',
+        format: 'pdf',
+      });
+    });
+
+    it('when downloading the SVG, should capture it with the frame background and save it as an SVG', async () => {
+      renderTab();
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Baixar o infográfico como SVG (vetor)' }),
+      );
+
+      await waitFor(() =>
+        expect(snackbar.success).toHaveBeenCalledWith('Imagem do infográfico salva.'),
+      );
+      expect(captureSvg).toHaveBeenCalledWith(expect.any(HTMLElement), false);
+      expect(saveImage.mutateAsync).toHaveBeenCalledWith({
+        fileName: 'Infográfico - Redes de computadores',
+        dataBase64: 'U1ZH',
+        format: 'svg',
+      });
+    });
+
+    it('when the PDF cannot be made, should show the error and save nothing', async () => {
+      capturePdf.mockRejectedValue(new Error('falhou o pdf'));
+
+      renderTab();
+      await userEvent.click(screen.getByRole('button', { name: 'Baixar o infográfico como PDF' }));
+
+      await waitFor(() => expect(snackbar.error).toHaveBeenCalledWith('falhou o pdf'));
+      expect(saveImage.mutateAsync).not.toHaveBeenCalled();
     });
 
     it('when downloading without background, should ask for a transparent image and say so in the name', async () => {

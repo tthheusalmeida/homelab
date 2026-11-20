@@ -75,8 +75,10 @@ O resumo só **monta** o infográfico; para **conhecer** o que a IA tem à dispo
 - **Peças:** todas as peças do banco, agrupadas por tema, com nome, **chave** e palavras-chave, e uma busca (sem acento e sem diferenciar maiúsculas) por nome, chave, palavra-chave ou tema.
 A galeria usa o tema e a cor de destaque do app (mude em Aparência e volte para ver). A seção ocupa mais largura que as outras (`max-w-5xl`).
 
-## Baixar como imagem (PNG)
-Dois ícones: **PNG com fundo** e **PNG sem fundo (transparente)**, com tooltip. O renderer fotografa o quadro (`lib/infographic-image.ts`, `html-to-image`, 2x; fixa o preenchimento e o traço das peças antes da foto, porque a biblioteca perderia o que vem de classe CSS) e envia o PNG em base64 pelo canal `library:mind-map:save-image` (o mesmo do mapa mental; o main confere que é um PNG e abre o diálogo "Salvar como"). Nome sugerido: "Infográfico - título da página.png" (e "(sem fundo)").
+## Baixar como imagem (PNG), PDF ou SVG
+Quatro ícones, com tooltip: **PNG com fundo**, **PNG sem fundo (transparente)**, **PDF** e **SVG (vetor)**. O renderer fotografa o quadro (`lib/infographic-image.ts`, `html-to-image`, 2x; fixa o preenchimento e o traço das peças antes da foto, porque a biblioteca perderia o que vem de classe CSS) e envia o arquivo em base64 pelo canal `library:mind-map:save-image` (o mesmo do mapa mental, com o campo `format`: `png` por padrão, `svg` ou `pdf`; o main confere que o conteúdo é mesmo desse formato e abre o diálogo "Salvar como"). Nome sugerido: "Infográfico - título da página" (e "(sem fundo)" no PNG transparente), com a extensão do formato.
+- **PDF:** uma página só, do tamanho do desenho (a 96 dpi), com um JPEG de alta resolução do quadro (`lib/pdf-image.ts` monta o PDF sem biblioteca). Tem o fundo do quadro; o texto não é selecionável.
+- **SVG:** o quadro como vetor (`foreignObject`): nítido em qualquer tamanho e abre em navegadores, mas nem todo editor de vetores desenha o `foreignObject`.
 
 ## Canais IPC
 `library:infographic:get` (`{ id }` → infográfico ou `null`), `library:infographic:generate`, `library:infographic:save` (`{ id, infographic }` → o infográfico editado) e `library:infographic:delete` (`{ id }` → nada; apaga só o infográfico) (`{ id, modelId?, layout? }` → infográfico). Página inexistente é `NOT_FOUND`, página que não é resumo ou modelo desconhecido é `VALIDATION` e falha da IA é `PROVIDER_FAILED`. **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`**: a lista de canais permitidos fica no preload, compilado na abertura.

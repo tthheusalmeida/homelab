@@ -1,9 +1,11 @@
 import { IpcChannels } from '../../shared/channels';
-import type {
-  LibraryMindMap,
-  LibraryMindMapImageResult,
-  LibraryMindMapNode,
-  LibraryMindMapRequest,
+import {
+  LIBRARY_IMAGE_FORMATS,
+  type LibraryImageFormat,
+  type LibraryMindMap,
+  type LibraryMindMapImageResult,
+  type LibraryMindMapNode,
+  type LibraryMindMapRequest,
 } from '../../shared/contracts/library';
 import { IpcError, IpcErrorCode } from '../../shared/errors';
 import { IpcHandler, type IpcRoute } from '../ipc-handler';
@@ -23,19 +25,24 @@ export interface MindMapPort {
 
 /** Salva a imagem PNG do mapa onde o usuário escolher (diálogo do sistema, no main). */
 export interface MindMapImagePort {
-  save(fileName: string, dataBase64: string): Promise<LibraryMindMapImageResult>;
+  save(
+    fileName: string,
+    dataBase64: string,
+    format?: LibraryImageFormat,
+  ): Promise<LibraryMindMapImageResult>;
 }
 
 export const MindMapPayloadMessages = {
   nodes: 'Informe os ramos do mapa mental.',
   image: 'Informe o nome e o conteúdo da imagem.',
+  format: 'Escolha PNG, SVG ou PDF.',
 } as const;
 
 /**
  * Canais `library:mind-map:*`. Página inexistente chega como `NOT_FOUND`, página que não é resumo
  * como `VALIDATION` e falha da IA como `PROVIDER_FAILED`, todos pelo `IpcErrorMapper`. O
  * `save` confere só que os ramos são uma lista (o resto é validado e cortado pelo service); o
- * `save-image` confere só que nome e conteúdo são textos; o resto (é um PNG?) é do `images`.
+ * `save-image` confere só que nome e conteúdo são textos e que o formato (PNG, SVG ou PDF) existe; o resto (o conteúdo é mesmo desse formato?) é do `images`.
  */
 export class MindMapHandler extends IpcHandler {
   constructor(
@@ -59,12 +66,16 @@ export class MindMapHandler extends IpcHandler {
 
         return this.mindMaps.save(id, { subtitle, nodes });
       }),
-      this.route(IpcChannels.library.mindMap.saveImage, ({ fileName, dataBase64 }) => {
+      this.route(IpcChannels.library.mindMap.saveImage, ({ fileName, dataBase64, format }) => {
         if (typeof fileName !== 'string' || typeof dataBase64 !== 'string' || dataBase64 === '') {
           throw new IpcError(IpcErrorCode.VALIDATION, MindMapPayloadMessages.image);
         }
 
-        return this.images.save(fileName, dataBase64);
+        if (format !== undefined && !LIBRARY_IMAGE_FORMATS.includes(format)) {
+          throw new IpcError(IpcErrorCode.VALIDATION, MindMapPayloadMessages.format);
+        }
+
+        return this.images.save(fileName, dataBase64, format);
       }),
     ];
   }

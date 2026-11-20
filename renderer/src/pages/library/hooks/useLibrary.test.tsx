@@ -382,9 +382,21 @@ describe('useSaveMindMapImage', () => {
       returned = await result.current.mutateAsync({ fileName: 'Mapa', dataBase64: 'UE5H' });
     });
 
-    expect(library.saveMindMapImage).toHaveBeenCalledWith('Mapa', 'UE5H');
+    expect(library.saveMindMapImage).toHaveBeenCalledWith('Mapa', 'UE5H', undefined);
     expect(returned).toEqual({ saved: true, path: 'D:/m.png' });
     expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it('when a format is given, should hand it to the api', async () => {
+    vi.mocked(library.saveMindMapImage).mockResolvedValue({ saved: true, path: 'D:/m.pdf' });
+    const { wrapper } = setup();
+    const { result } = renderHook(() => useSaveMindMapImage(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ fileName: 'Info', dataBase64: 'JVBE', format: 'pdf' });
+    });
+
+    expect(library.saveMindMapImage).toHaveBeenCalledWith('Info', 'JVBE', 'pdf');
   });
 });
 

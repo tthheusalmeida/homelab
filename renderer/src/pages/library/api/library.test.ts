@@ -288,6 +288,20 @@ describe('mind map image api', () => {
     });
   });
 
+  it('when a format is given, should send it along', async () => {
+    const invoke = mockApi({
+      [IpcChannels.library.mindMap.saveImage]: () => ok({ saved: true, path: 'D:/i.pdf' }),
+    });
+
+    await saveMindMapImage('Infográfico', 'JVBE', 'pdf');
+
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.mindMap.saveImage, {
+      fileName: 'Infográfico',
+      dataBase64: 'JVBE',
+      format: 'pdf',
+    });
+  });
+
   it('when the user cancels the save dialog, should resolve with saved false', async () => {
     mockApi({ [IpcChannels.library.mindMap.saveImage]: () => ok({ saved: false }) });
 

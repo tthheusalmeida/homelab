@@ -17,6 +17,7 @@ import type {
   LibraryInfographicInput,
   LibraryListFilters,
   LibraryMindMap,
+  LibraryImageFormat,
   LibraryMindMapImageResult,
   LibraryMindMapNode,
 } from '#shared/contracts/library';
@@ -136,12 +137,17 @@ export function saveMindMap(
   return ipc.invoke(IpcChannels.library.mindMap.save, { id, ...map });
 }
 
-/** Pede ao main o diálogo "Salvar como" e grava a imagem PNG do mapa (`saved: false` se o usuário cancelou). */
+/** Pede ao main o diálogo "Salvar como" e grava a imagem (PNG por padrão, SVG ou PDF) do mapa ou do infográfico (`saved: false` se o usuário cancelou). */
 export function saveMindMapImage(
   fileName: string,
   dataBase64: string,
+  format?: LibraryImageFormat,
 ): Promise<LibraryMindMapImageResult> {
-  return ipc.invoke(IpcChannels.library.mindMap.saveImage, { fileName, dataBase64 });
+  return ipc.invoke(IpcChannels.library.mindMap.saveImage, {
+    fileName,
+    dataBase64,
+    ...(format ? { format } : {}),
+  });
 }
 
 /** O infográfico guardado do resumo, ou `null` se ainda não foi gerado. */

@@ -35,7 +35,7 @@ import type {
   UpdateDocumentInput,
 } from "../types/library.types";
 
-import type { LibraryInfographicInput } from "#shared/contracts/library";
+import type { LibraryImageFormat, LibraryInfographicInput } from "#shared/contracts/library";
 import type { InfographicLayoutId } from "#shared/infographic-layouts";
 
 export const LIBRARY_KEY = ["library"] as const;
@@ -193,8 +193,15 @@ export function useGenerateInfographic() {
 /** Salva a imagem PNG do mapa onde o usuário escolher; não mexe na biblioteca, então não invalida nada. */
 export function useSaveMindMapImage() {
   return useMutation({
-    mutationFn: ({ fileName, dataBase64 }: { fileName: string; dataBase64: string }) =>
-      saveMindMapImage(fileName, dataBase64),
+    mutationFn: ({
+      fileName,
+      dataBase64,
+      format,
+    }: {
+      fileName: string;
+      dataBase64: string;
+      format?: LibraryImageFormat;
+    }) => saveMindMapImage(fileName, dataBase64, format),
   });
 }
 

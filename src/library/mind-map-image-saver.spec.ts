@@ -5,6 +5,7 @@ import {
   MAX_MIND_MAP_IMAGE_BYTES,
   MindMapImageMessages,
   MindMapImageSaver,
+  safeFileName,
   safePngName,
 } from './mind-map-image-saver';
 
@@ -103,6 +104,50 @@ describe('MindMapImageSaver', () => {
   });
 });
 
+describe('MindMapImageSaver: other formats', () => {
+  const pdf = Buffer.from('%PDF-1.4\n%fim');
+  const svg = Buffer.from('<?xml version="1.0"?>\n<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+
+  it('when saving a PDF, should filter by PDF, add .pdf and write the bytes', async () => {
+    const { saver, picker, write } = setup('D:/Docs/infografico');
+
+    await expect(saver.save('Infográfico', pdf.toString('base64'), 'pdf')).resolves.toEqual({
+      saved: true,
+      path: 'D:/Docs/infografico.pdf',
+    });
+    expect(picker.pickSavePath).toHaveBeenCalledWith({
+      defaultPath: 'Infográfico.pdf',
+      filters: [{ name: 'Documento PDF', extensions: ['pdf'] }],
+    });
+    expect(write).toHaveBeenCalledWith('D:/Docs/infografico.pdf', pdf);
+  });
+
+  it('when saving an SVG, should filter by SVG and add .svg', async () => {
+    const { saver, picker } = setup('D:/Docs/infografico');
+
+    await expect(saver.save('Infográfico', svg.toString('base64'), 'svg')).resolves.toMatchObject({
+      path: 'D:/Docs/infografico.svg',
+    });
+    expect(picker.pickSavePath).toHaveBeenCalledWith(
+      expect.objectContaining({ filters: [{ name: 'Imagem SVG', extensions: ['svg'] }] }),
+    );
+  });
+
+  it.each([
+    ['a PNG said to be a PDF', png(), 'pdf'],
+    ['a PDF said to be a PNG', pdf, 'png'],
+    ['text that is not an SVG', Buffer.from('<html></html>'), 'svg'],
+    ['a PNG said to be an SVG', png(), 'svg'],
+  ] as const)('when the content is %s, should answer VALIDATION', async (_name, data, format) => {
+    const { saver, picker } = setup();
+
+    await expect(saver.save('x', data.toString('base64'), format)).rejects.toMatchObject({
+      code: IpcErrorCode.VALIDATION,
+    });
+    expect(picker.pickSavePath).not.toHaveBeenCalled();
+  });
+});
+
 describe('safePngName', () => {
   it('when the name is fine, should keep it and make sure it ends with .png', () => {
     expect(safePngName('Mapa mental - Redes')).toBe('Mapa mental - Redes.png');
@@ -121,5 +166,12 @@ describe('safePngName', () => {
 
   it('when the name is too long, should cut it', () => {
     expect(safePngName('a'.repeat(300)).length).toBeLessThanOrEqual(104);
+  });
+});
+
+describe('safeFileName', () => {
+  it('when given a format, should end with its extension', () => {
+    expect(safeFileName('Infográfico', 'pdf')).toBe('Infográfico.pdf');
+    expect(safeFileName('Infográfico.SVG', 'svg')).toBe('Infográfico.svg');
   });
 });
