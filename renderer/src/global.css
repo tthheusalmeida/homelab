@@ -870,6 +870,23 @@
   animation: hl-enter-left var(--duration-enter) var(--ease-out-soft) both;
 }
 
+@keyframes hl-menu-item {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Item de lista suspensa (select, menu, sugestões): entra da esquerda em cascata curta (`--i` x 30 ms, teto de 240 ms). */
+@utility animate-menu-item {
+  animation: hl-menu-item calc(var(--duration-quick) * 2) var(--ease-out-soft) both;
+  animation-delay: min(calc(var(--i, 0) * 30ms), 240ms);
+}
+
 @utility animate-exit-left {
   animation: hl-exit-left var(--duration-exit) var(--ease-in-soft) both;
 }

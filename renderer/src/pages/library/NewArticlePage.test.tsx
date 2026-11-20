@@ -164,16 +164,13 @@ describe("NewArticlePage", () => {
     expect(screen.getByRole("button", { name: "Cancelar" })).toBeDisabled();
   });
 
-  it("when categories already exist, should suggest them at the first level", () => {
+  it("when categories already exist, should suggest them at the first level", async () => {
     categories.data = [{ name: "Química", children: [] }];
     renderPage();
 
-    const list = screen.getByLabelText("Categoria").getAttribute("list")!;
-    expect(
-      Array.from(document.querySelectorAll(`#${list} option`)).map((o) =>
-        o.getAttribute("value"),
-      ),
-    ).toEqual(["Química"]);
+    await userEvent.click(screen.getByLabelText("Categoria"));
+
+    expect((await screen.findAllByRole("option")).map((o) => o.textContent)).toEqual(["Química"]);
   });
 
   describe("live preview", () => {

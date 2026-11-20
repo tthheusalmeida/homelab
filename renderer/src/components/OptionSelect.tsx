@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import {
   Select,
   SelectContent,
@@ -67,8 +69,12 @@ export function OptionSelect({
         <SelectGroup>
           {label && <SelectLabel>{label}</SelectLabel>}
 
-          {options.map((option) => (
-            <SelectItem key={option.id} value={option.id}>
+          {options.map((option, index) => (
+            <SelectItem
+              key={option.id}
+              value={option.id}
+              style={{ "--i": index } as CSSProperties}
+            >
               {option.label}
             </SelectItem>
           ))}
