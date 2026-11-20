@@ -29,9 +29,11 @@ Campos de cada seção: `layout`, `title` (o que a seção explica), `subtitle`,
 
 ## Banco de peças
 - **216 peças**: 20 temas com 10 peças cada (Tecnologia, Jogos, Proteção, Saúde, Finanças, Educação, Natureza, Alimentação, Justiça e crime, Esporte, Viagem, Negócios, Música, Ciência, Casa, Transporte, Comunicação, Arte e design, Energia e Espaço) e **16 genéricas** (seta, confirmação, negação, pergunta, alerta, estrela, relógio, engrenagem, pessoa, documento, lupa, corrente, bandeira, coração, mais e brilho) para combinar com a peça do tema.
-- **Catálogo** (o que a IA vê: chave, tema, nome e palavras-chave): `shared/infographic-pieces.ts`. **Desenhos** (formas SVG em um quadro 100 x 100, com base hexagonal em perspectiva): `renderer/src/lib/infographic-pieces.ts`. Um teste (`infographic-pieces.test.ts`) garante que as duas listas têm as mesmas chaves, nomes e tags.
-- **Tons** só do app (`global.css`, classes `ig-*`): destaque, destaque escuro, destaque suave, neutros e cartão. Nenhuma cor fixa.
-- **Peça nova:** acrescente a chamada `P('tema', 'id', 'Nome', 'palavras chave', [formas])` no arquivo de desenhos e a linha no catálogo (mesma chave, nome e tags). Para um tema novo, acrescente também em `INFOGRAPHIC_THEMES` (e mantenha 10 peças por tema, regra conferida no teste do catálogo).
+- **Catálogo** (o que a IA vê: chave, tema, nome e palavras-chave): `shared/infographic-pieces.ts`. **Desenhos** (formas SVG em um quadro 100 x 100 mais a `box` que o glifo ocupa): `renderer/src/lib/infographic-pieces.ts`. Um teste (`infographic-pieces.test.ts`) garante que as duas listas têm as mesmas chaves, nomes e tags.
+- **Estilo da peça ("papel facetado"):** cada peça é desenhada com as formas e os tons do arquivo de desenhos, e `InfographicPiece` acrescenta por cima o estilo: **facetas** (triângulos claros e escuros quase transparentes, sempre iguais para a mesma chave, em `lib/infographic-facets.ts`) recortadas nas partes preenchidas, um **contorno de adesivo** (branco no tema claro, cinza claro no escuro, `--ig-edge`) e uma **sombra** suave. Nada de preto ou branco puro: tudo vem dos tokens do app.
+- **Tons** (`b`, `B`, `s`, `n`, `N`, `d`, `w`; classes `ig-f-*` e `ig-s-*` em `global.css`): destaque, destaque escuro, destaque suave, cinza claro, cinza médio, cinza escuro e cartão (brilhos). Acompanham tema e cor de destaque.
+- **Ajuste no quadro:** `pieceFit(box)` centraliza a peça (usa a `box` de cada uma) e a escala (entre 0,6 e 1,3 vezes) para ocupar cerca de 76 dos 100 do quadro, deixando folga para o contorno e a sombra.
+- **Peça nova:** acrescente o objeto da peça (`key`, `theme`, `name`, `tags`, `shapes` com os tons acima e `box`) no arquivo de desenhos e a linha no catálogo (mesma chave, nome e tags). Para um tema novo, acrescente também em `INFOGRAPHIC_THEMES` (e mantenha 10 peças por tema, regra conferida no teste do catálogo).
 - Chave desconhecida ou vazia vira um hexágono suave; nunca quebra a tela.
 - Para criminalidade o banco usa algemas, distintivo, sirene, balança, grade, tribunal e pasta de processo (sem armas).
 
@@ -56,6 +58,12 @@ Campos de cada seção: `layout`, `title` (o que a seção explica), `subtitle`,
 - **Sem edição por enquanto:** o infográfico é o que a IA gerou. Para mudar, gere de novo (ou escolha um modelo só).
 - Um infográfico guardado no formato antigo (um modelo só, sem seções, de versões de teste) é tratado como não gerado.
 
+## Galeria (Configurações > Infográfico)
+O resumo só **monta** o infográfico; para **conhecer** o que a IA tem à disposição existe a seção **Infográfico** das Configurações (`settings/src/sections/InfographicGallerySection.tsx`), com duas abas:
+- **Modelos:** um infográfico de exemplo (`lib/infographic-sample.ts`, tema economia) com os 10 modelos, um por seção, desenhado pelo mesmo `InfographicView` do resumo. Atalhos levam a cada modelo. Não gasta IA nem depende de um resumo.
+- **Peças:** todas as peças do banco, agrupadas por tema, com nome, **chave** e palavras-chave, e uma busca (sem acento e sem diferenciar maiúsculas) por nome, chave, palavra-chave ou tema.
+A galeria usa o tema e a cor de destaque do app (mude em Aparência e volte para ver). A seção ocupa mais largura que as outras (`max-w-5xl`).
+
 ## Baixar como imagem (PNG)
 Dois ícones: **PNG com fundo** e **PNG sem fundo (transparente)**, com tooltip. O renderer fotografa o quadro (`lib/infographic-image.ts`, `html-to-image`, 2x; fixa o preenchimento e o traço das peças antes da foto, porque a biblioteca perderia o que vem de classe CSS) e envia o PNG em base64 pelo canal `library:mind-map:save-image` (o mesmo do mapa mental; o main confere que é um PNG e abre o diálogo "Salvar como"). Nome sugerido: "Infográfico - título da página.png" (e "(sem fundo)").
 
@@ -63,7 +71,7 @@ Dois ícones: **PNG com fundo** e **PNG sem fundo (transparente)**, com tooltip.
 `library:infographic:get` (`{ id }` → infográfico ou `null`) e `library:infographic:generate` (`{ id, modelId?, layout? }` → infográfico). Página inexistente é `NOT_FOUND`, página que não é resumo ou modelo desconhecido é `VALIDATION` e falha da IA é `PROVIDER_FAILED`. **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`**: a lista de canais permitidos fica no preload, compilado na abertura.
 
 ## Testes
-Back: `infographic.spec.ts` (validação), `infographic.prompt.spec.ts`, `infographic-store.spec.ts`, `infographic.service.spec.ts`, `infographic.handler.spec.ts`, `infographic-pieces.spec.ts` (catálogo e modelos) e a exclusão junto com a página em `library.service.spec.ts`. Renderer: `InfographicPiece`, `InfographicView` (os 10 modelos), `SummaryInfographic`, `lib/infographic*.test.ts`, api, hooks e `DocumentPage.summary.test.tsx`.
+Back: `infographic.spec.ts` (validação), `infographic.prompt.spec.ts`, `infographic-store.spec.ts`, `infographic.service.spec.ts`, `infographic.handler.spec.ts`, `infographic-pieces.spec.ts` (catálogo e modelos) e a exclusão junto com a página em `library.service.spec.ts`. Renderer: `InfographicPiece` (selo, glifo, recorte e `glyphFit`), `InfographicView` (os 10 modelos), `InfographicGallerySection` e `lib/infographic-sample.test.ts` (a galeria e o exemplo), `SummaryInfographic`, `lib/infographic*.test.ts`, api, hooks e `DocumentPage.summary.test.tsx`.
 
 ## O que ficou para as próximas fases
 - Testar a qualidade da escolha de modelo e de peças com resumos reais e ajustar o prompt e as palavras-chave do catálogo.

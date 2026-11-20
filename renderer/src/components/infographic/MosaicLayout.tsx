@@ -30,10 +30,7 @@ export function MosaicLayout({ data }: LayoutProps) {
           {data.subtitle && <p className="text-sm text-muted-foreground">{data.subtitle}</p>}
         </div>
 
-        <PieceBox
-          pieceKey={data.piece}
-          className="w-[min(11rem,60%)] self-end border-0 bg-transparent bg-none p-0"
-        />
+        <PieceBox pieceKey={data.piece} className="w-[min(11rem,60%)] self-end" />
       </div>
 
       {items.map((item, index) => (
@@ -46,7 +43,7 @@ export function MosaicLayout({ data }: LayoutProps) {
               {item.tag}
             </span>
           ) : (
-            <PieceBox pieceKey={item.piece} className="w-20 border-0 bg-transparent bg-none p-0" />
+            <PieceBox pieceKey={item.piece} className="w-20" />
           )}
 
           <h4 className="text-sm font-semibold tracking-tight">{item.title}</h4>

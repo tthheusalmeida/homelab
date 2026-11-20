@@ -10,7 +10,7 @@ export function FunnelLayout({ data }: LayoutProps) {
     <div className="space-y-5">
       <div className="flex items-center gap-4">
         <div className="w-24 shrink-0">
-          <PieceBox pieceKey={data.piece} className="border-0 bg-transparent bg-none p-0" />
+          <PieceBox pieceKey={data.piece} />
         </div>
 
         <div className="space-y-1">
@@ -42,7 +42,7 @@ export function FunnelLayout({ data }: LayoutProps) {
             </div>
 
             <div className="grid grid-cols-[76px_1fr] items-center gap-3">
-              <PieceBox pieceKey={item.piece} pedestal={false} />
+              <PieceBox pieceKey={item.piece} />
 
               <p className="text-sm text-muted-foreground">{item.text}</p>
             </div>

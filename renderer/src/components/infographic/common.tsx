@@ -51,9 +51,12 @@ export function HexNum({ n, large = false }: { n: ReactNode; large?: boolean }) 
   );
 }
 
-/** Hexágono de confirmação (verdade, vencedor) ou de negação (mito). */
-export function HexMark({ kind = 'ok' }: { kind?: 'ok' | 'bad' }) {
-  const Icon = kind === 'ok' ? Check : X;
+/**
+ * Hexágono de confirmação (vencedor, dica), de negação (mito) ou de verdade (verde, para o par mito e
+ * verdade; é uma cor fixa, não a de destaque do app).
+ */
+export function HexMark({ kind = 'ok' }: { kind?: 'ok' | 'bad' | 'true' }) {
+  const Icon = kind === 'bad' ? X : Check;
 
   return (
     <span
@@ -61,7 +64,9 @@ export function HexMark({ kind = 'ok' }: { kind?: 'ok' | 'bad' }) {
       className={cn(
         'grid h-[22px] w-5 shrink-0 place-items-center text-background',
         HEX,
-        kind === 'ok' ? 'bg-brand' : 'bg-destructive',
+        kind === 'ok' && 'bg-brand',
+        kind === 'bad' && 'bg-destructive',
+        kind === 'true' && 'bg-emerald-500',
       )}
     >
       <Icon className="size-3" strokeWidth={3.2} />
@@ -69,19 +74,11 @@ export function HexMark({ kind = 'ok' }: { kind?: 'ok' | 'bad' }) {
   );
 }
 
-/** Caixa com uma peça dentro (borda, fundo e pontilhado). */
-export function PieceBox({
-  pieceKey,
-  className,
-  pedestal = true,
-}: {
-  pieceKey: string;
-  className?: string;
-  pedestal?: boolean;
-}) {
+/** A peça (o selo com o glifo) no tamanho dado pelo `className` do pai. */
+export function PieceBox({ pieceKey, className }: { pieceKey: string; className?: string }) {
   return (
-    <div className={cn('overflow-hidden rounded-lg border bg-background p-1', DOT_GRID, className)}>
-      <InfographicPiece pieceKey={pieceKey} pedestal={pedestal} />
+    <div className={className}>
+      <InfographicPiece pieceKey={pieceKey} />
     </div>
   );
 }

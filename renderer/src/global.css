@@ -1209,23 +1209,46 @@
   outline: none;
 }
 
-/* Infográfico: tons das peças (desenhos em viewBox 100x100; ver docs/infografico.md). Só usam os
-   tokens do app, então acompanham tema e cor de destaque. */
+/* Infográfico: peças no estilo papel facetado (desenho em viewBox 100x100; ver docs/infografico.md).
+   Os tons usam só os tokens do app, então acompanham tema e cor de destaque. O contorno de adesivo
+   (`--ig-edge`) é branco no tema claro e um cinza suave no escuro, para não estourar. */
+.ig-piece {
+  --ig-edge: #fff;
+}
+.dark .ig-piece {
+  --ig-edge: color-mix(in oklab, var(--foreground) 82%, var(--background));
+}
 .ig-f-b { fill: var(--brand); }
-.ig-f-bd { fill: color-mix(in oklab, var(--brand) 62%, #000); }
+.ig-f-B { fill: color-mix(in oklab, var(--brand) 62%, #000); }
 .ig-f-s { fill: color-mix(in oklab, var(--brand) 36%, var(--card)); }
 .ig-f-n { fill: color-mix(in oklab, var(--foreground) 22%, var(--card)); }
-.ig-f-nm { fill: color-mix(in oklab, var(--foreground) 38%, var(--card)); }
+.ig-f-N { fill: color-mix(in oklab, var(--foreground) 38%, var(--card)); }
 .ig-f-d { fill: color-mix(in oklab, var(--foreground) 72%, var(--card)); }
 .ig-f-w { fill: var(--card); }
+.ig-f-b, .ig-f-B, .ig-f-s, .ig-f-n, .ig-f-N, .ig-f-d {
+  stroke: rgb(0 0 0 / 0.22);
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+}
 .ig-k { fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .ig-s-b { stroke: var(--brand); }
-.ig-s-bd { stroke: color-mix(in oklab, var(--brand) 62%, #000); }
+.ig-s-B { stroke: color-mix(in oklab, var(--brand) 62%, #000); }
 .ig-s-s { stroke: color-mix(in oklab, var(--brand) 36%, var(--card)); }
 .ig-s-n { stroke: color-mix(in oklab, var(--foreground) 22%, var(--card)); }
-.ig-s-nm { stroke: color-mix(in oklab, var(--foreground) 38%, var(--card)); }
+.ig-s-N { stroke: color-mix(in oklab, var(--foreground) 38%, var(--card)); }
 .ig-s-d { stroke: color-mix(in oklab, var(--foreground) 72%, var(--card)); }
 .ig-s-w { stroke: var(--card); }
+.ig-edge { fill: var(--ig-edge); stroke: var(--ig-edge); stroke-width: 7; stroke-linejoin: round; }
+.ig-edgek { fill: none; stroke: var(--ig-edge); stroke-linecap: round; stroke-linejoin: round; }
+/* No tema escuro os cinzas são bem mais claros, mantendo a ordem (claro > médio > escuro), para as
+   peças não ficarem apagadas. */
+.dark .ig-f-n { fill: color-mix(in oklab, var(--foreground) 84%, var(--card)); }
+.dark .ig-f-N { fill: color-mix(in oklab, var(--foreground) 68%, var(--card)); }
+.dark .ig-f-d { fill: color-mix(in oklab, var(--foreground) 50%, var(--card)); }
+.dark .ig-s-n { stroke: color-mix(in oklab, var(--foreground) 84%, var(--card)); }
+.dark .ig-s-N { stroke: color-mix(in oklab, var(--foreground) 68%, var(--card)); }
+.dark .ig-s-d { stroke: color-mix(in oklab, var(--foreground) 50%, var(--card)); }
+.ig-edges { filter: drop-shadow(0 3px 2px rgb(0 0 0 / 0.4)); }
 .ig-ped-t { fill: color-mix(in oklab, var(--foreground) 8%, var(--card)); }
 .ig-ped-l { fill: color-mix(in oklab, var(--foreground) 15%, var(--card)); }
 .ig-ped-r { fill: color-mix(in oklab, var(--foreground) 21%, var(--card)); }

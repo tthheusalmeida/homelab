@@ -97,10 +97,32 @@ export const Strings = {
     cancel: 'Cancelar',
   },
   restart: RestartStrings,
+  infographic: {
+    tabs: 'Galeria do infográfico',
+    tabLayouts: 'Modelos',
+    tabPieces: 'Peças',
+    layoutsHint:
+      'Um infográfico de exemplo com os dez modelos que a IA pode usar, um em cada seção, com a cor de destaque e o tema do app.',
+    layoutsIndex: 'Ir para um modelo',
+    piecesHint:
+      'As peças do banco, por tema, com a chave que a IA usa e as palavras-chave que ajudam a escolher a peça certa para cada texto.',
+    search: 'Buscar peça por nome, chave ou palavra-chave',
+    count: (pieces: number, themes: number) =>
+      `${pieces} peça${pieces === 1 ? '' : 's'} em ${themes} grupo${themes === 1 ? '' : 's'}`,
+    empty: 'Nenhuma peça encontrada. Tente outra palavra.',
+  },
 } as const;
 
 export type SectionId =
-  'paths' | 'appearance' | 'external' | 'local' | 'components' | 'access' | 'backup' | 'updates';
+  | 'paths'
+  | 'appearance'
+  | 'infographic'
+  | 'external'
+  | 'local'
+  | 'components'
+  | 'access'
+  | 'backup'
+  | 'updates';
 
 /** Chave de `useCollapsedGroups` das Configurações (separada da barra do app). */
 export const SETTINGS_COLLAPSED_KEY = 'homelab.settings-collapsed';
@@ -113,7 +135,7 @@ export interface SectionInfo {
 
 /** Grupos do menu das Configurações, na mesma ordem e com o mesmo comportamento da barra do app. */
 export const SECTION_GROUPS: ReadonlyArray<{ label: string; ids: readonly SectionId[] }> = [
-  { label: 'Geral', ids: ['appearance', 'paths'] },
+  { label: 'Geral', ids: ['appearance', 'paths', 'infographic'] },
   { label: 'IA', ids: ['external', 'local'] },
   { label: 'Sistema', ids: ['components', 'access', 'backup', 'updates'] },
 ];
@@ -130,6 +152,12 @@ export const SECTIONS: ReadonlyArray<SectionInfo> = [
     label: 'Aparência',
     description:
       'Tema, cor de destaque e como o texto aparece na leitura. Vale na hora, sem reiniciar.',
+  },
+  {
+    id: 'infographic',
+    label: 'Infográfico',
+    description:
+      'Galeria dos modelos e das peças que a IA usa para montar o infográfico de um resumo.',
   },
   {
     id: 'external',

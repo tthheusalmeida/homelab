@@ -29,6 +29,26 @@ function numbersOf(shape: Shape): number[] {
   }
 }
 
+/** Os tons de uma forma (inclusive das formas aninhadas). */
+function toneOf(shape: Shape): string[] {
+  switch (shape[0]) {
+    case 'r':
+    case 'e':
+    case 'l':
+    case 'q':
+      return [shape[5]];
+    case 'c':
+    case 'o':
+      return [shape[4]];
+    case 'g':
+    case 'a':
+    case 'k':
+      return [shape[2]];
+    case 'T':
+      return shape[4].flatMap(toneOf);
+  }
+}
+
 describe('banco de peças do infográfico', () => {
   it('when comparing with the catalog the AI sees, should have exactly the same keys', () => {
     expect(INFOGRAPHIC_PIECE_SHAPES.map((piece) => piece.key).sort()).toEqual(
@@ -76,10 +96,23 @@ describe('banco de peças do infográfico', () => {
     }
   });
 
-  it('when reading the generic pieces, should have them without the hexagonal base', () => {
-    const generic = INFOGRAPHIC_PIECE_SHAPES.filter((piece) => piece.theme === 'generico');
+  it('when reading each piece, should only use the known tones and a valid box', () => {
+    const tones = new Set(['b', 'B', 's', 'n', 'N', 'd', 'w']);
 
-    expect(generic.length).toBeGreaterThan(10);
-    expect(generic.every((piece) => piece.ped === false)).toBe(true);
+    for (const piece of INFOGRAPHIC_PIECE_SHAPES) {
+      for (const tone of piece.shapes.flatMap(toneOf)) {
+        expect(tones.has(tone)).toBe(true);
+      }
+
+      expect(piece.box).toHaveLength(4);
+      expect(piece.box[2]).toBeGreaterThan(0);
+      expect(piece.box[3]).toBeGreaterThan(0);
+    }
+  });
+
+  it('when reading each piece, should have at least one shape that is not a light highlight', () => {
+    for (const piece of INFOGRAPHIC_PIECE_SHAPES) {
+      expect(piece.shapes.flatMap(toneOf).some((tone) => tone !== 'w')).toBe(true);
+    }
   });
 });
