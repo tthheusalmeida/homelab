@@ -66,6 +66,7 @@ import type { PlatformLoginsResult } from './platform';
 import type {
   LibraryCategoryNode,
   LibraryClassificationSuggestion,
+  LibraryCategoryPathRequest,
   LibraryRenameCategoryRequest,
   LibraryRenameCategoryResult,
   LibraryCreateArticleRequest,
@@ -329,6 +330,16 @@ export interface IpcContracts {
   [IpcChannels.library.renameCategory]: {
     request: LibraryRenameCategoryRequest;
     response: LibraryRenameCategoryResult;
+  };
+  /** Cria uma categoria vazia, em qualquer lugar (os níveis que faltarem também). */
+  [IpcChannels.library.createCategory]: {
+    request: LibraryCategoryPathRequest;
+    response: { created: true };
+  };
+  /** Exclui uma categoria sem páginas (e as subcategorias vazias dela). */
+  [IpcChannels.library.deleteCategory]: {
+    request: LibraryCategoryPathRequest;
+    response: { deleted: true };
   };
   [IpcChannels.library.tags]: { request: void; response: LibraryTagCount[] };
   [IpcChannels.library.index]: { request: void; response: LibraryIndexStatus };

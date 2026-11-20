@@ -48,6 +48,12 @@ export interface LibraryRenameCategoryRequest {
   to: string[];
 }
 
+/** Cria uma categoria vazia (e os níveis que faltarem no caminho). */
+export interface LibraryCategoryPathRequest {
+  /** O caminho da categoria, de 1 a 4 níveis. */
+  path: string[];
+}
+
 export interface LibraryRenameCategoryResult {
   /** Quantas páginas mudaram de pasta. */
   moved: number;

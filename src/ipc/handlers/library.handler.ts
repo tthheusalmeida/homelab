@@ -22,7 +22,7 @@ export interface LibraryReader {
   list(filters: LibraryListFilters): Promise<LibraryDocumentSummary[]>;
   inbox(): LibraryDocumentSummary[];
   get(id: string): Promise<LibraryDocumentDetail>;
-  categories(): LibraryCategoryNode[];
+  categories(): Promise<LibraryCategoryNode[]>;
   tags(): LibraryTagCount[];
   indexStatus(): LibraryIndexStatus;
 }
@@ -36,6 +36,8 @@ export interface LibraryWriter {
   archive(id: string): Promise<LibraryDocumentDetail>;
   discard(id: string): Promise<void>;
   renameCategory(from: string[], to: string[]): Promise<LibraryRenameCategoryResult>;
+  createCategory(category: string[]): Promise<{ created: true }>;
+  deleteCategory(category: string[]): Promise<{ deleted: true }>;
 }
 
 /** Porta do `LibraryClassifier` do back (sugestão de título, categoria e tags pela IA). */
@@ -103,6 +105,12 @@ export class LibraryHandler extends IpcHandler {
       ),
       this.route(IpcChannels.library.documents.archive, ({ id }) => this.library.archive(id)),
       this.route(IpcChannels.library.documents.delete, ({ id }) => this.library.discard(id)),
+      this.route(IpcChannels.library.createCategory, ({ path }) =>
+        this.library.createCategory(requireStringList(path, 'path')),
+      ),
+      this.route(IpcChannels.library.deleteCategory, ({ path }) =>
+        this.library.deleteCategory(requireStringList(path, 'path')),
+      ),
       this.route(IpcChannels.library.renameCategory, ({ from, to }) =>
         this.library.renameCategory(requireStringList(from, 'from'), requireStringList(to, 'to')),
       ),

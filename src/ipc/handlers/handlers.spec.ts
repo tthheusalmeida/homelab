@@ -77,6 +77,8 @@ describe('createHandlers', () => {
             archive: jest.fn(),
             discard: jest.fn(),
             renameCategory: jest.fn(),
+            createCategory: jest.fn(),
+            deleteCategory: jest.fn(),
           },
           libraryClassifier: { suggest: jest.fn() },
           mindMaps: { get: jest.fn(), generate: jest.fn(), save: jest.fn(), delete: jest.fn() },

@@ -55,21 +55,17 @@ describe('LibraryService: renomear categoria', () => {
     expect((await service.get(a.meta.id)).meta.category).toEqual(['Tecnologia', 'Infra']);
   });
 
-  it('when renaming a category, should write the new category in the page too and keep its content and id', async () => {
+  it('when renaming a category, should keep the content, the id and the other files of the folder', async () => {
     const a = await article('Docker', ['Tecnologia', 'Containers']);
 
     await service.renameCategory(['Tecnologia', 'Containers'], ['Tecnologia', 'Infra']);
 
     const detail = await service.get(a.meta.id);
-    const raw = fs.readFileSync(
-      path.join(tmp.lib, 'Tecnologia', 'Infra', files('Tecnologia', 'Infra')[0]),
-      'utf8',
-    );
 
     expect(detail.content.trim()).toBe('Texto de Docker');
     expect(detail.meta.id).toBe(a.meta.id);
-    expect(raw).toContain('Infra');
-    expect(raw).not.toContain('Containers');
+    expect(files('Tecnologia', 'Infra')).toHaveLength(1);
+    expect(files('Tecnologia', 'Containers')).toEqual([]);
   });
 
   it('when renaming a parent category, should take the subcategories and their pages along', async () => {
@@ -124,12 +120,13 @@ describe('LibraryService: renomear categoria', () => {
     expect(folders()).toEqual(['Tecnologia']);
   });
 
-  it('when moving a subcategory up to the top, should leave no empty folder behind', async () => {
+  it('when moving a subcategory up to the top, should keep the old parent as an empty category', async () => {
     await article('Docker', ['Tecnologia', 'Containers']);
 
     await service.renameCategory(['Tecnologia', 'Containers'], ['Containers']);
 
-    expect(folders()).toEqual(['Containers']);
+    expect(folders()).toEqual(['Containers', 'Tecnologia']);
+    expect(folders('Tecnologia')).toEqual([]);
   });
 
   it('when only the capitals change, should rename the folder itself', async () => {
@@ -142,7 +139,7 @@ describe('LibraryService: renomear categoria', () => {
     expect(folders()).toEqual(['Tecnologia']);
     expect(folders('Tecnologia')).toEqual(['Containers']);
     expect((await service.get(page.meta.id)).meta.category).toEqual(['Tecnologia', 'Containers']);
-    expect(service.categories().map((node) => node.name)).toEqual(['Tecnologia']);
+    expect((await service.categories()).map((node) => node.name)).toEqual(['Tecnologia']);
   });
 
   it('when only the accents change, should rename the folder itself', async () => {
@@ -218,7 +215,7 @@ describe('LibraryService: renomear categoria', () => {
 
     await service.renameCategory(['Tecnologia', 'Containers'], ['Tecnologia', 'Infra']);
 
-    const [tree] = service.categories();
+    const [tree] = await service.categories();
 
     expect(tree.name).toBe('Tecnologia');
     expect(tree.children).toMatchObject([{ name: 'Infra', count: 2 }]);

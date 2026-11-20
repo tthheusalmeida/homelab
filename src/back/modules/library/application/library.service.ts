@@ -123,9 +123,16 @@ export class LibraryService implements OnModuleInit {
     return { meta, content: body };
   }
 
-  /** Árvore de categorias só dos documentos publicados. */
-  categories(): CategoryNode[] {
-    return buildCategoryTree(this.published().map((doc) => doc.meta.category));
+  /**
+   * Árvore de categorias: as dos documentos publicados (com a contagem) e também as pastas que
+   * existem **sem páginas**, com contagem zero. Uma categoria é uma pasta e continua existindo
+   * depois que a última página sai dela.
+   */
+  async categories(): Promise<CategoryNode[]> {
+    return buildCategoryTree(
+      this.published().map((doc) => doc.meta.category),
+      await this.storage.listCategoryDirs(),
+    );
   }
 
   tags(): TagCount[] {
@@ -212,58 +219,101 @@ export class LibraryService implements OnModuleInit {
   }
 
   /**
-   * Renomeia ou move uma categoria **com tudo o que há dentro**: cada página (publicada ou arquivada)
-   * da categoria e das subcategorias vai para a pasta do caminho novo, e as pastas que ficarem
-   * vazias somem. Se o caminho novo já existe, as páginas se juntam a ele. Trocar só a caixa ou os
-   * acentos do nome ("tecnologia" → "Tecnologia") renomeia a pasta de verdade. O caminho novo pode ter
-   * outra quantidade de níveis, desde que nenhuma página passe do limite. Devolve quantas páginas
-   * mudaram de lugar.
+   * Cria uma categoria **vazia** (a pasta), em qualquer lugar, de 1 a 4 níveis. Os níveis que ainda
+   * não existem no caminho também são criados, então "Redes / Segurança / Firewall" cria os três.
+   * Uma categoria é uma pasta e existe mesmo sem páginas; só some quando é excluída. Já existir é erro.
+   */
+  async createCategory(category: string[]): Promise<{ created: true }> {
+    const clean = sanitizeCategoryPath(category);
+
+    if (await this.storage.categoryExists(clean)) {
+      throw new BadRequestException('Já existe uma categoria com esse caminho.');
+    }
+
+    await this.storage.resolveCategoryDir(clean, true);
+
+    return { created: true };
+  }
+
+  /**
+   * Exclui uma categoria **sem páginas** (e as subcategorias vazias dela). Se houver página dentro,
+   * mesmo uma removida da biblioteca, recusa e não apaga nada: mova as páginas antes.
+   */
+  async deleteCategory(category: string[]): Promise<{ deleted: true }> {
+    const clean = sanitizeCategoryPath(category);
+
+    if (!(await this.storage.categoryExists(clean))) {
+      throw new NotFoundException('Categoria não encontrada.');
+    }
+
+    const hasPages = this.index
+      .all()
+      .some(
+        (doc) =>
+          doc.meta.status !== DocumentStatusOptions.PENDING &&
+          startsWithCategory(doc.meta.category, clean),
+      );
+
+    if (hasPages || !(await this.storage.removeCategoryDir(clean))) {
+      throw new BadRequestException(
+        'A categoria tem páginas ou arquivos. Mova as páginas para outra categoria antes de excluir.',
+      );
+    }
+
+    return { deleted: true };
+  }
+
+  /**
+   * Renomeia ou move uma categoria **com tudo o que há dentro**: a pasta inteira (páginas publicadas
+   * e arquivadas, subcategorias e até as vazias) vai para o caminho novo, de uma vez. Se o caminho
+   * novo já existe, o conteúdo se junta ao que está lá. Trocar só a caixa ou os acentos do nome
+   * ("tecnologia" → "Tecnologia") renomeia a pasta de verdade. O caminho novo pode ter outra
+   * quantidade de níveis, desde que nada passe de 4; não pode ficar dentro da própria categoria.
+   * A categoria pode estar vazia. Devolve quantas páginas mudaram de pasta.
    */
   async renameCategory(from: string[], to: string[]): Promise<{ moved: number }> {
     const source = sanitizeCategoryPath(from);
     const target = sanitizeCategoryPath(to);
-    const affected = this.index
+
+    if (!(await this.storage.categoryExists(source))) {
+      throw new NotFoundException('Categoria não encontrada.');
+    }
+
+    // O nível mais fundo dentro da categoria (pastas vazias contam).
+    const deepest = (await this.storage.listCategoryDirs())
+      .filter((dir) => startsWithCategory(dir, source))
+      .reduce((max, dir) => Math.max(max, dir.length), source.length);
+
+    if (target.length + deepest - source.length > MAX_CATEGORY_DEPTH) {
+      throw new BadRequestException(
+        `A categoria deve ter de 1 a ${MAX_CATEGORY_DEPTH} níveis, contando as subcategorias.`,
+      );
+    }
+
+    if (target.length > source.length && startsWithCategory(target, source)) {
+      throw new BadRequestException('Uma categoria não pode ir para dentro dela mesma.');
+    }
+
+    const count = this.index
       .all()
       .filter(
         (doc) =>
           doc.meta.status !== DocumentStatusOptions.PENDING &&
           startsWithCategory(doc.meta.category, source),
-      );
-
-    if (affected.length === 0) {
-      throw new NotFoundException('Categoria não encontrada.');
-    }
-
-    const tooDeep = affected.some(
-      (doc) => target.length + doc.meta.category.length - source.length > MAX_CATEGORY_DEPTH,
-    );
-
-    if (tooDeep) {
-      throw new BadRequestException(
-        `A categoria deve ter de 1 a ${MAX_CATEGORY_DEPTH} níveis, contando as subcategorias.`,
-      );
-    }
+      ).length;
 
     const sameKeys =
       source.length === target.length &&
       source.every((name, level) => normalizeKey(name) === normalizeKey(target[level]));
 
     if (sameKeys) {
-      return { moved: await this.renameFolders(source, target, affected.length) };
+      return { moved: await this.renameFolders(source, target, count) };
     }
 
-    for (const doc of affected) {
-      const { meta: current, body } = await this.storage.read(doc.path);
-      const meta: DocumentMeta = {
-        ...current,
-        category: [...target, ...current.category.slice(source.length)],
-        updatedAt: new Date().toISOString(),
-      };
+    await this.storage.moveCategoryDir(source, target);
+    await this.index.rebuild();
 
-      await this.persist(meta, body, doc.path);
-    }
-
-    return { moved: affected.length };
+    return { moved: count };
   }
 
   /**
@@ -292,7 +342,6 @@ export class LibraryService implements OnModuleInit {
 
     return count;
   }
-
   /**
    * Remoção lógica: o arquivo continua em `lib/`, mas deixa de aparecer na
    * biblioteca. Pode ser readicionado com `publish`.
@@ -324,7 +373,7 @@ export class LibraryService implements OnModuleInit {
   async discard(id: string): Promise<void> {
     const indexed = this.find(id);
 
-    await this.storage.remove(indexed.path);
+    await this.storage.remove(indexed.path, false);
     this.index.remove(id);
     // O mapa mental (e as edições do usuário) pertence ao texto: apagou o texto, apaga o mapa.
     this.mindMaps?.delete(id);
@@ -367,7 +416,7 @@ export class LibraryService implements OnModuleInit {
     const newPath = await this.storage.save(meta, body);
 
     if (previousPath && previousPath !== newPath) {
-      await this.storage.remove(previousPath);
+      await this.storage.remove(previousPath, false);
     }
 
     this.index.upsert(await this.storage.read(newPath));

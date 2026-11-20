@@ -14,10 +14,11 @@ export interface CategoryNode {
  * Níveis com o mesmo nome (ignorando maiúscula e acento) são unidos; a
  * ordem é alfanumérica natural em cada nível.
  */
-export function buildCategoryTree(categories: string[][]): CategoryNode[] {
+export function buildCategoryTree(categories: string[][], empty: string[][] = []): CategoryNode[] {
   const roots: CategoryNode[] = [];
 
-  for (const category of categories) {
+  /** Acha ou cria cada nível do caminho; `counted` soma um documento em cada nível. */
+  const place = (category: string[], counted: boolean) => {
     let level = roots;
 
     category.forEach((name, depth) => {
@@ -34,9 +35,22 @@ export function buildCategoryTree(categories: string[][]): CategoryNode[] {
         level.push(node);
       }
 
-      node.count += 1;
+      if (counted) {
+        node.count += 1;
+      }
+
       level = node.children;
     });
+  };
+
+  for (const category of categories) {
+    place(category, true);
+  }
+
+  // Pastas de categoria que existem sem nenhum documento (ou só com documentos fora da lista):
+  // aparecem na árvore com contagem zero.
+  for (const category of empty) {
+    place(category, false);
   }
 
   const sort = (nodes: CategoryNode[]): CategoryNode[] => {

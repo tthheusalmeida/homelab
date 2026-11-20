@@ -96,6 +96,8 @@ export const IpcChannels = {
     inbox: 'library:inbox',
     categories: 'library:categories',
     renameCategory: 'library:categories:rename',
+    createCategory: 'library:categories:create',
+    deleteCategory: 'library:categories:delete',
     tags: 'library:tags',
     index: 'library:index',
     reindex: 'library:reindex',
