@@ -22,7 +22,10 @@ function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
 }
 
 function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+  // Com `render`, o elemento é o do chamador e mantém o próprio `data-slot`.
+  const slot = props.render ? {} : { "data-slot": "tooltip-trigger" }
+
+  return <TooltipPrimitive.Trigger {...slot} {...props} />
 }
 
 function TooltipContent({

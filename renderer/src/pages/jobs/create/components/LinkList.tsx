@@ -4,6 +4,7 @@ import { ChevronDown, Link2, Pencil, X } from "lucide-react";
 
 import { Button } from "#ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "#ui/collapsible";
+import { Tip } from "#components/Tip";
 
 import { VideoUrlStrings } from "../video-url-text";
 import { describeLink, MAX_BATCH_LINKS, VISIBLE_LINKS } from "../video-urls";
@@ -35,10 +36,12 @@ function LinkRow({ link, position, disabled, onEdit, onRemove }: LinkRowProps) {
 
       <Link2 aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
 
-      <span className="min-w-0 flex-1 truncate text-sm" title={link}>
-        <span className="font-medium">{host}</span>
-        <span className="text-muted-foreground">{path}</span>
-      </span>
+      <Tip content={link}>
+        <span className="min-w-0 flex-1 truncate text-sm">
+          <span className="font-medium">{host}</span>
+          <span className="text-muted-foreground">{path}</span>
+        </span>
+      </Tip>
 
       <Button
         type="button"

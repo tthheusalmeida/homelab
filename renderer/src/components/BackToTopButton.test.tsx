@@ -54,7 +54,6 @@ describe("BackToTopButton", () => {
 
     const button = screen.getByRole("button", { name: "Voltar ao topo" });
 
-    expect(button).toHaveAttribute("title", "Voltar ao topo");
     expect(button).toHaveAttribute("type", "button");
   });
 

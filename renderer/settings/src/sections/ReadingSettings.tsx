@@ -6,6 +6,7 @@ import { Label } from '#ui/label';
 import { ReadingColorPicker } from '#components/ReadingColorPicker';
 import { ReadingPreview } from '#components/ReadingPreview';
 import { SettingsGroup, SettingsPanel, SettingsRow } from '#components/SettingsGroup';
+import { Tip } from '#components/Tip';
 import { ValueStepper } from '#components/ValueStepper';
 import { useAppearance } from '#hooks/use-appearance';
 import {
@@ -56,19 +57,19 @@ export function ReadingSettings() {
         <SettingsRow label={text.font}>
           <div role="radiogroup" aria-label={text.font} className="flex flex-wrap gap-1">
             {READING_FONT_IDS.map((font) => (
-              <Button
-                key={font}
-                type="button"
-                role="radio"
-                aria-checked={reading.font === font}
-                title={readingFontHints[font]}
-                variant={reading.font === font ? 'default' : 'outline'}
-                size="xs"
-                style={{ fontFamily: readingFontFamilies[font] }}
-                onClick={() => change({ font })}
-              >
-                {readingFontLabels[font]}
-              </Button>
+              <Tip key={font} content={readingFontHints[font]}>
+                <Button
+                  type="button"
+                  role="radio"
+                  aria-checked={reading.font === font}
+                  variant={reading.font === font ? 'default' : 'outline'}
+                  size="xs"
+                  style={{ fontFamily: readingFontFamilies[font] }}
+                  onClick={() => change({ font })}
+                >
+                  {readingFontLabels[font]}
+                </Button>
+              </Tip>
             ))}
           </div>
         </SettingsRow>
@@ -88,20 +89,22 @@ export function ReadingSettings() {
               onIncrease={() => change({ fontSize: stepFontSize(reading.fontSize, 1) })}
             />
 
-            <span title={text.zoomHint}>
-              <ValueStepper
-                label={text.zoom}
-                value={`${reading.zoom}%`}
-                decreaseLabel="Diminuir o zoom"
-                increaseLabel="Aumentar o zoom"
-                canDecrease={reading.zoom > READING_ZOOM.min}
-                canIncrease={reading.zoom < READING_ZOOM.max}
-                decreaseIcon={<ZoomOut />}
-                increaseIcon={<ZoomIn />}
-                onDecrease={() => change({ zoom: stepZoom(reading.zoom, -1) })}
-                onIncrease={() => change({ zoom: stepZoom(reading.zoom, 1) })}
-              />
-            </span>
+            <Tip content={text.zoomHint}>
+              <span>
+                <ValueStepper
+                  label={text.zoom}
+                  value={`${reading.zoom}%`}
+                  decreaseLabel="Diminuir o zoom"
+                  increaseLabel="Aumentar o zoom"
+                  canDecrease={reading.zoom > READING_ZOOM.min}
+                  canIncrease={reading.zoom < READING_ZOOM.max}
+                  decreaseIcon={<ZoomOut />}
+                  increaseIcon={<ZoomIn />}
+                  onDecrease={() => change({ zoom: stepZoom(reading.zoom, -1) })}
+                  onIncrease={() => change({ zoom: stepZoom(reading.zoom, 1) })}
+                />
+              </span>
+            </Tip>
           </div>
         </SettingsRow>
 

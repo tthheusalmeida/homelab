@@ -654,7 +654,7 @@ describe('InfographicView: troca de peças', () => {
 });
 
 describe('InfographicView: edição de textos', () => {
-  const texts = () => screen.queryAllByTitle('Editar este texto');
+  const texts = () => Array.from(document.querySelectorAll<HTMLElement>('[data-slot="editable-text"]'));
   const clickAll = async (onPick: ReturnType<typeof vi.fn>) => {
     for (const text of texts()) {
       await userEvent.click(text);

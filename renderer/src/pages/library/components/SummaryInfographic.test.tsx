@@ -721,8 +721,7 @@ describe('SummaryInfographic text edit', { timeout: 20_000 }, () => {
   const startEditing = async () =>
     userEvent.click(screen.getByRole('button', { name: 'Editar as peças' }));
   const textButton = (text: string) =>
-    screen
-      .getAllByTitle('Editar este texto')
+    Array.from(document.querySelectorAll<HTMLElement>('[data-slot="editable-text"]'))
       .find((element) => element.textContent === text) as HTMLElement;
   const dialog = () => within(screen.getByRole('dialog'));
   const gone = () => waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -838,6 +837,6 @@ describe('SummaryInfographic text edit', { timeout: 20_000 }, () => {
 
     renderTab();
 
-    expect(screen.queryAllByTitle('Editar este texto')).toHaveLength(0);
+    expect(document.querySelectorAll('[data-slot="editable-text"]')).toHaveLength(0);
   });
 });

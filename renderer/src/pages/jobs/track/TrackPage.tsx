@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { Button } from "../../../ui/button";
 import { Card, CardContent } from "../../../ui/card";
+import { Tip } from "../../../components/Tip";
 
 import { ConfirmDialog } from "../../../components/ConfirmDialog";
 import { ErrorState } from "../../../components/ErrorState";
@@ -210,14 +211,15 @@ export function TrackPage() {
                     {TrackStrings.select}
                   </Button>
 
-                  <Button
-                    variant="destructive"
-                    disabled={deletable.length === 0}
-                    title={deletable.length === 0 ? TrackStrings.nothingToDelete : undefined}
-                    onClick={() => setConfirming("all")}
-                  >
-                    {TrackStrings.deleteAll}
-                  </Button>
+                  <Tip content={deletable.length === 0 && TrackStrings.nothingToDelete} wrap>
+                    <Button
+                      variant="destructive"
+                      disabled={deletable.length === 0}
+                      onClick={() => setConfirming("all")}
+                    >
+                      {TrackStrings.deleteAll}
+                    </Button>
+                  </Tip>
                 </>
               )}
             </div>

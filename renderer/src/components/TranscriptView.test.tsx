@@ -7,6 +7,7 @@ import type { TimedExcerpt } from '#shared/transcript';
 import { AppearanceContext, type AppearanceApi } from '#hooks/use-appearance';
 
 import { TranscriptView } from './TranscriptView';
+import { tooltipTextOf } from '#test/tooltip';
 
 const excerpts: TimedExcerpt[] = [0, 60, 120, 180, 240, 300].map((seconds, index) => ({
   seconds,
@@ -78,22 +79,22 @@ describe('TranscriptView', () => {
     }
   });
 
-  it('when the source is YouTube, should open the video at the excerpt time from the chip', () => {
+  it('when the source is YouTube, should open the video at the excerpt time from the chip', async () => {
     render(<TranscriptView excerpts={excerpts} sourceUrl="https://www.youtube.com/watch?v=abc" />);
 
     const chip = within(screen.getByRole('region', { name: 'Trecho de 2:00' })).getByRole('link');
 
     expect(chip).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abc&t=120s');
-    expect(chip).toHaveAttribute('title', 'Abrir o vídeo neste momento');
+    expect(await tooltipTextOf(chip)).toBe('Abrir o vídeo neste momento');
   });
 
-  it('when the platform has no timed link, should open just the video and say so', () => {
+  it('when the platform has no timed link, should open just the video and say so', async () => {
     render(<TranscriptView excerpts={excerpts} sourceUrl="https://outro.test/v/1" />);
 
     const chip = within(screen.getByRole('region', { name: 'Trecho de 2:00' })).getByRole('link');
 
     expect(chip).toHaveAttribute('href', 'https://outro.test/v/1');
-    expect(chip.getAttribute('title')).toMatch(/não abre no momento exato/);
+    expect(await tooltipTextOf(chip)).toMatch(/não abre no momento exato/);
   });
 
   it('when there is no source link, should show the times as plain text', () => {

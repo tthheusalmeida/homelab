@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { InfographicPiece } from '#components/InfographicPiece';
 import { LazyRender } from '#components/LazyRender';
 import { SearchInput } from '#components/SearchInput';
+import { Tip } from '#components/Tip';
 import { createPieceMatcher } from '#lib/piece-search';
 import { cn } from '#lib/utils';
 import { INFOGRAPHIC_PIECES, INFOGRAPHIC_THEMES } from '#shared/infographic-pieces';
@@ -116,25 +117,24 @@ export function PieceCatalog({
 
               return (
                 <li key={piece.key}>
-                  {onPick ? (
-                    <button
-                      type="button"
-                      title={piece.name}
-                      aria-pressed={piece.key === selected}
-                      onClick={() => onPick(piece.key)}
-                      className={cn(
-                        box,
-                        'cursor-pointer transition hover:border-brand focus-visible:outline-2 focus-visible:outline-brand',
-                        piece.key === selected && 'border-brand ring-2 ring-brand',
-                      )}
-                    >
-                      {content}
-                    </button>
-                  ) : (
-                    <div title={piece.name} className={box}>
-                      {content}
-                    </div>
-                  )}
+                  <Tip content={piece.name}>
+                    {onPick ? (
+                      <button
+                        type="button"
+                        aria-pressed={piece.key === selected}
+                        onClick={() => onPick(piece.key)}
+                        className={cn(
+                          box,
+                          'cursor-pointer transition hover:border-brand focus-visible:outline-2 focus-visible:outline-brand',
+                          piece.key === selected && 'border-brand ring-2 ring-brand',
+                        )}
+                      >
+                        {content}
+                      </button>
+                    ) : (
+                      <div className={box}>{content}</div>
+                    )}
+                  </Tip>
                 </li>
               );
             })}

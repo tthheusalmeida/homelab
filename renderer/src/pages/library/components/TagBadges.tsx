@@ -1,8 +1,9 @@
 import { Badge } from "#ui/badge";
+import { Tip } from "#components/Tip";
 
 interface TagBadgesProps {
   tags: string[];
-  /** Quantas tags aparecem; as outras viram "+N" (com a lista completa no title). */
+  /** Quantas tags aparecem; as outras viram "+N" (com a lista completa no tooltip). */
   max?: number;
 }
 
@@ -19,9 +20,9 @@ export function TagBadges({ tags, max = 3 }: TagBadgesProps) {
       ))}
 
       {rest.length > 0 && (
-        <Badge variant="secondary" title={rest.join(", ")}>
-          +{rest.length}
-        </Badge>
+        <Tip content={rest.join(", ")}>
+          <Badge variant="secondary">+{rest.length}</Badge>
+        </Tip>
       )}
     </>
   );

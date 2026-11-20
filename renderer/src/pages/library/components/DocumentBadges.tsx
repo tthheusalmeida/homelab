@@ -2,6 +2,7 @@ import { LayoutPanelTop, Network } from 'lucide-react';
 
 import { Badge } from '#ui/badge';
 import { cn } from '#lib/utils';
+import { Tip } from '#components/Tip';
 
 import { documentTypeLabels, type DocumentStatus, type DocumentType } from '../types/library.types';
 
@@ -40,26 +41,20 @@ export function GeneratedMarks({ document, variant = 'text', className }: Genera
     <span className={cn('inline-flex items-center gap-1', className)}>
       {marks.map(({ key, label, icon: Icon }) =>
         variant === 'icon' ? (
-          <span
-            key={key}
-            role="img"
-            data-mark={key}
-            title={`Tem ${label.toLowerCase()}`}
-            aria-label={`Tem ${label.toLowerCase()}`}
-            // Fica sobre o fundo do app (abaixo da folha): a cor de destaque sólida, com o ícone na cor própria
-            // dela, contrasta nos dois temas e acompanha a cor escolhida.
-            className="relative z-10 grid size-5 place-items-center rounded bg-primary text-primary-foreground shadow-sm"
-          >
-            <Icon className="size-3" />
-          </span>
+          <Tip key={key} content={`Tem ${label.toLowerCase()}`}>
+            <span
+              role="img"
+              data-mark={key}
+              aria-label={`Tem ${label.toLowerCase()}`}
+              // Fica sobre o fundo do app (abaixo da folha): a cor de destaque sólida, com o ícone na cor própria
+              // dela, contrasta nos dois temas e acompanha a cor escolhida.
+              className="relative z-10 grid size-5 place-items-center rounded bg-primary text-primary-foreground shadow-sm"
+            >
+              <Icon className="size-3" />
+            </span>
+          </Tip>
         ) : (
-          <Badge
-            key={key}
-            variant="outline"
-            data-mark={key}
-            title={`Tem ${label.toLowerCase()}`}
-            className="gap-1 text-brand-text"
-          >
+          <Badge key={key} variant="outline" data-mark={key} className="gap-1 text-brand-text">
             <Icon className="size-3" />
 
             {label}

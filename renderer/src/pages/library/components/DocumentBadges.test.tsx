@@ -6,6 +6,7 @@ import type { DocumentSummary } from '../types/library.types';
 
 import { DocumentCard } from './DocumentCard';
 import { GeneratedMarks } from './DocumentBadges';
+import { tooltipTextOf } from '#test/tooltip';
 
 const document = {
   id: 'd1',
@@ -83,15 +84,13 @@ describe('GeneratedMarks', () => {
     expect(screen.getByText('Mapa mental')).toBeInTheDocument();
   });
 
-  it('when in icon mode, should show only the icons with the name in the tooltip', () => {
+  it('when in icon mode, should show only the icons with the name in the tooltip', async () => {
     render(<GeneratedMarks variant="icon" document={{ hasInfographic: true, hasMindMap: true }} />);
 
-    expect(screen.getByRole('img', { name: 'Tem infográfico' })).toHaveAttribute(
-      'title',
+    expect(await tooltipTextOf(screen.getByRole('img', { name: 'Tem infográfico' }))).toBe(
       'Tem infográfico',
     );
-    expect(screen.getByRole('img', { name: 'Tem mapa mental' })).toHaveAttribute(
-      'title',
+    expect(await tooltipTextOf(screen.getByRole('img', { name: 'Tem mapa mental' }))).toBe(
       'Tem mapa mental',
     );
     expect(screen.queryByText('Infográfico')).not.toBeInTheDocument();
@@ -206,13 +205,12 @@ describe('DocumentCard grid marks position', () => {
     expect(mark.className).not.toContain('color-mix');
   });
 
-  it('when the marks sit above the link that covers the card, should stay hoverable for their tooltip', () => {
+  it('when the marks sit above the link that covers the card, should stay hoverable for their tooltip', async () => {
     const { container } = renderGrid(both);
 
     expect(container.querySelector('[data-mark="hasMindMap"]')).toHaveClass('relative', 'z-10');
-    expect(container.querySelector('[data-mark="hasMindMap"]')).toHaveAttribute(
-      'title',
-      'Tem mapa mental',
-    );
+    expect(
+      await tooltipTextOf(container.querySelector('[data-mark="hasMindMap"]') as HTMLElement),
+    ).toBe('Tem mapa mental');
   });
 });

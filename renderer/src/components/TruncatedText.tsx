@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '#ui/tooltip';
+import { Tip } from '#components/Tip';
 import { cn } from '#lib/utils';
 
 /** Espera antes de o tooltip aparecer (ms): curta, para o nome inteiro aparecer logo. */
@@ -30,23 +30,15 @@ export function TruncatedText({ children, className, side = 'right' }: Truncated
   };
 
   return (
-    <TooltipProvider delay={TOOLTIP_DELAY_MS}>
-      <Tooltip disabled={!truncated}>
-        <TooltipTrigger
-          render={
-            <span
-              ref={ref}
-              className={cn('truncate', className)}
-              onMouseEnter={measure}
-              onFocus={measure}
-            >
-              {children}
-            </span>
-          }
-        />
-
-        <TooltipContent side={side}>{children}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tip content={truncated && children} side={side} delay={TOOLTIP_DELAY_MS}>
+      <span
+        ref={ref}
+        className={cn('truncate', className)}
+        onMouseEnter={measure}
+        onFocus={measure}
+      >
+        {children}
+      </span>
+    </Tip>
   );
 }
