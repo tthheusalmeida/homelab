@@ -79,8 +79,11 @@ export function useGenerateMindMap() {
   return useMutation({
     mutationFn: ({ id, modelId }: { id: string; modelId?: string }) =>
       generateMindMap(id, modelId),
-    onSuccess: (map, { id }) =>
-      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map),
+    onSuccess: async (map, { id }) => {
+      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map);
+      // a lista de Páginas mostra a marca de "tem mapa mental"
+      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
+    },
   });
 }
 
@@ -101,8 +104,11 @@ export function useSaveMindMap() {
       subtitle?: string;
       nodes: MindMapNodeInput[];
     }) => saveMindMap(id, { subtitle, nodes }),
-    onSuccess: (map, { id }) =>
-      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map),
+    onSuccess: async (map, { id }) => {
+      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map);
+      // um mapa feito do zero também ganha a marca na lista de Páginas
+      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
+    },
   });
 }
 
@@ -176,8 +182,11 @@ export function useGenerateInfographic() {
       modelId?: string;
       layout?: InfographicLayoutId;
     }) => generateInfographic(id, { modelId, layout }),
-    onSuccess: (infographic, { id }) =>
-      queryClient.setQueryData([...LIBRARY_KEY, "infographic", id], infographic),
+    onSuccess: async (infographic, { id }) => {
+      queryClient.setQueryData([...LIBRARY_KEY, "infographic", id], infographic);
+      // a lista de Páginas mostra a marca de "tem infográfico"
+      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
+    },
   });
 }
 

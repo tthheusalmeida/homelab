@@ -328,7 +328,7 @@ describe("mind map hooks", () => {
     expect(library.getMindMap).not.toHaveBeenCalled();
   });
 
-  it("when the map is generated, should store it in the map query without invalidating the library", async () => {
+  it("when the map is generated, should store it in the map query and refresh only the page list (the mark of having a mind map)", async () => {
     vi.mocked(library.generateMindMap).mockResolvedValue(map);
     vi.mocked(library.getMindMap).mockResolvedValue(null);
     const { wrapper, invalidate } = setup();
@@ -345,7 +345,7 @@ describe("mind map hooks", () => {
 
     expect(library.generateMindMap).toHaveBeenCalledWith("id1", undefined);
     await waitFor(() => expect(result.current.query.data).toEqual(map));
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["library", "documents"] });
   });
 
   it("when generating fails, should expose the error and keep the query as it was", async () => {
@@ -402,7 +402,7 @@ describe('useSaveMindMap', () => {
     vi.resetAllMocks();
   });
 
-  it('when saving, should send the id and the map, and put the result in the map query', async () => {
+  it('when saving, should send the id and the map, put the result in the map query and refresh the page list', async () => {
     vi.mocked(library.saveMindMap).mockResolvedValue(edited);
     vi.mocked(library.getMindMap).mockResolvedValue(null);
     const { wrapper, invalidate } = setup();
@@ -426,7 +426,7 @@ describe('useSaveMindMap', () => {
       nodes: [{ label: 'Termo', children: [] }],
     });
     await waitFor(() => expect(result.current.query.data).toEqual(edited));
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["library", "documents"] });
   });
 
   it('when saving fails, should expose the error and keep the query as it was', async () => {
@@ -480,7 +480,7 @@ describe('useInfographic', () => {
     expect(library.getInfographic).not.toHaveBeenCalled();
   });
 
-  it('when it is generated, should store it in the infographic query without invalidating the library', async () => {
+  it('when it is generated, should store it in the infographic query and refresh only the page list (the mark of having an infographic)', async () => {
     vi.mocked(library.generateInfographic).mockResolvedValue(infographic);
     vi.mocked(library.getInfographic).mockResolvedValue(null);
     const { wrapper, invalidate } = setup();
@@ -501,7 +501,7 @@ describe('useInfographic', () => {
       layout: 'funnel',
     });
     await waitFor(() => expect(result.current.query.data).toEqual(infographic));
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["library", "documents"] });
   });
 
   it('when generating fails, should expose the error and keep the query as it was', async () => {

@@ -262,6 +262,40 @@ describe('LibrarySearch', () => {
       expect((await titles({ has: [] })).length).toBe(4);
     });
 
+    it('when listing, should flag each page that has an infographic and/or a mind map (and only those)', async () => {
+      const all = await search.search({});
+      const by = (title: string) => all.find((doc) => doc.title === title);
+
+      expect(by('Com os dois')).toMatchObject({ hasInfographic: true, hasMindMap: true });
+      expect(by('Só infográfico')).toMatchObject({ hasInfographic: true });
+      expect(by('Só infográfico')).not.toHaveProperty('hasMindMap');
+      expect(by('Só mapa')).toMatchObject({ hasMindMap: true });
+      expect(by('Só mapa')).not.toHaveProperty('hasInfographic');
+      expect(by('Nenhum')).not.toHaveProperty('hasInfographic');
+      expect(by('Nenhum')).not.toHaveProperty('hasMindMap');
+    });
+
+    it('when an infographic was saved before the sections existed, should not flag it nor match the filter', async () => {
+      infographics.set('4', {
+        contentHash: 'h',
+        model: 'm',
+        createdAt: 'd',
+        title: 'x',
+      } as unknown as StoredInfographic);
+
+      expect((await search.search({})).find((doc) => doc.title === 'Nenhum')).not.toHaveProperty(
+        'hasInfographic',
+      );
+      expect(await titles({ has: ['infographic'] })).not.toContain('Nenhum');
+    });
+
+    it('when the stores are not available, should flag nothing', async () => {
+      const bare = new LibrarySearch(index, tmp.storage);
+      const all = await bare.search({});
+
+      expect(all.some((doc) => 'hasInfographic' in doc || 'hasMindMap' in doc)).toBe(false);
+    });
+
     it('when asking for infographics, should return only the pages that have one', async () => {
       expect((await titles({ has: ['infographic'] })).sort()).toEqual([
         'Com os dois',

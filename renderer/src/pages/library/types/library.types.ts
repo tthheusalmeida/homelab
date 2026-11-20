@@ -57,6 +57,10 @@ export interface DocumentSummary extends DocumentMeta {
   fileName: string;
   preview: string;
   matchedIn?: "metadata" | "content";
+  /** O resumo já tem infográfico guardado. */
+  hasInfographic?: boolean;
+  /** O resumo já tem mapa mental guardado. */
+  hasMindMap?: boolean;
 }
 
 export interface DocumentDetail {

@@ -146,6 +146,7 @@ export function LibraryPage() {
 
           <OptionSelect
             value={type ?? ALL}
+            active={type !== undefined}
             options={toOptions(documentTypeLabels, "Todos os tipos")}
             placeholder="Tipo"
             label="Tipo"
@@ -160,6 +161,7 @@ export function LibraryPage() {
 
           <OptionSelect
             value={source ?? ALL}
+            active={source !== undefined}
             options={toOptions(documentSourceLabels, "Todas as origens")}
             placeholder="Origem"
             label="Origem"
@@ -174,6 +176,7 @@ export function LibraryPage() {
 
           <OptionSelect
             value={content ?? ALL}
+            active={content !== undefined}
             options={toOptions(contentFilterLabels, "Todo o conteúdo")}
             placeholder="Conteúdo"
             label="Conteúdo gerado"

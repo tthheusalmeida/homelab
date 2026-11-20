@@ -22,6 +22,10 @@ export interface LibraryDocumentSummary extends LibraryDocumentMeta {
   fileName: string;
   preview: string;
   matchedIn?: 'metadata' | 'content';
+  /** O resumo já tem infográfico guardado (só vem quando é verdade). */
+  hasInfographic?: boolean;
+  /** O resumo já tem mapa mental guardado (só vem quando é verdade). */
+  hasMindMap?: boolean;
 }
 
 export interface LibraryDocumentDetail {

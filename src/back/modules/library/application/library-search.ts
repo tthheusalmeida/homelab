@@ -37,6 +37,10 @@ export interface DocumentSummary extends DocumentMeta {
   fileName: string;
   preview: string;
   matchedIn?: 'metadata' | 'content';
+  /** O resumo já tem infográfico guardado (só vem quando é verdade). */
+  hasInfographic?: boolean;
+  /** O resumo já tem mapa mental guardado (só vem quando é verdade). */
+  hasMindMap?: boolean;
 }
 
 const READ_CONCURRENCY = 8;
@@ -71,8 +75,8 @@ export class LibrarySearch {
     const category = filters.category ?? [];
     const has = parseHas(filters.has);
     const hasContent = (id: string) =>
-      (!has.includes('infographic') || this.infographics?.get(id) !== undefined) &&
-      (!has.includes('mind-map') || this.mindMaps?.get(id) !== undefined);
+      (!has.includes('infographic') || this.hasInfographic(id)) &&
+      (!has.includes('mind-map') || this.hasMindMap(id));
 
     const candidates = this.index
       .all()
@@ -102,7 +106,22 @@ export class LibrarySearch {
           compareNatural(a.doc.fileName, b.doc.fileName),
     );
 
-    return sorted.map(({ doc, matchedIn }) => toSummary(doc, matchedIn));
+    return sorted.map(({ doc, matchedIn }) => ({
+      ...toSummary(doc, matchedIn),
+      ...(this.hasInfographic(doc.meta.id) ? { hasInfographic: true } : {}),
+      ...(this.hasMindMap(doc.meta.id) ? { hasMindMap: true } : {}),
+    }));
+  }
+
+  /** Tem infográfico guardado? Um guardado antes das seções não conta (para a tela é como se não existisse). */
+  private hasInfographic(id: string): boolean {
+    const stored = this.infographics?.get(id);
+
+    return stored !== undefined && Array.isArray(stored.sections);
+  }
+
+  private hasMindMap(id: string): boolean {
+    return this.mindMaps?.get(id) !== undefined;
   }
 
   private async matchText(candidates: IndexedDocument[], tokens: string[]): Promise<Match[]> {

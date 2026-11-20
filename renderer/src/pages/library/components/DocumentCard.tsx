@@ -10,7 +10,7 @@ import { formatDate } from "#lib/format";
 import type { DocumentSummary } from "../types/library.types";
 
 import { CategoryBreadcrumb } from "./CategoryBreadcrumb";
-import { DocumentTypeBadge } from "./DocumentBadges";
+import { DocumentTypeBadge, GeneratedMarks } from "./DocumentBadges";
 import { TagBadges } from "./TagBadges";
 
 interface DocumentCardProps {
@@ -86,8 +86,8 @@ export function DocumentCard({
               </p>
             )}
 
-            <div className="mt-auto flex flex-wrap items-end justify-between gap-x-3 text-[10px] text-stone-500">
-              <span className="truncate">
+            <div className="mt-auto flex items-end justify-between gap-x-2 text-[10px] text-stone-500">
+              <span className="min-w-0 flex-1 truncate">
                 {document.tags.slice(0, 2).map((tag) => `#${tag}`).join(" ")}
               </span>
 
@@ -99,6 +99,11 @@ export function DocumentCard({
           </div>
         </PaperPage>
         </TiltCard>
+
+        {/* As marcas ficam **abaixo** da folha, sobre o fundo do app: não mexem no desenho do cartão e contrastam com o tema. A faixa tem altura fixa (com ou sem marcas) para todos os cartões terem a mesma altura. */}
+        <div className="mt-2 flex h-5 items-center justify-center">
+          <GeneratedMarks document={document} variant="icon" />
+        </div>
       </div>
     );
   }
@@ -111,6 +116,8 @@ export function DocumentCard({
             {title}
 
             <DocumentTypeBadge type={document.type} />
+
+            <GeneratedMarks document={document} />
           </div>
 
           <CategoryBreadcrumb category={document.category} />
@@ -134,6 +141,8 @@ export function DocumentCard({
           {title}
 
           <DocumentTypeBadge type={document.type} />
+
+          <GeneratedMarks document={document} />
         </div>
 
         <CategoryBreadcrumb category={document.category} />

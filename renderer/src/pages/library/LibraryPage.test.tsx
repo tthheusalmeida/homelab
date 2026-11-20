@@ -35,16 +35,19 @@ vi.mock("#components/OptionSelect", () => ({
     options,
     label,
     placeholder,
+    active,
     onValueChange,
   }: {
     value?: string;
     options: { id: string; label: string }[];
     label?: string;
     placeholder: string;
+    active?: boolean;
     onValueChange: (value: string) => void;
   }) => (
     <select
       aria-label={label ?? placeholder}
+      data-active={active ? "true" : "false"}
       value={value ?? ""}
       onChange={(event) => onValueChange(event.target.value)}
     >
@@ -358,5 +361,79 @@ describe("LibraryPage", () => {
 
     expect(grid?.className).toContain('minmax(11rem,1fr)');
     expect(grid?.className).not.toMatch(/(sm|xl):grid-cols/);
+  });
+});
+
+describe("LibraryPage filters highlight", () => {
+  const select = (name: string) => screen.getByLabelText(name);
+
+  it("when no filter is applied, should not highlight any of the filters", () => {
+    renderPage();
+
+    for (const name of ["Tipo", "Origem", "Conteúdo gerado"]) {
+      expect(select(name)).toHaveAttribute("data-active", "false");
+    }
+  });
+
+  it("when a type is chosen, should highlight only the type filter; choosing all removes it", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.selectOptions(select("Tipo"), "summary");
+
+    expect(select("Tipo")).toHaveAttribute("data-active", "true");
+    expect(select("Origem")).toHaveAttribute("data-active", "false");
+
+    await user.selectOptions(select("Tipo"), "all");
+
+    expect(select("Tipo")).toHaveAttribute("data-active", "false");
+  });
+
+  it("when a source or a content filter is chosen, should highlight it", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.selectOptions(select("Origem"), "manual");
+    await user.selectOptions(select("Conteúdo gerado"), "mind-map");
+
+    expect(select("Origem")).toHaveAttribute("data-active", "true");
+    expect(select("Conteúdo gerado")).toHaveAttribute("data-active", "true");
+  });
+
+  it("when the sort changes, should not highlight it (it is not a filter)", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.selectOptions(select("Ordenar por"), "recent");
+
+    expect(select("Ordenar por")).toHaveAttribute("data-active", "false");
+  });
+
+  it("when the filters are cleared, should remove every highlight", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.selectOptions(select("Tipo"), "summary");
+    await user.selectOptions(select("Conteúdo gerado"), "infographic");
+
+    await user.click(screen.getByRole("button", { name: "Limpar filtros" }));
+
+    for (const name of ["Tipo", "Origem", "Conteúdo gerado"]) {
+      expect(select(name)).toHaveAttribute("data-active", "false");
+    }
+  });
+
+  it("when there is text in the search, should highlight the search field; empty text removes it", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.getByRole("searchbox")).not.toHaveAttribute("data-active");
+
+    await user.type(screen.getByRole("searchbox"), "docker");
+
+    expect(screen.getByRole("searchbox")).toHaveAttribute("data-active", "true");
+
+    await user.clear(screen.getByRole("searchbox"));
+
+    expect(screen.getByRole("searchbox")).not.toHaveAttribute("data-active");
   });
 });
