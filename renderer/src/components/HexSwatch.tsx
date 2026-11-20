@@ -1,8 +1,9 @@
 import type { ComponentProps, CSSProperties, ReactNode } from 'react';
 
 import { cn } from '#lib/utils';
+import { HEX_CLIP } from '#lib/hex';
 
-const HEX = '[clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]';
+const HEX = HEX_CLIP;
 
 interface HexSwatchProps extends Omit<ComponentProps<'button'>, 'color'> {
   /** Opção escolhida: ganha um contorno hexagonal. */

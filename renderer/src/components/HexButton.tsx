@@ -2,9 +2,10 @@ import type { ComponentProps } from "react";
 
 import { Button } from "#ui/button";
 import { cn } from "#lib/utils";
+import { HEX_CLIP } from "#lib/hex";
 
 /** Mesmo hexágono do `HexDot` e do logo (ponta para cima). */
-export const HEX_CLIP = "[clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]";
+export { HEX_CLIP };
 
 /** Chip com as duas pontas de um hexágono (o horário dos trechos da transcrição). */
 export const HEX_CHIP_CLIP =

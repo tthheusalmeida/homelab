@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 
 import { cn } from '#lib/utils';
+import { HEX_CLIP } from '#lib/hex';
 import type { MindMap, MindMapNode } from '#lib/mind-map';
 import {
   addBranch,
@@ -59,7 +60,6 @@ const ZOOM_STEP = 1.2;
 /** Quanto o ponteiro precisa andar (px) para o gesto contar como arrastar, e não como clique. */
 const DRAG_THRESHOLD = 4;
 
-const HEX_CLIP = '[clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]';
 
 interface View {
   x: number;

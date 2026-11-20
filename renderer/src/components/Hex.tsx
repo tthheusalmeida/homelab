@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { cn } from '#lib/utils';
+import { HEX_CLIP } from '#lib/hex';
 
 /** Caminho SVG de um hexágono de pontas para cima, centrado em (cx, cy) com raio r. */
 export function hexPath(cx: number, cy: number, r: number): string {
@@ -76,7 +77,8 @@ export function HexDot({ className, pulse = false }: { className?: string; pulse
     <span
       aria-hidden="true"
       className={cn(
-        'inline-block h-[0.7rem] w-[0.62rem] shrink-0 [clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]',
+        'inline-block h-[0.7rem] w-[0.62rem] shrink-0',
+        HEX_CLIP,
         pulse && 'animate-pulse',
         className,
       )}
