@@ -46,6 +46,8 @@ describe("OptionSelect", () => {
     const popup = await screen.findByRole("listbox");
     const content = popup.closest('[data-slot="select-content"]') as HTMLElement;
 
+    expect(trigger()).toHaveAttribute("data-popup-open");
+    expect(trigger()).toHaveClass("data-popup-open:ring-2", "data-popup-open:ring-ring");
     expect(content).toHaveAttribute("data-align-trigger", "false");
     expect(content).toHaveClass("transition-opacity", "data-starting-style:opacity-0");
     expect(content.className).not.toMatch(/zoom|slide/);
