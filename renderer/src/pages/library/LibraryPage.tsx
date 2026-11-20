@@ -17,6 +17,7 @@ import { SearchInput } from "#components/SearchInput";
 import { useDebouncedValue } from "#hooks/use-debounced-value";
 import { useStoredState } from "#hooks/use-stored-state";
 
+import { CategoryCreateDialog } from "./components/CategoryCreateDialog";
 import {
   CategoryEditDialog,
   CategoryEditStrings,
@@ -31,7 +32,11 @@ import {
   useRenameCategory,
   useTags,
 } from "./hooks/useLibrary";
-import { findCategory, followRenamedCategory } from "./categories";
+import {
+  findCategory,
+  followRenamedCategory,
+  startsWithPath,
+} from "./categories";
 import {
   contentFilterLabels,
   contentFilterToHas,
@@ -76,6 +81,8 @@ export function LibraryPage() {
   const [sort, setSort] = useState<SortOption>("title");
   // A categoria que está sendo editada (lápis ao lado dela na árvore).
   const [editing, setEditing] = useState<CategoryNode | null>(null);
+  // Onde uma categoria nova está sendo criada (`[]` = nível principal; `null` = ninguém está criando).
+  const [creating, setCreating] = useState<string[] | null>(null);
   const [view, setView] = useStoredState<ViewMode>(
     "library:view",
     "grid",
@@ -132,6 +139,15 @@ export function LibraryPage() {
     }
   }
   const tagList = useTags();
+
+  // Só a categoria escolhida filtra: se ela está sem páginas, a tela explica em vez de dizer "nenhum resultado".
+  const onlyCategory =
+    category.length > 0 &&
+    q.trim() === "" &&
+    type === undefined &&
+    source === undefined &&
+    content === undefined &&
+    tags.length === 0;
 
   const hasFilters =
     q.trim() !== "" ||
@@ -283,6 +299,7 @@ export function LibraryPage() {
             selected={category}
             onSelect={setCategory}
             onEdit={setEditing}
+            onCreate={setCreating}
             onMove={moveCategory}
             disabled={renameCategory.isPending}
           />
@@ -303,6 +320,13 @@ export function LibraryPage() {
           onConfirm={() => joining && runMove(joining.node, joining.parent)}
         />
 
+        <CategoryCreateDialog
+          parent={creating}
+          tree={categories.data ?? []}
+          onOpenChange={(open) => !open && setCreating(null)}
+          onCreated={setCategory}
+        />
+
         <CategoryEditDialog
           category={editing}
           tree={categories.data ?? []}
@@ -310,11 +334,25 @@ export function LibraryPage() {
           onRenamed={(from, to) =>
             setCategory((current) => followRenamedCategory(current, from, to))
           }
+          onDeleted={(path) =>
+            setCategory((current) => (startsWithPath(current, path) ? [] : current))
+          }
         />
 
         <section aria-label="Páginas" className="space-y-3">
           {documents.data.length === 0 ? (
-            hasFilters ? (
+            onlyCategory ? (
+              <EmptyState
+                icon={LibraryIcon}
+                title="Esta categoria está vazia"
+                description="Ainda não há páginas aqui. Escolha esta categoria ao adicionar ou editar uma página para guardá-la nela."
+                action={
+                  <Button variant="secondary" onClick={() => setCategory([])}>
+                    Ver todas as categorias
+                  </Button>
+                }
+              />
+            ) : hasFilters ? (
               <EmptyState
                 icon={SearchX}
                 title="Nenhum resultado encontrado"

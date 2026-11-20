@@ -6,6 +6,8 @@ import { failure, mockApi, ok } from '#test/api-mock';
 import {
   archiveDocument,
   createArticle,
+  createCategory,
+  deleteCategory,
   discardDocument,
   deleteInfographic,
   deleteMindMap,
@@ -154,6 +156,28 @@ describe('library api: escrita por IPC', () => {
       tags: ['t'],
       title: 'T',
     });
+  });
+
+  it('when creating a category, should send the path', async () => {
+    const invoke = mockApi({ [IpcChannels.library.createCategory]: () => ok({ created: true }) });
+
+    await expect(createCategory(['Redes', 'Segurança'])).resolves.toEqual({ created: true });
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.createCategory, {
+      path: ['Redes', 'Segurança'],
+    });
+  });
+
+  it('when deleting a category, should send the path and reject with the reason when refused', async () => {
+    const invoke = mockApi({ [IpcChannels.library.deleteCategory]: () => ok({ deleted: true }) });
+
+    await expect(deleteCategory(['Redes'])).resolves.toEqual({ deleted: true });
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.deleteCategory, { path: ['Redes'] });
+
+    mockApi({
+      [IpcChannels.library.deleteCategory]: () => failure('VALIDATION', 'A categoria tem páginas.'),
+    });
+
+    await expect(deleteCategory(['Redes'])).rejects.toThrow('A categoria tem páginas.');
   });
 
   it('when renaming a category, should send both paths and return how many pages moved', async () => {

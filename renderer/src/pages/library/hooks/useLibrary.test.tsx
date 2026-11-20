@@ -13,6 +13,8 @@ vi.mock("../api/library", () => ({
   getIndexStatus: vi.fn(),
   reindex: vi.fn(),
   renameCategory: vi.fn(),
+  createCategory: vi.fn(),
+  deleteCategory: vi.fn(),
   publishDocument: vi.fn(),
   archiveDocument: vi.fn(),
   discardDocument: vi.fn(),
@@ -51,6 +53,8 @@ import {
   usePublishDocument,
   useReindex,
   useRenameCategory,
+  useCreateCategory,
+  useDeleteCategory,
   useSaveInfographic,
   useSaveMindMap,
   useSaveMindMapImage,
@@ -365,6 +369,50 @@ describe("mind map hooks", () => {
 
     await waitFor(() => expect(result.current.generate.error?.message).toBe("falhou"));
     expect(result.current.query.data).toBeNull();
+  });
+});
+
+describe('useCreateCategory and useDeleteCategory', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('when creating, should send the path and read the library again', async () => {
+    vi.mocked(library.createCategory).mockResolvedValue({ created: true });
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(() => useCreateCategory(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync(['Redes']);
+    });
+
+    expect(library.createCategory).toHaveBeenCalledWith(['Redes']);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['library'] });
+  });
+
+  it('when deleting, should send the path and read the library again', async () => {
+    vi.mocked(library.deleteCategory).mockResolvedValue({ deleted: true });
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(() => useDeleteCategory(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync(['Redes']);
+    });
+
+    expect(library.deleteCategory).toHaveBeenCalledWith(['Redes']);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['library'] });
+  });
+
+  it('when it fails, should not read the library again', async () => {
+    vi.mocked(library.createCategory).mockRejectedValue(new Error('falhou'));
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(() => useCreateCategory(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync(['Redes']).catch(() => {});
+    });
+
+    expect(invalidate).not.toHaveBeenCalled();
   });
 });
 

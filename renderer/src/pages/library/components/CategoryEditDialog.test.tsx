@@ -1,15 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const rename = vi.hoisted(() => ({
   mutate: vi.fn(),
   state: { isPending: false, isError: false, error: null as Error | null },
 }));
+const remove = vi.hoisted(() => ({
+  mutate: vi.fn(),
+  reset: vi.fn(),
+  state: { isPending: false, isError: false, error: null as Error | null },
+}));
 const snackbar = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
 vi.mock('../hooks/useLibrary', () => ({
   useRenameCategory: () => ({ mutate: rename.mutate, ...rename.state }),
+  useDeleteCategory: () => ({ mutate: remove.mutate, reset: remove.reset, ...remove.state }),
 }));
 vi.mock('#components/Snackbar', () => ({ useSnackbar: () => snackbar }));
 // Select nativo no lugar do select do base-ui, para poder escolher opções.
@@ -87,6 +93,9 @@ const optionLabels = () =>
 beforeEach(() => {
   rename.mutate.mockReset();
   rename.state = { isPending: false, isError: false, error: null };
+  remove.mutate.mockReset();
+  remove.reset.mockReset();
+  remove.state = { isPending: false, isError: false, error: null };
   snackbar.success.mockReset();
 });
 
@@ -321,6 +330,102 @@ describe('CategoryEditDialog', () => {
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(rename.mutate).not.toHaveBeenCalled();
+  });
+});
+
+describe('CategoryEditDialog: categoria vazia e exclusão', () => {
+  const empty = node('Vazia', ['Vazia'], 0, [node('Filha', ['Vazia', 'Filha'], 0)]);
+  const emptyTree = [...tree, empty];
+
+  function setupEmpty() {
+    const onOpenChange = vi.fn();
+    const onDeleted = vi.fn();
+
+    render(
+      <CategoryEditDialog
+        category={empty}
+        tree={emptyTree}
+        onOpenChange={onOpenChange}
+        onDeleted={onDeleted}
+      />,
+    );
+
+    return { onOpenChange, onDeleted, user: userEvent.setup() };
+  }
+
+  const confirm = () => within(screen.getAllByRole('dialog').at(-1) as HTMLElement);
+
+  it('when the category is empty, should say so in the description', () => {
+    setupEmpty();
+
+    expect(screen.getByText(/Esta categoria está vazia/)).toBeInTheDocument();
+  });
+
+  it('when the category has pages, should not offer to delete it', () => {
+    setup();
+
+    expect(
+      screen.queryByRole('button', { name: CategoryEditStrings.delete }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('when the category is empty, should offer to delete it', () => {
+    setupEmpty();
+
+    expect(screen.getByRole('button', { name: CategoryEditStrings.delete })).toBeInTheDocument();
+  });
+
+  it('when asking to delete, should confirm first and say that the subcategories go too', async () => {
+    const { user } = setupEmpty();
+
+    await user.click(screen.getByRole('button', { name: CategoryEditStrings.delete }));
+
+    expect(screen.getByText(CategoryEditStrings.deleteTitle)).toBeInTheDocument();
+    expect(screen.getByText(/e as subcategorias dela também/)).toBeInTheDocument();
+    expect(remove.mutate).not.toHaveBeenCalled();
+  });
+
+  it('when the delete is confirmed, should delete, say so, tell the page and close', async () => {
+    const { user, onDeleted, onOpenChange } = setupEmpty();
+
+    remove.mutate.mockImplementation((_path: unknown, options: { onSuccess: () => void }) =>
+      options.onSuccess(),
+    );
+
+    await user.click(screen.getByRole('button', { name: CategoryEditStrings.delete }));
+    await user.click(confirm().getByRole('button', { name: CategoryEditStrings.delete }));
+
+    expect(remove.mutate).toHaveBeenCalledWith(['Vazia'], expect.any(Object));
+    expect(snackbar.success).toHaveBeenCalledWith(CategoryEditStrings.deleted);
+    expect(onDeleted).toHaveBeenCalledWith(['Vazia']);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('when the delete fails, should show the reason in the confirmation', async () => {
+    remove.state = {
+      isPending: false,
+      isError: true,
+      error: new Error('A categoria tem páginas ou arquivos.'),
+    };
+
+    const { user } = setupEmpty();
+
+    await user.click(screen.getByRole('button', { name: CategoryEditStrings.delete }));
+
+    expect(screen.getByText('A categoria tem páginas ou arquivos.')).toBeInTheDocument();
+  });
+
+  it('when the category is empty, should still be possible to rename it', async () => {
+    const { user } = setupEmpty();
+
+    await user.clear(nameField());
+    await user.type(nameField(), 'Livre');
+    await user.click(save());
+
+    expect(rename.mutate).toHaveBeenCalledWith(
+      { from: ['Vazia'], to: ['Livre'] },
+      expect.any(Object),
+    );
   });
 });
 

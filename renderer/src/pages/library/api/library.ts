@@ -71,6 +71,16 @@ export function renameCategory(
   return ipc.invoke(IpcChannels.library.renameCategory, { from, to });
 }
 
+/** Cria uma categoria vazia (e os níveis que faltarem no caminho). */
+export function createCategory(path: string[]): Promise<{ created: true }> {
+  return ipc.invoke(IpcChannels.library.createCategory, { path });
+}
+
+/** Exclui uma categoria sem páginas (e as subcategorias vazias dela). */
+export function deleteCategory(path: string[]): Promise<{ deleted: true }> {
+  return ipc.invoke(IpcChannels.library.deleteCategory, { path });
+}
+
 export function getTags(): Promise<TagCount[]> {
   return ipc.invoke(IpcChannels.library.tags);
 }

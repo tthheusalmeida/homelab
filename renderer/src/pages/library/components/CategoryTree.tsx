@@ -1,6 +1,6 @@
 import { useEffect, useState, type DragEvent } from "react";
 
-import { ChevronRight, Pencil } from "lucide-react";
+import { ChevronRight, Pencil, Plus } from "lucide-react";
 
 import { Button } from "#ui/button";
 import { HexDot, Logo } from "#components/Hex";
@@ -8,7 +8,7 @@ import { IconButton } from "#components/IconButton";
 import { cn } from "#lib/utils";
 import { normalizeKey } from "#lib/text";
 
-import { canMoveInto } from "../categories";
+import { canMoveInto, MAX_CATEGORY_LEVELS } from "../categories";
 import type { CategoryNode } from "../types/library.types";
 
 interface CategoryTreeProps {
@@ -18,6 +18,11 @@ interface CategoryTreeProps {
   onSelect: (path: string[]) => void;
   /** Com isso, cada categoria ganha um lápis (ao passar o mouse ou focar) que pede para editá-la. */
   onEdit?: (node: CategoryNode) => void;
+  /**
+   * Com isso, aparece o botão "Nova categoria" no alto (cria no nível principal) e, em cada
+   * categoria que ainda tem espaço, um "+" que cria **dentro** dela. `parent` vazio = nível principal.
+   */
+  onCreate?: (parent: string[]) => void;
   /**
    * Com isso, as categorias podem ser **arrastadas** para dentro de outra (ou para "Todas as
    * categorias", que é o nível principal). `parent` vazio = nível principal.
@@ -56,6 +61,7 @@ export function CategoryTree({
   selected,
   onSelect,
   onEdit,
+  onCreate,
   onMove,
   disabled = false,
 }: CategoryTreeProps) {
@@ -208,6 +214,19 @@ export function CategoryTree({
             </span>
           </Button>
 
+          {onCreate && node.path.length < MAX_CATEGORY_LEVELS && (
+            <IconButton
+              label={`Nova categoria dentro de ${node.name}`}
+              variant="ghost"
+              size="icon-xs"
+              disabled={disabled}
+              className="shrink-0 opacity-0 transition-opacity group-hover/cat:opacity-100 focus-visible:opacity-100"
+              onClick={() => onCreate(node.path)}
+            >
+              <Plus />
+            </IconButton>
+          )}
+
           {onEdit && (
             <IconButton
               label={`Editar a categoria ${node.name}`}
@@ -240,12 +259,26 @@ export function CategoryTree({
         disabled && "pointer-events-none opacity-60",
       )}
     >
-      <p
-        aria-hidden="true"
-        className="px-2 pb-1.5 font-mono text-[11px] tracking-wider text-muted-foreground uppercase"
-      >
-        categorias
-      </p>
+      <div className="flex items-center justify-between pb-1.5 pl-2">
+        <p
+          aria-hidden="true"
+          className="font-mono text-[11px] tracking-wider text-muted-foreground uppercase"
+        >
+          categorias
+        </p>
+
+        {onCreate && (
+          <IconButton
+            label="Nova categoria"
+            variant="ghost"
+            size="icon-xs"
+            disabled={disabled}
+            onClick={() => onCreate([])}
+          >
+            <Plus />
+          </IconButton>
+        )}
+      </div>
 
       <div
         className={cn("rounded-md transition-colors", over === ROOT_KEY && DROP_TARGET)}

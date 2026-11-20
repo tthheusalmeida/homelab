@@ -8,6 +8,8 @@ import {
 import {
   archiveDocument,
   createArticle,
+  createCategory,
+  deleteCategory,
   discardDocument,
   getCategories,
   getDocument,
@@ -307,6 +309,26 @@ export function useSuggestClassification() {
   return useMutation({
     mutationFn: ({ id, modelId }: { id: string; modelId?: string }) =>
       suggestClassification(id, modelId),
+  });
+}
+
+/** Cria uma categoria vazia (e os níveis que faltarem); a árvore é lida de novo. */
+export function useCreateCategory() {
+  const invalidate = useInvalidateLibrary();
+
+  return useMutation({
+    mutationFn: (path: string[]) => createCategory(path),
+    onSuccess: invalidate,
+  });
+}
+
+/** Exclui uma categoria sem páginas; a árvore é lida de novo. */
+export function useDeleteCategory() {
+  const invalidate = useInvalidateLibrary();
+
+  return useMutation({
+    mutationFn: (path: string[]) => deleteCategory(path),
+    onSuccess: invalidate,
   });
 }
 

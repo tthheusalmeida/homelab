@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 
 const state = vi.hoisted(() => ({
   filters: vi.fn(),
   rename: vi.fn(),
+  create: vi.fn(),
+  remove: vi.fn(),
   pending: false,
   tree: [] as unknown[],
 }));
@@ -31,6 +33,20 @@ vi.mock('./hooks/useLibrary', () => ({
     refetch: vi.fn(),
   }),
   useTags: () => ({ isLoading: false, isError: false, data: [], refetch: vi.fn() }),
+  useCreateCategory: () => ({
+    mutate: state.create,
+    reset: vi.fn(),
+    isPending: false,
+    isError: false,
+    error: null,
+  }),
+  useDeleteCategory: () => ({
+    mutate: state.remove,
+    reset: vi.fn(),
+    isPending: false,
+    isError: false,
+    error: null,
+  }),
   useRenameCategory: () => ({
     mutate: state.rename,
     reset: vi.fn(),
@@ -74,6 +90,8 @@ function drag(from: HTMLElement, to: HTMLElement) {
 beforeEach(() => {
   state.filters.mockReset();
   state.rename.mockReset();
+  state.create.mockReset();
+  state.remove.mockReset();
   state.pending = false;
   state.tree = [
     node('Tecnologia', ['Tecnologia'], 1, [node('Docker', ['Tecnologia', 'Docker'], 1)]),
@@ -248,5 +266,64 @@ describe('LibraryPage: mover categoria arrastando', () => {
       'aria-busy',
       'true',
     );
+  });
+});
+
+describe('LibraryPage: criar e excluir categoria', () => {
+  it('when Nova categoria is clicked, should open the dialog for the main level', async () => {
+    setup();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nova categoria' }));
+
+    expect(screen.getByRole('textbox', { name: 'Nome' })).toBeInTheDocument();
+  });
+
+  it('when a category is created, should create the path and choose the new category', async () => {
+    state.create.mockImplementation((_path: unknown, options: { onSuccess: () => void }) =>
+      options.onSuccess(),
+    );
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: 'Nova categoria' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Nome' }), 'Redes / Segurança');
+    await userEvent.click(screen.getByRole('button', { name: 'Criar' }));
+
+    expect(state.create).toHaveBeenCalledWith(['Redes', 'Segurança'], expect.any(Object));
+    expect(lastCategory()).toEqual(['Redes', 'Segurança']);
+  });
+
+  it('when the plus of a category is clicked, should create inside it', async () => {
+    state.create.mockImplementation((_path: unknown, options: { onSuccess: () => void }) =>
+      options.onSuccess(),
+    );
+    setup();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Nova categoria dentro de Culinária' }),
+    );
+    await userEvent.type(screen.getByRole('textbox', { name: 'Nome' }), 'Sobremesas');
+    await userEvent.click(screen.getByRole('button', { name: 'Criar' }));
+
+    expect(state.create).toHaveBeenCalledWith(['Culinária', 'Sobremesas'], expect.any(Object));
+  });
+
+  it('when the chosen category is deleted, should go back to all categories', async () => {
+    state.tree = [node('Vazia', ['Vazia'], 0)];
+    state.remove.mockImplementation((_path: unknown, options: { onSuccess: () => void }) =>
+      options.onSuccess(),
+    );
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^Vazias*0$/ }));
+
+    expect(lastCategory()).toEqual(['Vazia']);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Editar a categoria Vazia' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Excluir categoria' }));
+    await userEvent.click(
+      within(screen.getAllByRole('dialog').at(-1) as HTMLElement).getByRole('button', {
+        name: 'Excluir categoria',
+      }),
+    );
+
+    expect(state.remove).toHaveBeenCalledWith(['Vazia'], expect.any(Object));
+    expect(lastCategory()).toEqual([]);
   });
 });

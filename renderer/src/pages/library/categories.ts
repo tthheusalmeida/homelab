@@ -68,6 +68,17 @@ export function canMoveInto(node: CategoryNode, parent: string[], name = node.na
   );
 }
 
+/**
+ * Os níveis escritos num campo de texto: "Redes / Segurança › Firewall" vira três nomes. Aceita `/` e
+ * `›` (e `>`) como separador, tira os espaços e ignora níveis em branco.
+ */
+export function parseCategoryNames(text: string): string[] {
+  return text
+    .split(/[/›>]/)
+    .map((name) => name.trim())
+    .filter((name) => name !== '');
+}
+
 /** Um lugar onde a categoria pode ficar (para a lista "Dentro de"). `path` vazio é o nível principal. */
 export interface CategoryPlace {
   path: string[];
@@ -92,6 +103,25 @@ export function placesFor(
         !startsWithPath(item.path, node.path) &&
         item.path.length + categoryDepth(node) <= MAX_CATEGORY_LEVELS
       ) {
+        places.push({ path: item.path, label: item.path.join(' › ') });
+      }
+
+      walk(item.children);
+    }
+  };
+
+  walk(tree);
+
+  return places;
+}
+
+/** Os lugares onde dá para criar uma categoria nova: o nível principal e cada categoria que ainda tem espaço para um nível abaixo. */
+export function placesForNew(tree: CategoryNode[], rootLabel: string): CategoryPlace[] {
+  const places: CategoryPlace[] = [{ path: [], label: rootLabel }];
+
+  const walk = (nodes: CategoryNode[]) => {
+    for (const item of nodes) {
+      if (item.path.length < MAX_CATEGORY_LEVELS) {
         places.push({ path: item.path, label: item.path.join(' › ') });
       }
 
