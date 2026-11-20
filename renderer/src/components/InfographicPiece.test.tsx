@@ -1,9 +1,60 @@
-import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
 
+import { loadPieceShapes, resetPieceShapesForTests } from '#lib/infographic-piece-store';
 import { INFOGRAPHIC_PIECE_SHAPES } from '#lib/infographic-pieces';
 
-import { InfographicPiece, pieceFit } from './InfographicPiece';
+import { InfographicPiece, pieceFit, pieceName } from './InfographicPiece';
+
+describe('InfographicPiece loading', () => {
+  afterEach(async () => {
+    // devolve o estado "carregado" que os testes das outras telas esperam
+    await loadPieceShapes();
+  });
+
+  it('when the drawings have not arrived, should keep an empty space with the name and then draw the piece', async () => {
+    resetPieceShapesForTests();
+
+    const { container } = render(<InfographicPiece pieceKey="jogos.controle" />);
+    const svg = screen.getByRole('img', { name: 'Controle de videogame' });
+
+    expect(svg).toHaveAttribute('data-loading');
+    expect(container.querySelector('.ig-f-b, .ig-f-s')).toBeNull();
+
+    await act(async () => {
+      await loadPieceShapes();
+    });
+
+    expect(svg).not.toHaveAttribute('data-loading');
+    expect(container.querySelector('[class*="ig-f-"]')).not.toBeNull();
+  });
+
+  it('when the key is empty or unknown, should not wait for the drawings (it is only the hexagon)', () => {
+    resetPieceShapesForTests();
+
+    const { container } = render(<InfographicPiece pieceKey="inventada.coisa" />);
+
+    expect(container.querySelector('svg')).not.toHaveAttribute('data-loading');
+    expect(container.querySelectorAll('polygon.ig-f-s')).toHaveLength(1);
+  });
+
+  it('when asking the name of a piece, should answer from the catalog without the drawings', () => {
+    resetPieceShapesForTests();
+
+    expect(pieceName('jogos.controle')).toBe('Controle de videogame');
+    expect(pieceName('')).toBe('Ilustração');
+  });
+
+  it('when loading the drawings many times, should fetch them once', async () => {
+    resetPieceShapesForTests();
+
+    await Promise.all([loadPieceShapes(), loadPieceShapes(), loadPieceShapes()]);
+
+    const { container } = render(<InfographicPiece pieceKey="jogos.dado" />);
+
+    expect(container.querySelector('[class*="ig-f-"]')).not.toBeNull();
+  });
+});
 
 describe('InfographicPiece', () => {
   it('when the key exists, should draw the piece with its name as the accessible label', () => {

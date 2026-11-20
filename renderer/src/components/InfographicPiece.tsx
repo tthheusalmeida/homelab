@@ -1,10 +1,18 @@
-import { useId, useMemo, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useSyncExternalStore, type ReactNode } from 'react';
 
 import { facetsOf, seedOf } from '#lib/infographic-facets';
-import { INFOGRAPHIC_PIECE_SHAPES, type Shape } from '#lib/infographic-pieces';
+import {
+  getPieceShapes,
+  loadPieceShapes,
+  pieceShapesLoaded,
+  subscribePieceShapes,
+} from '#lib/infographic-piece-store';
+import type { Shape } from '#lib/infographic-pieces';
 import { cn } from '#lib/utils';
+import { INFOGRAPHIC_PIECES } from '#shared/infographic-pieces';
 
-const PIECES = new Map(INFOGRAPHIC_PIECE_SHAPES.map((piece) => [piece.key, piece]));
+/** Nomes das peças, do catálogo leve: o nome (e se a chave existe) não espera o desenho chegar. */
+const NAMES = new Map(INFOGRAPHIC_PIECES.map((piece) => [piece.key, piece.name]));
 
 /** Hexágono suave: o que aparece quando a chave da peça é vazia ou desconhecida. */
 const FALLBACK: Shape[] = [['g', [50, 14, 81, 32, 81, 68, 50, 86, 19, 68, 19, 32], 's']];
@@ -170,7 +178,7 @@ const f = (n: number) => +n.toFixed(3);
 
 /** O nome da peça (o de leitores de tela); chave vazia ou desconhecida é só "Ilustração". */
 export function pieceName(key: string): string {
-  return PIECES.get(key)?.name ?? 'Ilustração';
+  return NAMES.get(key) ?? 'Ilustração';
 }
 
 /** Escala e deslocamento que centralizam a caixa da peça no quadro. */
@@ -193,8 +201,20 @@ interface InfographicPieceProps {
  * cor de destaque. O tamanho vem do pai (`w-full`).
  */
 export function InfographicPiece({ pieceKey, className }: InfographicPieceProps) {
-  const piece = PIECES.get(pieceKey);
-  const shapes = piece?.shapes ?? FALLBACK;
+  const name = NAMES.get(pieceKey);
+  const ready = useSyncExternalStore(subscribePieceShapes, pieceShapesLoaded);
+  const waiting = name !== undefined && !ready;
+
+  // O desenho vem em um arquivo à parte, baixado quando a primeira peça aparece.
+  useEffect(() => {
+    if (waiting) {
+      void loadPieceShapes();
+    }
+  }, [waiting]);
+
+  const piece = ready ? getPieceShapes(pieceKey) : undefined;
+  // Enquanto o desenho não chega, o espaço fica vazio (do mesmo tamanho); chave vazia ou desconhecida é o hexágono.
+  const shapes = piece?.shapes ?? (waiting ? [] : FALLBACK);
   const fit = pieceFit(piece?.box ?? FALLBACK_BOX);
   const id = `ig-${useId().replace(/:/g, '')}`;
   const facets = useMemo(() => facetsOf(seedOf(pieceKey || 'vazia')), [pieceKey]);
@@ -203,8 +223,9 @@ export function InfographicPiece({ pieceKey, className }: InfographicPieceProps)
     <svg
       viewBox="0 0 100 100"
       role="img"
-      aria-label={piece?.name ?? 'Ilustração'}
+      aria-label={name ?? 'Ilustração'}
       data-piece={pieceKey || undefined}
+      data-loading={waiting ? '' : undefined}
       className={cn('ig-piece block h-auto w-full overflow-visible', className)}
     >
       <defs>
@@ -234,6 +255,3 @@ export function InfographicPiece({ pieceKey, className }: InfographicPieceProps)
     </svg>
   );
 }
-
-/** Quantas peças o banco tem (testes e telas de catálogo). */
-export const INFOGRAPHIC_PIECE_COUNT = INFOGRAPHIC_PIECE_SHAPES.length;
