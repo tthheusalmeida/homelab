@@ -8,6 +8,8 @@ import {
   type InfographicThemeId,
 } from '../../../../shared/infographic-pieces';
 
+import { singular, synonymsOf } from '../../../../shared/infographic-synonyms';
+
 import type { ParsedInfographic } from './infographic';
 
 /** Palavras que não ajudam a achar uma peça. */
@@ -65,6 +67,10 @@ function tokens(text: string): string[] {
     .filter((word) => word.length >= 3 && !STOP.has(word));
 }
 
+/** Quanto vale um sinônimo da palavra no nome ou nas palavras-chave (sempre menos que a palavra exata: 4 e 3). */
+const SYNONYM_NAME = 2;
+const SYNONYM_TAG = 1.5;
+
 /** Raiz curta de uma palavra: "endividamento" e "endividar" se encontram em "endivi". */
 const stem = (word: string) => word.slice(0, 5);
 
@@ -74,6 +80,9 @@ interface IndexedPiece {
   tags: Set<string>;
   nameStems: Set<string>;
   tagStems: Set<string>;
+  /** Palavras no singular, para casar com os sinônimos. */
+  nameSingular: Set<string>;
+  tagSingular: Set<string>;
 }
 
 const INDEX: IndexedPiece[] = INFOGRAPHIC_PIECES.map((info) => {
@@ -86,8 +95,23 @@ const INDEX: IndexedPiece[] = INFOGRAPHIC_PIECES.map((info) => {
     tags,
     nameStems: new Set([...name].map(stem)),
     tagStems: new Set([...tags].map(stem)),
+    nameSingular: new Set([...name].map(singular)),
+    tagSingular: new Set([...tags].map(singular)),
   };
 });
+
+/** Alguma peça tem esta palavra (ou uma de mesma raiz) no nome ou nas palavras-chave? */
+function hasDirectMatch(word: string): boolean {
+  const root = stem(word);
+
+  return INDEX.some(
+    (piece) =>
+      piece.name.has(word) ||
+      piece.tags.has(word) ||
+      piece.nameStems.has(root) ||
+      piece.tagStems.has(root),
+  );
+}
 
 /** Peças genéricas, na ordem em que servem de reserva quando nada do tema combina. */
 const FALLBACK_ORDER = [
@@ -119,6 +143,11 @@ export class PieceResolver {
   resolve(text: string): string {
     const words = tokens(text);
     const wordStems = new Set(words.map(stem));
+    // Sinônimos só das palavras que nenhuma peça tem (nem pela raiz): quem já casa direto não precisa
+    // deles, e assim eles nunca tiram uma peça de quem acertou a palavra. Contam uma vez por palavra.
+    const related = words
+      .filter((word) => !hasDirectMatch(word))
+      .map((word) => synonymsOf(word).map(singular));
     let best: { key: string; score: number } | null = null;
 
     for (const piece of INDEX) {
@@ -137,6 +166,11 @@ export class PieceResolver {
       for (const root of wordStems) {
         if (piece.nameStems.has(root)) score += 1.5;
         else if (piece.tagStems.has(root)) score += 1;
+      }
+
+      for (const group of related) {
+        if (group.some((word) => piece.nameSingular.has(word))) score += SYNONYM_NAME;
+        else if (group.some((word) => piece.tagSingular.has(word))) score += SYNONYM_TAG;
       }
 
       if (score === 0) {

@@ -26,6 +26,24 @@ vi.mock("./hooks/useLibrary", () => ({
   },
   useCategories: () => categories,
   useTags: () => tags,
+  useUpdateDocument: () => ({ mutate: vi.fn(), isPending: false }),
+  useDeleteCategory: () => ({
+    mutate: vi.fn(),
+    reset: vi.fn(),
+    isPending: false,
+    isError: false,
+    error: null,
+  }),
+  useRenameCategory: () => ({
+    mutate: vi.fn(),
+    reset: vi.fn(),
+    isPending: false,
+    isError: false,
+    error: null,
+  }),
+}));
+vi.mock("#components/Snackbar", () => ({
+  useSnackbar: () => ({ success: vi.fn(), error: vi.fn() }),
 }));
 
 // Select nativo no lugar do select do base-ui, para poder escolher opções.
@@ -185,11 +203,31 @@ describe("LibraryPage", () => {
       screen.getByRole("button", { name: "Todas as categorias" }),
     );
     await user.click(screen.getByRole("button", { name: /^Ciência/ }));
+    await user.selectOptions(screen.getByLabelText("Tipo"), "summary");
 
     expect(screen.getByText("Nenhum resultado encontrado")).toBeInTheDocument();
     expect(
       screen.queryByText("A biblioteca está vazia"),
     ).not.toBeInTheDocument();
+  });
+
+  it("when only an empty category is chosen, should say the category is empty instead of no results", async () => {
+    documents.data = [];
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: /^Ciência/ }));
+
+    expect(screen.getByText("Esta categoria está vazia")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Nenhum resultado encontrado"),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Ver todas as categorias" }),
+    );
+
+    expect(lastFilters().category).toEqual([]);
   });
 
   it("when the first render happens, should query without filters and sorted by title", () => {

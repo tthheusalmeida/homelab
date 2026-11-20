@@ -34,7 +34,7 @@ export class LibraryClassifier {
   async suggest(id: string, modelId?: string): Promise<ClassificationSuggestion> {
     const { meta, content } = await this.library.get(id);
 
-    const tree = this.library.categories();
+    const tree = await this.library.categories();
     const knownTags = this.library
       .tags()
       .sort((a, b) => b.count - a.count)

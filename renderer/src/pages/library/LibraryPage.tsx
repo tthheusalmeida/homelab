@@ -1,13 +1,15 @@
 import { useState, type CSSProperties } from "react";
 
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { Inbox, SearchX, Library as LibraryIcon } from "lucide-react";
 
 import { InboxStrings } from "#lib/inbox-text";
 import { Button, buttonVariants } from "#ui/button";
 import { Card, CardContent } from "#ui/card";
 
+import { ConfirmDialog } from "#components/ConfirmDialog";
 import { EmptyState } from "#components/EmptyState";
+import { useSnackbar } from "#components/Snackbar";
 import { ErrorState } from "#components/ErrorState";
 import { LoadingState } from "#components/LoadingState";
 import { OptionSelect } from "#components/OptionSelect";
@@ -15,11 +17,28 @@ import { SearchInput } from "#components/SearchInput";
 import { useDebouncedValue } from "#hooks/use-debounced-value";
 import { useStoredState } from "#hooks/use-stored-state";
 
-import { CategoryTree } from "./components/CategoryTree";
+import { CategoryCreateDialog } from "./components/CategoryCreateDialog";
+import {
+  CategoryEditDialog,
+  CategoryEditStrings,
+} from "./components/CategoryEditDialog";
+import { CategoryTree, type TreePage } from "./components/CategoryTree";
 import { DocumentCard } from "./components/DocumentCard";
 import { TagFilter } from "./components/TagFilter";
 import { ViewToggle, viewModes, type ViewMode } from "./components/ViewToggle";
-import { useCategories, useDocuments, useTags } from "./hooks/useLibrary";
+import {
+  useCategories,
+  useDocuments,
+  useDeleteCategory,
+  useRenameCategory,
+  useTags,
+  useUpdateDocument,
+} from "./hooks/useLibrary";
+import {
+  findCategory,
+  followRenamedCategory,
+  startsWithPath,
+} from "./categories";
 import {
   contentFilterLabels,
   contentFilterToHas,
@@ -29,6 +48,7 @@ import {
   type ContentFilter,
   type DocumentSource,
   type DocumentType,
+  type CategoryNode,
   type SortOption,
 } from "./types/library.types";
 import { PageHeader } from "#components/PageHeader";
@@ -61,6 +81,10 @@ export function LibraryPage() {
   const [content, setContent] = useState<ContentFilter>();
   const [tags, setTags] = useState<string[]>([]);
   const [sort, setSort] = useState<SortOption>("title");
+  // A categoria que está sendo editada (lápis ao lado dela na árvore).
+  const [editing, setEditing] = useState<CategoryNode | null>(null);
+  // Onde uma categoria nova está sendo criada (`[]` = nível principal; `null` = ninguém está criando).
+  const [creating, setCreating] = useState<string[] | null>(null);
   const [view, setView] = useStoredState<ViewMode>(
     "library:view",
     "grid",
@@ -69,6 +93,9 @@ export function LibraryPage() {
 
   const q = useDebouncedValue(search);
 
+  // Todas as páginas publicadas, para mostrar na árvore (sem os filtros da lista ao lado). Vem antes
+  // da lista para não mudar a ordem das consultas.
+  const treePages = useDocuments({ sort: "title" });
   const documents = useDocuments({
     q,
     category,
@@ -79,7 +106,91 @@ export function LibraryPage() {
     sort,
   });
   const categories = useCategories();
+  const renameCategory = useRenameCategory();
+  const updatePage = useUpdateDocument();
+  const navigate = useNavigate();
+  const removeCategory = useDeleteCategory();
+  // A categoria vazia que está para ser excluída (a lixeira da árvore pede confirmação antes).
+  const [deleting, setDeleting] = useState<CategoryNode | null>(null);
+  const moving =
+    renameCategory.isPending || updatePage.isPending || removeCategory.isPending;
+
+  function deleteNow() {
+    if (!deleting) {
+      return;
+    }
+
+    const { path } = deleting;
+
+    removeCategory.mutate(path, {
+      onSuccess: () => {
+        snackbar.success(CategoryEditStrings.deleted);
+        setCategory((current) => (startsWithPath(current, path) ? [] : current));
+        setDeleting(null);
+      },
+    });
+  }
+  const snackbar = useSnackbar();
+  // Mover arrastando para uma categoria que já tem uma com esse nome pergunta antes de juntar.
+  const [joining, setJoining] = useState<{
+    node: CategoryNode;
+    parent: string[];
+  } | null>(null);
+
+  function runMove(node: CategoryNode, parent: string[]) {
+    const to = [...parent, node.name];
+
+    renameCategory.mutate(
+      { from: node.path, to },
+      {
+        onSuccess: ({ moved }) => {
+          snackbar.success(CategoryEditStrings.done(moved));
+          setCategory((current) => followRenamedCategory(current, node.path, to));
+          setJoining(null);
+        },
+        onError: (error) => {
+          // a janela de "juntar" mostra o erro; o arrastar direto avisa por aqui
+          if (!joining) {
+            snackbar.error(error.message || CategoryEditStrings.failed);
+          }
+        },
+      },
+    );
+  }
+
+  // Arrastar uma página para uma categoria: troca a categoria dela (o arquivo vai para a pasta).
+  function movePage(page: TreePage, parent: string[]) {
+    updatePage.mutate(
+      { id: page.id, input: { category: parent } },
+      {
+        onSuccess: () =>
+          snackbar.success(
+            `“${page.title}” movida para ${parent.join(" › ")}.`,
+          ),
+        onError: (error) =>
+          snackbar.error(error.message || "Não foi possível mover a página."),
+      },
+    );
+  }
+
+  function moveCategory(node: CategoryNode, parent: string[]) {
+    if (findCategory(categories.data ?? [], [...parent, node.name])) {
+      renameCategory.reset();
+      setJoining({ node, parent });
+    } else {
+      runMove(node, parent);
+    }
+  }
   const tagList = useTags();
+
+  // Só a categoria escolhida filtra: se ela está sem páginas, a tela explica em vez de dizer "nenhum resultado".
+  const onlyCategory =
+    category.length > 0 &&
+    q.trim() === "" &&
+    type === undefined &&
+    source === undefined &&
+    content === undefined &&
+    tags.length === 0;
 
   const hasFilters =
     q.trim() !== "" ||
@@ -230,12 +341,94 @@ export function LibraryPage() {
             nodes={categories.data ?? []}
             selected={category}
             onSelect={setCategory}
+            onEdit={setEditing}
+            onCreate={setCreating}
+            onDelete={(node) => {
+              removeCategory.reset();
+              setDeleting(node);
+            }}
+            pages={treePages.data}
+            onOpenPage={(page) => navigate(`/library/${page.id}`)}
+            onMove={moveCategory}
+            onMovePage={movePage}
+            disabled={moving}
+            persistKey="library:categories:open"
           />
         </aside>
 
+        <ConfirmDialog
+          open={deleting !== null}
+          onOpenChange={(open) => !open && !removeCategory.isPending && setDeleting(null)}
+          title={CategoryEditStrings.deleteTitle}
+          description={
+            deleting
+              ? CategoryEditStrings.deleteDescription(
+                  deleting.name,
+                  deleting.children.length > 0,
+                )
+              : ""
+          }
+          confirmLabel={
+            removeCategory.isPending ? CategoryEditStrings.deleting : CategoryEditStrings.delete
+          }
+          destructive
+          isPending={removeCategory.isPending}
+          errorMessage={
+            removeCategory.isError
+              ? removeCategory.error.message || CategoryEditStrings.deleteFailed
+              : undefined
+          }
+          onConfirm={deleteNow}
+        />
+
+        <ConfirmDialog
+          open={joining !== null}
+          onOpenChange={(open) => !open && !renameCategory.isPending && setJoining(null)}
+          title="Juntar as categorias?"
+          description={
+            joining
+              ? `Já existe “${joining.node.name}” ${joining.parent.length > 0 ? `dentro de “${joining.parent.join(" › ")}”` : "no nível principal"}. As ${joining.node.count === 1 ? "1 página" : `${joining.node.count} páginas`} de “${joining.node.name}” vão se juntar a ela.`
+              : ""
+          }
+          confirmLabel="Juntar"
+          isPending={renameCategory.isPending}
+          errorMessage={renameCategory.isError ? renameCategory.error.message : undefined}
+          onConfirm={() => joining && runMove(joining.node, joining.parent)}
+        />
+
+        <CategoryCreateDialog
+          parent={creating}
+          tree={categories.data ?? []}
+          onOpenChange={(open) => !open && setCreating(null)}
+          onCreated={setCategory}
+        />
+
+        <CategoryEditDialog
+          category={editing}
+          tree={categories.data ?? []}
+          onOpenChange={(open) => !open && setEditing(null)}
+          onRenamed={(from, to) =>
+            setCategory((current) => followRenamedCategory(current, from, to))
+          }
+          onDeleted={(path) =>
+            setCategory((current) => (startsWithPath(current, path) ? [] : current))
+          }
+        />
+
         <section aria-label="Páginas" className="space-y-3">
           {documents.data.length === 0 ? (
-            hasFilters ? (
+            onlyCategory ? (
+              <EmptyState
+                icon={LibraryIcon}
+                title="Esta categoria está vazia"
+                description="Ainda não há páginas aqui. Escolha esta categoria ao adicionar ou editar uma página para guardá-la nela."
+                action={
+                  <Button variant="secondary" onClick={() => setCategory([])}>
+                    Ver todas as categorias
+                  </Button>
+                }
+              />
+            ) : hasFilters ? (
               <EmptyState
                 icon={SearchX}
                 title="Nenhum resultado encontrado"

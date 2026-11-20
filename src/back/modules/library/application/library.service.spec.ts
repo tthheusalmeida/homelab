@@ -212,14 +212,14 @@ describe('LibraryService', () => {
       await expect(service.publish('nope', publishInput)).rejects.toThrow(NotFoundException);
     });
 
-    it('when re-adding an archived document with another category, should move it and drop the old folder', async () => {
+    it('when re-adding an archived document with another category, should move it and keep the old (now empty) category', async () => {
       await seedPending();
       await service.publish('job1', { category: ['Antiga'] });
       await service.archive('job1');
 
       await service.publish('job1', { category: ['Nova'] });
 
-      expect(fs.readdirSync(tmp.lib)).toEqual(['Nova']);
+      expect(fs.readdirSync(tmp.lib).sort()).toEqual(['Antiga', 'Nova']);
       expect(index.get('job1')?.meta.status).toBe('published');
       expect(await service.list({ category: ['Nova'] })).toHaveLength(1);
     });
@@ -248,7 +248,7 @@ describe('LibraryService', () => {
       expect((await service.get(id)).content).toBe('# Novo\n\ntexto\n');
     });
 
-    it('when the category changes, should move the file and remove the old one and empty folders', async () => {
+    it('when the category changes, should move the file, remove the old one and keep the old category folder (now empty)', async () => {
       const id = await publishedId();
       const oldPath = index.get(id)!.path;
 
@@ -259,7 +259,7 @@ describe('LibraryService', () => {
       expect(newPath).toBe(path.join(tmp.lib, 'Estudos', 'Docker', path.basename(oldPath)));
       expect(fs.existsSync(newPath)).toBe(true);
       expect(fs.existsSync(oldPath)).toBe(false);
-      expect(fs.existsSync(path.join(tmp.lib, 'Ciência da Computação'))).toBe(false);
+      expect(fs.existsSync(path.join(tmp.lib, 'Ciência da Computação', 'DevOps'))).toBe(true);
       expect(index.get(id)!.meta.category).toEqual(['Estudos', 'Docker']);
     });
 
@@ -363,13 +363,15 @@ describe('LibraryService', () => {
       expect((await tmp.storage.read(index.get('job1')!.path)).meta.status).toBe('archived');
     });
 
-    it('when archiving, should remove the document from categories and tags', async () => {
+    it('when archiving, should take the document out of the counts and tags but keep the (now empty) category', async () => {
       await seedPending();
       await service.publish('job1', publishInput);
 
       await service.archive('job1');
 
-      expect(service.categories()).toEqual([]);
+      expect(await service.categories()).toMatchObject([
+        { name: 'Ciência da Computação', count: 0, children: [{ name: 'DevOps', count: 0 }] },
+      ]);
       expect(service.tags()).toEqual([]);
     });
 
@@ -406,7 +408,7 @@ describe('LibraryService', () => {
       expect(service.inbox()).toEqual([]);
     });
 
-    it('when discarding an archived document, should delete the file and prune empty folders', async () => {
+    it('when discarding an archived document, should delete the file and keep the empty category folders', async () => {
       await seedPending();
       await service.publish('job1', publishInput);
       await service.archive('job1');
@@ -414,10 +416,10 @@ describe('LibraryService', () => {
       await service.discard('job1');
 
       expect(await tmp.storage.listMarkdownFiles(tmp.lib)).toEqual([]);
-      expect(fs.readdirSync(tmp.lib)).toEqual([]);
+      expect(fs.readdirSync(tmp.lib)).toEqual(['Ciência da Computação']);
     });
 
-    it('when the document is published, should delete it too: the file, the index entry and its folders', async () => {
+    it('when the document is published, should delete it too: the file and the index entry, keeping its (now empty) category folders', async () => {
       await seedPending();
       await service.publish('job1', publishInput);
 
@@ -425,8 +427,10 @@ describe('LibraryService', () => {
 
       expect(index.get('job1')).toBeUndefined();
       expect(await tmp.storage.listMarkdownFiles(tmp.lib)).toEqual([]);
-      expect(fs.readdirSync(tmp.lib)).toEqual([]);
-      expect(service.categories()).toEqual([]);
+      expect(fs.readdirSync(tmp.lib)).toEqual(['Ciência da Computação']);
+      expect(await service.categories()).toMatchObject([
+        { name: 'Ciência da Computação', count: 0, children: [{ name: 'DevOps', count: 0 }] },
+      ]);
     });
 
     it('when the document is deleted, should delete its mind map too', async () => {
@@ -534,7 +538,7 @@ describe('LibraryService', () => {
       await service.createArticle(article);
 
       expect(await service.list({ type: 'article' })).toHaveLength(1);
-      expect(service.categories()[0]).toMatchObject({
+      expect((await service.categories())[0]).toMatchObject({
         name: 'Química',
         count: 1,
       });
@@ -597,7 +601,7 @@ describe('LibraryService', () => {
         content: 'x',
       });
 
-      expect(service.categories().map((n) => [n.name, n.count])).toEqual([
+      expect((await service.categories()).map((n) => [n.name, n.count])).toEqual([
         ['Ciência', 1],
         ['Química', 1],
       ]);
@@ -610,7 +614,7 @@ describe('LibraryService', () => {
     it('when only pending documents exist, should return empty categories and tags', async () => {
       await seedPending('job1', { tags: ['x'], category: ['Algo'] });
 
-      expect(service.categories()).toEqual([]);
+      expect(await service.categories()).toEqual([]);
       expect(service.tags()).toEqual([]);
     });
   });

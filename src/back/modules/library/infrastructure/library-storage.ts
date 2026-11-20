@@ -156,16 +156,202 @@ export class LibraryStorage {
     return filePath;
   }
 
-  /** Apaga o arquivo e remove as pastas de categoria que ficarem vazias. */
-  async remove(filePath: string): Promise<void> {
+  /**
+   * Alinha o frontmatter com a pasta: se a `category` gravada no arquivo for diferente da que a pasta
+   * indica (ou só na caixa ou nos acentos), reescreve o arquivo (temporário e renomeia) com a da
+   * pasta, sem mexer em mais nada (nem em `updatedAt`). Só vale para publicado e arquivado; devolve
+   * `true` se reescreveu.
+   */
+  async alignCategory(filePath: string): Promise<boolean> {
+    const raw = await fs.promises.readFile(filePath, 'utf8');
+    const { meta, body } = parseDocument(raw);
+    const located = this.categoryFromLocation(filePath, meta);
+
+    if (
+      meta.status === DocumentStatusOptions.PENDING ||
+      (located.length === meta.category.length &&
+        located.every((name, i) => name === meta.category[i]))
+    ) {
+      return false;
+    }
+
+    const temporary = `${filePath}.tmp`;
+
+    await fs.promises.writeFile(
+      temporary,
+      serializeDocument({ ...meta, category: located }, body),
+      'utf8',
+    );
+    await fs.promises.rename(temporary, filePath);
+
+    return true;
+  }
+
+  /**
+   * Apaga o arquivo. Com `prune` (o padrão), remove também as pastas de categoria que ficarem
+   * vazias; o `LibraryService` passa `false`, porque a categoria é uma pasta que existe mesmo sem
+   * páginas e só some quando o usuário a exclui.
+   */
+  async remove(filePath: string, prune = true): Promise<void> {
     const resolved = path.resolve(filePath);
     const root = this.rootOf(resolved);
 
     await fs.promises.unlink(resolved);
 
-    if (root === this.libDir) {
+    if (prune && root === this.libDir) {
       await this.pruneEmptyDirs(path.dirname(resolved));
     }
+  }
+
+  /**
+   * Todas as pastas de categoria de `LIB_DIR` (com ou sem páginas), cada uma como o caminho de nomes
+   * de cima para baixo. Ignora pastas ocultas, de nome inválido ou além dos 4 níveis.
+   */
+  async listCategoryDirs(): Promise<string[][]> {
+    const found: string[][] = [];
+
+    const walk = async (dir: string, trail: string[]): Promise<void> => {
+      let entries: fs.Dirent[];
+
+      try {
+        entries = await fs.promises.readdir(dir, { withFileTypes: true });
+      } catch (error) {
+        if (isNotFound(error)) {
+          return;
+        }
+
+        throw error;
+      }
+
+      for (const entry of entries) {
+        if (
+          !entry.isDirectory() ||
+          entry.name.startsWith('.') ||
+          trail.length >= MAX_CATEGORY_DEPTH
+        ) {
+          continue;
+        }
+
+        try {
+          sanitizeCategoryPath([entry.name]);
+        } catch {
+          continue;
+        }
+
+        const next = [...trail, entry.name];
+
+        found.push(next);
+        await walk(path.join(dir, entry.name), next);
+      }
+    };
+
+    await walk(this.libDir, []);
+
+    return found;
+  }
+
+  /** A pasta da categoria existe? (Compara sem diferenciar maiúscula, acento e espaços.) */
+  async categoryExists(category: string[]): Promise<boolean> {
+    let current = this.libDir;
+
+    for (const name of sanitizeCategoryPath(category)) {
+      const existing = await this.findChildDir(current, name);
+
+      if (!existing) {
+        return false;
+      }
+
+      current = path.join(current, existing);
+    }
+
+    return true;
+  }
+
+  /**
+   * Move a pasta de uma categoria, com tudo o que há dentro (páginas e subcategorias, até as vazias),
+   * para o caminho novo. Se o caminho novo não existe, a pasta é renomeada de uma vez; se existe, o
+   * conteúdo se junta ao que já está lá (pasta com pasta e arquivo com arquivo; um arquivo com o
+   * mesmo nome é um erro, nada é sobrescrito). O caminho novo não pode ficar dentro do antigo.
+   */
+  async moveCategoryDir(source: string[], target: string[]): Promise<void> {
+    const from = await this.resolveCategoryDir(source, false);
+    const targetPath = sanitizeCategoryPath(target);
+    const name = targetPath[targetPath.length - 1];
+    const parent =
+      targetPath.length > 1
+        ? await this.resolveCategoryDir(targetPath.slice(0, -1), true)
+        : this.libDir;
+    const existing = await this.findChildDir(parent, name);
+    const destination = path.join(parent, existing ?? name);
+
+    if (path.resolve(from) === path.resolve(destination)) {
+      return;
+    }
+
+    if (isWithin(from, destination)) {
+      throw new Error('Uma categoria não pode ir para dentro dela mesma.');
+    }
+
+    this.assertWithin(this.libDir, destination);
+
+    if (existing) {
+      await this.mergeDir(from, destination);
+    } else {
+      await fs.promises.rename(from, destination);
+    }
+  }
+
+  /** Junta o conteúdo de `from` em `into` e apaga `from`, sem sobrescrever nenhum arquivo. */
+  private async mergeDir(from: string, into: string): Promise<void> {
+    for (const entry of await fs.promises.readdir(from, { withFileTypes: true })) {
+      const origin = path.join(from, entry.name);
+
+      if (entry.isDirectory()) {
+        const existing = await this.findChildDir(into, entry.name);
+
+        if (existing) {
+          await this.mergeDir(origin, path.join(into, existing));
+        } else {
+          await fs.promises.rename(origin, path.join(into, entry.name));
+        }
+      } else {
+        const destination = path.join(into, entry.name);
+
+        if (await exists(destination)) {
+          throw new Error(`Já existe um arquivo "${entry.name}" na pasta de destino.`);
+        }
+
+        await fs.promises.rename(origin, destination);
+      }
+    }
+
+    await fs.promises.rmdir(from);
+  }
+
+  /**
+   * Apaga a pasta de uma categoria e as subpastas, **só se não houver nenhum arquivo** dentro. Devolve
+   * `false` (sem apagar nada) se encontrar algum arquivo.
+   */
+  async removeCategoryDir(category: string[]): Promise<boolean> {
+    const dir = await this.resolveCategoryDir(category, false);
+
+    const hasFiles = async (folder: string): Promise<boolean> => {
+      for (const entry of await fs.promises.readdir(folder, { withFileTypes: true })) {
+        if (!entry.isDirectory() || (await hasFiles(path.join(folder, entry.name)))) {
+          return true;
+        }
+      }
+
+      return false;
+    };
+
+    if (await hasFiles(dir)) {
+      return false;
+    }
+
+    await fs.promises.rm(dir, { recursive: true });
+
+    return true;
   }
 
   /**
@@ -189,6 +375,28 @@ export class LibraryStorage {
     }
 
     return current;
+  }
+
+  /**
+   * Troca só a caixa ou os acentos do nome de uma pasta de categoria ("tecnologia" → "Tecnologia"):
+   * o nome novo tem a mesma chave do antigo, então `resolveCategoryDir` reaproveitaria a pasta com o
+   * nome velho. Aqui a pasta é renomeada de verdade, com tudo o que há dentro. Devolve `false` se a
+   * pasta já tem esse nome.
+   */
+  async renameCategoryFolder(category: string[], newName: string): Promise<boolean> {
+    const dir = await this.resolveCategoryDir(category, false);
+    const [name] = sanitizeCategoryPath([newName]);
+
+    if (path.basename(dir) === name) {
+      return false;
+    }
+
+    const target = path.join(path.dirname(dir), name);
+
+    this.assertWithin(this.libDir, target);
+    await fs.promises.rename(dir, target);
+
+    return true;
   }
 
   private async findChildDir(parent: string, name: string): Promise<string | null> {
@@ -247,6 +455,16 @@ function isWithin(root: string, target: string): boolean {
   const relative = path.relative(root, target);
 
   return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
+}
+
+async function exists(target: string): Promise<boolean> {
+  try {
+    await fs.promises.access(target);
+
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function isNotFound(error: unknown): boolean {

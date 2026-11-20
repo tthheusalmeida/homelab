@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { dismissGeneration, isGenerationDismissed } from '#lib/dismissed-generation';
 import type { LibraryInfographic } from '#shared/contracts/library';
 
 const saved = vi.hoisted(() => ({
@@ -20,6 +21,8 @@ const saveInfo = vi.hoisted(() => ({ mutateAsync: vi.fn(), isPending: false }));
 const saveImage = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
 const snackbar = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 const capture = vi.hoisted(() => vi.fn());
+const capturePdf = vi.hoisted(() => vi.fn());
+const captureSvg = vi.hoisted(() => vi.fn());
 
 vi.mock('../hooks/useLibrary', () => ({
   useInfographic: () => saved.state,
@@ -29,7 +32,11 @@ vi.mock('../hooks/useLibrary', () => ({
   useSaveInfographic: () => ({ mutateAsync: saveInfo.mutateAsync, isPending: saveInfo.isPending }),
 }));
 vi.mock('#components/Snackbar', () => ({ useSnackbar: () => snackbar }));
-vi.mock('#lib/infographic-image', () => ({ captureInfographicPng: capture }));
+vi.mock('#lib/infographic-image', () => ({
+  captureInfographicPng: capture,
+  captureInfographicPdf: capturePdf,
+  captureInfographicSvg: captureSvg,
+}));
 
 import { SummaryInfographic } from './SummaryInfographic';
 
@@ -95,6 +102,8 @@ beforeEach(() => {
   generate.state = { isPending: false, isError: false, error: null };
   saveImage.mutateAsync.mockReset().mockResolvedValue({ saved: true, path: 'D:/x.png' });
   capture.mockReset().mockResolvedValue('QUJD');
+  capturePdf.mockReset().mockResolvedValue('UERG');
+  captureSvg.mockReset().mockResolvedValue('U1ZH');
   snackbar.success.mockReset();
   snackbar.error.mockReset();
 });
@@ -274,7 +283,52 @@ describe('SummaryInfographic', () => {
       expect(saveImage.mutateAsync).toHaveBeenCalledWith({
         fileName: 'Infográfico - Redes de computadores',
         dataBase64: 'QUJD',
+        format: 'png',
       });
+    });
+
+    it('when downloading the PDF, should build it from the frame and save it as a PDF', async () => {
+      renderTab();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Baixar o infográfico como PDF' }));
+
+      await waitFor(() =>
+        expect(snackbar.success).toHaveBeenCalledWith('PDF do infográfico salvo.'),
+      );
+      expect(capturePdf).toHaveBeenCalledWith(expect.any(HTMLElement));
+      expect(saveImage.mutateAsync).toHaveBeenCalledWith({
+        fileName: 'Infográfico - Redes de computadores',
+        dataBase64: 'UERG',
+        format: 'pdf',
+      });
+    });
+
+    it('when downloading the SVG, should capture it with the frame background and save it as an SVG', async () => {
+      renderTab();
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Baixar o infográfico como SVG (vetor)' }),
+      );
+
+      await waitFor(() =>
+        expect(snackbar.success).toHaveBeenCalledWith('Imagem do infográfico salva.'),
+      );
+      expect(captureSvg).toHaveBeenCalledWith(expect.any(HTMLElement), false);
+      expect(saveImage.mutateAsync).toHaveBeenCalledWith({
+        fileName: 'Infográfico - Redes de computadores',
+        dataBase64: 'U1ZH',
+        format: 'svg',
+      });
+    });
+
+    it('when the PDF cannot be made, should show the error and save nothing', async () => {
+      capturePdf.mockRejectedValue(new Error('falhou o pdf'));
+
+      renderTab();
+      await userEvent.click(screen.getByRole('button', { name: 'Baixar o infográfico como PDF' }));
+
+      await waitFor(() => expect(snackbar.error).toHaveBeenCalledWith('falhou o pdf'));
+      expect(saveImage.mutateAsync).not.toHaveBeenCalled();
     });
 
     it('when downloading without background, should ask for a transparent image and say so in the name', async () => {
@@ -409,6 +463,30 @@ describe('SummaryInfographic delete', () => {
 
     expect(generate.mutate).not.toHaveBeenCalled();
     expect(screen.getByText('Este resumo ainda não tem infográfico')).toBeInTheDocument();
+  });
+
+  it('when the user deleted it on purpose before (even in another session), should not generate by itself and let the button generate again', async () => {
+    dismissGeneration('infographic', currentId);
+    renderTab();
+
+    expect(generate.mutate).not.toHaveBeenCalled();
+    expect(screen.getByText('Este resumo ainda não tem infográfico')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /Gerar infográfico/ }));
+
+    expect(generate.mutate).toHaveBeenCalledTimes(1);
+    expect(isGenerationDismissed('infographic', currentId)).toBe(false);
+  });
+
+  it('when the user confirms the delete, should remember it for the next sessions', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await userEvent.click(deleteButton());
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Excluir só o infográfico' }),
+    );
+
+    expect(isGenerationDismissed('infographic', currentId)).toBe(true);
   });
 
   it('when deleting fails, should show the reason inside the dialog and keep it open', async () => {

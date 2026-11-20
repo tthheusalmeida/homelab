@@ -7,6 +7,9 @@ const MAX_SEGMENT_LENGTH = 60;
 const FILE_EXTENSION = '.md';
 
 const RESERVED_NAMES = new Set([
+  // A pasta dos livros dentro da biblioteca (`BOOKS_FOLDER`): não é categoria e nenhuma categoria
+  // pode ter esse nome (criar, renomear ou mover para ele misturaria páginas e livros).
+  '_livros',
   'con',
   'prn',
   'aux',

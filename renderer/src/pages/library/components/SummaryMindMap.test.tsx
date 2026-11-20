@@ -97,6 +97,8 @@ vi.mock('#components/MindMapView', () => ({
   ),
 }));
 
+import { dismissGeneration, isGenerationDismissed } from '#lib/dismissed-generation';
+
 import { SummaryMindMap } from './SummaryMindMap';
 
 const content = '## Local A\n- **Item**: x';
@@ -748,6 +750,33 @@ describe('SummaryMindMap delete', () => {
     render(<SummaryMindMap documentId={id} title="Redes" content={content} />);
 
     expect(generate.mutate).not.toHaveBeenCalled();
+  });
+
+  it('when the user confirms the delete, should remember it for the next sessions', async () => {
+    saved.state = { ...saved.state, data: aiMap };
+    const id = renderMap();
+    await userEvent.click(deleteButton());
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Excluir só o mapa mental' }),
+    );
+
+    expect(isGenerationDismissed('mind-map', id)).toBe(true);
+  });
+
+  it('when the user deleted it on purpose before (even in another session), should not generate by itself and let the button generate again', async () => {
+    const id = nextId();
+
+    dismissGeneration('mind-map', id);
+    renderMap(id);
+
+    expect(generate.mutate).not.toHaveBeenCalled();
+
+    await userEvent.click(
+      within(screen.getByRole('note')).getByRole('button', { name: 'Gerar com IA' }),
+    );
+
+    expect(generate.mutate).toHaveBeenCalledWith({ id });
+    expect(isGenerationDismissed('mind-map', id)).toBe(false);
   });
 
   it('when deleting fails, should show the reason inside the dialog and keep it open', async () => {

@@ -58,6 +58,25 @@ describe('HexColorPicker', () => {
     expect(fill).toHaveStyle({ backgroundColor: '#ff0000' });
   });
 
+  it('when an option has its own style and check class, should use them', () => {
+    const options: HexColorOption[] = [
+      {
+        id: 'padrao',
+        label: 'Padrão',
+        style: { backgroundImage: 'linear-gradient(red, blue)' },
+        checkClassName: 'text-foreground',
+      },
+    ];
+
+    render(<HexColorPicker label="Cor" options={options} value="padrao" onChange={() => {}} />);
+
+    const radio = screen.getByRole('radio', { name: 'Padrão' });
+
+    expect(radio.style.backgroundImage).toContain('linear-gradient');
+    expect(radio.querySelector('svg')).toHaveClass('text-foreground');
+    expect(radio.querySelector('svg')).not.toHaveClass('text-white');
+  });
+
   it('when disabled, should not call onChange', async () => {
     const onChange = vi.fn();
     render(<HexColorPicker label="Cor" options={custom} value="a" onChange={onChange} disabled />);

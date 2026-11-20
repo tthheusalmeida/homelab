@@ -33,10 +33,13 @@ const story = (data: Record<string, unknown> = {}) => ({
   subtitle: 'Do código à tela',
   intro: 'Uma rede de redes.',
   piece: 'tecnologia.wifi',
-  sections: [steps(), timeline()],
+  sections: [steps(), timeline(), steps({ title: 'Partes' }), timeline({ title: 'Marcos' })],
   takeaways: ['Lembre 1', 'Lembre 2'],
   ...data,
 });
+
+// O mínimo de seções é 4: as histórias de teste que só queriam 1 ou 2 seções ganham estas no fim.
+const more = () => [steps({ title: 'Partes' }), timeline({ title: 'Marcos' })];
 
 const answer = (data: Record<string, unknown>) => JSON.stringify(data);
 
@@ -52,7 +55,12 @@ describe('parseInfographic', () => {
       piece: 'tecnologia.wifi',
       takeaways: ['Lembre 1', 'Lembre 2'],
     });
-    expect(parsed.sections.map((section) => section.layout)).toEqual(['steps', 'timeline']);
+    expect(parsed.sections.map((section) => section.layout)).toEqual([
+      'steps',
+      'timeline',
+      'steps',
+      'timeline',
+    ]);
     expect(parsed.sections[0].items[0]).toEqual({
       piece: 'tecnologia.chip',
       title: 'Etapa 1',
@@ -102,28 +110,46 @@ describe('parseInfographic', () => {
     const parsed = parseInfographic(
       answer(
         story({
-          sections: [steps(), { layout: 'pizza', title: 'X', items: items(3) }, timeline()],
+          sections: [
+            steps(),
+            { layout: 'pizza', title: 'X', items: items(3) },
+            timeline(),
+            ...more(),
+          ],
         }),
       ),
     );
 
-    expect(parsed.sections.map((section) => section.layout)).toEqual(['steps', 'timeline']);
+    expect(parsed.sections.map((section) => section.layout)).toEqual([
+      'steps',
+      'timeline',
+      'steps',
+      'timeline',
+    ]);
   });
 
   it('when a section has no title or too few items for its layout, should drop it', () => {
     const parsed = parseInfographic(
       answer(
         story({
-          sections: [steps({ title: '' }), steps({ items: items(2) }), steps(), timeline()],
+          sections: [
+            steps({ title: '' }),
+            steps({ items: items(2) }),
+            steps(),
+            timeline(),
+            ...more(),
+          ],
         }),
       ),
     );
 
-    expect(parsed.sections).toHaveLength(2);
+    expect(parsed.sections).toHaveLength(4);
   });
 
   it('when the cover has no optional fields, should return the title, a piece for the cover and the sections', () => {
-    const parsed = parseInfographic(answer({ title: 'T', sections: [steps(), timeline()] }));
+    const parsed = parseInfographic(
+      answer({ title: 'T', sections: [steps(), timeline(), ...more()] }),
+    );
 
     expect(Object.keys(parsed).sort()).toEqual(['piece', 'sections', 'title']);
     expect(parsed.piece).not.toBe('');
@@ -169,6 +195,7 @@ describe('parseInfographic', () => {
               ],
             }),
             timeline(),
+            ...more(),
           ],
         }),
       ),
@@ -199,6 +226,7 @@ describe('parseInfographic', () => {
               items: [{ title: ' **Servidor**: ', text: 'Guarda  o `site`' }, item(2), item(3)],
             }),
             timeline(),
+            ...more(),
           ],
         }),
       ),
@@ -216,6 +244,7 @@ describe('parseInfographic', () => {
           sections: [
             steps({ items: [{ title: 'A', text: 'palavra '.repeat(60) }, item(2), item(3)] }),
             timeline(),
+            ...more(),
           ],
         }),
       ),
@@ -239,7 +268,9 @@ describe('parseInfographic', () => {
   it('when there are too many tips in a section, should keep only the allowed number', () => {
     const parsed = parseInfographic(
       answer(
-        story({ sections: [steps({ tips: ['a', '', 'b', 'c', 'd', 'e', 'f'] }), timeline()] }),
+        story({
+          sections: [steps({ tips: ['a', '', 'b', 'c', 'd', 'e', 'f'] }), timeline(), ...more()],
+        }),
       ),
     );
 
@@ -248,7 +279,7 @@ describe('parseInfographic', () => {
 
   it('when a section has more items than its layout allows, should cut the extra ones', () => {
     const parsed = parseInfographic(
-      answer(story({ sections: [steps({ items: items(9) }), timeline()] })),
+      answer(story({ sections: [steps({ items: items(9) }), timeline(), ...more()] })),
     );
 
     expect(parsed.sections[0].items).toHaveLength(5);
@@ -270,7 +301,7 @@ describe('parseInfographic', () => {
       ...extra,
     });
     const withVersus = (extra: Record<string, unknown> = {}) =>
-      answer(story({ sections: [steps(), versus(extra)] }));
+      answer(story({ sections: [steps(), versus(extra), ...more()] }));
 
     it('when the section has two sides and criteria, should keep the sides, the B text and the winner', () => {
       const section = parseInfographic(withVersus()).sections[1];
@@ -291,12 +322,22 @@ describe('parseInfographic', () => {
       const parsed = parseInfographic(
         answer(
           story({
-            sections: [steps(), timeline(), versus({ sides: [{ piece: '', title: 'Só um' }] })],
+            sections: [
+              steps(),
+              timeline(),
+              versus({ sides: [{ piece: '', title: 'Só um' }] }),
+              ...more(),
+            ],
           }),
         ),
       );
 
-      expect(parsed.sections.map((section) => section.layout)).toEqual(['steps', 'timeline']);
+      expect(parsed.sections.map((section) => section.layout)).toEqual([
+        'steps',
+        'timeline',
+        'steps',
+        'timeline',
+      ]);
     });
 
     it('when there are more than two sides, should keep the first two', () => {
@@ -324,7 +365,7 @@ describe('parseInfographic', () => {
     });
 
     it('when values are outside 0 to 100 or missing, should clamp them and default to 50', () => {
-      const section = parseInfographic(answer(story({ sections: [steps(), ranking()] })))
+      const section = parseInfographic(answer(story({ sections: [steps(), ranking(), ...more()] })))
         .sections[1];
 
       expect(section.items.map((entry) => entry.value)).toEqual([100, 0, 50]);
@@ -335,7 +376,11 @@ describe('parseInfographic', () => {
       const parsed = parseInfographic(
         answer(
           story({
-            sections: [steps({ meterLabel: 'X', items: items(3, { value: 10 }) }), timeline()],
+            sections: [
+              steps({ meterLabel: 'X', items: items(3, { value: 10 }) }),
+              timeline(),
+              ...more(),
+            ],
           }),
         ),
       );
@@ -361,6 +406,7 @@ describe('parseInfographic', () => {
                   { tag: '4-6', text: 'ciclos' },
                 ],
               },
+              ...more(),
             ],
           }),
         ),
@@ -378,10 +424,13 @@ describe('parseInfographic', () => {
     const cycle = (count: number) => ({ layout: 'cycle', title: 'Ciclo', items: items(count) });
 
     expect(
-      parseInfographic(answer(story({ sections: [steps(), cycle(6)] }))).sections[1].items,
+      parseInfographic(answer(story({ sections: [steps(), cycle(6), ...more()] }))).sections[1]
+        .items,
     ).toHaveLength(4);
-    expect(
-      parseInfographic(answer(story({ sections: [steps(), timeline(), cycle(3)] }))).sections,
-    ).toHaveLength(2);
+    const dropped = parseInfographic(
+      answer(story({ sections: [steps(), timeline(), cycle(3), ...more()] })),
+    );
+
+    expect(dropped.sections.map((section) => section.layout)).not.toContain('cycle');
   });
 });

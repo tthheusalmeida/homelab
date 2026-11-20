@@ -228,14 +228,18 @@ describe("CategoryTree", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("when the expand button is clicked, should reveal the children; clicking again collapses", async () => {
+  it("when the folder is clicked, should reveal the children; clicking again collapses", async () => {
     const user = userEvent.setup();
     render(<CategoryTree nodes={tree} selected={[]} onSelect={() => {}} />);
 
-    await user.click(screen.getByRole("button", { name: "Expandir Ciência" }));
+    await user.click(screen.getByRole("button", { name: /^Ciência/ }));
     expect(screen.getByRole("button", { name: /^DevOps/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Ciência/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
 
-    await user.click(screen.getByRole("button", { name: "Recolher Ciência" }));
+    await user.click(screen.getByRole("button", { name: /^Ciência/ }));
     expect(
       screen.queryByRole("button", { name: /^DevOps/ }),
     ).not.toBeInTheDocument();
@@ -245,7 +249,7 @@ describe("CategoryTree", () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
     render(<CategoryTree nodes={tree} selected={[]} onSelect={onSelect} />);
-    await user.click(screen.getByRole("button", { name: "Expandir Ciência" }));
+    await user.click(screen.getByRole("button", { name: /^Ciência/ }));
 
     await user.click(screen.getByRole("button", { name: /^DevOps/ }));
 

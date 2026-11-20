@@ -12,6 +12,9 @@ vi.mock("../api/library", () => ({
   getTags: vi.fn(),
   getIndexStatus: vi.fn(),
   reindex: vi.fn(),
+  renameCategory: vi.fn(),
+  createCategory: vi.fn(),
+  deleteCategory: vi.fn(),
   publishDocument: vi.fn(),
   archiveDocument: vi.fn(),
   discardDocument: vi.fn(),
@@ -49,6 +52,9 @@ import {
   useMindMap,
   usePublishDocument,
   useReindex,
+  useRenameCategory,
+  useCreateCategory,
+  useDeleteCategory,
   useSaveInfographic,
   useSaveMindMap,
   useSaveMindMapImage,
@@ -366,6 +372,81 @@ describe("mind map hooks", () => {
   });
 });
 
+describe('useCreateCategory and useDeleteCategory', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('when creating, should send the path and read the library again', async () => {
+    vi.mocked(library.createCategory).mockResolvedValue({ created: true });
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(() => useCreateCategory(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync(['Redes']);
+    });
+
+    expect(library.createCategory).toHaveBeenCalledWith(['Redes']);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['library'] });
+  });
+
+  it('when deleting, should send the path and read the library again', async () => {
+    vi.mocked(library.deleteCategory).mockResolvedValue({ deleted: true });
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(() => useDeleteCategory(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync(['Redes']);
+    });
+
+    expect(library.deleteCategory).toHaveBeenCalledWith(['Redes']);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['library'] });
+  });
+
+  it('when it fails, should not read the library again', async () => {
+    vi.mocked(library.createCategory).mockRejectedValue(new Error('falhou'));
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(() => useCreateCategory(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync(['Redes']).catch(() => {});
+    });
+
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+});
+
+describe('useRenameCategory', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('when renaming, should send both paths and read the library again', async () => {
+    vi.mocked(library.renameCategory).mockResolvedValue({ moved: 2 });
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(() => useRenameCategory(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ from: ['A'], to: ['B'] });
+    });
+
+    expect(library.renameCategory).toHaveBeenCalledWith(['A'], ['B']);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['library'] });
+  });
+
+  it('when renaming fails, should not read the library again', async () => {
+    vi.mocked(library.renameCategory).mockRejectedValue(new Error('falhou'));
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(() => useRenameCategory(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ from: ['A'], to: ['B'] }).catch(() => {});
+    });
+
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+});
+
 describe('useSaveMindMapImage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -382,9 +463,21 @@ describe('useSaveMindMapImage', () => {
       returned = await result.current.mutateAsync({ fileName: 'Mapa', dataBase64: 'UE5H' });
     });
 
-    expect(library.saveMindMapImage).toHaveBeenCalledWith('Mapa', 'UE5H');
+    expect(library.saveMindMapImage).toHaveBeenCalledWith('Mapa', 'UE5H', undefined);
     expect(returned).toEqual({ saved: true, path: 'D:/m.png' });
     expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it('when a format is given, should hand it to the api', async () => {
+    vi.mocked(library.saveMindMapImage).mockResolvedValue({ saved: true, path: 'D:/m.pdf' });
+    const { wrapper } = setup();
+    const { result } = renderHook(() => useSaveMindMapImage(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ fileName: 'Info', dataBase64: 'JVBE', format: 'pdf' });
+    });
+
+    expect(library.saveMindMapImage).toHaveBeenCalledWith('Info', 'JVBE', 'pdf');
   });
 });
 

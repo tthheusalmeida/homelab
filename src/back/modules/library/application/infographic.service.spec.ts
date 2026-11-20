@@ -34,6 +34,24 @@ const goodAnswer = JSON.stringify({
         { title: 'C', text: 'c', tag: '2010' },
       ],
     },
+    {
+      layout: 'steps',
+      title: 'As camadas',
+      items: [
+        { title: 'Enlace', text: 'Liga os aparelhos.' },
+        { title: 'Rede', text: 'Escolhe o caminho.' },
+        { title: 'Aplicação', text: 'Entrega ao programa.' },
+      ],
+    },
+    {
+      layout: 'timeline',
+      title: 'Os marcos',
+      items: [
+        { title: 'D', text: 'd', tag: '1983' },
+        { title: 'E', text: 'e', tag: '1991' },
+        { title: 'F', text: 'f', tag: '2007' },
+      ],
+    },
   ],
   takeaways: ['Tudo é uma rede de redes.'],
 });
@@ -241,7 +259,12 @@ describe('InfographicService', () => {
         model: cheapestModel(),
         stale: false,
       });
-      expect(result.sections.map((section) => section.layout)).toEqual(['steps', 'timeline']);
+      expect(result.sections.map((section) => section.layout)).toEqual([
+        'steps',
+        'timeline',
+        'steps',
+        'timeline',
+      ]);
       expect(store.get('1')?.title).toBe('Como a internet chega');
     });
 

@@ -8,6 +8,8 @@ import {
 import {
   archiveDocument,
   createArticle,
+  createCategory,
+  deleteCategory,
   discardDocument,
   getCategories,
   getDocument,
@@ -23,6 +25,7 @@ import {
   getTags,
   publishDocument,
   reindex,
+  renameCategory,
   saveInfographic,
   saveMindMap,
   saveMindMapImage,
@@ -35,7 +38,7 @@ import type {
   UpdateDocumentInput,
 } from "../types/library.types";
 
-import type { LibraryInfographicInput } from "#shared/contracts/library";
+import type { LibraryImageFormat, LibraryInfographicInput } from "#shared/contracts/library";
 import type { InfographicLayoutId } from "#shared/infographic-layouts";
 
 export const LIBRARY_KEY = ["library"] as const;
@@ -193,8 +196,15 @@ export function useGenerateInfographic() {
 /** Salva a imagem PNG do mapa onde o usuário escolher; não mexe na biblioteca, então não invalida nada. */
 export function useSaveMindMapImage() {
   return useMutation({
-    mutationFn: ({ fileName, dataBase64 }: { fileName: string; dataBase64: string }) =>
-      saveMindMapImage(fileName, dataBase64),
+    mutationFn: ({
+      fileName,
+      dataBase64,
+      format,
+    }: {
+      fileName: string;
+      dataBase64: string;
+      format?: LibraryImageFormat;
+    }) => saveMindMapImage(fileName, dataBase64, format),
   });
 }
 
@@ -299,6 +309,37 @@ export function useSuggestClassification() {
   return useMutation({
     mutationFn: ({ id, modelId }: { id: string; modelId?: string }) =>
       suggestClassification(id, modelId),
+  });
+}
+
+/** Cria uma categoria vazia (e os níveis que faltarem); a árvore é lida de novo. */
+export function useCreateCategory() {
+  const invalidate = useInvalidateLibrary();
+
+  return useMutation({
+    mutationFn: (path: string[]) => createCategory(path),
+    onSuccess: invalidate,
+  });
+}
+
+/** Exclui uma categoria sem páginas; a árvore é lida de novo. */
+export function useDeleteCategory() {
+  const invalidate = useInvalidateLibrary();
+
+  return useMutation({
+    mutationFn: (path: string[]) => deleteCategory(path),
+    onSuccess: invalidate,
+  });
+}
+
+/** Renomeia ou move uma categoria; as páginas, a árvore e as tags são lidas de novo. */
+export function useRenameCategory() {
+  const invalidate = useInvalidateLibrary();
+
+  return useMutation({
+    mutationFn: ({ from, to }: { from: string[]; to: string[] }) =>
+      renameCategory(from, to),
+    onSuccess: invalidate,
   });
 }
 

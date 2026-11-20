@@ -67,6 +67,15 @@ describe('PieceCatalog', () => {
     expect(screen.queryByText('jogos.controle')).not.toBeInTheDocument();
   });
 
+  it('when searching with a synonym that no piece has written, should still find the piece', async () => {
+    render(<PieceCatalog />);
+
+    await userEvent.type(screen.getByRole('searchbox'), 'grana');
+
+    expect(screen.getByText('Pilha de moedas')).toBeInTheDocument();
+    expect(screen.queryByText('Notebook')).not.toBeInTheDocument();
+  });
+
   it('when the drawings are still waiting to be shown, should still list, count and search every piece', async () => {
     vi.stubGlobal(
       'IntersectionObserver',

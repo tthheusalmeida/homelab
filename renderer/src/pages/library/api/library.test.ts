@@ -6,6 +6,8 @@ import { failure, mockApi, ok } from '#test/api-mock';
 import {
   archiveDocument,
   createArticle,
+  createCategory,
+  deleteCategory,
   discardDocument,
   deleteInfographic,
   deleteMindMap,
@@ -24,6 +26,7 @@ import {
   getTags,
   publishDocument,
   reindex,
+  renameCategory,
   suggestClassification,
   toListFilters,
   updateDocument,
@@ -153,6 +156,46 @@ describe('library api: escrita por IPC', () => {
       tags: ['t'],
       title: 'T',
     });
+  });
+
+  it('when creating a category, should send the path', async () => {
+    const invoke = mockApi({ [IpcChannels.library.createCategory]: () => ok({ created: true }) });
+
+    await expect(createCategory(['Redes', 'Segurança'])).resolves.toEqual({ created: true });
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.createCategory, {
+      path: ['Redes', 'Segurança'],
+    });
+  });
+
+  it('when deleting a category, should send the path and reject with the reason when refused', async () => {
+    const invoke = mockApi({ [IpcChannels.library.deleteCategory]: () => ok({ deleted: true }) });
+
+    await expect(deleteCategory(['Redes'])).resolves.toEqual({ deleted: true });
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.deleteCategory, { path: ['Redes'] });
+
+    mockApi({
+      [IpcChannels.library.deleteCategory]: () => failure('VALIDATION', 'A categoria tem páginas.'),
+    });
+
+    await expect(deleteCategory(['Redes'])).rejects.toThrow('A categoria tem páginas.');
+  });
+
+  it('when renaming a category, should send both paths and return how many pages moved', async () => {
+    const invoke = mockApi({ [IpcChannels.library.renameCategory]: () => ok({ moved: 2 }) });
+
+    await expect(renameCategory(['A', 'B'], ['C'])).resolves.toEqual({ moved: 2 });
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.renameCategory, {
+      from: ['A', 'B'],
+      to: ['C'],
+    });
+  });
+
+  it('when renaming a category fails, should reject with the reason', async () => {
+    mockApi({
+      [IpcChannels.library.renameCategory]: () => failure('NOT_FOUND', 'Categoria não encontrada.'),
+    });
+
+    await expect(renameCategory(['X'], ['Y'])).rejects.toThrow('Categoria não encontrada.');
   });
 
   it('when archiving, should send the id to library:documents:archive', async () => {
@@ -285,6 +328,20 @@ describe('mind map image api', () => {
     expect(invoke).toHaveBeenCalledWith(IpcChannels.library.mindMap.saveImage, {
       fileName: 'Mapa mental - Redes',
       dataBase64: 'UE5H',
+    });
+  });
+
+  it('when a format is given, should send it along', async () => {
+    const invoke = mockApi({
+      [IpcChannels.library.mindMap.saveImage]: () => ok({ saved: true, path: 'D:/i.pdf' }),
+    });
+
+    await saveMindMapImage('Infográfico', 'JVBE', 'pdf');
+
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.mindMap.saveImage, {
+      fileName: 'Infográfico',
+      dataBase64: 'JVBE',
+      format: 'pdf',
     });
   });
 

@@ -3,19 +3,17 @@ import { useMemo, useState } from 'react';
 import { InfographicPiece } from '#components/InfographicPiece';
 import { LazyRender } from '#components/LazyRender';
 import { SearchInput } from '#components/SearchInput';
+import { createPieceMatcher } from '#lib/piece-search';
 import { cn } from '#lib/utils';
 import { INFOGRAPHIC_PIECES, INFOGRAPHIC_THEMES } from '#shared/infographic-pieces';
 
 /** Textos do catálogo de peças (a galeria das Configurações e o seletor de troca usam os mesmos). */
 export const CatalogStrings = {
-  search: 'Buscar peça por nome, chave ou palavra-chave',
+  search: 'Buscar peça por nome, chave, palavra-chave ou sinônimo',
   count: (pieces: number, themes: number) =>
     `${pieces} peça${pieces === 1 ? '' : 's'} em ${themes} grupo${themes === 1 ? '' : 's'}`,
   empty: 'Nenhuma peça encontrada. Tente outra palavra.',
 } as const;
-
-/** Sem acento e em minúsculas, para a busca achar "calculadora" ao digitar "Cálculadora". */
-const normalize = (value: string) => value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 interface PieceCatalogProps {
   /** Com isso, cada peça vira um botão que a escolhe (o seletor de troca); sem, é só para ver. */
@@ -30,8 +28,8 @@ interface PieceCatalogProps {
 }
 
 /**
- * O banco de peças do infográfico por tema, com busca (sem acento, por nome, chave, palavra-chave ou
- * tema). Serve à galeria das Configurações (para ver) e ao seletor de troca (para escolher).
+ * O banco de peças do infográfico por tema, com busca (sem acento, por nome, chave, palavra-chave, tema
+ * ou sinônimo). Serve à galeria das Configurações (para ver) e ao seletor de troca (para escolher).
  */
 export function PieceCatalog({
   onPick,
@@ -43,18 +41,13 @@ export function PieceCatalog({
   const [query, setQuery] = useState('');
 
   const groups = useMemo(() => {
-    const needle = normalize(query.trim());
+    const matches = createPieceMatcher(query);
 
     return Object.entries(INFOGRAPHIC_THEMES)
       .map(([theme, label]) => ({
         theme,
         label,
-        pieces: INFOGRAPHIC_PIECES.filter(
-          (piece) =>
-            piece.theme === theme &&
-            (needle === '' ||
-              normalize(`${piece.name} ${piece.key} ${piece.tags} ${label}`).includes(needle)),
-        ),
+        pieces: INFOGRAPHIC_PIECES.filter((piece) => piece.theme === theme && matches(piece)),
       }))
       .filter((group) => group.pieces.length > 0);
   }, [query]);

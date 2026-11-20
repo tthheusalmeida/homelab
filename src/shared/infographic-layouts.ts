@@ -138,7 +138,7 @@ export function layoutInfo(id: InfographicLayoutId): InfographicLayoutInfo {
 }
 
 /** Quantas seções tem a história (com um modelo escolhido pelo usuário, é uma só). */
-export const INFOGRAPHIC_SECTIONS = { min: 2, max: 6 } as const;
+export const INFOGRAPHIC_SECTIONS = { min: 4, max: 6 } as const;
 
 /** Limites de texto (a IA é cortada neles, e o prompt os informa). */
 export const INFOGRAPHIC_LIMITS = {

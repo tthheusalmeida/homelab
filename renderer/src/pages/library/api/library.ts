@@ -17,8 +17,10 @@ import type {
   LibraryInfographicInput,
   LibraryListFilters,
   LibraryMindMap,
+  LibraryImageFormat,
   LibraryMindMapImageResult,
   LibraryMindMapNode,
+  LibraryRenameCategoryResult,
 } from '#shared/contracts/library';
 import type { InfographicLayoutId } from '#shared/infographic-layouts';
 import { ipc } from '#lib/ipc';
@@ -59,6 +61,24 @@ export function getInbox(): Promise<DocumentSummary[]> {
 
 export function getCategories(): Promise<CategoryNode[]> {
   return ipc.invoke(IpcChannels.library.categories);
+}
+
+/** Renomeia ou move uma categoria (e as subcategorias); as páginas dela mudam de pasta junto. */
+export function renameCategory(
+  from: string[],
+  to: string[],
+): Promise<LibraryRenameCategoryResult> {
+  return ipc.invoke(IpcChannels.library.renameCategory, { from, to });
+}
+
+/** Cria uma categoria vazia (e os níveis que faltarem no caminho). */
+export function createCategory(path: string[]): Promise<{ created: true }> {
+  return ipc.invoke(IpcChannels.library.createCategory, { path });
+}
+
+/** Exclui uma categoria sem páginas (e as subcategorias vazias dela). */
+export function deleteCategory(path: string[]): Promise<{ deleted: true }> {
+  return ipc.invoke(IpcChannels.library.deleteCategory, { path });
 }
 
 export function getTags(): Promise<TagCount[]> {
@@ -136,12 +156,17 @@ export function saveMindMap(
   return ipc.invoke(IpcChannels.library.mindMap.save, { id, ...map });
 }
 
-/** Pede ao main o diálogo "Salvar como" e grava a imagem PNG do mapa (`saved: false` se o usuário cancelou). */
+/** Pede ao main o diálogo "Salvar como" e grava a imagem (PNG por padrão, SVG ou PDF) do mapa ou do infográfico (`saved: false` se o usuário cancelou). */
 export function saveMindMapImage(
   fileName: string,
   dataBase64: string,
+  format?: LibraryImageFormat,
 ): Promise<LibraryMindMapImageResult> {
-  return ipc.invoke(IpcChannels.library.mindMap.saveImage, { fileName, dataBase64 });
+  return ipc.invoke(IpcChannels.library.mindMap.saveImage, {
+    fileName,
+    dataBase64,
+    ...(format ? { format } : {}),
+  });
 }
 
 /** O infográfico guardado do resumo, ou `null` se ainda não foi gerado. */

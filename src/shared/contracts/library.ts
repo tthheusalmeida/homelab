@@ -40,6 +40,25 @@ export interface LibraryCategoryNode {
   children: LibraryCategoryNode[];
 }
 
+/** Renomeia ou move uma categoria (e tudo o que há dentro dela) para outro caminho, de 1 a 4 níveis. */
+export interface LibraryRenameCategoryRequest {
+  /** O caminho de hoje (a categoria e, por baixo, as subcategorias vão junto). */
+  from: string[];
+  /** O caminho novo. Se já existir, as páginas se juntam a ele. */
+  to: string[];
+}
+
+/** Cria uma categoria vazia (e os níveis que faltarem no caminho). */
+export interface LibraryCategoryPathRequest {
+  /** O caminho da categoria, de 1 a 4 níveis. */
+  path: string[];
+}
+
+export interface LibraryRenameCategoryResult {
+  /** Quantas páginas mudaram de pasta. */
+  moved: number;
+}
+
 export interface LibraryTagCount {
   tag: string;
   count: number;
@@ -161,12 +180,18 @@ export interface LibraryMindMapSaveRequest {
   nodes: LibraryMindMapNode[];
 }
 
-/** Imagem PNG do mapa mental, para o usuário salvar num arquivo. */
+/** Formatos de arquivo que o mapa mental e o infográfico podem ser salvos. */
+export const LIBRARY_IMAGE_FORMATS = ['png', 'svg', 'pdf'] as const;
+export type LibraryImageFormat = (typeof LIBRARY_IMAGE_FORMATS)[number];
+
+/** Imagem (PNG, SVG) ou PDF do mapa mental ou do infográfico, para o usuário salvar num arquivo. */
 export interface LibraryMindMapImageRequest {
-  /** Nome sugerido no diálogo de salvar (a extensão `.png` é garantida pelo main). */
+  /** Nome sugerido no diálogo de salvar (a extensão do formato é garantida pelo main). */
   fileName: string;
-  /** O PNG em base64, sem o prefixo `data:`. */
+  /** O arquivo em base64, sem o prefixo `data:`. */
   dataBase64: string;
+  /** Formato do conteúdo; sem ele, PNG. */
+  format?: LibraryImageFormat;
 }
 
 export interface LibraryMindMapImageResult {

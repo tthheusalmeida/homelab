@@ -35,6 +35,9 @@ function setup(overrides: Partial<Fakes> = {}, suggest = jest.fn()) {
     update: jest.fn().mockResolvedValue({ meta: {}, content: '' }),
     archive: jest.fn().mockResolvedValue({ meta: {}, content: '' }),
     discard: jest.fn().mockResolvedValue(undefined),
+    renameCategory: jest.fn().mockResolvedValue({ moved: 0 }),
+    createCategory: jest.fn().mockResolvedValue({ created: true }),
+    deleteCategory: jest.fn().mockResolvedValue({ deleted: true }),
     ...overrides,
   };
   const ipc = new FakeIpcMain();

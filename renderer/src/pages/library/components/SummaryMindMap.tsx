@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { Check, Pencil, Sparkles, Trash2, X } from 'lucide-react';
 
+import {
+  allowGeneration,
+  dismissGeneration,
+  isGenerationDismissed,
+} from '#lib/dismissed-generation';
 import { buildMindMap, fromAiMap } from '#lib/mind-map';
 import {
   draftFromMap,
@@ -76,7 +81,11 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   const missing = saved.isSuccess && saved.data === null;
 
   useEffect(() => {
-    if (missing && !requestedThisSession.has(documentId)) {
+    if (
+      missing &&
+      !requestedThisSession.has(documentId) &&
+      !isGenerationDismissed("mind-map", documentId)
+    ) {
       requestedThisSession.add(documentId);
       generate.mutate({ id: documentId });
     }
@@ -90,7 +99,10 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   );
 
   const pending = generate.isPending;
-  const generateNow = () => generate.mutate({ id: documentId });
+  const generateNow = () => {
+    allowGeneration("mind-map", documentId);
+    generate.mutate({ id: documentId });
+  };
   // Mapa editado à mão: gerar de novo apagaria as edições, então pergunta antes.
   const regenerate = () => (saved.data?.edited ? setConfirm('regenerate') : generateNow());
 
@@ -111,11 +123,13 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
     setDraft(next);
   };
 
-  // Excluir só o mapa: marca a página como "já tentada" antes, para a aba não gerar outro sozinha.
+  // Excluir só o mapa: marca a página como "já tentada" e "excluída de propósito" (guardado entre
+  // sessões), para a aba não gerar outro sozinha. Só o botão Gerar volta a gerar.
   const deleteNow = () => {
     requestedThisSession.add(documentId);
     deleteMap.mutate(documentId, {
       onSuccess: () => {
+        dismissGeneration("mind-map", documentId);
         setConfirm(null);
         snackbar.success('Mapa mental excluído.');
       },

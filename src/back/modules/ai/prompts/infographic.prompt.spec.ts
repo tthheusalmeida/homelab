@@ -41,7 +41,7 @@ describe('buildInfographicPrompt', () => {
 
     expect(prompt).toContain('conta uma HISTÓRIA');
     expect(prompt).toContain('**Capa:**');
-    expect(prompt).toContain('De 2 a 6 seções');
+    expect(prompt).toContain('De 4 a 6 seções');
     expect(prompt).toContain('as seções vizinhas usam modelos diferentes');
     expect(prompt).toContain('**Fechamento:**');
     expect(prompt).toContain('"takeaways"');

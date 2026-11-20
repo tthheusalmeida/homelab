@@ -1,10 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { Check, Download, ImageOff, LayoutPanelTop, Pencil, Trash2, X } from 'lucide-react';
+import {
+  Check,
+  Download,
+  FileCode,
+  FileText,
+  ImageOff,
+  LayoutPanelTop,
+  Pencil,
+  Trash2,
+  X,
+} from 'lucide-react';
 
 import { isDraftDirty, pieceAt, toSaveInput, withPiece } from '#lib/infographic-edit';
 import { textAt, withText, type TextTarget } from '#lib/infographic-text-edit';
-import { captureInfographicPng } from '#lib/infographic-image';
+import {
+  captureInfographicPdf,
+  captureInfographicPng,
+  captureInfographicSvg,
+} from '#lib/infographic-image';
+import {
+  allowGeneration,
+  dismissGeneration,
+  isGenerationDismissed,
+} from '#lib/dismissed-generation';
 import {
   AUTO_LAYOUT,
   infographicImageName,
@@ -45,6 +64,9 @@ interface SummaryInfographicProps {
 }
 
 const DOWNLOAD_FAILED = 'Não foi possível gerar a imagem do infográfico.';
+
+/** Formas de baixar: PNG com fundo, PNG sem fundo, SVG (vetor) ou PDF de uma página. */
+type DownloadKind = 'png' | 'png-transparent' | 'svg' | 'pdf';
 
 /**
  * Páginas para as quais a IA já foi chamada nesta sessão. Abrir a aba chama a IA **uma vez** por
@@ -90,8 +112,10 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
   const data = saved.data ?? null;
   const failed = generate.isError && !pending;
 
-  const generateNow = () =>
+  const generateNow = () => {
+    allowGeneration('infographic', documentId);
     generate.mutate({ id: documentId, layout: choice === AUTO_LAYOUT ? undefined : choice });
+  };
   // Infográfico editado à mão: gerar de novo apagaria as edições, então pergunta antes.
   const requestGenerate = () => (saved.data?.edited ? setConfirm('regenerate') : generateNow());
 
@@ -139,7 +163,11 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
   const missing = !saved.isPending && saved.data === null;
 
   useEffect(() => {
-    if (missing && !requestedThisSession.has(documentId)) {
+    if (
+      missing &&
+      !requestedThisSession.has(documentId) &&
+      !isGenerationDismissed('infographic', documentId)
+    ) {
       requestedThisSession.add(documentId);
       generate.mutate({ id: documentId });
     }
@@ -147,18 +175,20 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [missing, documentId]);
 
-  // Excluir só o infográfico: marca a página como "já tentada" antes, para a aba não gerar outro sozinha.
+  // Excluir só o infográfico: marca a página como "já tentada" e "excluída de propósito" (guardado
+  // entre sessões), para a aba não gerar outro sozinha. Só o botão Gerar volta a gerar.
   const deleteNow = () => {
     requestedThisSession.add(documentId);
     deleteInfographic.mutate(documentId, {
       onSuccess: () => {
+        dismissGeneration('infographic', documentId);
         setConfirmDelete(false);
         snackbar.success('Infográfico excluído.');
       },
     });
   };
 
-  const download = async (transparent: boolean) => {
+  const download = async (kind: DownloadKind) => {
     const element = stage.current;
 
     if (!element || exporting) {
@@ -168,14 +198,24 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
     setExporting(true);
 
     try {
-      const dataBase64 = await captureInfographicPng(element, transparent);
+      const transparent = kind === 'png-transparent';
+      const format = kind === 'svg' || kind === 'pdf' ? kind : 'png';
+      const dataBase64 =
+        kind === 'pdf'
+          ? await captureInfographicPdf(element)
+          : kind === 'svg'
+            ? await captureInfographicSvg(element, false)
+            : await captureInfographicPng(element, transparent);
       const result = await saveImage.mutateAsync({
         fileName: infographicImageName(title, transparent),
         dataBase64,
+        format,
       });
 
       if (result.saved) {
-        snackbar.success('Imagem do infográfico salva.');
+        snackbar.success(
+          kind === 'pdf' ? 'PDF do infográfico salvo.' : 'Imagem do infográfico salva.',
+        );
       }
     } catch (error) {
       snackbar.error(error instanceof Error && error.message ? error.message : DOWNLOAD_FAILED);
@@ -302,7 +342,7 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
               label={exporting ? 'Gerando imagem…' : 'Baixar o infográfico como PNG com fundo'}
               disabled={exporting || pending}
               aria-busy={exporting}
-              onClick={() => void download(false)}
+              onClick={() => void download('png')}
             >
               {exporting ? <HexLoader className="size-4" label="Gerando imagem" /> : <Download />}
             </IconButton>
@@ -314,9 +354,25 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
                   : 'Baixar o infográfico como PNG sem fundo (transparente)'
               }
               disabled={exporting || pending}
-              onClick={() => void download(true)}
+              onClick={() => void download('png-transparent')}
             >
               <ImageOff />
+            </IconButton>
+
+            <IconButton
+              label={exporting ? 'Gerando arquivo…' : 'Baixar o infográfico como PDF'}
+              disabled={exporting || pending}
+              onClick={() => void download('pdf')}
+            >
+              <FileText />
+            </IconButton>
+
+            <IconButton
+              label={exporting ? 'Gerando arquivo…' : 'Baixar o infográfico como SVG (vetor)'}
+              disabled={exporting || pending}
+              onClick={() => void download('svg')}
+            >
+              <FileCode />
             </IconButton>
 
             <IconButton

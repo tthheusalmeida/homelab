@@ -135,7 +135,35 @@ describe('MindMapHandler: save-image', () => {
         dataBase64: 'iVBORw0KGgo=',
       }),
     ).resolves.toEqual({ ok: true, data: { saved: true, path: 'D:/mapa.png' } });
-    expect(images.save).toHaveBeenCalledWith('Mapa mental - Redes.png', 'iVBORw0KGgo=');
+    expect(images.save).toHaveBeenCalledWith('Mapa mental - Redes.png', 'iVBORw0KGgo=', undefined);
+  });
+
+  it.each(['png', 'svg', 'pdf'])(
+    'when the format is %s, should hand it to the saver',
+    async (format) => {
+      const { ipc, images } = setup();
+
+      await ipc.invoke(IpcChannels.library.mindMap.saveImage, {
+        fileName: 'Infográfico',
+        dataBase64: 'AAAA',
+        format,
+      } as never);
+
+      expect(images.save).toHaveBeenCalledWith('Infográfico', 'AAAA', format);
+    },
+  );
+
+  it('when the format is unknown, should answer VALIDATION without saving', async () => {
+    const { ipc, images } = setup();
+
+    const result = await ipc.invoke(IpcChannels.library.mindMap.saveImage, {
+      fileName: 'a',
+      dataBase64: 'AAAA',
+      format: 'gif',
+    } as never);
+
+    expect(result).toMatchObject({ ok: false, error: { code: IpcErrorCode.VALIDATION } });
+    expect(images.save).not.toHaveBeenCalled();
   });
 
   it('when the user closes the save dialog, should answer ok with saved false', async () => {

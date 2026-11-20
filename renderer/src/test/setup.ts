@@ -3,6 +3,8 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
+import { loadPieceShapes } from "#lib/infographic-piece-store";
+
 // jsdom does not implement these browser APIs used by the UI libs.
 class ResizeObserverStub {
   observe() {}
@@ -24,6 +26,10 @@ class IntersectionObserverStub {
 }
 
 vi.stubGlobal("IntersectionObserver", IntersectionObserverStub);
+
+// Os desenhos das peças chegam sob demanda no app; nos testes já começam carregados, para que as telas
+// com peças desenhem na hora. Os testes do carregamento em si usam `resetPieceShapesForTests`.
+await loadPieceShapes();
 
 Element.prototype.scrollIntoView = () => {};
 Element.prototype.getAnimations = () => [];
