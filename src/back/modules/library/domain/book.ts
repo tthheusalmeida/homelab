@@ -1,13 +1,18 @@
 import { uuidv7 } from 'uuidv7';
 
+import { ACCENT_IDS } from '../../../../shared/contracts/appearance';
+
 export const BOOK_KINDS = ['pos', 'course', 'study', 'book'] as const;
 
 export type BookKind = (typeof BOOK_KINDS)[number];
 
 export const DEFAULT_BOOK_KIND: BookKind = 'study';
 
-/** Cores da capa (o front mapeia cada nome para um degradê). */
-export const BOOK_COVER_COLORS = ['blue', 'emerald', 'violet', 'amber', 'rose', 'slate'] as const;
+/**
+ * Cores da capa (o front mapeia cada nome para um degradê): as 15 cores do tema e `slate`, que só
+ * continua válida para livros criados antes de a capa usar as cores do tema.
+ */
+export const BOOK_COVER_COLORS = [...ACCENT_IDS, 'slate'] as const;
 
 export type BookCoverColor = (typeof BOOK_COVER_COLORS)[number];
 

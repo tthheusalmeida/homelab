@@ -15,15 +15,13 @@ import {
 import { Input } from "#ui/input";
 import { Label } from "#ui/label";
 import { Textarea } from "#ui/textarea";
+import { accentOptions } from "#lib/appearance";
 import { cn } from "#lib/utils";
 
+import { HexColorPicker } from "#components/HexColorPicker";
 import { OptionSelect } from "#components/OptionSelect";
 
-import {
-  DEFAULT_COVER_COLOR,
-  bookCoverColors,
-  isValidCoverImageUrl,
-} from "../cover";
+import { DEFAULT_COVER_COLOR, isValidCoverImageUrl } from "../cover";
 import { useCreateBook, useUpdateBook } from "../hooks";
 import {
   bookKindOptions,
@@ -186,29 +184,13 @@ function BookForm({
           <div className="space-y-2">
             <Label id="book-color-label">Cor da capa</Label>
 
-            <div
-              role="group"
-              aria-labelledby="book-color-label"
-              className="flex flex-wrap gap-2"
-            >
-              {bookCoverColors.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  aria-label={option.label}
-                  aria-pressed={color === option.id}
-                  title={option.label}
-                  disabled={mutation.isPending}
-                  onClick={() => setColor(option.id)}
-                  className={cn(
-                    "size-8 rounded-full border-2 border-transparent",
-                    option.swatch,
-                    color === option.id &&
-                      "ring-2 ring-ring ring-offset-2 ring-offset-background",
-                  )}
-                />
-              ))}
-            </div>
+            <HexColorPicker
+              label="Cor da capa"
+              options={accentOptions}
+              value={color}
+              disabled={mutation.isPending}
+              onChange={setColor}
+            />
           </div>
 
           <div className="space-y-2">

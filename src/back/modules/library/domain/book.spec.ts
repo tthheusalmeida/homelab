@@ -1,4 +1,6 @@
+import { ACCENT_IDS } from '../../../../shared/contracts/appearance';
 import {
+  BOOK_COVER_COLORS,
   BookValidationError,
   bookDocumentIds,
   cleanBookTitle,
@@ -164,19 +166,20 @@ describe('book cover', () => {
   });
 
   describe('cleanCoverColor', () => {
-    it.each(['blue', 'emerald', 'violet', 'amber', 'rose', 'slate'])(
-      'when the color is %s, should accept it',
-      (color) => {
-        expect(cleanCoverColor(color)).toBe(color);
-      },
-    );
+    it.each([...ACCENT_IDS, 'slate'])('when the color is %s, should accept it', (color) => {
+      expect(cleanCoverColor(color)).toBe(color);
+    });
+
+    it('when listing the colors, should offer the 15 theme colors plus the legacy slate', () => {
+      expect(BOOK_COVER_COLORS).toHaveLength(16);
+    });
 
     it.each([undefined, null])('when the color is %p, should use the default', (value) => {
       expect(cleanCoverColor(value)).toBe('blue');
     });
 
     it('when the color is unknown, should throw', () => {
-      expect(() => cleanCoverColor('pink')).toThrow('Cor de capa inválida');
+      expect(() => cleanCoverColor('magenta')).toThrow('Cor de capa inválida');
     });
   });
 
@@ -214,7 +217,7 @@ describe('book cover', () => {
   });
 
   it('when the saved color is unknown, should fall back to the default', () => {
-    const raw = { ...newBook({ title: 'T' }), coverColor: 'pink' };
+    const raw = { ...newBook({ title: 'T' }), coverColor: 'magenta' };
 
     expect(parseBook(raw).coverColor).toBe('blue');
   });

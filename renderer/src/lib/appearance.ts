@@ -43,6 +43,13 @@ export const accentLabels: Record<AccentId, string> = {
   violet: "Violeta",
 };
 
+/** As 15 cores do tema como opções do `HexColorPicker` (cor de destaque, capa do livro...). */
+export const accentOptions = ACCENT_IDS.map((id) => ({
+  id,
+  label: accentLabels[id],
+  accent: id,
+}));
+
 export function resolveMode(
   theme: ThemeMode,
   systemDark: boolean,

@@ -128,12 +128,13 @@ describe("BookFormDialog", () => {
       const user = userEvent.setup();
       render(<BookFormDialog open onOpenChange={() => {}} />);
 
-      expect(screen.getByRole("button", { name: "Azul" })).toHaveAttribute(
-        "aria-pressed",
+      expect(screen.getAllByRole("radio")).toHaveLength(15);
+      expect(screen.getByRole("radio", { name: "Azul" })).toHaveAttribute(
+        "aria-checked",
         "true",
       );
 
-      await user.click(screen.getByRole("button", { name: "Verde" }));
+      await user.click(screen.getByRole("radio", { name: "Esmeralda" }));
       await user.type(screen.getByLabelText("Título"), "X");
       await user.click(screen.getByRole("button", { name: "Criar livro" }));
 
@@ -188,8 +189,8 @@ describe("BookFormDialog", () => {
       );
 
       expect(screen.getByLabelText(/Subtítulo/)).toHaveValue("Sub");
-      expect(screen.getByRole("button", { name: "Rosa" })).toHaveAttribute(
-        "aria-pressed",
+      expect(screen.getByRole("radio", { name: "Rosé" })).toHaveAttribute(
+        "aria-checked",
         "true",
       );
       expect(screen.getByLabelText(/Imagem da capa/)).toHaveValue(

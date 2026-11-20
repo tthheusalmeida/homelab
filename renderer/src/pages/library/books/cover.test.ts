@@ -1,28 +1,22 @@
 import { describe, expect, it } from "vitest";
 
+import { ACCENT_IDS } from "#shared/contracts/appearance";
+
 import {
   DEFAULT_COVER_COLOR,
-  bookCoverColors,
   gradientOf,
   isValidCoverImageUrl,
 } from "./cover";
 
 describe("cover colors", () => {
-  it("when listing the colors, should offer the six options with a label, gradient and swatch", () => {
-    expect(bookCoverColors.map((color) => color.id)).toEqual([
-      "blue",
-      "emerald",
-      "violet",
-      "amber",
-      "rose",
-      "slate",
-    ]);
-    expect(
-      bookCoverColors.every(
-        (color) => color.label && color.gradient && color.swatch,
-      ),
-    ).toBe(true);
-  });
+  it.each([...ACCENT_IDS, "slate" as const])(
+    "when the color is %s, should have a gradient of its own",
+    (color) => {
+      expect(gradientOf(color)).toMatch(
+        new RegExp(`^from-${color}-\\d+ to-${color}-\\d+$`),
+      );
+    },
+  );
 
   it("when asking for a gradient, should return the one of that color", () => {
     expect(gradientOf("rose")).toBe("from-rose-600 to-rose-900");

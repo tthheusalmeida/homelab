@@ -1,5 +1,8 @@
+import type { AccentId } from './appearance';
+
 export type BookKind = 'pos' | 'course' | 'study' | 'book';
-export type BookCoverColor = 'blue' | 'emerald' | 'violet' | 'amber' | 'rose' | 'slate';
+/** As 15 cores do tema (`AccentId`) mais `slate`, que só existe em livros criados antes da troca. */
+export type BookCoverColor = AccentId | 'slate';
 
 /** Último ponto lido: o capítulo e o elemento (título) que estava na tela. */
 export interface BookPosition {
