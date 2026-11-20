@@ -9,15 +9,16 @@ import {
 
 import { uuidv7 } from 'uuidv7';
 
-import { buildCategoryTree, type CategoryNode } from '../domain/categories';
+import { buildCategoryTree, startsWithCategory, type CategoryNode } from '../domain/categories';
 import { normalizeTags } from '../domain/document';
 import {
   DocumentSourceOptions,
   DocumentStatusOptions,
   DocumentTypeOptions,
+  MAX_CATEGORY_DEPTH,
   type DocumentMeta,
 } from '../domain/library.types';
-import { compareNatural, sanitizeCategoryPath } from '../domain/naming';
+import { compareNatural, normalizeKey, sanitizeCategoryPath } from '../domain/naming';
 import {
   LibraryIndex,
   type IndexError,
@@ -208,6 +209,88 @@ export class LibraryService implements OnModuleInit {
     await this.persist(meta, newBody, indexed.path);
 
     return { meta, content: newBody.trim() };
+  }
+
+  /**
+   * Renomeia ou move uma categoria **com tudo o que há dentro**: cada página (publicada ou arquivada)
+   * da categoria e das subcategorias vai para a pasta do caminho novo, e as pastas que ficarem
+   * vazias somem. Se o caminho novo já existe, as páginas se juntam a ele. Trocar só a caixa ou os
+   * acentos do nome ("tecnologia" → "Tecnologia") renomeia a pasta de verdade. O caminho novo pode ter
+   * outra quantidade de níveis, desde que nenhuma página passe do limite. Devolve quantas páginas
+   * mudaram de lugar.
+   */
+  async renameCategory(from: string[], to: string[]): Promise<{ moved: number }> {
+    const source = sanitizeCategoryPath(from);
+    const target = sanitizeCategoryPath(to);
+    const affected = this.index
+      .all()
+      .filter(
+        (doc) =>
+          doc.meta.status !== DocumentStatusOptions.PENDING &&
+          startsWithCategory(doc.meta.category, source),
+      );
+
+    if (affected.length === 0) {
+      throw new NotFoundException('Categoria não encontrada.');
+    }
+
+    const tooDeep = affected.some(
+      (doc) => target.length + doc.meta.category.length - source.length > MAX_CATEGORY_DEPTH,
+    );
+
+    if (tooDeep) {
+      throw new BadRequestException(
+        `A categoria deve ter de 1 a ${MAX_CATEGORY_DEPTH} níveis, contando as subcategorias.`,
+      );
+    }
+
+    const sameKeys =
+      source.length === target.length &&
+      source.every((name, level) => normalizeKey(name) === normalizeKey(target[level]));
+
+    if (sameKeys) {
+      return { moved: await this.renameFolders(source, target, affected.length) };
+    }
+
+    for (const doc of affected) {
+      const { meta: current, body } = await this.storage.read(doc.path);
+      const meta: DocumentMeta = {
+        ...current,
+        category: [...target, ...current.category.slice(source.length)],
+        updatedAt: new Date().toISOString(),
+      };
+
+      await this.persist(meta, body, doc.path);
+    }
+
+    return { moved: affected.length };
+  }
+
+  /**
+   * O caminho novo é o mesmo com outra caixa ou outros acentos: renomeia as pastas que mudaram (de
+   * cima para baixo) e refaz o índice. Se nada mudou, não há o que fazer.
+   */
+  private async renameFolders(source: string[], target: string[], count: number): Promise<number> {
+    let renamed = false;
+
+    for (let level = 0; level < source.length; level += 1) {
+      if (source[level] !== target[level]) {
+        const done = await this.storage.renameCategoryFolder(
+          [...target.slice(0, level), source[level]],
+          target[level],
+        );
+
+        renamed = renamed || done;
+      }
+    }
+
+    if (!renamed) {
+      return 0;
+    }
+
+    await this.index.rebuild();
+
+    return count;
   }
 
   /**

@@ -15,11 +15,13 @@ import { SearchInput } from "#components/SearchInput";
 import { useDebouncedValue } from "#hooks/use-debounced-value";
 import { useStoredState } from "#hooks/use-stored-state";
 
+import { CategoryEditDialog } from "./components/CategoryEditDialog";
 import { CategoryTree } from "./components/CategoryTree";
 import { DocumentCard } from "./components/DocumentCard";
 import { TagFilter } from "./components/TagFilter";
 import { ViewToggle, viewModes, type ViewMode } from "./components/ViewToggle";
 import { useCategories, useDocuments, useTags } from "./hooks/useLibrary";
+import { followRenamedCategory } from "./categories";
 import {
   contentFilterLabels,
   contentFilterToHas,
@@ -29,6 +31,7 @@ import {
   type ContentFilter,
   type DocumentSource,
   type DocumentType,
+  type CategoryNode,
   type SortOption,
 } from "./types/library.types";
 import { PageHeader } from "#components/PageHeader";
@@ -61,6 +64,8 @@ export function LibraryPage() {
   const [content, setContent] = useState<ContentFilter>();
   const [tags, setTags] = useState<string[]>([]);
   const [sort, setSort] = useState<SortOption>("title");
+  // A categoria que está sendo editada (lápis ao lado dela na árvore).
+  const [editing, setEditing] = useState<CategoryNode | null>(null);
   const [view, setView] = useStoredState<ViewMode>(
     "library:view",
     "grid",
@@ -230,8 +235,18 @@ export function LibraryPage() {
             nodes={categories.data ?? []}
             selected={category}
             onSelect={setCategory}
+            onEdit={setEditing}
           />
         </aside>
+
+        <CategoryEditDialog
+          category={editing}
+          tree={categories.data ?? []}
+          onOpenChange={(open) => !open && setEditing(null)}
+          onRenamed={(from, to) =>
+            setCategory((current) => followRenamedCategory(current, from, to))
+          }
+        />
 
         <section aria-label="Páginas" className="space-y-3">
           {documents.data.length === 0 ? (

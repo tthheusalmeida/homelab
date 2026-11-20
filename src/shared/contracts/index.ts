@@ -66,6 +66,8 @@ import type { PlatformLoginsResult } from './platform';
 import type {
   LibraryCategoryNode,
   LibraryClassificationSuggestion,
+  LibraryRenameCategoryRequest,
+  LibraryRenameCategoryResult,
   LibraryCreateArticleRequest,
   LibraryDocumentDetail,
   LibraryDocumentRequest,
@@ -323,6 +325,11 @@ export interface IpcContracts {
 
   [IpcChannels.library.inbox]: { request: void; response: LibraryDocumentSummary[] };
   [IpcChannels.library.categories]: { request: void; response: LibraryCategoryNode[] };
+  /** Renomeia ou move uma categoria; as páginas dela mudam de pasta junto. */
+  [IpcChannels.library.renameCategory]: {
+    request: LibraryRenameCategoryRequest;
+    response: LibraryRenameCategoryResult;
+  };
   [IpcChannels.library.tags]: { request: void; response: LibraryTagCount[] };
   [IpcChannels.library.index]: { request: void; response: LibraryIndexStatus };
 

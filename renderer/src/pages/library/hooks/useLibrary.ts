@@ -23,6 +23,7 @@ import {
   getTags,
   publishDocument,
   reindex,
+  renameCategory,
   saveInfographic,
   saveMindMap,
   saveMindMapImage,
@@ -306,6 +307,17 @@ export function useSuggestClassification() {
   return useMutation({
     mutationFn: ({ id, modelId }: { id: string; modelId?: string }) =>
       suggestClassification(id, modelId),
+  });
+}
+
+/** Renomeia ou move uma categoria; as páginas, a árvore e as tags são lidas de novo. */
+export function useRenameCategory() {
+  const invalidate = useInvalidateLibrary();
+
+  return useMutation({
+    mutationFn: ({ from, to }: { from: string[]; to: string[] }) =>
+      renameCategory(from, to),
+    onSuccess: invalidate,
   });
 }
 

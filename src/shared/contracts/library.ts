@@ -40,6 +40,19 @@ export interface LibraryCategoryNode {
   children: LibraryCategoryNode[];
 }
 
+/** Renomeia ou move uma categoria (e tudo o que há dentro dela) para outro caminho, de 1 a 4 níveis. */
+export interface LibraryRenameCategoryRequest {
+  /** O caminho de hoje (a categoria e, por baixo, as subcategorias vão junto). */
+  from: string[];
+  /** O caminho novo. Se já existir, as páginas se juntam a ele. */
+  to: string[];
+}
+
+export interface LibraryRenameCategoryResult {
+  /** Quantas páginas mudaram de pasta. */
+  moved: number;
+}
+
 export interface LibraryTagCount {
   tag: string;
   count: number;

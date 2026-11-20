@@ -191,6 +191,28 @@ export class LibraryStorage {
     return current;
   }
 
+  /**
+   * Troca só a caixa ou os acentos do nome de uma pasta de categoria ("tecnologia" → "Tecnologia"):
+   * o nome novo tem a mesma chave do antigo, então `resolveCategoryDir` reaproveitaria a pasta com o
+   * nome velho. Aqui a pasta é renomeada de verdade, com tudo o que há dentro. Devolve `false` se a
+   * pasta já tem esse nome.
+   */
+  async renameCategoryFolder(category: string[], newName: string): Promise<boolean> {
+    const dir = await this.resolveCategoryDir(category, false);
+    const [name] = sanitizeCategoryPath([newName]);
+
+    if (path.basename(dir) === name) {
+      return false;
+    }
+
+    const target = path.join(path.dirname(dir), name);
+
+    this.assertWithin(this.libDir, target);
+    await fs.promises.rename(dir, target);
+
+    return true;
+  }
+
   private async findChildDir(parent: string, name: string): Promise<string | null> {
     try {
       const entries = await fs.promises.readdir(parent, {

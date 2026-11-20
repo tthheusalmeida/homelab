@@ -89,6 +89,7 @@ O `chatId` é criado pela tela (uuid) ao abrir um chat novo; o chat **nasce com 
 | `library:documents:get` | `GET library/documents/:id` | `{ id }` | `{ meta, content }` | 6a (feito) |
 | `library:inbox` | `GET library/inbox` | — | resumos `pending`, mais recentes primeiro | 6a (feito) |
 | `library:categories` | `GET library/categories` | — | árvore `{ name, path, count, children }` (só publicados) | 6a (feito) |
+| `library:categories:rename` | (novo, sem equivalente HTTP) | `{ from: string[], to: string[] }` (caminhos de 1 a 4 níveis) | `{ moved }` (páginas que mudaram de pasta) | edição de categorias |
 | `library:tags` | `GET library/tags` | — | `[{ tag, count }]` | 6a (feito) |
 | `library:index` | `GET library/index` | — | `{ total, errors: [{ file, message }] }` | 6a (feito) |
 

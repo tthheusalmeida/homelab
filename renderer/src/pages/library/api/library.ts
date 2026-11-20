@@ -20,6 +20,7 @@ import type {
   LibraryImageFormat,
   LibraryMindMapImageResult,
   LibraryMindMapNode,
+  LibraryRenameCategoryResult,
 } from '#shared/contracts/library';
 import type { InfographicLayoutId } from '#shared/infographic-layouts';
 import { ipc } from '#lib/ipc';
@@ -60,6 +61,14 @@ export function getInbox(): Promise<DocumentSummary[]> {
 
 export function getCategories(): Promise<CategoryNode[]> {
   return ipc.invoke(IpcChannels.library.categories);
+}
+
+/** Renomeia ou move uma categoria (e as subcategorias); as páginas dela mudam de pasta junto. */
+export function renameCategory(
+  from: string[],
+  to: string[],
+): Promise<LibraryRenameCategoryResult> {
+  return ipc.invoke(IpcChannels.library.renameCategory, { from, to });
 }
 
 export function getTags(): Promise<TagCount[]> {

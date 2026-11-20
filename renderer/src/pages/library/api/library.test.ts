@@ -24,6 +24,7 @@ import {
   getTags,
   publishDocument,
   reindex,
+  renameCategory,
   suggestClassification,
   toListFilters,
   updateDocument,
@@ -153,6 +154,24 @@ describe('library api: escrita por IPC', () => {
       tags: ['t'],
       title: 'T',
     });
+  });
+
+  it('when renaming a category, should send both paths and return how many pages moved', async () => {
+    const invoke = mockApi({ [IpcChannels.library.renameCategory]: () => ok({ moved: 2 }) });
+
+    await expect(renameCategory(['A', 'B'], ['C'])).resolves.toEqual({ moved: 2 });
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.renameCategory, {
+      from: ['A', 'B'],
+      to: ['C'],
+    });
+  });
+
+  it('when renaming a category fails, should reject with the reason', async () => {
+    mockApi({
+      [IpcChannels.library.renameCategory]: () => failure('NOT_FOUND', 'Categoria não encontrada.'),
+    });
+
+    await expect(renameCategory(['X'], ['Y'])).rejects.toThrow('Categoria não encontrada.');
   });
 
   it('when archiving, should send the id to library:documents:archive', async () => {

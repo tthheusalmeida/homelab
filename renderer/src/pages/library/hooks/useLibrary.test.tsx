@@ -12,6 +12,7 @@ vi.mock("../api/library", () => ({
   getTags: vi.fn(),
   getIndexStatus: vi.fn(),
   reindex: vi.fn(),
+  renameCategory: vi.fn(),
   publishDocument: vi.fn(),
   archiveDocument: vi.fn(),
   discardDocument: vi.fn(),
@@ -49,6 +50,7 @@ import {
   useMindMap,
   usePublishDocument,
   useReindex,
+  useRenameCategory,
   useSaveInfographic,
   useSaveMindMap,
   useSaveMindMapImage,
@@ -363,6 +365,37 @@ describe("mind map hooks", () => {
 
     await waitFor(() => expect(result.current.generate.error?.message).toBe("falhou"));
     expect(result.current.query.data).toBeNull();
+  });
+});
+
+describe('useRenameCategory', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('when renaming, should send both paths and read the library again', async () => {
+    vi.mocked(library.renameCategory).mockResolvedValue({ moved: 2 });
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(() => useRenameCategory(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ from: ['A'], to: ['B'] });
+    });
+
+    expect(library.renameCategory).toHaveBeenCalledWith(['A'], ['B']);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['library'] });
+  });
+
+  it('when renaming fails, should not read the library again', async () => {
+    vi.mocked(library.renameCategory).mockRejectedValue(new Error('falhou'));
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(() => useRenameCategory(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ from: ['A'], to: ['B'] }).catch(() => {});
+    });
+
+    expect(invalidate).not.toHaveBeenCalled();
   });
 });
 

@@ -1,8 +1,9 @@
 import { useState } from "react";
 
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Pencil } from "lucide-react";
 
 import { Button } from "#ui/button";
+import { IconButton } from "#components/IconButton";
 import { cn } from "#lib/utils";
 import { normalizeKey } from "#lib/text";
 
@@ -13,6 +14,8 @@ interface CategoryTreeProps {
   /** Caminho selecionado; vazio = todas as categorias. */
   selected: string[];
   onSelect: (path: string[]) => void;
+  /** Com isso, cada categoria ganha um lápis (ao passar o mouse ou focar) que pede para editá-la. */
+  onEdit?: (node: CategoryNode) => void;
 }
 
 const pathKey = (path: string[]) => path.map(normalizeKey).join("\u0000");
@@ -24,7 +27,12 @@ function isPrefix(prefix: string[], path: string[]) {
   );
 }
 
-export function CategoryTree({ nodes, selected, onSelect }: CategoryTreeProps) {
+export function CategoryTree({
+  nodes,
+  selected,
+  onSelect,
+  onEdit,
+}: CategoryTreeProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   function toggle(path: string[]) {
@@ -52,7 +60,7 @@ export function CategoryTree({ nodes, selected, onSelect }: CategoryTreeProps) {
     return (
       <li key={pathKey(node.path)}>
         <div
-          className="flex items-center gap-0.5"
+          className="group/cat flex items-center gap-0.5"
           style={{ paddingLeft: `${depth * 12}px` }}
         >
           {hasChildren ? (
@@ -82,6 +90,18 @@ export function CategoryTree({ nodes, selected, onSelect }: CategoryTreeProps) {
 
             <span className="text-xs text-muted-foreground">{node.count}</span>
           </Button>
+
+          {onEdit && (
+            <IconButton
+              label={`Editar a categoria ${node.name}`}
+              variant="ghost"
+              size="icon-xs"
+              className="shrink-0 opacity-0 transition-opacity group-hover/cat:opacity-100 focus-visible:opacity-100"
+              onClick={() => onEdit(node)}
+            >
+              <Pencil />
+            </IconButton>
+          )}
         </div>
 
         {hasChildren && isOpen && (
