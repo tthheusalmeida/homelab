@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 import { createTmpLibrary, type TmpLibrary } from '../../../testing/tmp-library';
+import { BOOKS_FOLDER } from '../infrastructure/book-storage';
 import { LibraryIndex } from '../infrastructure/library-index';
 
 import { LibrarySearch } from './library-search';
@@ -108,6 +109,29 @@ describe('LibraryService: categorias explícitas (pastas, mesmo vazias)', () => 
       fs.mkdirSync(dir('Boa'), { recursive: true });
 
       expect(await names()).toEqual(['Boa']);
+    });
+
+    it('when the library has the books folder, should not list it as a category', async () => {
+      fs.mkdirSync(dir(BOOKS_FOLDER), { recursive: true });
+      fs.writeFileSync(dir(BOOKS_FOLDER, 'um-livro.json'), '{}');
+      fs.mkdirSync(dir('Tecnologia'), { recursive: true });
+
+      expect(await names()).toEqual(['Tecnologia']);
+    });
+
+    it('when creating, renaming or moving to the name of the books folder, should refuse', async () => {
+      await article('Docker', ['Tecnologia']);
+
+      await expect(service.createCategory([BOOKS_FOLDER])).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      await expect(service.createCategory(['Tecnologia', '_LIVROS'])).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      await expect(service.renameCategory(['Tecnologia'], [BOOKS_FOLDER])).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      expect(await names()).toEqual(['Tecnologia']);
     });
 
     it('when folders go beyond 4 levels, should list only the first 4', async () => {
