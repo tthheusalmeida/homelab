@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { dismissGeneration, isGenerationDismissed } from '#lib/dismissed-generation';
 import type { LibraryInfographic } from '#shared/contracts/library';
 
 const saved = vi.hoisted(() => ({
@@ -409,6 +410,30 @@ describe('SummaryInfographic delete', () => {
 
     expect(generate.mutate).not.toHaveBeenCalled();
     expect(screen.getByText('Este resumo ainda não tem infográfico')).toBeInTheDocument();
+  });
+
+  it('when the user deleted it on purpose before (even in another session), should not generate by itself and let the button generate again', async () => {
+    dismissGeneration('infographic', currentId);
+    renderTab();
+
+    expect(generate.mutate).not.toHaveBeenCalled();
+    expect(screen.getByText('Este resumo ainda não tem infográfico')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /Gerar infográfico/ }));
+
+    expect(generate.mutate).toHaveBeenCalledTimes(1);
+    expect(isGenerationDismissed('infographic', currentId)).toBe(false);
+  });
+
+  it('when the user confirms the delete, should remember it for the next sessions', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await userEvent.click(deleteButton());
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Excluir só o infográfico' }),
+    );
+
+    expect(isGenerationDismissed('infographic', currentId)).toBe(true);
   });
 
   it('when deleting fails, should show the reason inside the dialog and keep it open', async () => {

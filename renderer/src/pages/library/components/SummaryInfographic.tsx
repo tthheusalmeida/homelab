@@ -6,6 +6,11 @@ import { isDraftDirty, pieceAt, toSaveInput, withPiece } from '#lib/infographic-
 import { textAt, withText, type TextTarget } from '#lib/infographic-text-edit';
 import { captureInfographicPng } from '#lib/infographic-image';
 import {
+  allowGeneration,
+  dismissGeneration,
+  isGenerationDismissed,
+} from '#lib/dismissed-generation';
+import {
   AUTO_LAYOUT,
   infographicImageName,
   LAYOUT_OPTIONS,
@@ -90,8 +95,10 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
   const data = saved.data ?? null;
   const failed = generate.isError && !pending;
 
-  const generateNow = () =>
+  const generateNow = () => {
+    allowGeneration("infographic", documentId);
     generate.mutate({ id: documentId, layout: choice === AUTO_LAYOUT ? undefined : choice });
+  };
   // Infográfico editado à mão: gerar de novo apagaria as edições, então pergunta antes.
   const requestGenerate = () => (saved.data?.edited ? setConfirm('regenerate') : generateNow());
 
@@ -139,7 +146,11 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
   const missing = !saved.isPending && saved.data === null;
 
   useEffect(() => {
-    if (missing && !requestedThisSession.has(documentId)) {
+    if (
+      missing &&
+      !requestedThisSession.has(documentId) &&
+      !isGenerationDismissed("infographic", documentId)
+    ) {
       requestedThisSession.add(documentId);
       generate.mutate({ id: documentId });
     }
@@ -147,11 +158,13 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [missing, documentId]);
 
-  // Excluir só o infográfico: marca a página como "já tentada" antes, para a aba não gerar outro sozinha.
+  // Excluir só o infográfico: marca a página como "já tentada" e "excluída de propósito" (guardado
+  // entre sessões), para a aba não gerar outro sozinha. Só o botão Gerar volta a gerar.
   const deleteNow = () => {
     requestedThisSession.add(documentId);
     deleteInfographic.mutate(documentId, {
       onSuccess: () => {
+        dismissGeneration("infographic", documentId);
         setConfirmDelete(false);
         snackbar.success('Infográfico excluído.');
       },
