@@ -1,14 +1,10 @@
 import { useState } from "react";
 
-import { Loader2 } from "lucide-react";
-
-import { Button } from "#ui/button";
-import { DialogFooter, DialogForm } from "#ui/dialog";
+import { DialogForm } from "#ui/dialog";
 
 import { useAiModels } from "../../../ai/chat/hooks/useAiModels";
 import { useAiProviders } from "../../../ai/chat/hooks/useAiProviders";
 import { useAiThinking } from "../../../ai/chat/hooks/useAiThinking";
-import { buildDocumentHints } from "../hints";
 import {
   DEFAULT_SUMMARY_DETAIL,
   isSummaryDetail,
@@ -16,9 +12,9 @@ import {
   type SummaryDetail,
 } from "../summary-detail";
 import { useCreateVideoToSummary } from "../hooks/useCreateVideoToSummary";
-import { useLinksField } from "../hooks/useLinksField";
-import { VideoUrlStrings } from "../video-url-text";
+import { useVideoJobForm } from "../hooks/useVideoJobForm";
 import { JobDocumentFields } from "./JobDocumentFields";
+import { VideoJobFooter } from "./VideoJobFooter";
 import { VideoUrlField } from "./VideoUrlField";
 import { OptionSelect } from "#components/OptionSelect";
 
@@ -28,10 +24,6 @@ interface VideoToSummaryFormProps {
 }
 
 export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
-  const links = useLinksField();
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<string[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
   const [providerId, setProviderId] = useState<string>();
   const [modelId, setModelId] = useState<string>();
   const [thinkingId, setThinkingId] = useState<string>();
@@ -50,12 +42,8 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
     });
 
   const createJob = useCreateVideoToSummary();
-  const [sent, setSent] = useState(false);
-
-  const isBatch = links.urls.length > 1;
-
-  // Travado enquanto envia e depois de enviar: evita criar o mesmo job duas vezes.
-  const locked = createJob.isPending || sent;
+  const form = useVideoJobForm(createJob, onCreated);
+  const { links, locked } = form;
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -64,29 +52,7 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
       return;
     }
 
-    if (locked || !links.canSubmit) {
-      return;
-    }
-
-    createJob.mutate(
-      {
-        urls: links.urls,
-        providerId,
-        modelId,
-        thinking: thinkingId,
-        detail,
-        // Com vários links o título único não vale: cada documento usa o padrão.
-        ...buildDocumentHints({ title: isBatch ? "" : title, category, tags }),
-      },
-      {
-        onSuccess: (result) => {
-          if (links.applyResult(result)) {
-            setSent(true);
-            onCreated?.();
-          }
-        },
-      },
-    );
+    form.submit({ providerId, modelId, thinking: thinkingId, detail });
   };
 
   const handleProviderChange = (value: string | null) => {
@@ -168,37 +134,15 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
       <JobDocumentFields
         idPrefix="summary"
         defaultTitle="Resumo de vídeo"
-        title={title}
-        onTitleChange={setTitle}
-        category={category}
-        onCategoryChange={setCategory}
-        tags={tags}
-        onTagsChange={setTags}
-        disabled={locked}
-        isBatch={isBatch}
+        {...form.documentFields}
       />
 
-      {createJob.isError && (
-        <p className="text-sm text-destructive">
-          Não foi possível criar o job. Tente novamente.
-        </p>
-      )}
-
-      <DialogFooter>
-        <Button
-          type="submit"
-          disabled={
-            !links.canSubmit ||
-            !providerId ||
-            !modelId ||
-            !thinkingId ||
-            locked
-          }
-        >
-          {createJob.isPending && <Loader2 className="animate-spin" />}
-          {VideoUrlStrings.submit(links.urls.length)}
-        </Button>
-      </DialogFooter>
+      <VideoJobFooter
+        linkCount={links.urls.length}
+        canSubmit={links.canSubmit && !!providerId && !!modelId && !!thinkingId && !locked}
+        isPending={createJob.isPending}
+        isError={createJob.isError}
+      />
     </DialogForm>
   );
 }
