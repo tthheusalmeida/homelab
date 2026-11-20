@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-
 import { Autocomplete } from "@base-ui/react/autocomplete";
 
 import { Input } from "#ui/input";
@@ -54,12 +52,11 @@ export function SuggestInput({
               )}
             >
               <Autocomplete.List>
-                {(suggestion: string, index: number) => (
+                {(suggestion: string) => (
                   <Autocomplete.Item
                     key={suggestion}
                     value={suggestion}
                     className={cn(popupItem, "pr-2")}
-                    style={{ "--i": index } as CSSProperties}
                   >
                     {suggestion}
                   </Autocomplete.Item>

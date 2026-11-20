@@ -74,7 +74,7 @@ Toda seção usa `SettingsGroup` (título mono em maiúsculas, dica e conteúdo)
 ## Tooltip, listas e campos com sugestão (sem controles nativos)
 O app **não usa** o `title` do navegador, o `<select>` nem o `<datalist>`: não seguem o tema nem a identidade. O teste `renderer/src/native-controls.test.ts` falha se algum voltar.
 - **Tooltip = `components/Tip.tsx`**: `<Tip content="texto">…controle…</Tip>` (200 ms de espera; também ao focar). `content` vazio desliga o tooltip sem remontar o controle (serve para dica condicional). Controle desabilitado não recebe o mouse: use `wrap` para explicar o motivo. `IconButton` e `TruncatedText` são `Tip` com forma pronta.
-- **Escolha entre opções = `OptionSelect`** (sobre `ui/select`); **texto livre com sugestões = `SuggestInput`** (lista do mesmo desenho). Menus (`ui/dropdown-menu`), selects e sugestões compartilham `ui/popup.tsx` (superfície, item, rótulo e animação de abrir); os itens entram em cascata curta (`animate-menu-item`, `--i`).
+- **Escolha entre opções = `OptionSelect`** (sobre `ui/select`); **texto livre com sugestões = `SuggestInput`** (lista do mesmo desenho). Menus (`ui/dropdown-menu`), selects e sugestões compartilham `ui/popup.tsx` (superfície, item, rótulo e animação de abrir); os itens não têm animação própria (só o popup abre e fecha), para o texto não esmaecer.
 
 ## Botão só com ícone (`IconButton`)
 Ações que o ícone já diz (zoom, ajustar, baixar, modo leitura...) usam `components/IconButton.tsx`: botão `icon-sm` outline com o **tooltip da ação** (200 ms de espera; também ao focar com o teclado) e o mesmo texto como nome acessível. Não monte `Button` + `title` à mão. Botão desabilitado não mostra o tooltip. Chamadas para ação dentro de avisos (ex.: "Tentar de novo") continuam com texto.
