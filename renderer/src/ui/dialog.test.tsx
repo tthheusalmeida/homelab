@@ -227,3 +227,27 @@ describe('DialogBody (long content)', () => {
     expect(body).toHaveClass('overflow-y-auto');
   });
 });
+
+describe('DialogHeader close button', () => {
+  it('when the header has only a title, should still be tall enough for the close button not to cross the line below', () => {
+    render(
+      <Dialog open>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sobre a página</DialogTitle>
+          </DialogHeader>
+
+          <p>conteúdo</p>
+        </DialogContent>
+      </Dialog>,
+    );
+
+    const header = screen.getByText('Sobre a página').parentElement;
+    const close = screen.getByRole('button', { name: 'Close' });
+
+    // 16px de topo + 32px do botão = 48px; o cabeçalho tem no mínimo 3,5rem (56px)
+    expect(header).toHaveClass('min-h-[3.5rem]', 'border-b');
+    expect(close).toHaveClass('top-4');
+    expect(close).toHaveClass('size-8');
+  });
+});

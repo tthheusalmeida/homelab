@@ -80,3 +80,27 @@ describe('PiecePickerDialog', () => {
     expect(screen.queryByText('Trocar a peça')).not.toBeInTheDocument();
   });
 });
+
+describe('PiecePickerDialog scrolling', () => {
+  it('when the list scrolls, should keep the search fixed at the top of the dialog body', () => {
+    setup();
+
+    const row = screen.getByRole('searchbox').closest('.sticky') as HTMLElement;
+
+    expect(row).toHaveClass('sticky', 'top-0', 'z-10', 'bg-popover');
+    // sem o espaçamento de cima do miolo, as peças não aparecem entre o cabeçalho e a busca
+    expect(screen.getByRole('dialog').querySelector('[data-slot=dialog-body]')).toHaveClass('pt-0');
+    expect(screen.getByRole('dialog').querySelector('[data-slot=dialog-body]')).toContainElement(
+      row,
+    );
+  });
+
+  it('when scrolling, should use only the scroll of the dialog body (no second scroll inside it)', () => {
+    setup();
+
+    const body = screen.getByRole('dialog').querySelector('[data-slot=dialog-body]') as HTMLElement;
+
+    expect(body.querySelectorAll('.overflow-y-auto')).toHaveLength(0);
+    expect(body.innerHTML).not.toContain('max-h-[60vh]');
+  });
+});

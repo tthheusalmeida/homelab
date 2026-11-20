@@ -42,3 +42,29 @@ describe("PaperPage", () => {
     expect(sheet).not.toHaveClass("max-w-3xl");
   });
 });
+
+describe("PaperPage thumbnail fixed size", () => {
+  it("when it is a thumbnail, should keep the 3:4 proportion and clip the content instead of growing", () => {
+    const { container } = render(
+      <PaperPage variant="sheet" size="thumb">
+        <p>conteúdo</p>
+      </PaperPage>,
+    );
+    const sheet = container.querySelector("[data-slot=paper-page]");
+
+    expect(sheet).toHaveClass("aspect-[3/4]", "overflow-hidden");
+    expect(sheet?.firstElementChild).toHaveClass("min-h-0", "overflow-hidden");
+  });
+
+  it("when it is the full page, should not clip it", () => {
+    const { container } = render(
+      <PaperPage variant="sheet">
+        <p>conteúdo</p>
+      </PaperPage>,
+    );
+    const sheet = container.querySelector("[data-slot=paper-page]");
+
+    expect(sheet).not.toHaveClass("overflow-hidden");
+    expect(sheet?.firstElementChild).not.toHaveClass("overflow-hidden");
+  });
+});

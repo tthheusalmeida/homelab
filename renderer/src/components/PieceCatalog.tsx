@@ -23,6 +23,8 @@ interface PieceCatalogProps {
   selected?: string;
   /** Mostra a chave e as palavras-chave de cada peça (a galeria); desligado, só o nome (o seletor). */
   details?: boolean;
+  /** Classes da linha da busca e do contador (o seletor a deixa fixa no topo ao rolar). */
+  searchClassName?: string;
   className?: string;
 }
 
@@ -30,7 +32,13 @@ interface PieceCatalogProps {
  * O banco de peças do infográfico por tema, com busca (sem acento, por nome, chave, palavra-chave ou
  * tema). Serve à galeria das Configurações (para ver) e ao seletor de troca (para escolher).
  */
-export function PieceCatalog({ onPick, selected, details = true, className }: PieceCatalogProps) {
+export function PieceCatalog({
+  onPick,
+  selected,
+  details = true,
+  searchClassName,
+  className,
+}: PieceCatalogProps) {
   const [query, setQuery] = useState('');
 
   const groups = useMemo(() => {
@@ -54,7 +62,7 @@ export function PieceCatalog({ onPick, selected, details = true, className }: Pi
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className={cn('flex flex-wrap items-center gap-3', searchClassName)}>
         <SearchInput
           value={query}
           onChange={setQuery}
@@ -88,7 +96,10 @@ export function PieceCatalog({ onPick, selected, details = true, className }: Pi
                 <>
                   <InfographicPiece pieceKey={piece.key} className="w-16" />
 
-                  <b className="text-sm leading-tight">{piece.name}</b>
+                  {/* Duas linhas de altura fixa: todos os cartões ficam do mesmo tamanho, e nome maior que isso vira reticências (o nome inteiro fica no tooltip). */}
+                  <span className="flex h-9 w-full items-center justify-center">
+                    <b className="line-clamp-2 text-sm leading-tight">{piece.name}</b>
+                  </span>
 
                   {details && (
                     <>
@@ -104,13 +115,14 @@ export function PieceCatalog({ onPick, selected, details = true, className }: Pi
                 </>
               );
               const box =
-                'flex w-full flex-col items-center gap-1.5 rounded-lg border bg-card p-3 text-center';
+                'flex h-full w-full flex-col items-center gap-1.5 rounded-lg border bg-card p-3 text-center';
 
               return (
                 <li key={piece.key}>
                   {onPick ? (
                     <button
                       type="button"
+                      title={piece.name}
                       aria-pressed={piece.key === selected}
                       onClick={() => onPick(piece.key)}
                       className={cn(
@@ -122,7 +134,9 @@ export function PieceCatalog({ onPick, selected, details = true, className }: Pi
                       {content}
                     </button>
                   ) : (
-                    <div className={box}>{content}</div>
+                    <div title={piece.name} className={box}>
+                      {content}
+                    </div>
                   )}
                 </li>
               );

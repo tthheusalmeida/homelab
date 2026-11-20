@@ -75,3 +75,51 @@ describe('PieceCatalog', () => {
     expect(screen.getByRole('status')).toHaveTextContent(CatalogStrings.empty);
   });
 });
+
+describe('PieceCatalog search row', () => {
+  it('when a class is given for the search row, should apply it to the row with the search and the count', () => {
+    render(<PieceCatalog searchClassName="sticky top-0" />);
+
+    const row = screen.getByRole('searchbox').closest('.sticky');
+
+    expect(row).not.toBeNull();
+    expect(row).toContainElement(screen.getByText(/peças em 21 grupos/));
+  });
+
+  it('when no class is given, should not make the search row sticky', () => {
+    render(<PieceCatalog />);
+
+    expect(screen.getByRole('searchbox').closest('.sticky')).toBeNull();
+  });
+});
+
+describe('PieceCatalog fixed size', () => {
+  it('when listing the pieces, should give every card the same height and the name a fixed two-line box', () => {
+    render(<PieceCatalog onPick={vi.fn()} details={false} />);
+
+    const cards = screen.getAllByRole('button');
+
+    expect(cards.length).toBe(INFOGRAPHIC_PIECES.length);
+
+    for (const card of cards) {
+      expect(card).toHaveClass('h-full', 'w-full');
+      expect(card.querySelector('b')).toHaveClass('line-clamp-2');
+      expect(card.querySelector('b')?.parentElement).toHaveClass('h-9');
+    }
+  });
+
+  it('when a name is long, should keep it whole in the tooltip of the card', () => {
+    render(<PieceCatalog onPick={vi.fn()} details={false} />);
+
+    expect(screen.getByTitle('Câmera de segurança')).toBeInTheDocument();
+    expect(screen.getByTitle('Controle de videogame')).toBeInTheDocument();
+  });
+
+  it('when only viewing, should also give each card the tooltip and the same size', () => {
+    render(<PieceCatalog />);
+
+    const card = screen.getByTitle('Notebook');
+
+    expect(card).toHaveClass('h-full');
+  });
+});

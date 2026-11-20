@@ -170,7 +170,9 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="dialog-header"
       className={cn(
         // Fora da rolagem: só o miolo rola. Sem miolo entre ele e o rodapé, o rodapé já traz a borda.
-        "flex shrink-0 flex-col gap-1 border-b bg-popover px-5 pt-4 pr-12 pb-3 has-[+[data-slot=dialog-footer]]:border-b-0",
+        // A altura mínima (3,5rem) é a do "x" de fechar (16px de topo + 32px de botão + folga): com
+        // só o título, sem ela o "x" passaria da linha que separa o cabeçalho do miolo.
+        "flex min-h-[3.5rem] shrink-0 flex-col justify-center gap-1 border-b bg-popover px-5 pt-4 pr-12 pb-3 has-[+[data-slot=dialog-footer]]:border-b-0",
         className
       )}
       {...props}

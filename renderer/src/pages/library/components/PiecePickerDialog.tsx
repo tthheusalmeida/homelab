@@ -2,6 +2,13 @@ import { PieceCatalog } from '#components/PieceCatalog';
 import { pieceName } from '#components/InfographicPiece';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '#ui/dialog';
 
+/**
+ * A busca fica fixa no topo do miolo que rola do diálogo (o miolo fica sem o espaçamento de cima,
+ * `pt-0`, para as peças não aparecerem entre o cabeçalho e a busca). A margem lateral negativa
+ * cancela o espaçamento do miolo (`px-5`) para o fundo cobrir a largura toda.
+ */
+const SEARCH_STICKY = 'sticky top-0 z-10 -mx-5 bg-popover px-5 py-3';
+
 interface PiecePickerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -22,7 +29,7 @@ export function PiecePickerDialog({
 }: PiecePickerDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl sm:max-w-3xl">
+      <DialogContent className="max-w-3xl sm:max-w-3xl" bodyClassName="pt-0">
         <DialogHeader>
           <DialogTitle>Trocar a peça</DialogTitle>
 
@@ -33,9 +40,12 @@ export function PiecePickerDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[60vh] overflow-y-auto pr-1">
-          <PieceCatalog details={false} selected={currentKey} onPick={onPick} />
-        </div>
+        <PieceCatalog
+          details={false}
+          selected={currentKey}
+          onPick={onPick}
+          searchClassName={SEARCH_STICKY}
+        />
       </DialogContent>
     </Dialog>
   );

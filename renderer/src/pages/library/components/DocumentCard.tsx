@@ -70,7 +70,10 @@ export function DocumentCard({
 
             <Link
               to={`/library/${document.id}`}
-              className="line-clamp-3 font-serif text-[15px] leading-snug font-semibold text-stone-900 after:absolute after:inset-0 hover:underline"
+              title={document.title}
+              // Altura fixa de 3 linhas (3 x 15px x 1,375): títulos curtos e longos ocupam o mesmo espaço e o
+              // texto abaixo começa sempre no mesmo ponto; o que passar vira reticências (o nome inteiro fica no tooltip).
+              className="line-clamp-3 h-[3.875rem] overflow-hidden font-serif text-[15px] leading-snug font-semibold text-stone-900 after:absolute after:inset-0 hover:underline"
             >
               {document.title}
             </Link>
@@ -78,7 +81,7 @@ export function DocumentCard({
             <span aria-hidden className="block h-px w-8 bg-stone-300" />
 
             {previewWithoutTitle(document.preview ?? "", document.title) && (
-              <p className="line-clamp-5 font-serif text-[11px] leading-relaxed text-stone-600">
+              <p className="line-clamp-4 font-serif text-[11px] leading-relaxed text-stone-600">
                 {previewWithoutTitle(document.preview ?? "", document.title)}
               </p>
             )}
