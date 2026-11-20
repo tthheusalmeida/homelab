@@ -24,6 +24,10 @@ import { services } from "./pages/home/types/services.types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "#ui/collapsible";
 
 describe("motion css", () => {
+  it("when pressing the select button, should not shrink it like other buttons", () => {
+    expect(css).toContain('button:not(:disabled):not([data-slot="select-trigger"]):active');
+  });
+
   it.each([
     "animate-enter",
     "animate-enter-fade",

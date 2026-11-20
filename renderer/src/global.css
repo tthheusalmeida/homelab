@@ -925,8 +925,8 @@
     transition-timing-function: var(--ease-out-soft);
   }
 
-  /* Botões afundam um pouco ao clicar. */
-  button:not(:disabled):active,
+  /* Botões afundam um pouco ao clicar (menos o botão do select, que não pode mudar de tamanho ao abrir a lista). */
+  button:not(:disabled):not([data-slot="select-trigger"]):active,
   [role="button"]:not([aria-disabled="true"]):active {
     transform: scale(0.97);
   }
