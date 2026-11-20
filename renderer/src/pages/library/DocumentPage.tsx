@@ -5,12 +5,9 @@ import { ArrowLeft, FileText, LayoutPanelTop, Network } from "lucide-react";
 
 import { InboxStrings } from "#lib/inbox-text";
 import { Button } from "#ui/button";
-import { Card, CardContent } from "#ui/card";
 
 import { BackToTopButton } from "#components/BackToTopButton";
 import { ConfirmDialog } from "#components/ConfirmDialog";
-import { ErrorState } from "#components/ErrorState";
-import { LoadingState } from "#components/LoadingState";
 import { OptionToggle, type ToggleOption } from "#components/OptionToggle";
 import { DocumentBody } from "#components/DocumentBody";
 import { ReadingMode } from "#components/ReadingMode";
@@ -41,6 +38,7 @@ import {
 } from "./hooks/useLibrary";
 import { documentTypeLabels } from "./types/library.types";
 import { useSnackbar } from "#components/Snackbar";
+import { PageLoading, PageError } from "#components/PageState";
 
 type Modal = "about" | "edit" | "remove" | "book" | "delete" | null;
 
@@ -104,24 +102,18 @@ export function DocumentPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[80dvh] items-center justify-center">
-        <LoadingState message="Carregando" />
-      </div>
+      <PageLoading />
     );
   }
 
   if (isError || !data) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center">
-          <ErrorState
-            primaryMessage="Oops! não foi possível abrir a página."
-            secondaryMessage="Ela pode ter sido removida ou o servidor está indisponível."
-            actionLabel="Voltar à biblioteca"
-            action={() => navigate("/library")}
-          />
-        </CardContent>
-      </Card>
+      <PageError
+        primaryMessage="Oops! não foi possível abrir a página."
+        secondaryMessage="Ela pode ter sido removida ou o servidor está indisponível."
+        actionLabel="Voltar à biblioteca"
+        action={() => navigate("/library")}
+      />
     );
   }
 

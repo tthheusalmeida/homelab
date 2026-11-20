@@ -9,18 +9,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from "#ui/dialog";
-import { Card, CardContent } from "#ui/card";
 
-import { ErrorState } from "#components/ErrorState";
 import { PageHeader } from "#components/PageHeader";
 import { useSnackbar } from "#components/Snackbar";
-import { LoadingState } from "#components/LoadingState";
 
 import { JobTypeList } from "./components/JobTypeList";
 import { JobForm } from "./components/JobForm";
 import { useJobTypes } from "./hooks/useJobsTypes";
 
 import { type JobType } from "../types/job.types";
+import { PageLoading, PageError } from "#components/PageState";
 
 export function CreatePage() {
   const [selectedJobType, setSelectedJobType] = useState<JobType | null>(null);
@@ -31,22 +29,16 @@ export function CreatePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[80dvh] items-center justify-center">
-        <LoadingState message="Carregando" />
-      </div>
+      <PageLoading />
     );
   }
 
   if (isError || !data) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center">
-          <ErrorState
-            primaryMessage="Oops! houve uma falha ao carregar os tipos de jobs."
-            secondaryMessage="Tente novamente mais tarde."
-          />
-        </CardContent>
-      </Card>
+      <PageError
+        primaryMessage="Oops! houve uma falha ao carregar os tipos de jobs."
+        secondaryMessage="Tente novamente mais tarde."
+      />
     );
   }
 

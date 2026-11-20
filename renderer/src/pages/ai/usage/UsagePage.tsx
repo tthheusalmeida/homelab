@@ -4,18 +4,17 @@ import { useAiUsage } from "./hooks/useAiUsage";
 import type { AIProviderName } from "./types/ai.types";
 
 import { Button } from "../../../ui/button";
-import { Card, CardContent } from "../../../ui/card";
 
 import { UsageSummary } from "./components/UsageSummary";
 import { UsageTimeline } from "./components/UsageTimeline";
 import { ProviderUsage } from "./components/ProviderUsage";
 import { ModelUsage } from "./components/ModelUsage";
 import { RecentRequests } from "./components/RecentRequests";
-import { LoadingState } from "../../../components/LoadingState";
-import { ErrorState } from "../../../components/ErrorState";
 import { ExternalLink } from "#components/ExternalLink";
 import { PROVIDER_CONSOLES } from "#lib/provider-consoles";
 import { PageHeader } from "#components/PageHeader";
+import { PageLoading, PageError } from "#components/PageState";
+import { Card, CardContent } from "../../../ui/card";
 
 export function UsagePage() {
   const [provider, setProvider] = useState<AIProviderName>();
@@ -26,22 +25,16 @@ export function UsagePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[80dvh] items-center justify-center">
-        <LoadingState message="Carregando" />
-      </div>
+      <PageLoading />
     );
   }
 
   if (isError || !data) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center">
-          <ErrorState
-            primaryMessage="Oops! houve falha ao carregar o uso de IA"
-            secondaryMessage="Tente novamente mais tarde."
-          />
-        </CardContent>
-      </Card>
+      <PageError
+        primaryMessage="Oops! houve falha ao carregar o uso de IA"
+        secondaryMessage="Tente novamente mais tarde."
+      />
     );
   }
 

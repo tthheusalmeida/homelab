@@ -17,7 +17,6 @@ import {
 
 
 import { Button } from "#ui/button";
-import { Card, CardContent } from "#ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,8 +29,6 @@ import { extractHeadings } from "#lib/markdown";
 import { BackToTopButton } from "#components/BackToTopButton";
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { EmptyState } from "#components/EmptyState";
-import { ErrorState } from "#components/ErrorState";
-import { LoadingState } from "#components/LoadingState";
 import { ReadingMode } from "#components/ReadingMode";
 import { ReadingSurface } from "#components/ReadingSurface";
 import { useActiveSection } from "#hooks/use-active-section";
@@ -67,6 +64,7 @@ import {
 import { bookStats } from "./stats";
 import type { BookSearchHit } from "./types";
 import { useSnackbar } from "#components/Snackbar";
+import { PageLoading, PageError } from "#components/PageState";
 
 type Modal = "organize" | "edit" | "delete" | "details" | "reset" | null;
 
@@ -239,24 +237,18 @@ export function BookPage() {
 
   if (reading.isLoading) {
     return (
-      <div className="flex min-h-[80dvh] items-center justify-center">
-        <LoadingState message="Carregando" />
-      </div>
+      <PageLoading />
     );
   }
 
   if (reading.isError || !reading.data) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center">
-          <ErrorState
-            primaryMessage="Oops! não foi possível abrir o livro."
-            secondaryMessage="Ele pode ter sido removido ou o servidor está indisponível."
-            actionLabel="Voltar aos livros"
-            action={() => navigate("/library/books")}
-          />
-        </CardContent>
-      </Card>
+      <PageError
+        primaryMessage="Oops! não foi possível abrir o livro."
+        secondaryMessage="Ele pode ter sido removido ou o servidor está indisponível."
+        actionLabel="Voltar aos livros"
+        action={() => navigate("/library/books")}
+      />
     );
   }
 

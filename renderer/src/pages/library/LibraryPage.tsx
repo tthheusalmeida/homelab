@@ -5,13 +5,10 @@ import { Inbox, SearchX, Library as LibraryIcon } from "lucide-react";
 
 import { InboxStrings } from "#lib/inbox-text";
 import { Button, buttonVariants } from "#ui/button";
-import { Card, CardContent } from "#ui/card";
 
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { EmptyState } from "#components/EmptyState";
 import { useSnackbar } from "#components/Snackbar";
-import { ErrorState } from "#components/ErrorState";
-import { LoadingState } from "#components/LoadingState";
 import { OptionSelect } from "#components/OptionSelect";
 import { SearchInput } from "#components/SearchInput";
 import { useDebouncedValue } from "#hooks/use-debounced-value";
@@ -52,6 +49,7 @@ import {
   type SortOption,
 } from "./types/library.types";
 import { PageHeader } from "#components/PageHeader";
+import { PageLoading, PageError } from "#components/PageState";
 
 const ALL = "all";
 
@@ -219,23 +217,17 @@ export function LibraryPage() {
 
   if (documents.isLoading) {
     return (
-      <div className="flex min-h-[80dvh] items-center justify-center">
-        <LoadingState message="Carregando" />
-      </div>
+      <PageLoading />
     );
   }
 
   if (documents.isError || !documents.data) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center">
-          <ErrorState
-            primaryMessage="Oops! houve uma falha ao carregar a biblioteca."
-            secondaryMessage="Tente novamente mais tarde."
-            action={() => void documents.refetch()}
-          />
-        </CardContent>
-      </Card>
+      <PageError
+        primaryMessage="Oops! houve uma falha ao carregar a biblioteca."
+        secondaryMessage="Tente novamente mais tarde."
+        action={() => void documents.refetch()}
+      />
     );
   }
 

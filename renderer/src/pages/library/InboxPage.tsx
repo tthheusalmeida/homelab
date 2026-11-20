@@ -5,12 +5,9 @@ import { Inbox, Plus, RefreshCw, Trash2 } from "lucide-react";
 
 import { InboxStrings } from "#lib/inbox-text";
 import { Button, buttonVariants } from "#ui/button";
-import { Card, CardContent } from "#ui/card";
 
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { EmptyState } from "#components/EmptyState";
-import { ErrorState } from "#components/ErrorState";
-import { LoadingState } from "#components/LoadingState";
 
 import { DocumentCard } from "./components/DocumentCard";
 import { PublishDialog } from "./components/PublishDialog";
@@ -24,6 +21,9 @@ import {
 import type { DocumentSummary } from "./types/library.types";
 import { useSnackbar } from "#components/Snackbar";
 import { PageHeader } from "#components/PageHeader";
+import { PageError } from "#components/PageState";
+import { Card, CardContent } from "#ui/card";
+import { LoadingState } from "#components/LoadingState";
 
 type View = "pending" | "archived";
 
@@ -132,15 +132,11 @@ export function InboxPage() {
           <LoadingState message="Carregando" />
         </div>
       ) : current.isError || !current.data ? (
-        <Card>
-          <CardContent className="py-10 text-center">
-            <ErrorState
-              primaryMessage="Oops! houve uma falha ao carregar as páginas."
-              secondaryMessage="Tente novamente mais tarde."
-              action={() => void current.refetch()}
-            />
-          </CardContent>
-        </Card>
+        <PageError
+          primaryMessage="Oops! houve uma falha ao carregar as páginas."
+          secondaryMessage="Tente novamente mais tarde."
+          action={() => void current.refetch()}
+        />
       ) : current.data.length === 0 ? (
         view === "pending" ? (
           <EmptyState
