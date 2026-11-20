@@ -286,7 +286,7 @@ export const INFOGRAPHIC_PIECES: readonly InfographicPieceInfo[] = [
     key: 'financas.percentual',
     theme: 'financas',
     name: 'Percentual',
-    tags: 'taxa desconto juros porcentagem',
+    tags: 'taxa desconto juros porcentagem número valor proporção medida',
   },
   {
     key: 'financas.lingote',
@@ -778,7 +778,7 @@ export const INFOGRAPHIC_PIECES: readonly InfographicPieceInfo[] = [
     key: 'ciencia.cerebro',
     theme: 'ciencia',
     name: 'Cérebro',
-    tags: 'neurociência mente cognição aprendizado',
+    tags: 'neurociência mente cognição aprendizado emoção emocional ativação memória reação',
   },
   { key: 'casa.casa', theme: 'casa', name: 'Casa', tags: 'moradia imóvel lar residência' },
   { key: 'casa.sofa', theme: 'casa', name: 'Sofá', tags: 'sala conforto móvel decoração' },
@@ -979,7 +979,7 @@ export const INFOGRAPHIC_PIECES: readonly InfographicPieceInfo[] = [
     key: 'energia.raio',
     theme: 'energia',
     name: 'Raio',
-    tags: 'eletricidade potência rápido força',
+    tags: 'eletricidade potência rápido força ativação gatilho impulso reação',
   },
   {
     key: 'energia.bateria',
@@ -1152,7 +1152,7 @@ export const INFOGRAPHIC_PIECES: readonly InfographicPieceInfo[] = [
     key: 'generico.coracao',
     theme: 'generico',
     name: 'Coração',
-    tags: 'amor cuidado favorito afeto',
+    tags: 'amor cuidado favorito afeto emoção emocional sentimento paixão',
   },
   { key: 'generico.mais', theme: 'generico', name: 'Adicionar', tags: 'mais novo incluir somar' },
   {

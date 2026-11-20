@@ -1211,12 +1211,9 @@
 
 /* Infográfico: peças no estilo papel facetado (desenho em viewBox 100x100; ver docs/infografico.md).
    Os tons usam só os tokens do app, então acompanham tema e cor de destaque. O contorno de adesivo
-   (`--ig-edge`) é branco no tema claro e um cinza suave no escuro, para não estourar. */
+   (`--ig-edge`) é branco nos dois temas. */
 .ig-piece {
   --ig-edge: #fff;
-}
-.dark .ig-piece {
-  --ig-edge: color-mix(in oklab, var(--foreground) 82%, var(--background));
 }
 .ig-f-b { fill: var(--brand); }
 .ig-f-B { fill: color-mix(in oklab, var(--brand) 62%, #000); }
@@ -1240,14 +1237,15 @@
 .ig-s-w { stroke: var(--card); }
 .ig-edge { fill: var(--ig-edge); stroke: var(--ig-edge); stroke-width: 7; stroke-linejoin: round; }
 .ig-edgek { fill: none; stroke: var(--ig-edge); stroke-linecap: round; stroke-linejoin: round; }
-/* No tema escuro os cinzas são bem mais claros, mantendo a ordem (claro > médio > escuro), para as
-   peças não ficarem apagadas. */
-.dark .ig-f-n { fill: color-mix(in oklab, var(--foreground) 84%, var(--card)); }
-.dark .ig-f-N { fill: color-mix(in oklab, var(--foreground) 68%, var(--card)); }
-.dark .ig-f-d { fill: color-mix(in oklab, var(--foreground) 50%, var(--card)); }
-.dark .ig-s-n { stroke: color-mix(in oklab, var(--foreground) 84%, var(--card)); }
-.dark .ig-s-N { stroke: color-mix(in oklab, var(--foreground) 68%, var(--card)); }
-.dark .ig-s-d { stroke: color-mix(in oklab, var(--foreground) 50%, var(--card)); }
+/* No tema escuro os neutros são **tons claros da cor de destaque** (quase brancos, médios e escuros), e não
+   cinzas: mantêm a ordem claro > médio > escuro e dão cor às peças. Para voltar aos cinzas, troque os
+   `color-mix` por `color-mix(in oklab, var(--foreground) 84%, var(--card))` (n), `68%` (N) e `50%` (d). */
+.dark .ig-f-n { fill: color-mix(in oklab, var(--brand) 38%, #f3f3f3); }
+.dark .ig-f-N { fill: color-mix(in oklab, var(--brand) 62%, #bcbcbc); }
+.dark .ig-f-d { fill: color-mix(in oklab, var(--brand) 72%, #6a6a6a); }
+.dark .ig-s-n { stroke: color-mix(in oklab, var(--brand) 38%, #f3f3f3); }
+.dark .ig-s-N { stroke: color-mix(in oklab, var(--brand) 62%, #bcbcbc); }
+.dark .ig-s-d { stroke: color-mix(in oklab, var(--brand) 72%, #6a6a6a); }
 .ig-edges { filter: drop-shadow(0 3px 2px rgb(0 0 0 / 0.4)); }
 .ig-ped-t { fill: color-mix(in oklab, var(--foreground) 8%, var(--card)); }
 .ig-ped-l { fill: color-mix(in oklab, var(--foreground) 15%, var(--card)); }

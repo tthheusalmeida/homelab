@@ -29,6 +29,13 @@ describe('buildInfographicPrompt', () => {
     expect(prompt).not.toContain('conta uma HISTÓRIA');
   });
 
+  it('when choosing pieces, should guide the AI on abstract ideas and on what a number piece illustrates', () => {
+    const prompt = buildInfographicPrompt({ title: 'T', content: 'C' });
+
+    expect(prompt).toContain('ideias abstratas');
+    expect(prompt).toContain('a peça ilustra o que o número mede');
+  });
+
   it('when no layout is chosen, should ask for a story with a cover, several sections in different layouts and a closing', () => {
     const prompt = buildInfographicPrompt(base);
 

@@ -802,7 +802,7 @@ export const INFOGRAPHIC_PIECE_SHAPES: readonly Piece[] = [
     key: 'financas.percentual',
     theme: 'financas',
     name: 'Percentual',
-    tags: 'taxa desconto juros porcentagem',
+    tags: 'taxa desconto juros porcentagem número valor proporção medida',
     shapes: [
       ['c', 30, 26, 11, 'b'],
       ['c', 70, 60, 11, 'b'],
@@ -2251,7 +2251,7 @@ export const INFOGRAPHIC_PIECE_SHAPES: readonly Piece[] = [
     key: 'ciencia.cerebro',
     theme: 'ciencia',
     name: 'Cérebro',
-    tags: 'neurociência mente cognição aprendizado',
+    tags: 'neurociência mente cognição aprendizado emoção emocional ativação memória reação',
     shapes: [
       ['c', 37, 36, 17, 'b'],
       ['c', 63, 36, 17, 'b'],
@@ -2857,7 +2857,7 @@ export const INFOGRAPHIC_PIECE_SHAPES: readonly Piece[] = [
     key: 'energia.raio',
     theme: 'energia',
     name: 'Raio',
-    tags: 'eletricidade potência rápido força',
+    tags: 'eletricidade potência rápido força ativação gatilho impulso reação',
     shapes: [['g', [58, 6, 22, 44, 44, 44, 36, 72, 78, 30, 54, 30], 'b']],
     box: [22, 6, 56, 66],
   },
@@ -3321,7 +3321,7 @@ export const INFOGRAPHIC_PIECE_SHAPES: readonly Piece[] = [
     key: 'generico.coracao',
     theme: 'generico',
     name: 'Coração',
-    tags: 'amor cuidado favorito afeto',
+    tags: 'amor cuidado favorito afeto emoção emocional sentimento paixão',
     shapes: [
       ['a', 'M50 68C20 46 20 22 38 22C46 22 50 28 50 32C50 28 54 22 62 22C80 22 80 46 50 68Z', 'b'],
     ],
