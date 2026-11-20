@@ -26,6 +26,16 @@ vi.mock("./hooks/useLibrary", () => ({
   },
   useCategories: () => categories,
   useTags: () => tags,
+  useRenameCategory: () => ({
+    mutate: vi.fn(),
+    reset: vi.fn(),
+    isPending: false,
+    isError: false,
+    error: null,
+  }),
+}));
+vi.mock("#components/Snackbar", () => ({
+  useSnackbar: () => ({ success: vi.fn(), error: vi.fn() }),
 }));
 
 // Select nativo no lugar do select do base-ui, para poder escolher opções.

@@ -7,7 +7,9 @@ import { InboxStrings } from "#lib/inbox-text";
 import { Button, buttonVariants } from "#ui/button";
 import { Card, CardContent } from "#ui/card";
 
+import { ConfirmDialog } from "#components/ConfirmDialog";
 import { EmptyState } from "#components/EmptyState";
+import { useSnackbar } from "#components/Snackbar";
 import { ErrorState } from "#components/ErrorState";
 import { LoadingState } from "#components/LoadingState";
 import { OptionSelect } from "#components/OptionSelect";
@@ -15,13 +17,21 @@ import { SearchInput } from "#components/SearchInput";
 import { useDebouncedValue } from "#hooks/use-debounced-value";
 import { useStoredState } from "#hooks/use-stored-state";
 
-import { CategoryEditDialog } from "./components/CategoryEditDialog";
+import {
+  CategoryEditDialog,
+  CategoryEditStrings,
+} from "./components/CategoryEditDialog";
 import { CategoryTree } from "./components/CategoryTree";
 import { DocumentCard } from "./components/DocumentCard";
 import { TagFilter } from "./components/TagFilter";
 import { ViewToggle, viewModes, type ViewMode } from "./components/ViewToggle";
-import { useCategories, useDocuments, useTags } from "./hooks/useLibrary";
-import { followRenamedCategory } from "./categories";
+import {
+  useCategories,
+  useDocuments,
+  useRenameCategory,
+  useTags,
+} from "./hooks/useLibrary";
+import { findCategory, followRenamedCategory } from "./categories";
 import {
   contentFilterLabels,
   contentFilterToHas,
@@ -84,6 +94,43 @@ export function LibraryPage() {
     sort,
   });
   const categories = useCategories();
+  const renameCategory = useRenameCategory();
+  const snackbar = useSnackbar();
+  // Mover arrastando para uma categoria que já tem uma com esse nome pergunta antes de juntar.
+  const [joining, setJoining] = useState<{
+    node: CategoryNode;
+    parent: string[];
+  } | null>(null);
+
+  function runMove(node: CategoryNode, parent: string[]) {
+    const to = [...parent, node.name];
+
+    renameCategory.mutate(
+      { from: node.path, to },
+      {
+        onSuccess: ({ moved }) => {
+          snackbar.success(CategoryEditStrings.done(moved));
+          setCategory((current) => followRenamedCategory(current, node.path, to));
+          setJoining(null);
+        },
+        onError: (error) => {
+          // a janela de "juntar" mostra o erro; o arrastar direto avisa por aqui
+          if (!joining) {
+            snackbar.error(error.message || CategoryEditStrings.failed);
+          }
+        },
+      },
+    );
+  }
+
+  function moveCategory(node: CategoryNode, parent: string[]) {
+    if (findCategory(categories.data ?? [], [...parent, node.name])) {
+      renameCategory.reset();
+      setJoining({ node, parent });
+    } else {
+      runMove(node, parent);
+    }
+  }
   const tagList = useTags();
 
   const hasFilters =
@@ -236,8 +283,25 @@ export function LibraryPage() {
             selected={category}
             onSelect={setCategory}
             onEdit={setEditing}
+            onMove={moveCategory}
+            disabled={renameCategory.isPending}
           />
         </aside>
+
+        <ConfirmDialog
+          open={joining !== null}
+          onOpenChange={(open) => !open && !renameCategory.isPending && setJoining(null)}
+          title="Juntar as categorias?"
+          description={
+            joining
+              ? `Já existe “${joining.node.name}” ${joining.parent.length > 0 ? `dentro de “${joining.parent.join(" › ")}”` : "no nível principal"}. As ${joining.node.count === 1 ? "1 página" : `${joining.node.count} páginas`} de “${joining.node.name}” vão se juntar a ela.`
+              : ""
+          }
+          confirmLabel="Juntar"
+          isPending={renameCategory.isPending}
+          errorMessage={renameCategory.isError ? renameCategory.error.message : undefined}
+          onConfirm={() => joining && runMove(joining.node, joining.parent)}
+        />
 
         <CategoryEditDialog
           category={editing}

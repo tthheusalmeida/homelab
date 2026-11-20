@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 
 import { Loader2 } from 'lucide-react';
 
@@ -12,24 +12,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#ui/dialog';
+import { Input } from '#ui/input';
+import { Label } from '#ui/label';
 
 import { Callout } from '#components/Callout';
-import { CategoryPicker } from '#components/CategoryPicker';
+import { OptionSelect } from '#components/OptionSelect';
 import { useSnackbar } from '#components/Snackbar';
-import { normalizeKey } from '#lib/text';
 
+import { findCategory, placesFor, startsWithPath } from '../categories';
 import { useRenameCategory } from '../hooks/useLibrary';
 import type { CategoryNode } from '../types/library.types';
 
-/** Máximo de níveis de uma categoria (pastas dentro de pastas). */
-const MAX_LEVELS = 4;
+/** Tamanho máximo do nome de uma categoria (o mesmo do back). */
+const MAX_NAME_LENGTH = 60;
+/** Valor da lista para o nível principal (uma lista não aceita valor vazio). */
+const ROOT = 'root';
 
 export const CategoryEditStrings = {
   title: 'Editar categoria',
   description: (count: number) =>
-    `Mude o nome ou o lugar desta categoria. As ${count === 1 ? '1 página' : `${count} páginas`} dela (e as das subcategorias) vão junto para a nova pasta.`,
-  merge: 'Já existe uma categoria com esse caminho: as páginas vão se juntar a ela.',
-  tooDeep: `Com esse caminho, alguma subcategoria passaria de ${MAX_LEVELS} níveis. Use um caminho mais curto.`,
+    `Mude o nome ou o lugar desta categoria. As ${count === 1 ? '1 página' : `${count} páginas`} dela (e as das subcategorias) vão junto para a nova pasta; as subcategorias continuam dentro dela.`,
+  name: 'Nome',
+  parent: 'Dentro de',
+  parentPlaceholder: 'Escolha onde ela fica',
+  root: 'Nenhuma (nível principal)',
+  merge: 'Já existe uma categoria com esse nome nesse lugar: as páginas vão se juntar a ela.',
   save: 'Salvar',
   saving: 'Movendo as páginas…',
   cancel: 'Cancelar',
@@ -40,38 +47,10 @@ export const CategoryEditStrings = {
       : `${moved === 1 ? '1 página movida' : `${moved} páginas movidas`} para a nova categoria.`,
 } as const;
 
-const samePath = (a: string[], b: string[]) =>
-  a.length === b.length && a.every((name, level) => name === b[level]);
-
-const sameKeys = (a: string[], b: string[]) =>
-  a.length === b.length && a.every((name, level) => normalizeKey(name) === normalizeKey(b[level]));
-
-function findNode(nodes: CategoryNode[], path: string[]): CategoryNode | undefined {
-  let level = nodes;
-  let found: CategoryNode | undefined;
-
-  for (const name of path) {
-    found = level.find((node) => normalizeKey(node.name) === normalizeKey(name));
-
-    if (!found) {
-      return undefined;
-    }
-
-    level = found.children;
-  }
-
-  return found;
-}
-
-/** Quantos níveis a categoria tem, contando a subcategoria mais funda dela. */
-function depthOf(node: CategoryNode): number {
-  return 1 + Math.max(0, ...node.children.map(depthOf));
-}
-
 interface CategoryEditDialogProps {
   /** Categoria a editar; `null` mantém o diálogo fechado. */
   category: CategoryNode | null;
-  /** A árvore inteira (sugestões em cada nível e aviso de que o caminho já existe). */
+  /** A árvore inteira (os lugares possíveis e o aviso de que o nome já existe ali). */
   tree: CategoryNode[];
   onOpenChange: (open: boolean) => void;
   /** Depois de salvar: o caminho de antes e o novo (a tela acompanha o filtro, se for o caso). */
@@ -79,9 +58,10 @@ interface CategoryEditDialogProps {
 }
 
 /**
- * Editar uma categoria depois de criada: trocar o nome ou mudar de lugar (inclusive para dentro de
- * outra). As páginas dela, e as das subcategorias, vão para a pasta nova; se o caminho novo já existe,
- * elas se juntam a ele.
+ * Editar uma categoria depois de criada, sem refazer o caminho: **Nome** (um campo de texto) e
+ * **Dentro de** (a lista dos lugares onde ela pode ficar). As páginas dela, e as das subcategorias,
+ * vão para a pasta nova, e as subcategorias seguem dentro dela. Se já existe uma categoria com esse
+ * nome nesse lugar, elas se juntam a ela. Mover arrastando na árvore faz a mesma coisa.
  */
 export function CategoryEditDialog({
   category,
@@ -95,7 +75,7 @@ export function CategoryEditDialog({
 
   return (
     <Dialog open={category !== null} onOpenChange={(open) => (open || !busy) && onOpenChange(open)}>
-      <DialogContent bare className="sm:max-w-xl">
+      <DialogContent bare className="sm:max-w-md">
         {category && (
           <CategoryEditForm
             key={category.path.join('\u0000')}
@@ -127,7 +107,10 @@ function CategoryEditForm({
   onBusyChange,
   onRenamed,
 }: CategoryEditFormProps) {
-  const [path, setPath] = useState(category.path);
+  const nameId = useId();
+  const currentParent = category.path.slice(0, -1);
+  const [name, setName] = useState(category.name);
+  const [parent, setParent] = useState(currentParent);
   const rename = useRenameCategory();
   const snackbar = useSnackbar();
 
@@ -138,14 +121,33 @@ function CategoryEditForm({
     return () => onBusyChange(false);
   }, [rename.isPending, onBusyChange]);
 
-  // O seletor já tira os níveis vazios do fim; um nível só de espaços não vale.
-  const target = path.map((name) => name.trim());
-  const valid = target.length > 0 && target.every((name) => name !== '');
-  const unchanged = samePath(target, category.path);
-  const deepest = target.length + depthOf(category) - category.path.length;
-  const tooDeep = valid && deepest > MAX_LEVELS;
-  const merging = valid && findNode(tree, target) !== undefined && !sameKeys(target, category.path);
-  const canSave = valid && !unchanged && !tooDeep && !rename.isPending;
+  const places = useMemo(
+    () => placesFor(category, tree, CategoryEditStrings.root),
+    [category, tree],
+  );
+  const options = places.map((place) => ({
+    id: place.path.length === 0 ? ROOT : place.path.join('\u0000'),
+    label: place.label,
+  }));
+  const parentId = parent.length === 0 ? ROOT : parent.join('\u0000');
+
+  const cleanName = name.trim();
+  const target = [...parent, cleanName];
+  const unchanged =
+    cleanName === category.name &&
+    parent.length === currentParent.length &&
+    startsWithPath(parent, currentParent);
+  const sameSpot = target.length === category.path.length && startsWithPath(target, category.path);
+  const merging = cleanName !== '' && !sameSpot && findCategory(tree, target) !== undefined;
+  const canSave = cleanName !== '' && !unchanged && !rename.isPending;
+
+  function chooseParent(id: string | null) {
+    const place = places.find((own, index) => options[index].id === id);
+
+    if (place) {
+      setParent(place.path);
+    }
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -170,17 +172,35 @@ function CategoryEditForm({
         <DialogDescription>{CategoryEditStrings.description(category.count)}</DialogDescription>
       </DialogHeader>
 
-      <CategoryPicker
-        value={path}
-        onChange={setPath}
-        options={tree}
-        maxLevels={MAX_LEVELS}
-        disabled={rename.isPending}
-      />
+      <div className="space-y-2">
+        <Label htmlFor={nameId}>{CategoryEditStrings.name}</Label>
+
+        <Input
+          id={nameId}
+          value={name}
+          maxLength={MAX_NAME_LENGTH}
+          autoFocus
+          disabled={rename.isPending}
+          onChange={(event) => setName(event.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>{CategoryEditStrings.parent}</Label>
+
+        <OptionSelect
+          value={parentId}
+          options={options}
+          placeholder={CategoryEditStrings.parentPlaceholder}
+          label={CategoryEditStrings.parent}
+          triggerWidth="w-full"
+          contentWidth="w-72"
+          disabled={rename.isPending}
+          onValueChange={chooseParent}
+        />
+      </div>
 
       {merging && <Callout tone="info">{CategoryEditStrings.merge}</Callout>}
-
-      {tooDeep && <Callout tone="warning">{CategoryEditStrings.tooDeep}</Callout>}
 
       {rename.isError && (
         <p role="alert" className="text-sm text-destructive">

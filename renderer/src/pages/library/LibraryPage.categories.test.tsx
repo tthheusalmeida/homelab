@@ -1,21 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 
 const state = vi.hoisted(() => ({
   filters: vi.fn(),
   rename: vi.fn(),
+  pending: false,
+  tree: [] as unknown[],
 }));
+const snackbar = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
-const tree = [
-  {
-    name: 'Tecnologia',
-    path: ['Tecnologia'],
-    count: 1,
-    children: [{ name: 'Docker', path: ['Tecnologia', 'Docker'], count: 1, children: [] }],
-  },
-];
+const node = (name: string, path: string[], count: number, children: unknown[] = []) => ({
+  name,
+  path,
+  count,
+  children,
+});
 
 vi.mock('./hooks/useLibrary', () => ({
   useDocuments: (filters: unknown) => {
@@ -23,18 +24,22 @@ vi.mock('./hooks/useLibrary', () => ({
 
     return { isLoading: false, isError: false, data: [], refetch: vi.fn() };
   },
-  useCategories: () => ({ isLoading: false, isError: false, data: tree, refetch: vi.fn() }),
+  useCategories: () => ({
+    isLoading: false,
+    isError: false,
+    data: state.tree,
+    refetch: vi.fn(),
+  }),
   useTags: () => ({ isLoading: false, isError: false, data: [], refetch: vi.fn() }),
   useRenameCategory: () => ({
     mutate: state.rename,
-    isPending: false,
+    reset: vi.fn(),
+    isPending: state.pending,
     isError: false,
     error: null,
   }),
 }));
-vi.mock('#components/Snackbar', () => ({
-  useSnackbar: () => ({ success: vi.fn(), error: vi.fn() }),
-}));
+vi.mock('#components/Snackbar', () => ({ useSnackbar: () => snackbar }));
 
 import { LibraryPage } from './LibraryPage';
 
@@ -44,9 +49,38 @@ const lastCategory = () => {
   return (calls[calls.length - 1][0] as { category: string[] }).category;
 };
 
+const succeed = () =>
+  state.rename.mockImplementation(
+    (_input: unknown, options: { onSuccess: (result: { moved: number }) => void }) =>
+      options.onSuccess({ moved: 1 }),
+  );
+
+/** O arrastar do navegador: o `dataTransfer` precisa existir para o React ler. */
+const dataTransfer = () => ({ setData: vi.fn(), effectAllowed: '', dropEffect: '' });
+
+/** A linha (o bloco que arrasta) de uma categoria da árvore. */
+const rowOf = (name: RegExp) => screen.getByRole('button', { name }).parentElement as HTMLElement;
+const rootDrop = () =>
+  screen.getByRole('button', { name: 'Todas as categorias' }).parentElement as HTMLElement;
+
+function drag(from: HTMLElement, to: HTMLElement) {
+  const transfer = dataTransfer();
+
+  fireEvent.dragStart(from, { dataTransfer: transfer });
+  fireEvent.dragOver(to, { dataTransfer: transfer });
+  fireEvent.drop(to, { dataTransfer: transfer });
+}
+
 beforeEach(() => {
   state.filters.mockReset();
   state.rename.mockReset();
+  state.pending = false;
+  state.tree = [
+    node('Tecnologia', ['Tecnologia'], 1, [node('Docker', ['Tecnologia', 'Docker'], 1)]),
+    node('Culinária', ['Culinária'], 2),
+  ];
+  snackbar.success.mockReset();
+  snackbar.error.mockReset();
 });
 
 function setup() {
@@ -58,13 +92,13 @@ function setup() {
 }
 
 describe('LibraryPage: editar categoria', () => {
-  it('when a category pencil is clicked, should open the edit dialog for it', async () => {
+  it('when a category pencil is clicked, should open the edit dialog with its name', async () => {
     setup();
 
     await userEvent.click(screen.getByRole('button', { name: 'Editar a categoria Tecnologia' }));
 
     expect(screen.getByText('Editar categoria')).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Categoria' })).toHaveValue('Tecnologia');
+    expect(screen.getByRole('textbox', { name: 'Nome' })).toHaveValue('Tecnologia');
   });
 
   it('when the selected category is renamed, should keep the filter on it under the new name', async () => {
@@ -73,14 +107,10 @@ describe('LibraryPage: editar categoria', () => {
 
     expect(lastCategory()).toEqual(['Tecnologia']);
 
-    state.rename.mockImplementation(
-      (_input: unknown, options: { onSuccess: (result: { moved: number }) => void }) =>
-        options.onSuccess({ moved: 1 }),
-    );
-
+    succeed();
     await userEvent.click(screen.getByRole('button', { name: 'Editar a categoria Tecnologia' }));
 
-    const field = screen.getByRole('combobox', { name: 'Categoria' });
+    const field = screen.getByRole('textbox', { name: 'Nome' });
 
     await userEvent.clear(field);
     await userEvent.type(field, 'TI');
@@ -97,19 +127,126 @@ describe('LibraryPage: editar categoria', () => {
     setup();
     await userEvent.click(screen.getByRole('button', { name: /^Tecnologia\s*1$/ }));
 
-    state.rename.mockImplementation(
-      (_input: unknown, options: { onSuccess: (result: { moved: number }) => void }) =>
-        options.onSuccess({ moved: 1 }),
-    );
-
+    succeed();
     await userEvent.click(screen.getByRole('button', { name: 'Editar a categoria Docker' }));
 
-    const field = screen.getByRole('combobox', { name: 'Subcategoria' });
+    const field = screen.getByRole('textbox', { name: 'Nome' });
 
     await userEvent.clear(field);
     await userEvent.type(field, 'Containers');
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
 
     expect(lastCategory()).toEqual(['Tecnologia']);
+  });
+});
+
+describe('LibraryPage: mover categoria arrastando', () => {
+  it('when a category is dropped on another, should move it inside that one and say so', async () => {
+    succeed();
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^Tecnologia\s*1$/ }));
+
+    drag(rowOf(/^Docker/), rowOf(/^Culinária/));
+
+    expect(state.rename).toHaveBeenCalledWith(
+      { from: ['Tecnologia', 'Docker'], to: ['Culinária', 'Docker'] },
+      expect.any(Object),
+    );
+    expect(snackbar.success).toHaveBeenCalledWith('1 página movida para a nova categoria.');
+  });
+
+  it('when a category is dropped on "Todas as categorias", should move it to the main level', async () => {
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^Tecnologia\s*1$/ }));
+
+    drag(rowOf(/^Docker/), rootDrop());
+
+    expect(state.rename).toHaveBeenCalledWith(
+      { from: ['Tecnologia', 'Docker'], to: ['Docker'] },
+      expect.any(Object),
+    );
+  });
+
+  it('when the category moves under the selected filter, should keep the filter following it', async () => {
+    succeed();
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^Tecnologia\s*1$/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^Docker/ }));
+
+    expect(lastCategory()).toEqual(['Tecnologia', 'Docker']);
+
+    drag(rowOf(/^Docker/), rootDrop());
+
+    expect(lastCategory()).toEqual(['Docker']);
+  });
+
+  it('when it is dropped where it already is, should do nothing', async () => {
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^Tecnologia\s*1$/ }));
+
+    drag(rowOf(/^Docker/), rowOf(/^Tecnologia/));
+
+    expect(state.rename).not.toHaveBeenCalled();
+  });
+
+  it('when a category is dropped inside itself, should do nothing', async () => {
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^Tecnologia\s*1$/ }));
+
+    drag(rowOf(/^Tecnologia/), rowOf(/^Docker/));
+
+    expect(state.rename).not.toHaveBeenCalled();
+  });
+
+  it('when the drop would pass 4 levels, should do nothing', async () => {
+    state.tree = [
+      node('A', ['A'], 1, [
+        node('B', ['A', 'B'], 1, [
+          node('C', ['A', 'B', 'C'], 1, [node('D', ['A', 'B', 'C', 'D'], 1)]),
+        ]),
+      ]),
+      node('X', ['X'], 1),
+    ];
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^A\s*1$/ }));
+
+    drag(rowOf(/^A\s*1$/), rowOf(/^X/));
+
+    expect(state.rename).not.toHaveBeenCalled();
+  });
+
+  it('when the target already has one with that name, should ask before joining them', async () => {
+    state.tree = [
+      node('Tecnologia', ['Tecnologia'], 1, [node('Docker', ['Tecnologia', 'Docker'], 1)]),
+      node('Culinária', ['Culinária'], 2, [node('Docker', ['Culinária', 'Docker'], 2)]),
+    ];
+    succeed();
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^Tecnologia\s*1$/ }));
+
+    drag(
+      screen.getAllByRole('button', { name: /^Docker/ })[0].parentElement as HTMLElement,
+      rowOf(/^Culinária/),
+    );
+
+    expect(state.rename).not.toHaveBeenCalled();
+    expect(screen.getByText('Juntar as categorias?')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Juntar' }));
+
+    expect(state.rename).toHaveBeenCalledWith(
+      { from: ['Tecnologia', 'Docker'], to: ['Culinária', 'Docker'] },
+      expect.any(Object),
+    );
+  });
+
+  it('when the pages are being moved, should lock the tree', () => {
+    state.pending = true;
+    setup();
+
+    expect(screen.getByRole('navigation', { name: 'Categorias' })).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
   });
 });
