@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react';
+import type { CSSProperties } from 'react';
 
 import { HexSwatch } from '#components/HexSwatch';
 import { cn } from '#lib/utils';
@@ -12,6 +13,10 @@ export interface HexColorOption<T extends string = string> {
   accent?: AccentId;
   /** Qualquer valor de CSS, quando a cor não é uma cor de destaque. */
   color?: string;
+  /** Preenchimento próprio (ex.: um degradê) no lugar de `color`, para opções como "Padrão". */
+  style?: CSSProperties;
+  /** Classes da marca de selecionado, quando o padrão (branco com inversão) não lê bem no fundo. */
+  checkClassName?: string;
 }
 
 interface HexColorPickerProps<T extends string> {
@@ -54,6 +59,7 @@ export function HexColorPicker<T extends string>({
             aria-label={option.label}
             title={option.label}
             color={option.color}
+            style={option.style}
             // `data-accent` + `dark` fazem `bg-primary` mostrar a cor de destaque deste hexágono.
             data-accent={option.accent}
             className={cn(option.accent && 'dark')}
@@ -62,7 +68,10 @@ export function HexColorPicker<T extends string>({
           >
             {selected && (
               <Check
-                className={cn('size-3', !option.accent && 'text-white mix-blend-difference')}
+                className={cn(
+                  'size-3',
+                  !option.accent && (option.checkClassName ?? 'text-white mix-blend-difference'),
+                )}
                 aria-hidden
               />
             )}
