@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ChevronRight, Pencil } from "lucide-react";
 
 import { Button } from "#ui/button";
+import { HexDot, Logo } from "#components/Hex";
 import { IconButton } from "#components/IconButton";
 import { cn } from "#lib/utils";
 import { normalizeKey } from "#lib/text";
@@ -27,6 +28,15 @@ function isPrefix(prefix: string[], path: string[]) {
   );
 }
 
+/** Linha escolhida: o mesmo realce do item ativo da barra lateral (`primary/15`). */
+const ACTIVE_ROW = "bg-primary/15 text-foreground hover:bg-primary/20";
+
+/**
+ * Árvore de categorias no visual Colmeia: o painel ganha o rótulo mono ("categorias"), a raiz é o
+ * conjunto de três hexágonos da marca, cada categoria tem um hexágono (cheio quando tem
+ * subcategorias, vazado quando não, na cor de destaque quando escolhida) e os níveis ficam ligados
+ * por um fio tracejado. A contagem é mono, como os rótulos de comando do resto do app.
+ */
 export function CategoryTree({
   nodes,
   selected,
@@ -50,7 +60,7 @@ export function CategoryTree({
     });
   }
 
-  function renderNode(node: CategoryNode, depth: number) {
+  function renderNode(node: CategoryNode) {
     const hasChildren = node.children.length > 0;
     // Os ancestrais da categoria selecionada ficam sempre abertos.
     const isOpen =
@@ -59,10 +69,7 @@ export function CategoryTree({
 
     return (
       <li key={pathKey(node.path)}>
-        <div
-          className="group/cat flex items-center gap-0.5"
-          style={{ paddingLeft: `${depth * 12}px` }}
-        >
+        <div className="group/cat flex items-center gap-0.5">
           {hasChildren ? (
             <Button
               variant="ghost"
@@ -80,15 +87,31 @@ export function CategoryTree({
           )}
 
           <Button
-            variant={isSelected ? "secondary" : "ghost"}
+            variant="ghost"
             size="sm"
             aria-current={isSelected ? "true" : undefined}
-            className="min-w-0 flex-1 justify-between"
+            className={cn(
+              "min-w-0 flex-1 justify-start gap-2",
+              isSelected && ACTIVE_ROW,
+            )}
             onClick={() => onSelect(node.path)}
           >
+            <HexDot
+              className={cn(
+                "transition-colors",
+                isSelected
+                  ? "bg-primary"
+                  : hasChildren
+                    ? "bg-muted-foreground"
+                    : "bg-muted-foreground/35",
+              )}
+            />
+
             <span className="truncate">{node.name}</span>
 
-            <span className="text-xs text-muted-foreground">{node.count}</span>
+            <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">
+              {node.count}
+            </span>
           </Button>
 
           {onEdit && (
@@ -105,8 +128,8 @@ export function CategoryTree({
         </div>
 
         {hasChildren && isOpen && (
-          <ul className="animate-enter-fade">
-            {node.children.map((child) => renderNode(child, depth + 1))}
+          <ul className="animate-enter-fade ml-3 border-l border-dashed border-border pl-0.5">
+            {node.children.map((child) => renderNode(child))}
           </ul>
         )}
       </li>
@@ -114,18 +137,29 @@ export function CategoryTree({
   }
 
   return (
-    <nav aria-label="Categorias">
+    <nav aria-label="Categorias" className="rounded-lg border bg-card p-2">
+      <p
+        aria-hidden="true"
+        className="px-2 pb-1.5 font-mono text-[11px] tracking-wider text-muted-foreground uppercase"
+      >
+        categorias
+      </p>
+
       <Button
-        variant={selected.length === 0 ? "secondary" : "ghost"}
+        variant="ghost"
         size="sm"
         aria-current={selected.length === 0 ? "true" : undefined}
-        className="w-full justify-start"
+        className={cn(
+          "w-full justify-start gap-2",
+          selected.length === 0 && ACTIVE_ROW,
+        )}
         onClick={() => onSelect([])}
       >
+        <Logo className="size-4" />
         Todas as categorias
       </Button>
 
-      <ul className="mt-1">{nodes.map((node) => renderNode(node, 0))}</ul>
+      <ul className="mt-1">{nodes.map((node) => renderNode(node))}</ul>
     </nav>
   );
 }
