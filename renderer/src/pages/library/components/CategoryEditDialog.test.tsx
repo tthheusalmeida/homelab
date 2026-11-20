@@ -195,8 +195,35 @@ describe('CategoryEditDialog', () => {
     setup();
 
     expect(field('Categoria')).toBeDisabled();
-    expect(save()).toBeDisabled();
+    expect(screen.getByRole('button', { name: CategoryEditStrings.saving })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled();
+  });
+
+  it('when the pages are being moved, should say so on the button', () => {
+    rename.state = { isPending: true, isError: false, error: null };
+
+    setup();
+
+    expect(screen.getByRole('button', { name: CategoryEditStrings.saving })).toBeDisabled();
+  });
+
+  it('when the pages are being moved, should not close with Esc', async () => {
+    rename.state = { isPending: true, isError: false, error: null };
+
+    const { user, onOpenChange } = setup();
+
+    await user.keyboard('{Escape}');
+
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(screen.getByText('Editar categoria')).toBeInTheDocument();
+  });
+
+  it('when nothing is being moved, should close with Esc', async () => {
+    const { user, onOpenChange } = setup();
+
+    await user.keyboard('{Escape}');
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
   it('when cancelling, should close without saving', async () => {

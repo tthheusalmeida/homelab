@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Loader2 } from 'lucide-react';
 
@@ -31,6 +31,7 @@ export const CategoryEditStrings = {
   merge: 'Já existe uma categoria com esse caminho: as páginas vão se juntar a ela.',
   tooDeep: `Com esse caminho, alguma subcategoria passaria de ${MAX_LEVELS} níveis. Use um caminho mais curto.`,
   save: 'Salvar',
+  saving: 'Movendo as páginas…',
   cancel: 'Cancelar',
   failed: 'Não foi possível mudar a categoria. Tente novamente.',
   done: (moved: number) =>
@@ -88,8 +89,12 @@ export function CategoryEditDialog({
   onOpenChange,
   onRenamed,
 }: CategoryEditDialogProps) {
+  // Enquanto as páginas se mexem, o diálogo não fecha (Esc, clique fora ou X): fechar no meio faria
+  // a operação continuar sem nenhum sinal na tela.
+  const [busy, setBusy] = useState(false);
+
   return (
-    <Dialog open={category !== null} onOpenChange={onOpenChange}>
+    <Dialog open={category !== null} onOpenChange={(open) => (open || !busy) && onOpenChange(open)}>
       <DialogContent bare className="sm:max-w-xl">
         {category && (
           <CategoryEditForm
@@ -97,6 +102,7 @@ export function CategoryEditDialog({
             category={category}
             tree={tree}
             onDone={() => onOpenChange(false)}
+            onBusyChange={setBusy}
             onRenamed={onRenamed}
           />
         )}
@@ -109,13 +115,28 @@ interface CategoryEditFormProps {
   category: CategoryNode;
   tree: CategoryNode[];
   onDone: () => void;
+  /** Avisa o diálogo de que as páginas estão sendo movidas (ele não pode fechar nesse tempo). */
+  onBusyChange: (busy: boolean) => void;
   onRenamed?: (from: string[], to: string[]) => void;
 }
 
-function CategoryEditForm({ category, tree, onDone, onRenamed }: CategoryEditFormProps) {
+function CategoryEditForm({
+  category,
+  tree,
+  onDone,
+  onBusyChange,
+  onRenamed,
+}: CategoryEditFormProps) {
   const [path, setPath] = useState(category.path);
   const rename = useRenameCategory();
   const snackbar = useSnackbar();
+
+  useEffect(() => {
+    onBusyChange(rename.isPending);
+
+    // se o formulário sair da tela, o diálogo volta a poder fechar
+    return () => onBusyChange(false);
+  }, [rename.isPending, onBusyChange]);
 
   // O seletor já tira os níveis vazios do fim; um nível só de espaços não vale.
   const target = path.map((name) => name.trim());
@@ -174,7 +195,7 @@ function CategoryEditForm({ category, tree, onDone, onRenamed }: CategoryEditFor
 
         <Button type="submit" disabled={!canSave}>
           {rename.isPending && <Loader2 className="animate-spin" />}
-          {CategoryEditStrings.save}
+          {rename.isPending ? CategoryEditStrings.saving : CategoryEditStrings.save}
         </Button>
       </DialogFooter>
     </DialogForm>
