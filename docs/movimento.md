@@ -30,7 +30,7 @@ Tudo que entra ou sai da tela se move de forma suave; nada aparece "de repente".
 - **Barras de progresso:** a largura anima (`transition-[width]`, 700 ms) no Uso e no progresso do livro.
 - **Snackbar e aviso de reinício** das Configurações: entram e o snackbar sai com `animate-exit-down` antes de sair do DOM (`SNACKBAR_EXIT_MS`). A barra de progresso do snackbar usa `animate-countdown` (a duração vem de `animation-duration`).
 - **Controles:** `a`, `button`, `input`… têm transição de cor, borda, sombra e opacidade (`@layer base`); botões afundam um pouco ao clicar.
-- Já animavam (shadcn): diálogos, sheets, tooltips. **Selects, menus e listas de sugestão não animam**: só abrem (decisão do usuário; zoom, deslize e fade faziam a lista tremer).
+- Já animavam (shadcn): diálogos, sheets, tooltips. **Selects, menus e listas de sugestão** só mudam de **opacidade** ao abrir e fechar (`popupSurface` em `ui/popup.tsx`, 150 ms): sem zoom nem deslize, que faziam a lista tremer.
 
 ## Como aplicar em componente novo
 1. Item ou bloco que aparece com o conteúdo: `animate-enter` (e `--i` se for lista).

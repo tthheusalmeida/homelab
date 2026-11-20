@@ -1,12 +1,15 @@
 /**
  * Classes compartilhadas das listas suspensas (select, menu, sugestões) e do tooltip: um só desenho
- * para a superfície e os itens, **sem animação nenhuma** (a lista só abre, sem fade, zoom nem deslize), nos dois temas. Mudou o visual das
+ * para a superfície e os itens, com transição só de opacidade ao abrir e fechar (sem zoom nem deslize), nos dois temas. Mudou o visual das
  * listas do app? Mude aqui.
  */
 
-/** Superfície do popup: fundo do tema, sombra e um anel com um toque da cor de destaque. */
+/**
+ * Superfície do popup: fundo do tema, sombra e um anel. Aparece e some só por **opacidade** (150 ms):
+ * sem zoom nem deslize, que fazem a lista tremer.
+ */
 export const popupSurface =
-  "origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-lg ring-1 ring-foreground/10 outline-none";
+  "origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-lg ring-1 ring-foreground/10 outline-none transition-opacity duration-(--duration-quick) ease-(--ease-out-soft) data-starting-style:opacity-0 data-ending-style:opacity-0";
 
 /** Um item da lista: realce na cor de destaque e ícones no tamanho padrão. Sem animação própria: o texto aparece firme junto com o popup. */
 export const popupItem =

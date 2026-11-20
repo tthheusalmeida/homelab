@@ -47,6 +47,8 @@ describe("OptionSelect", () => {
     const content = popup.closest('[data-slot="select-content"]') as HTMLElement;
 
     expect(content).toHaveAttribute("data-align-trigger", "false");
+    expect(content).toHaveClass("transition-opacity", "data-starting-style:opacity-0");
+    expect(content.className).not.toMatch(/zoom|slide/);
     expect(content.parentElement).toHaveAttribute("data-side", "bottom");
   });
 
