@@ -18,8 +18,8 @@ import {
 } from '#lib/mind-map-edit';
 import { cn } from '#lib/utils';
 import { Callout } from '#components/Callout';
-import { ConfirmDialog } from '#components/ConfirmDialog';
 import { DeleteGeneratedDialog } from './DeleteGeneratedDialog';
+import { DiscardEditsDialog, RegenerateEditedDialog } from './GeneratedEditDialogs';
 import { GenerateButton } from '#components/GenerateButton';
 import { HexLoader } from '#components/Hex';
 import { IconButton } from '#components/IconButton';
@@ -301,13 +301,10 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
         onDownloadError={(message) => snackbar.error(message)}
       />
 
-      <ConfirmDialog
+      <DiscardEditsDialog
         open={confirm === 'discard'}
         onOpenChange={(open) => !open && setConfirm(null)}
-        title="Descartar as alterações?"
         description="As mudanças que você fez no mapa e ainda não salvou serão perdidas."
-        confirmLabel="Descartar alterações"
-        destructive
         onConfirm={() => {
           setConfirm(null);
           closeEditing();
@@ -324,13 +321,10 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
         onConfirm={deleteNow}
       />
 
-      <ConfirmDialog
+      <RegenerateEditedDialog
         open={confirm === 'regenerate'}
         onOpenChange={(open) => !open && setConfirm(null)}
-        title="Gerar de novo e perder as suas edições?"
-        description="Você editou este mapa à mão. Gerar de novo com a IA cria um mapa novo a partir do resumo e apaga as suas edições. Não há como desfazer."
-        confirmLabel="Gerar de novo"
-        destructive
+        noun="mapa"
         onConfirm={() => {
           setConfirm(null);
           generateNow();

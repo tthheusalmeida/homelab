@@ -33,7 +33,6 @@ import {
 import { cn } from '#lib/utils';
 
 import { Callout } from '#components/Callout';
-import { ConfirmDialog } from '#components/ConfirmDialog';
 import { EmptyState } from '#components/EmptyState';
 import { GenerateButton } from '#components/GenerateButton';
 import { HexLoader } from '#components/Hex';
@@ -54,6 +53,7 @@ import {
 } from '../hooks/useLibrary';
 
 import { DeleteGeneratedDialog } from './DeleteGeneratedDialog';
+import { DiscardEditsDialog, RegenerateEditedDialog } from './GeneratedEditDialogs';
 import { PiecePickerDialog } from './PiecePickerDialog';
 import { TextEditDialog } from './TextEditDialog';
 
@@ -444,26 +444,20 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
         />
       )}
 
-      <ConfirmDialog
+      <DiscardEditsDialog
         open={confirm === 'discard'}
         onOpenChange={(open) => !open && setConfirm(null)}
-        title="Descartar as alterações?"
         description="As peças e os textos que você mudou e ainda não salvou voltam como estavam."
-        confirmLabel="Descartar alterações"
-        destructive
         onConfirm={() => {
           setConfirm(null);
           closeEditing();
         }}
       />
 
-      <ConfirmDialog
+      <RegenerateEditedDialog
         open={confirm === 'regenerate'}
         onOpenChange={(open) => !open && setConfirm(null)}
-        title="Gerar de novo e perder as suas edições?"
-        description="Você editou este infográfico à mão. Gerar de novo com a IA cria um infográfico novo a partir do resumo e apaga as suas edições. Não há como desfazer."
-        confirmLabel="Gerar de novo"
-        destructive
+        noun="infográfico"
         onConfirm={() => {
           setConfirm(null);
           generateNow();
