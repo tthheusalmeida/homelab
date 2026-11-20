@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 
-import { FileText, Pencil, Plus } from "lucide-react";
+import { FileText, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "#ui/button";
 import { hexPath, Logo } from "#components/Hex";
@@ -41,6 +41,11 @@ interface CategoryTreeProps {
    * categorias", que é o nível principal). `parent` vazio = nível principal.
    */
   onMove?: (node: CategoryNode, parent: string[]) => void;
+  /**
+   * Com isso, uma categoria **sem páginas** ganha o botão de excluir (a lixeira), o último das ações,
+   * depois do "+" e do lápis. Quem recebe confirma e apaga.
+   */
+  onDelete?: (node: CategoryNode) => void;
   /** Com isso, as páginas podem ser **arrastadas** para dentro de uma categoria. */
   onMovePage?: (page: TreePage, parent: string[]) => void;
   /** Travada enquanto algo está sendo movido: nada é arrastado nem editado. */
@@ -186,6 +191,7 @@ export function CategoryTree({
   onOpenPage,
   onEdit,
   onCreate,
+  onDelete,
   onMove,
   onMovePage,
   disabled = false,
@@ -431,7 +437,9 @@ export function CategoryTree({
             <span className="sr-only">{node.count}</span>
           </button>
 
-          {((onCreate && node.path.length < MAX_CATEGORY_LEVELS) || onEdit) && (
+          {((onCreate && node.path.length < MAX_CATEGORY_LEVELS) ||
+            onEdit ||
+            (onDelete && node.count === 0)) && (
             <div className={ACTIONS}>
               {onCreate && node.path.length < MAX_CATEGORY_LEVELS && (
                 <IconButton
@@ -454,6 +462,19 @@ export function CategoryTree({
                   onClick={() => onEdit(node)}
                 >
                   <Pencil />
+                </IconButton>
+              )}
+
+              {onDelete && node.count === 0 && (
+                <IconButton
+                  label={`Excluir a categoria ${node.name}`}
+                  variant="ghost"
+                  size="icon-xs"
+                  disabled={disabled}
+                  className="hover:text-destructive"
+                  onClick={() => onDelete(node)}
+                >
+                  <Trash2 />
                 </IconButton>
               )}
             </div>

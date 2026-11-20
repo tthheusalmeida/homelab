@@ -27,6 +27,13 @@ vi.mock("./hooks/useLibrary", () => ({
   useCategories: () => categories,
   useTags: () => tags,
   useUpdateDocument: () => ({ mutate: vi.fn(), isPending: false }),
+  useDeleteCategory: () => ({
+    mutate: vi.fn(),
+    reset: vi.fn(),
+    isPending: false,
+    isError: false,
+    error: null,
+  }),
   useRenameCategory: () => ({
     mutate: vi.fn(),
     reset: vi.fn(),

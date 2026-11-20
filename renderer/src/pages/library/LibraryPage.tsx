@@ -29,6 +29,7 @@ import { ViewToggle, viewModes, type ViewMode } from "./components/ViewToggle";
 import {
   useCategories,
   useDocuments,
+  useDeleteCategory,
   useRenameCategory,
   useTags,
   useUpdateDocument,
@@ -108,7 +109,27 @@ export function LibraryPage() {
   const renameCategory = useRenameCategory();
   const updatePage = useUpdateDocument();
   const navigate = useNavigate();
-  const moving = renameCategory.isPending || updatePage.isPending;
+  const removeCategory = useDeleteCategory();
+  // A categoria vazia que está para ser excluída (a lixeira da árvore pede confirmação antes).
+  const [deleting, setDeleting] = useState<CategoryNode | null>(null);
+  const moving =
+    renameCategory.isPending || updatePage.isPending || removeCategory.isPending;
+
+  function deleteNow() {
+    if (!deleting) {
+      return;
+    }
+
+    const { path } = deleting;
+
+    removeCategory.mutate(path, {
+      onSuccess: () => {
+        snackbar.success(CategoryEditStrings.deleted);
+        setCategory((current) => (startsWithPath(current, path) ? [] : current));
+        setDeleting(null);
+      },
+    });
+  }
   const snackbar = useSnackbar();
   // Mover arrastando para uma categoria que já tem uma com esse nome pergunta antes de juntar.
   const [joining, setJoining] = useState<{
@@ -322,6 +343,10 @@ export function LibraryPage() {
             onSelect={setCategory}
             onEdit={setEditing}
             onCreate={setCreating}
+            onDelete={(node) => {
+              removeCategory.reset();
+              setDeleting(node);
+            }}
             pages={treePages.data}
             onOpenPage={(page) => navigate(`/library/${page.id}`)}
             onMove={moveCategory}
@@ -330,6 +355,31 @@ export function LibraryPage() {
             persistKey="library:categories:open"
           />
         </aside>
+
+        <ConfirmDialog
+          open={deleting !== null}
+          onOpenChange={(open) => !open && !removeCategory.isPending && setDeleting(null)}
+          title={CategoryEditStrings.deleteTitle}
+          description={
+            deleting
+              ? CategoryEditStrings.deleteDescription(
+                  deleting.name,
+                  deleting.children.length > 0,
+                )
+              : ""
+          }
+          confirmLabel={
+            removeCategory.isPending ? CategoryEditStrings.deleting : CategoryEditStrings.delete
+          }
+          destructive
+          isPending={removeCategory.isPending}
+          errorMessage={
+            removeCategory.isError
+              ? removeCategory.error.message || CategoryEditStrings.deleteFailed
+              : undefined
+          }
+          onConfirm={deleteNow}
+        />
 
         <ConfirmDialog
           open={joining !== null}

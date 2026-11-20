@@ -463,3 +463,67 @@ describe('LibraryPage: lembrar as categorias abertas', () => {
     expect(screen.getByRole('button', { name: 'Algoritmos' })).toBeInTheDocument();
   });
 });
+
+describe('LibraryPage: excluir categoria vazia pela árvore', () => {
+  const dialog = () => within(screen.getAllByRole('dialog').at(-1) as HTMLElement);
+
+  it('when the trash of an empty category is clicked, should ask first', async () => {
+    state.tree = [node('Vazia', ['Vazia'], 0)];
+    setup();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Excluir a categoria Vazia' }));
+
+    expect(screen.getByText('Excluir esta categoria?')).toBeInTheDocument();
+    expect(state.remove).not.toHaveBeenCalled();
+  });
+
+  it('when the delete is confirmed, should delete it, say so and go back to all categories if it was chosen', async () => {
+    state.tree = [node('Vazia', ['Vazia'], 0)];
+    state.remove.mockImplementation((_path: unknown, options: { onSuccess: () => void }) =>
+      options.onSuccess(),
+    );
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^Vazia\s*0$/ }));
+
+    expect(lastCategory()).toEqual(['Vazia']);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Excluir a categoria Vazia' }));
+    await userEvent.click(dialog().getByRole('button', { name: 'Excluir categoria' }));
+
+    expect(state.remove).toHaveBeenCalledWith(['Vazia'], expect.any(Object));
+    expect(snackbar.success).toHaveBeenCalledWith('Categoria excluída.');
+    expect(lastCategory()).toEqual([]);
+  });
+
+  it('when another category was chosen, should keep that choice after deleting', async () => {
+    state.tree = [node('Vazia', ['Vazia'], 0), node('Culinária', ['Culinária'], 2)];
+    state.remove.mockImplementation((_path: unknown, options: { onSuccess: () => void }) =>
+      options.onSuccess(),
+    );
+    setup();
+    await userEvent.click(screen.getByRole('button', { name: /^Culinária\s*2$/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Excluir a categoria Vazia' }));
+    await userEvent.click(dialog().getByRole('button', { name: 'Excluir categoria' }));
+
+    expect(lastCategory()).toEqual(['Culinária']);
+  });
+
+  it('when the delete is cancelled, should delete nothing', async () => {
+    state.tree = [node('Vazia', ['Vazia'], 0)];
+    setup();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Excluir a categoria Vazia' }));
+    await userEvent.click(dialog().getByRole('button', { name: 'Cancelar' }));
+
+    expect(state.remove).not.toHaveBeenCalled();
+  });
+
+  it('when a category has pages, should not show the trash', () => {
+    state.tree = [node('Cheia', ['Cheia'], 3)];
+    setup();
+
+    expect(
+      screen.queryByRole('button', { name: 'Excluir a categoria Cheia' }),
+    ).not.toBeInTheDocument();
+  });
+});
