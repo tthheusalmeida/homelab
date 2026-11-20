@@ -4,9 +4,12 @@
  * listas do app? Mude aqui.
  */
 
-/** Animação de abrir e fechar do popup (a mesma de todas as listas suspensas). */
+/**
+ * Abrir e fechar do popup (o mesmo de todas as listas suspensas): **só opacidade**. Zoom e deslize
+ * mexem na geometria enquanto o Positioner calcula o lugar e a lista parece tremer.
+ */
 export const popupMotion =
-  "data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95";
+  "data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0";
 
 /** Superfície do popup: fundo do tema, sombra e um anel com um toque da cor de destaque. */
 export const popupSurface =
