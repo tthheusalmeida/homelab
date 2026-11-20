@@ -95,6 +95,26 @@ describe('PiecePickerDialog scrolling', () => {
     );
   });
 
+  it('when searching, should keep the same height so the dialog does not jump', async () => {
+    setup();
+
+    const popup = screen.getByRole('dialog');
+
+    expect(popup).toHaveClass('h-[min(44rem,calc(100dvh-2rem))]');
+
+    await userEvent.type(screen.getByRole('searchbox'), 'calculadora');
+
+    expect(popup).toHaveClass('h-[min(44rem,calc(100dvh-2rem))]');
+  });
+
+  it('when the list is long, should reserve the scrollbar space so the width does not change while scrolling', () => {
+    setup();
+
+    expect(screen.getByRole('dialog').querySelector('[data-slot=dialog-body]')).toHaveClass(
+      '[scrollbar-gutter:stable]',
+    );
+  });
+
   it('when scrolling, should use only the scroll of the dialog body (no second scroll inside it)', () => {
     setup();
 

@@ -29,7 +29,11 @@ export function PiecePickerDialog({
 }: PiecePickerDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl sm:max-w-3xl" bodyClassName="pt-0">
+      {/* Altura fixa: a janela não encolhe nem cresce quando a busca filtra (ela não "pula"), e a faixa da barra de rolagem é reservada para o miolo não mudar de largura ao rolar. */}
+      <DialogContent
+        className="h-[min(44rem,calc(100dvh-2rem))] max-w-3xl sm:max-w-3xl"
+        bodyClassName="pt-0 [scrollbar-gutter:stable]"
+      >
         <DialogHeader>
           <DialogTitle>Trocar a peça</DialogTitle>
 

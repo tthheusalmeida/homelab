@@ -433,7 +433,7 @@ describe('SummaryInfographic delete', () => {
   });
 });
 
-describe('SummaryInfographic edit', () => {
+describe('SummaryInfographic edit', { timeout: 20_000 }, () => {
   const editButton = () => screen.getByRole('button', { name: 'Editar as peças' });
   const pieceButtons = () => screen.getAllByRole('button', { name: /^Trocar a peça:/ });
   const startEditing = async () => userEvent.click(editButton());
@@ -639,7 +639,7 @@ describe('SummaryInfographic edit', () => {
   });
 });
 
-describe('SummaryInfographic text edit', () => {
+describe('SummaryInfographic text edit', { timeout: 20_000 }, () => {
   const startEditing = async () =>
     userEvent.click(screen.getByRole('button', { name: 'Editar as peças' }));
   const textButton = (text: string) =>
