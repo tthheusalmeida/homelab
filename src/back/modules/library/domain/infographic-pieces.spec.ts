@@ -21,6 +21,23 @@ describe('PieceResolver', () => {
     expect(key).toBe('saude.seringa');
   });
 
+  it('when the text uses a synonym of a keyword, should still find the piece', () => {
+    // nenhuma peça tem "auto" ou "grana": o sentido vem da tabela de sinônimos
+    expect(new PieceResolver(null).resolve('O auto')).toBe('transporte.carro');
+    expect(new PieceResolver(null).resolve('Quanta grana')).toBe('financas.moedas');
+  });
+
+  it('when a piece matches the exact word and another only a synonym, should prefer the exact word', () => {
+    // "dinheiro" é palavra exata da peça de moedas; "grana" é só sinônimo dela
+    const exact = new PieceResolver(null).resolve('dinheiro');
+
+    expect(exact).toBe('financas.moedas');
+  });
+
+  it('when a synonym fits only part of the text, should not beat a piece that matches the exact words', () => {
+    expect(new PieceResolver(null).resolve('A calculadora e a grana')).toBe('financas.calculadora');
+  });
+
   it('when accents and case differ, should ignore them', () => {
     expect(new PieceResolver(null).resolve('ÁGUA e CHUVA')).toBe('natureza.chuva');
   });
