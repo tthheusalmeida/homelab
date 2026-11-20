@@ -1,26 +1,22 @@
 import { useState } from 'react';
-import { Minus, Plus, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 
 import { Button } from '#ui/button';
 import { Label } from '#ui/label';
 import { ReadingColorPicker } from '#components/ReadingColorPicker';
 import { ReadingPreview } from '#components/ReadingPreview';
+import { ReadingSteppers } from '#components/ReadingSteppers';
 import { SettingsGroup, SettingsPanel, SettingsRow } from '#components/SettingsGroup';
 import { Tip } from '#components/Tip';
-import { ValueStepper } from '#components/ValueStepper';
 import { useAppearance } from '#hooks/use-appearance';
 import {
   readingFontFamilies,
   readingFontHints,
   readingFontLabels,
-  stepFontSize,
-  stepZoom,
 } from '#lib/reading';
 import {
   DEFAULT_READING,
   READING_FONT_IDS,
-  READING_FONT_SIZE,
-  READING_ZOOM,
   type ReadingPreferences,
 } from '#shared/contracts/reading';
 
@@ -76,35 +72,13 @@ export function ReadingSettings() {
 
         <SettingsRow label={text.size}>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
-            <ValueStepper
-              label={text.fontSize}
-              value={`${reading.fontSize}`}
-              decreaseLabel="Diminuir a letra"
-              increaseLabel="Aumentar a letra"
-              canDecrease={reading.fontSize > READING_FONT_SIZE.min}
-              canIncrease={reading.fontSize < READING_FONT_SIZE.max}
-              decreaseIcon={<Minus />}
-              increaseIcon={<Plus />}
-              onDecrease={() => change({ fontSize: stepFontSize(reading.fontSize, -1) })}
-              onIncrease={() => change({ fontSize: stepFontSize(reading.fontSize, 1) })}
+            <ReadingSteppers
+              reading={reading}
+              change={change}
+              fontLabel={text.fontSize}
+              zoomLabel={text.zoom}
+              zoomHint={text.zoomHint}
             />
-
-            <Tip content={text.zoomHint}>
-              <span>
-                <ValueStepper
-                  label={text.zoom}
-                  value={`${reading.zoom}%`}
-                  decreaseLabel="Diminuir o zoom"
-                  increaseLabel="Aumentar o zoom"
-                  canDecrease={reading.zoom > READING_ZOOM.min}
-                  canIncrease={reading.zoom < READING_ZOOM.max}
-                  decreaseIcon={<ZoomOut />}
-                  increaseIcon={<ZoomIn />}
-                  onDecrease={() => change({ zoom: stepZoom(reading.zoom, -1) })}
-                  onIncrease={() => change({ zoom: stepZoom(reading.zoom, 1) })}
-                />
-              </span>
-            </Tip>
           </div>
         </SettingsRow>
 
