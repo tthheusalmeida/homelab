@@ -8,6 +8,11 @@ const saved = vi.hoisted(() => ({
 const save = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
 const saveMap = vi.hoisted(() => ({ mutateAsync: vi.fn(), isPending: false }));
 const snackbar = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+const del = vi.hoisted(() => ({
+  mutate: vi.fn(),
+  reset: vi.fn(),
+  state: { isPending: false, error: null as Error | null },
+}));
 const generate = vi.hoisted(() => ({
   mutate: vi.fn(),
   state: { isPending: false, isError: false, error: null as Error | null },
@@ -18,6 +23,7 @@ vi.mock('../hooks/useLibrary', () => ({
   useGenerateMindMap: () => ({ mutate: generate.mutate, ...generate.state }),
   useSaveMindMapImage: () => ({ mutateAsync: save.mutateAsync }),
   useSaveMindMap: () => ({ mutateAsync: saveMap.mutateAsync, isPending: saveMap.isPending }),
+  useDeleteMindMap: () => ({ mutate: del.mutate, reset: del.reset, ...del.state }),
 }));
 vi.mock('#components/Snackbar', () => ({ useSnackbar: () => snackbar }));
 vi.mock('#components/MindMapView', () => ({
@@ -119,6 +125,13 @@ beforeEach(() => {
   snackbar.success.mockReset();
   snackbar.error.mockReset();
   generate.mutate.mockReset();
+  del.mutate
+    .mockReset()
+    .mockImplementation((_id: string, options?: { onSuccess?: () => void }) =>
+      options?.onSuccess?.(),
+    );
+  del.reset.mockReset();
+  del.state = { isPending: false, error: null };
   saved.state = { isPending: false, isSuccess: true, isError: false, data: null };
   generate.state = { isPending: false, isError: false, error: null };
 });
@@ -651,5 +664,110 @@ describe('SummaryMindMap editing', () => {
       expect(screen.getByText('Gerar de novo e perder as suas edições?')).toBeInTheDocument();
       expect(generate.mutate).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('SummaryMindMap delete', () => {
+  const toolbar = () => screen.getByTestId('map-toolbar');
+  const deleteButton = () =>
+    within(toolbar()).getByRole('button', { name: 'Excluir só o mapa mental' });
+
+  it('when there is a map, should offer a delete button that says it is only the mind map', () => {
+    saved.state = { ...saved.state, data: aiMap };
+
+    renderMap();
+
+    expect(deleteButton()).toBeInTheDocument();
+  });
+
+  it('when there is no saved map, should not offer to delete', () => {
+    renderMap();
+
+    expect(
+      within(toolbar()).queryByRole('button', { name: 'Excluir só o mapa mental' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('when clicking delete, should ask first and say what stays', async () => {
+    saved.state = { ...saved.state, data: aiMap };
+    renderMap();
+
+    await userEvent.click(deleteButton());
+
+    expect(screen.getByText('Excluir só o mapa mental?')).toBeInTheDocument();
+    expect(screen.getByText(/O texto do resumo e o infográfico/)).toBeInTheDocument();
+    expect(del.mutate).not.toHaveBeenCalled();
+  });
+
+  it('when the map was edited, should warn that the edits are lost too', async () => {
+    saved.state = { ...saved.state, data: { ...aiMap, edited: true } };
+    renderMap();
+
+    await userEvent.click(deleteButton());
+
+    expect(screen.getByText(/inclusive todas as edições que você fez nele/)).toBeInTheDocument();
+  });
+
+  it('when the map was not edited, should not talk about edits', async () => {
+    saved.state = { ...saved.state, data: aiMap };
+    renderMap();
+
+    await userEvent.click(deleteButton());
+
+    expect(screen.queryByText(/inclusive todas as edições/)).not.toBeInTheDocument();
+  });
+
+  it('when the user cancels, should delete nothing', async () => {
+    saved.state = { ...saved.state, data: aiMap };
+    renderMap();
+    await userEvent.click(deleteButton());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(del.mutate).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.queryByText('Excluir só o mapa mental?')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('when the user confirms, should delete only the map, say so and not ask the AI for another one', async () => {
+    saved.state = { ...saved.state, data: aiMap };
+    const id = renderMap();
+    await userEvent.click(deleteButton());
+
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Excluir só o mapa mental' }),
+    );
+
+    expect(del.mutate).toHaveBeenCalledWith(id, expect.any(Object));
+    expect(snackbar.success).toHaveBeenCalledWith('Mapa mental excluído.');
+
+    // sem mapa guardado, a aba mostra o mapa simples sem gerar outro sozinha
+    saved.state = { ...saved.state, data: null };
+    cleanup();
+    render(<SummaryMindMap documentId={id} title="Redes" content={content} />);
+
+    expect(generate.mutate).not.toHaveBeenCalled();
+  });
+
+  it('when deleting fails, should show the reason inside the dialog and keep it open', async () => {
+    saved.state = { ...saved.state, data: aiMap };
+    del.mutate.mockReset();
+    del.state = { isPending: false, error: new Error('Falha ao apagar') };
+    renderMap();
+
+    await userEvent.click(deleteButton());
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Falha ao apagar');
+    expect(screen.getByText('Excluir só o mapa mental?')).toBeInTheDocument();
+  });
+
+  it('when the AI is working, should not allow deleting', () => {
+    saved.state = { ...saved.state, data: aiMap };
+    generate.state = { isPending: true, isError: false, error: null };
+
+    renderMap();
+
+    expect(deleteButton()).toBeDisabled();
   });
 });

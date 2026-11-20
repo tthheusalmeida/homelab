@@ -22,6 +22,8 @@ vi.mock("../api/library", () => ({
   generateMindMap: vi.fn(),
   getInfographic: vi.fn(),
   generateInfographic: vi.fn(),
+  deleteMindMap: vi.fn(),
+  deleteInfographic: vi.fn(),
   saveMindMapImage: vi.fn(),
   saveMindMap: vi.fn(),
 }));
@@ -33,6 +35,8 @@ import {
   useArchiveDocument,
   useCategories,
   useCreateArticle,
+  useDeleteInfographic,
+  useDeleteMindMap,
   useDiscardDocument,
   useDocument,
   useDocuments,
@@ -514,5 +518,68 @@ describe('useInfographic', () => {
 
     await waitFor(() => expect(result.current.generate.error?.message).toBe('falhou'));
     expect(result.current.query.data).toEqual(infographic);
+  });
+});
+
+describe("delete generated content hooks", () => {
+  const infographicSaved = { title: "T", piece: "", sections: [], model: "m", createdAt: "d", stale: false };
+
+  it("when deleting the infographic, should put null in its query and refresh only the page list", async () => {
+    vi.mocked(library.getInfographic).mockResolvedValue(infographicSaved as never);
+    vi.mocked(library.deleteInfographic).mockResolvedValue(undefined);
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(
+      () => ({ query: useInfographic("id1"), remove: useDeleteInfographic() }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.query.data).toEqual(infographicSaved));
+
+    await act(async () => {
+      await result.current.remove.mutateAsync("id1");
+    });
+
+    expect(library.deleteInfographic).toHaveBeenCalledWith("id1");
+    await waitFor(() => expect(result.current.query.data).toBeNull());
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["library", "documents"] });
+  });
+
+  it("when deleting the mind map, should put null in its query and refresh only the page list", async () => {
+    vi.mocked(library.getMindMap).mockResolvedValue({ nodes: [] } as never);
+    vi.mocked(library.deleteMindMap).mockResolvedValue(undefined);
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(
+      () => ({ query: useMindMap("id1"), remove: useDeleteMindMap() }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.query.data).toEqual({ nodes: [] }));
+
+    await act(async () => {
+      await result.current.remove.mutateAsync("id1");
+    });
+
+    expect(library.deleteMindMap).toHaveBeenCalledWith("id1");
+    await waitFor(() => expect(result.current.query.data).toBeNull());
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["library", "documents"] });
+  });
+
+  it("when deleting fails, should keep the saved content and expose the error", async () => {
+    vi.mocked(library.getInfographic).mockResolvedValue(infographicSaved as never);
+    vi.mocked(library.deleteInfographic).mockRejectedValue(new Error("Falha"));
+    const { wrapper } = setup();
+    const { result } = renderHook(
+      () => ({ query: useInfographic("id1"), remove: useDeleteInfographic() }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.query.data).toEqual(infographicSaved));
+
+    await act(async () => {
+      await result.current.remove.mutateAsync("id1").catch(() => undefined);
+    });
+
+    await waitFor(() => expect(result.current.remove.isError).toBe(true));
+    expect(result.current.query.data).toEqual(infographicSaved);
   });
 });

@@ -55,12 +55,19 @@ export interface LibraryIndexStatus {
  * Payload de `library:documents:list` (os parâmetros de query do `GET library/documents`).
  * `status` vazio vale `published`; `sort` vazio vale `title`. Valor fora da lista → `VALIDATION`.
  */
+/** Conteúdo gerado que a página precisa ter para entrar na lista (todos os pedidos valem juntos). */
+export type LibraryContentFilter = 'infographic' | 'mind-map';
+
+export const LIBRARY_CONTENT_FILTERS: readonly LibraryContentFilter[] = ['infographic', 'mind-map'];
+
 export interface LibraryListFilters {
   q?: string;
   category?: string[];
   type?: LibraryDocumentType;
   source?: LibraryDocumentSource;
   tags?: string[];
+  /** Só páginas que têm o infográfico e/ou o mapa mental gerados. */
+  has?: LibraryContentFilter[];
   status?: LibraryDocumentStatus;
   sort?: LibrarySort;
 }

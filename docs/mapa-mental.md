@@ -58,8 +58,8 @@ Excluir um resumo (janela "Sobre a página" > **Excluir**) **apaga também o map
 
 ## Dados e backup
 - `data/mind-maps.json` (um mapa por id de página; guarda também o hash do texto, o modelo, a data e se foi editado). O mapa **da IA** é cache e pode ser gerado de novo (centavos), mas as **edições do usuário** ficam neste mesmo arquivo e **ainda não entram no backup** (pendência: levar o arquivo para o `.zip`). Mapas guardados antes das frases curtas e do subtítulo continuam válidos (só mostram os termos); "Gerar de novo" traz as frases. Ver `persistencia.md`.
-- Excluir o resumo apaga o mapa dele (ver acima).
-- Canais IPC: `library:mind-map:get`, `library:mind-map:generate`, `library:mind-map:save` e `library:mind-map:save-image` (ver `ipc-canais.md`). **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`**: a lista de canais permitidos fica no preload, compilado na abertura, e um app aberto antes de um canal novo responde "Canal IPC não permitido".
+- **Excluir o resumo apaga o mapa dele** (e o infográfico). **Excluir só o mapa mental:** o ícone da lixeira ("Excluir só o mapa mental") entre os controles da aba abre `DeleteGeneratedDialog`, que diz "só", lista o que será apagado (o mapa, e as edições se foi editado) e o que continua (o texto do resumo e o infográfico). O resumo e o infográfico não mudam, a aba não gera outro mapa sozinha na mesma sessão (volta ao mapa simples com "Gerar com IA") e a lista de Páginas refaz o filtro "Com mapa mental".
+- Canais IPC: `library:mind-map:get`, `library:mind-map:generate`, `library:mind-map:save`, `library:mind-map:save-image` e `library:mind-map:delete` (ver `ipc-canais.md`). **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`**: a lista de canais permitidos fica no preload, compilado na abertura, e um app aberto antes de um canal novo responde "Canal IPC não permitido".
 
 ## O que ficou para as próximas fases
 - Filtro "Com infográfico" em Páginas (o infográfico em si já existe: ver `infografico.md`).

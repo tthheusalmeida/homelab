@@ -198,6 +198,7 @@ describe("LibraryPage", () => {
       type: undefined,
       source: undefined,
       tags: [],
+      has: [],
       sort: "title",
     });
   });
@@ -220,6 +221,34 @@ describe("LibraryPage", () => {
 
     await user.selectOptions(screen.getByLabelText("Tipo"), "all");
     expect(lastFilters().type).toBeUndefined();
+  });
+
+  it("when a content filter is chosen, should ask only for pages that have it", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.selectOptions(screen.getByLabelText("Conteúdo gerado"), "infographic");
+    expect(lastFilters().has).toEqual(["infographic"]);
+
+    await user.selectOptions(screen.getByLabelText("Conteúdo gerado"), "mind-map");
+    expect(lastFilters().has).toEqual(["mind-map"]);
+
+    await user.selectOptions(screen.getByLabelText("Conteúdo gerado"), "both");
+    expect(lastFilters().has).toEqual(["infographic", "mind-map"]);
+
+    await user.selectOptions(screen.getByLabelText("Conteúdo gerado"), "all");
+    expect(lastFilters().has).toEqual([]);
+  });
+
+  it("when only the content filter is active, should offer to clear the filters", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.selectOptions(screen.getByLabelText("Conteúdo gerado"), "infographic");
+    await user.click(screen.getByRole("button", { name: "Limpar filtros" }));
+
+    expect(lastFilters().has).toEqual([]);
+    expect(screen.getByLabelText("Conteúdo gerado")).toHaveValue("all");
   });
 
   it("when a source is chosen, should filter by it", async () => {

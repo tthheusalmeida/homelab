@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { Check, Pencil, Sparkles, X } from 'lucide-react';
+import { Check, Pencil, Sparkles, Trash2, X } from 'lucide-react';
 
 import { buildMindMap, fromAiMap } from '#lib/mind-map';
 import {
@@ -14,6 +14,7 @@ import {
 import { cn } from '#lib/utils';
 import { Callout } from '#components/Callout';
 import { ConfirmDialog } from '#components/ConfirmDialog';
+import { DeleteGeneratedDialog } from './DeleteGeneratedDialog';
 import { GenerateButton } from '#components/GenerateButton';
 import { HexLoader } from '#components/Hex';
 import { IconButton } from '#components/IconButton';
@@ -24,6 +25,7 @@ import { useSnackbar } from '#components/Snackbar';
 import {
   useGenerateMindMap,
   useMindMap,
+  useDeleteMindMap,
   useSaveMindMap,
   useSaveMindMapImage,
 } from '../hooks/useLibrary';
@@ -61,6 +63,7 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   const saved = useMindMap(documentId);
   const generate = useGenerateMindMap();
   const saveMap = useSaveMindMap();
+  const deleteMap = useDeleteMindMap();
   const saveImage = useSaveMindMapImage();
   const snackbar = useSnackbar();
 
@@ -68,7 +71,7 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   const [draft, setDraft] = useState<MindMapDraft | null>(
     () => draftsThisSession.get(documentId) ?? null,
   );
-  const [confirm, setConfirm] = useState<'discard' | 'regenerate' | null>(null);
+  const [confirm, setConfirm] = useState<'discard' | 'regenerate' | 'delete' | null>(null);
 
   const missing = saved.isSuccess && saved.data === null;
 
@@ -106,6 +109,17 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   const changeDraft = (next: MindMapDraft) => {
     draftsThisSession.set(documentId, next);
     setDraft(next);
+  };
+
+  // Excluir só o mapa: marca a página como "já tentada" antes, para a aba não gerar outro sozinha.
+  const deleteNow = () => {
+    requestedThisSession.add(documentId);
+    deleteMap.mutate(documentId, {
+      onSuccess: () => {
+        setConfirm(null);
+        snackbar.success('Mapa mental excluído.');
+      },
+    });
   };
 
   const closeEditing = () => {
@@ -223,6 +237,19 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
         <Pencil />
       </IconButton>
 
+      {hasMap && (
+        <IconButton
+          label="Excluir só o mapa mental"
+          disabled={pending}
+          onClick={() => {
+            deleteMap.reset();
+            setConfirm('delete');
+          }}
+        >
+          <Trash2 />
+        </IconButton>
+      )}
+
       {hasMap && !notice && (
         <IconButton
           label={pending ? 'Gerando…' : 'Gerar de novo com IA'}
@@ -271,6 +298,16 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
           setConfirm(null);
           closeEditing();
         }}
+      />
+
+      <DeleteGeneratedDialog
+        kind="mind-map"
+        open={confirm === 'delete'}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        isPending={deleteMap.isPending}
+        errorMessage={deleteMap.error?.message}
+        edited={saved.data?.edited}
+        onConfirm={deleteNow}
       />
 
       <ConfirmDialog

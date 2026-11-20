@@ -53,6 +53,7 @@ Fundação, armazenamento, índice, busca, operações e API.
 - Primeiro filtra pelos metadados em memória; só então lê do disco (8 por vez) os arquivos que ainda não casaram por metadados. Cada resultado indica `matchedIn`: `metadata` ou `content`.
 - Ordenação: `title` (padrão, alfanumérica natural pt-BR) ou `recent` (mais novos primeiro). Valor inválido em tipo, origem, status ou ordenação dá 400.
 - Os resultados trazem metadados, nome do arquivo e prévia, nunca o corpo.
+- **Conteúdo gerado (`has`):** lista com `infographic` e/ou `mind-map`; a página só entra se tiver **todos** os conteúdos pedidos guardados (`InfographicStore` e `MindMapStore`). Valor desconhecido ou que não seja lista é `BadRequest`. Sem os armazenamentos (testes, módulo mínimo) um pedido de conteúdo não devolve nada.
 
 ## Operações (`LibraryService`)
 - **Entrada:** documentos `pending` do mais recente ao mais antigo.

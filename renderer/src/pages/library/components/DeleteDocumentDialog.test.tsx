@@ -60,7 +60,17 @@ describe('DeleteDocumentDialog', () => {
     setup();
 
     expect(
-      screen.getByRole('button', { name: 'Excluir resumo e mapa mental' }),
+      screen.getByRole('button', { name: 'Excluir resumo, mapa mental e infográfico' }),
+    ).toBeInTheDocument();
+  });
+
+  it('when it is a summary, should say it also deletes the mind map and the infographic and point to deleting only one of them', () => {
+    setup();
+
+    expect(screen.getByText(/TUDO o que se baseia nele/)).toBeInTheDocument();
+    expect(screen.getByText(/O infográfico deste resumo/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Quer apagar só o mapa mental ou só o infográfico\?/),
     ).toBeInTheDocument();
   });
 
@@ -96,7 +106,9 @@ describe('DeleteDocumentDialog', () => {
   it('when confirmed, should ask to delete', async () => {
     const { onConfirm } = setup();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Excluir resumo e mapa mental' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Excluir resumo, mapa mental e infográfico' }),
+    );
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
@@ -114,7 +126,9 @@ describe('DeleteDocumentDialog', () => {
     setup({ isPending: true });
 
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Excluir resumo e mapa mental/ })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: /Excluir resumo, mapa mental e infográfico/ }),
+    ).toBeDisabled();
   });
 
   it('when it failed, should show the error message', () => {
@@ -126,7 +140,7 @@ describe('DeleteDocumentDialog', () => {
 
 describe('deletedMessage', () => {
   it('when a summary is deleted, should say the mind map went too', () => {
-    expect(deletedMessage('summary')).toBe('Resumo e mapa mental excluídos');
+    expect(deletedMessage('summary')).toBe('Resumo, mapa mental e infográfico excluídos');
   });
 
   it('when another type is deleted, should name the type', () => {

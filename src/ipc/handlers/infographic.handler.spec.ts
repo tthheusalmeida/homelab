@@ -1,3 +1,5 @@
+import { NotFoundException } from '@nestjs/common';
+
 import { IpcChannels } from '../../shared/channels';
 import { IpcErrorCode } from '../../shared/errors';
 import { IpcRegistrar } from '../ipc-registrar';
@@ -28,10 +30,11 @@ const infographic = {
   stale: false,
 };
 
-function setup(overrides: Partial<Record<'get' | 'generate', jest.Mock>> = {}) {
+function setup(overrides: Partial<Record<'get' | 'generate' | 'delete', jest.Mock>> = {}) {
   const port = {
     get: jest.fn().mockResolvedValue(infographic),
     generate: jest.fn().mockResolvedValue(infographic),
+    delete: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   };
   const ipc = new FakeIpcMain();
@@ -50,6 +53,29 @@ describe('InfographicHandler', () => {
       data: infographic,
     });
     expect(port.get).toHaveBeenCalledWith('1');
+  });
+
+  it('when library:infographic:delete is called, should delete only the infographic of that page', async () => {
+    const { ipc, port } = setup();
+
+    await expect(ipc.invoke(IpcChannels.library.infographic.delete, { id: '1' })).resolves.toEqual({
+      ok: true,
+      data: undefined,
+    });
+    expect(port.delete).toHaveBeenCalledWith('1');
+  });
+
+  it('when the page does not exist, should answer the error of the delete', async () => {
+    const { ipc } = setup({
+      delete: jest.fn().mockRejectedValue(new NotFoundException('Documento não encontrado')),
+    });
+
+    await expect(
+      ipc.invoke(IpcChannels.library.infographic.delete, { id: 'x' }),
+    ).resolves.toMatchObject({
+      ok: false,
+      error: { code: IpcErrorCode.NOT_FOUND },
+    });
   });
 
   it('when there is no infographic yet, should answer ok with null', async () => {

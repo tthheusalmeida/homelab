@@ -35,6 +35,7 @@ export function toListFilters(filters: LibraryFilters = {}): LibraryListFilters 
   if (text) payload.q = text;
   if (filters.category?.length) payload.category = filters.category;
   if (filters.tags?.length) payload.tags = filters.tags;
+  if (filters.has?.length) payload.has = filters.has;
   if (filters.type) payload.type = filters.type;
   if (filters.source) payload.source = filters.source;
   if (filters.status) payload.status = filters.status;
@@ -101,6 +102,16 @@ export function updateDocument(id: string, input: UpdateDocumentInput): Promise<
 /** O mapa mental guardado do resumo, ou `null` se ainda não foi gerado. */
 export function getMindMap(id: string): Promise<LibraryMindMap | null> {
   return ipc.invoke(IpcChannels.library.mindMap.get, { id });
+}
+
+/** Apaga só o mapa mental do resumo (o resumo e o infográfico ficam). */
+export function deleteMindMap(id: string): Promise<void> {
+  return ipc.invoke(IpcChannels.library.mindMap.delete, { id });
+}
+
+/** Apaga só o infográfico do resumo (o resumo e o mapa mental ficam). */
+export function deleteInfographic(id: string): Promise<void> {
+  return ipc.invoke(IpcChannels.library.infographic.delete, { id });
 }
 
 /** Pede à IA o mapa mental do resumo (gera de novo se já havia um). */

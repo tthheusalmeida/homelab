@@ -13,6 +13,8 @@ import {
   getDocument,
   getDocuments,
   getIndexStatus,
+  deleteInfographic,
+  deleteMindMap,
   generateInfographic,
   generateMindMap,
   getInbox,
@@ -99,6 +101,35 @@ export function useSaveMindMap() {
     }) => saveMindMap(id, { subtitle, nodes }),
     onSuccess: (map, { id }) =>
       queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map),
+  });
+}
+
+/**
+ * Apaga só o mapa mental do resumo. Põe `null` direto na consulta do mapa (o resumo e o infográfico
+ * não mudam, então a biblioteca não é invalidada), e a lista de Páginas refaz o filtro "Com mapa mental".
+ */
+export function useDeleteMindMap() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteMindMap(id),
+    onSuccess: async (_result, id) => {
+      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], null);
+      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
+    },
+  });
+}
+
+/** Apaga só o infográfico do resumo. Igual ao do mapa mental, para o infográfico. */
+export function useDeleteInfographic() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteInfographic(id),
+    onSuccess: async (_result, id) => {
+      queryClient.setQueryData([...LIBRARY_KEY, "infographic", id], null);
+      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
+    },
   });
 }
 

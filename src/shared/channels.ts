@@ -85,10 +85,12 @@ export const IpcChannels = {
       generate: 'library:mind-map:generate',
       save: 'library:mind-map:save',
       saveImage: 'library:mind-map:save-image',
+      delete: 'library:mind-map:delete',
     },
     infographic: {
       get: 'library:infographic:get',
       generate: 'library:infographic:generate',
+      delete: 'library:infographic:delete',
     },
     inbox: 'library:inbox',
     categories: 'library:categories',

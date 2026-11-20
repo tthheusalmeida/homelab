@@ -147,6 +147,40 @@ describe('MindMapService', () => {
     });
   });
 
+  describe('delete', () => {
+    it('when deleting, should remove only the mind map of the page', async () => {
+      await service.generate('1');
+      await service.generate('2');
+
+      await service.delete('1');
+
+      expect(store.get('1')).toBeUndefined();
+      expect(store.get('2')).toBeDefined();
+      await expect(service.get('1')).resolves.toBeNull();
+    });
+
+    it('when the map was edited by the user, should delete it as well (the caller confirms before)', async () => {
+      await service.generate('1');
+      await service.save('1', { nodes: [{ label: 'Meu ramo', children: [] }] });
+
+      await service.delete('1');
+
+      await expect(service.get('1')).resolves.toBeNull();
+    });
+
+    it('when the page has no mind map, should not fail', async () => {
+      await expect(service.delete('1')).resolves.toBeUndefined();
+    });
+
+    it('when the page does not exist, should let the NotFoundException through and delete nothing', async () => {
+      await service.generate('1');
+      library.get.mockRejectedValueOnce(new NotFoundException('Documento não encontrado'));
+
+      await expect(service.delete('1')).rejects.toBeInstanceOf(NotFoundException);
+      expect(store.get('1')).toBeDefined();
+    });
+  });
+
   describe('get', () => {
     it('when no map was generated, should return null', async () => {
       await expect(service.get('1')).resolves.toBeNull();

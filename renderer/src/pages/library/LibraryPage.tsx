@@ -21,9 +21,12 @@ import { TagFilter } from "./components/TagFilter";
 import { ViewToggle, viewModes, type ViewMode } from "./components/ViewToggle";
 import { useCategories, useDocuments, useTags } from "./hooks/useLibrary";
 import {
+  contentFilterLabels,
+  contentFilterToHas,
   documentSourceLabels,
   documentTypeLabels,
   sortLabels,
+  type ContentFilter,
   type DocumentSource,
   type DocumentType,
   type SortOption,
@@ -55,6 +58,7 @@ export function LibraryPage() {
   );
   const [type, setType] = useState<DocumentType>();
   const [source, setSource] = useState<DocumentSource>();
+  const [content, setContent] = useState<ContentFilter>();
   const [tags, setTags] = useState<string[]>([]);
   const [sort, setSort] = useState<SortOption>("title");
   const [view, setView] = useStoredState<ViewMode>(
@@ -65,7 +69,15 @@ export function LibraryPage() {
 
   const q = useDebouncedValue(search);
 
-  const documents = useDocuments({ q, category, type, source, tags, sort });
+  const documents = useDocuments({
+    q,
+    category,
+    type,
+    source,
+    tags,
+    has: contentFilterToHas(content),
+    sort,
+  });
   const categories = useCategories();
   const tagList = useTags();
 
@@ -74,6 +86,7 @@ export function LibraryPage() {
     category.length > 0 ||
     type !== undefined ||
     source !== undefined ||
+    content !== undefined ||
     tags.length > 0;
 
   function clearFilters() {
@@ -81,6 +94,7 @@ export function LibraryPage() {
     setCategory([]);
     setType(undefined);
     setSource(undefined);
+    setContent(undefined);
     setTags([]);
   }
 
@@ -154,6 +168,20 @@ export function LibraryPage() {
             onValueChange={(value) =>
               setSource(
                 !value || value === ALL ? undefined : (value as DocumentSource),
+              )
+            }
+          />
+
+          <OptionSelect
+            value={content ?? ALL}
+            options={toOptions(contentFilterLabels, "Todo o conteúdo")}
+            placeholder="Conteúdo"
+            label="Conteúdo gerado"
+            triggerWidth="w-52"
+            contentWidth="w-60"
+            onValueChange={(value) =>
+              setContent(
+                !value || value === ALL ? undefined : (value as ContentFilter),
               )
             }
           />

@@ -49,6 +49,15 @@ export class InfographicService {
     return toView(stored, hashContent(content));
   }
 
+  /**
+   * Apaga **só o infográfico** da página. O resumo e o mapa mental ficam como estão. Página
+   * inexistente é `NOT_FOUND`; página sem infográfico não é erro (já está como se pede).
+   */
+  async delete(id: string): Promise<void> {
+    await this.library.get(id);
+    this.store.delete(id);
+  }
+
   /** Gera (ou gera de novo) o infográfico da página e o guarda. */
   generate(
     id: string,

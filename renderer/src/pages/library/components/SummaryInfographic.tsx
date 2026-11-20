@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { Download, ImageOff, LayoutPanelTop } from 'lucide-react';
+import { Download, ImageOff, LayoutPanelTop, Trash2 } from 'lucide-react';
 
 import { captureInfographicPng } from '#lib/infographic-image';
 import {
@@ -21,7 +21,14 @@ import { LoadingState } from '#components/LoadingState';
 import { OptionSelect } from '#components/OptionSelect';
 import { useSnackbar } from '#components/Snackbar';
 
-import { useGenerateInfographic, useInfographic, useSaveMindMapImage } from '../hooks/useLibrary';
+import {
+  useDeleteInfographic,
+  useGenerateInfographic,
+  useInfographic,
+  useSaveMindMapImage,
+} from '../hooks/useLibrary';
+
+import { DeleteGeneratedDialog } from './DeleteGeneratedDialog';
 
 interface SummaryInfographicProps {
   documentId: string;
@@ -47,11 +54,13 @@ const requestedThisSession = new Set<string>();
 export function SummaryInfographic({ documentId, title, className }: SummaryInfographicProps) {
   const saved = useInfographic(documentId);
   const generate = useGenerateInfographic();
+  const deleteInfographic = useDeleteInfographic();
   const saveImage = useSaveMindMapImage();
   const snackbar = useSnackbar();
 
   const [choice, setChoice] = useState<LayoutChoice>(AUTO_LAYOUT);
   const [exporting, setExporting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const stage = useRef<HTMLDivElement>(null);
 
   const pending = generate.isPending;
@@ -71,6 +80,17 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
     // `generate` muda a cada render; só a falta do infográfico dispara a geração.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [missing, documentId]);
+
+  // Excluir só o infográfico: marca a página como "já tentada" antes, para a aba não gerar outro sozinha.
+  const deleteNow = () => {
+    requestedThisSession.add(documentId);
+    deleteInfographic.mutate(documentId, {
+      onSuccess: () => {
+        setConfirmDelete(false);
+        snackbar.success('Infográfico excluído.');
+      },
+    });
+  };
 
   const download = async (transparent: boolean) => {
     const element = stage.current;
@@ -187,6 +207,17 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
             >
               <ImageOff />
             </IconButton>
+
+            <IconButton
+              label="Excluir só o infográfico"
+              disabled={exporting || pending}
+              onClick={() => {
+                deleteInfographic.reset();
+                setConfirmDelete(true);
+              }}
+            >
+              <Trash2 />
+            </IconButton>
           </div>
         )}
       </div>
@@ -213,6 +244,15 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
           }
         />
       )}
+
+      <DeleteGeneratedDialog
+        kind="infographic"
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        isPending={deleteInfographic.isPending}
+        errorMessage={deleteInfographic.error?.message}
+        onConfirm={deleteNow}
+      />
     </div>
   );
 }

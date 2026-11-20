@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import type { LibraryInfographic } from '#shared/contracts/library';
@@ -11,6 +11,11 @@ const generate = vi.hoisted(() => ({
   mutate: vi.fn(),
   state: { isPending: false, isError: false, error: null as Error | null },
 }));
+const del = vi.hoisted(() => ({
+  mutate: vi.fn(),
+  reset: vi.fn(),
+  state: { isPending: false, error: null as Error | null },
+}));
 const saveImage = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
 const snackbar = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 const capture = vi.hoisted(() => vi.fn());
@@ -19,6 +24,7 @@ vi.mock('../hooks/useLibrary', () => ({
   useInfographic: () => saved.state,
   useGenerateInfographic: () => ({ mutate: generate.mutate, ...generate.state }),
   useSaveMindMapImage: () => ({ mutateAsync: saveImage.mutateAsync }),
+  useDeleteInfographic: () => ({ mutate: del.mutate, reset: del.reset, ...del.state }),
 }));
 vi.mock('#components/Snackbar', () => ({ useSnackbar: () => snackbar }));
 vi.mock('#lib/infographic-image', () => ({ captureInfographicPng: capture }));
@@ -75,6 +81,13 @@ beforeEach(() => {
   currentId = `doc${(pages += 1)}`;
   saved.state = { isPending: false, data: null };
   generate.mutate.mockReset();
+  del.mutate
+    .mockReset()
+    .mockImplementation((_id: string, options?: { onSuccess?: () => void }) =>
+      options?.onSuccess?.(),
+    );
+  del.reset.mockReset();
+  del.state = { isPending: false, error: null };
   generate.state = { isPending: false, isError: false, error: null };
   saveImage.mutateAsync.mockReset().mockResolvedValue({ saved: true, path: 'D:/x.png' });
   capture.mockReset().mockResolvedValue('QUJD');
@@ -325,5 +338,93 @@ describe('SummaryInfographic', () => {
         screen.queryByRole('button', { name: /Baixar o infográfico/ }),
       ).not.toBeInTheDocument();
     });
+  });
+});
+
+describe('SummaryInfographic delete', () => {
+  const deleteButton = () => screen.getByRole('button', { name: 'Excluir só o infográfico' });
+
+  it('when there is an infographic, should offer a delete button that says it is only the infographic', () => {
+    saved.state = { isPending: false, data: infographic };
+
+    renderTab();
+
+    expect(deleteButton()).toBeInTheDocument();
+  });
+
+  it('when there is no infographic, should not offer to delete', () => {
+    burnAutoRequest();
+
+    renderTab();
+
+    expect(
+      screen.queryByRole('button', { name: 'Excluir só o infográfico' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('when clicking delete, should ask first and say what stays', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+
+    await userEvent.click(deleteButton());
+
+    expect(screen.getByText('Excluir só o infográfico?')).toBeInTheDocument();
+    expect(screen.getByText(/O texto do resumo e o mapa mental/)).toBeInTheDocument();
+    expect(del.mutate).not.toHaveBeenCalled();
+  });
+
+  it('when the user cancels, should delete nothing', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await userEvent.click(deleteButton());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(del.mutate).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.queryByText('Excluir só o infográfico?')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('when the user confirms, should delete only the infographic and not ask the AI for another one', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await userEvent.click(deleteButton());
+
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Excluir só o infográfico' }),
+    );
+
+    expect(del.mutate).toHaveBeenCalledWith(currentId, expect.any(Object));
+    expect(snackbar.success).toHaveBeenCalledWith('Infográfico excluído.');
+
+    // sem infográfico guardado, a aba mostra o estado vazio sem gerar outro sozinha
+    cleanup();
+    saved.state = { isPending: false, data: null };
+    renderTab();
+
+    expect(generate.mutate).not.toHaveBeenCalled();
+    expect(screen.getByText('Este resumo ainda não tem infográfico')).toBeInTheDocument();
+  });
+
+  it('when deleting fails, should show the reason inside the dialog and keep it open', async () => {
+    saved.state = { isPending: false, data: infographic };
+    del.mutate.mockReset();
+    del.state = { isPending: false, error: new Error('Falha ao apagar') };
+    renderTab();
+
+    await userEvent.click(deleteButton());
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Falha ao apagar');
+    expect(screen.getByText('Excluir só o infográfico?')).toBeInTheDocument();
+  });
+
+  it('when the AI is generating, should not allow deleting', () => {
+    saved.state = { isPending: false, data: infographic };
+    generate.state = { isPending: true, isError: false, error: null };
+
+    renderTab();
+
+    expect(deleteButton()).toBeDisabled();
   });
 });

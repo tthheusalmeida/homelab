@@ -1,3 +1,5 @@
+import type { LibraryContentFilter } from "#shared/contracts/library";
+
 export type DocumentType = "summary" | "transcription" | "article";
 export type DocumentSource = "video" | "manual";
 export type DocumentStatus = "pending" | "published" | "archived";
@@ -12,6 +14,24 @@ export const documentSourceLabels: Record<DocumentSource, string> = {
   video: "Vídeo",
   manual: "Manual",
 };
+
+/** Filtro de conteúdo gerado: o infográfico, o mapa mental ou os dois (a página precisa ter tudo o que foi pedido). */
+export type ContentFilter = "infographic" | "mind-map" | "both";
+
+export const contentFilterLabels: Record<ContentFilter, string> = {
+  infographic: "Com infográfico",
+  "mind-map": "Com mapa mental",
+  both: "Com infográfico e mapa mental",
+};
+
+/** O que o filtro pede ao back (o campo has). */
+export function contentFilterToHas(filter: ContentFilter | undefined): LibraryContentFilter[] {
+  if (filter === "both") {
+    return ["infographic", "mind-map"];
+  }
+
+  return filter ? [filter] : [];
+}
 
 export type SortOption = "title" | "recent";
 
@@ -72,6 +92,7 @@ export interface LibraryFilters {
   type?: DocumentType;
   source?: DocumentSource;
   tags?: string[];
+  has?: LibraryContentFilter[];
   status?: DocumentStatus;
   sort?: SortOption;
 }

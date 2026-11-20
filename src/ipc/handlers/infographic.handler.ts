@@ -11,6 +11,8 @@ export interface InfographicPort {
     id: string,
     options: Pick<LibraryInfographicRequest, 'modelId' | 'layout'>,
   ): Promise<LibraryInfographic>;
+  /** Apaga só o infográfico da página (o resumo e o mapa mental ficam). */
+  delete(id: string): Promise<void>;
 }
 
 export const InfographicPayloadMessages = {
@@ -30,6 +32,7 @@ export class InfographicHandler extends IpcHandler {
   routes(): IpcRoute[] {
     return [
       this.route(IpcChannels.library.infographic.get, ({ id }) => this.infographics.get(id)),
+      this.route(IpcChannels.library.infographic.delete, ({ id }) => this.infographics.delete(id)),
       this.route(
         IpcChannels.library.infographic.generate,
         ({ id, modelId, layout }: LibraryInfographicRequest) => {

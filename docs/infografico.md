@@ -48,7 +48,7 @@ Campos de cada seção: `layout`, `title` (o que a seção explica), `subtitle`,
 ## Persistência
 - Cada infográfico fica em **`data/infographics.json`** (um por resumo, pelo id da página), com o mesmo mecanismo do mapa mental (`JsonFile` atômico com `.bak`): guarda a capa, as seções (modelo, textos e peças de cada uma), o fechamento, o hash do texto do resumo, o modelo do Gemini e a data. Abrir a página de novo (ou o app) mostra o que foi guardado.
 - Se o texto do resumo mudou depois da geração, aparece o aviso "O resumo mudou depois que este infográfico foi gerado." com o botão **Atualizar com IA**; o infográfico antigo continua na tela até lá.
-- **Excluir o resumo apaga o infográfico dele** (`LibraryService.discard`).
+- **Excluir o resumo apaga o infográfico dele** (`LibraryService.discard`, junto com o mapa mental). **Excluir só o infográfico:** o ícone da lixeira ("Excluir só o infográfico") ao lado dos botões de baixar abre `DeleteGeneratedDialog` (a mesma janela do mapa mental, com o título e o botão dizendo "só", a lista do que será apagado e o que continua: o texto do resumo e o mapa mental). O resumo e o mapa mental não mudam; a aba não gera outro infográfico sozinha na mesma sessão (mostra o estado vazio com "Gerar infográfico") e a lista de Páginas refaz o filtro "Com infográfico". Ao abrir a aba **numa sessão nova** de um resumo sem infográfico, ele volta a ser gerado sozinho (regra da primeira abertura).
 - **Backup:** entra no `.zip` como o item **Infográficos** (caixa própria em Configurações > Backup, separada da dos mapas mentais; ver `persistencia.md`). Restaurar em **Mesclar** só traz os de páginas que ainda não têm infográfico; **Substituir** troca todos.
 
 ## Tela
@@ -69,7 +69,7 @@ A galeria usa o tema e a cor de destaque do app (mude em Aparência e volte para
 Dois ícones: **PNG com fundo** e **PNG sem fundo (transparente)**, com tooltip. O renderer fotografa o quadro (`lib/infographic-image.ts`, `html-to-image`, 2x; fixa o preenchimento e o traço das peças antes da foto, porque a biblioteca perderia o que vem de classe CSS) e envia o PNG em base64 pelo canal `library:mind-map:save-image` (o mesmo do mapa mental; o main confere que é um PNG e abre o diálogo "Salvar como"). Nome sugerido: "Infográfico - título da página.png" (e "(sem fundo)").
 
 ## Canais IPC
-`library:infographic:get` (`{ id }` → infográfico ou `null`) e `library:infographic:generate` (`{ id, modelId?, layout? }` → infográfico). Página inexistente é `NOT_FOUND`, página que não é resumo ou modelo desconhecido é `VALIDATION` e falha da IA é `PROVIDER_FAILED`. **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`**: a lista de canais permitidos fica no preload, compilado na abertura.
+`library:infographic:get` (`{ id }` → infográfico ou `null`), `library:infographic:generate` e `library:infographic:delete` (`{ id }` → nada; apaga só o infográfico) (`{ id, modelId?, layout? }` → infográfico). Página inexistente é `NOT_FOUND`, página que não é resumo ou modelo desconhecido é `VALIDATION` e falha da IA é `PROVIDER_FAILED`. **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`**: a lista de canais permitidos fica no preload, compilado na abertura.
 
 ## Testes
 Back: `infographic.spec.ts` (validação), `infographic.prompt.spec.ts`, `infographic-store.spec.ts`, `infographic.service.spec.ts`, `infographic.handler.spec.ts`, `infographic-pieces.spec.ts` (catálogo e modelos) e a exclusão junto com a página em `library.service.spec.ts`. Renderer: `InfographicPiece` (selo, glifo, recorte e `glyphFit`), `InfographicView` (os 10 modelos), `InfographicGallerySection` e `lib/infographic-sample.test.ts` (a galeria e o exemplo), `SummaryInfographic`, `lib/infographic*.test.ts`, api, hooks e `DocumentPage.summary.test.tsx`.
@@ -77,4 +77,4 @@ Back: `infographic.spec.ts` (validação), `infographic.prompt.spec.ts`, `infogr
 ## O que ficou para as próximas fases
 - Testar a qualidade da escolha de modelo e de peças com resumos reais e ajustar o prompt e as palavras-chave do catálogo.
 - Refinar o desenho das peças (a primeira rodada foi feita por código, sem refino manual) e acrescentar peças sob demanda.
-- Editar textos e trocar peças à mão; escolher o modelo do Gemini; filtro "Com infográfico" em Páginas.
+- Editar textos e trocar peças à mão; escolher o modelo do Gemini.

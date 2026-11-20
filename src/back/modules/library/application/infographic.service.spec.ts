@@ -64,6 +64,40 @@ describe('InfographicService', () => {
     );
   });
 
+  describe('delete', () => {
+    it('when deleting, should remove only the infographic of the page', async () => {
+      await service.generate('1');
+      await service.generate('2');
+
+      await service.delete('1');
+
+      expect(store.get('1')).toBeUndefined();
+      expect(store.get('2')).toBeDefined();
+      await expect(service.get('1')).resolves.toBeNull();
+    });
+
+    it('when the page has no infographic, should not fail', async () => {
+      await expect(service.delete('1')).resolves.toBeUndefined();
+    });
+
+    it('when the page does not exist, should let the NotFoundException through and delete nothing', async () => {
+      await service.generate('1');
+      library.get.mockRejectedValueOnce(new NotFoundException('Documento não encontrado'));
+
+      await expect(service.delete('1')).rejects.toBeInstanceOf(NotFoundException);
+      expect(store.get('1')).toBeDefined();
+    });
+
+    it('when deleting, should be possible to generate it again afterwards', async () => {
+      await service.generate('1');
+      await service.delete('1');
+
+      await expect(service.generate('1')).resolves.toMatchObject({
+        title: 'Como a internet chega',
+      });
+    });
+  });
+
   describe('generate', () => {
     it('when the AI answers, should save and return the story with the model and no stale flag', async () => {
       const result = await service.generate('1');
