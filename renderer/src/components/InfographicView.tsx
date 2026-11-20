@@ -119,7 +119,7 @@ export const InfographicView = forwardRef<HTMLDivElement, InfographicViewProps>(
 
         {data.takeaways && data.takeaways.length > 0 && (
           <>
-            <HexRule className="my-0" />
+            <HexRule className="my-0 mb-6" />
 
             <Takeaways items={data.takeaways} />
           </>

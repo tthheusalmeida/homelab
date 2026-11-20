@@ -1,3 +1,5 @@
+import { ArrowRight } from 'lucide-react';
+
 import { cn } from '#lib/utils';
 
 import { HexMark, HighlightedTitle, Kicker, PieceBox } from './common';
@@ -10,9 +12,13 @@ const COLUMNS: Record<number, string> = {
 };
 
 /** A seta entre as etapas só aparece quando elas estão lado a lado (mesmo ponto de quebra das colunas). */
-const ARROW_SHOW: Record<number, string> = { 3: '@2xl:grid', 4: '@2xl:grid', 5: '@3xl:grid' };
+const ARROW_SHOW: Record<number, string> = { 3: '@2xl:flex', 4: '@2xl:flex', 5: '@3xl:flex' };
 
-/** Guia em passos: capa, etapas lado a lado ligadas por setas hexagonais e dicas. */
+/**
+ * Guia em passos: capa, etapas lado a lado ligadas por setas e dicas. A seta ocupa exatamente o vão
+ * entre duas peças (`-right-10` e `w-10`, o mesmo de `gap-10`) e fica na altura do meio da peça, então
+ * fica centralizada na horizontal e na vertical.
+ */
 export function StepsLayout({ data }: LayoutProps) {
   const { items } = data;
 
@@ -29,26 +35,29 @@ export function StepsLayout({ data }: LayoutProps) {
 
       <ol className={cn('grid gap-10 @lg:grid-cols-2', COLUMNS[items.length])}>
         {items.map((item, index) => (
-          <li key={index} className="relative flex flex-col gap-2">
-            <PieceBox pieceKey={item.piece} />
+          <li key={index} className="flex flex-col gap-2">
+            <div className="relative">
+              <PieceBox pieceKey={item.piece} />
+
+              {index < items.length - 1 && (
+                <span
+                  aria-hidden="true"
+                  data-step-arrow
+                  className={cn(
+                    'absolute inset-y-0 -right-10 hidden w-10 items-center justify-center text-brand',
+                    ARROW_SHOW[items.length],
+                  )}
+                >
+                  <ArrowRight className="size-6" strokeWidth={3.5} />
+                </span>
+              )}
+            </div>
 
             <Kicker className="mt-1 text-brand-text">Etapa {index + 1}</Kicker>
 
             <h4 className="font-semibold tracking-tight">{item.title}</h4>
 
             <p className="text-sm text-muted-foreground">{item.text}</p>
-
-            {index < items.length - 1 && (
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'absolute top-9 -right-8 hidden h-[29px] w-6 place-items-center bg-brand text-xs font-bold text-background [clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]',
-                  ARROW_SHOW[items.length],
-                )}
-              >
-                →
-              </span>
-            )}
           </li>
         ))}
       </ol>
@@ -58,7 +67,7 @@ export function StepsLayout({ data }: LayoutProps) {
           {data.tips.map((tip, index) => (
             <li
               key={index}
-              className="flex items-center gap-2 rounded-full border bg-background py-1.5 pr-4 pl-2 text-[13px]"
+              className="flex items-center gap-2 rounded-full border bg-background p-2 text-[13px]"
             >
               <HexMark />
 

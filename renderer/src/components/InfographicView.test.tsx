@@ -209,7 +209,28 @@ describe('InfographicView: os modelos', () => {
 
       expect(screen.getByText('Etapa 1')).toBeInTheDocument();
       expect(screen.getByText('Etapa 4')).toBeInTheDocument();
-      expect(screen.getAllByText('→')).toHaveLength(3);
+      expect(document.querySelectorAll('[data-step-arrow]')).toHaveLength(3);
+    });
+
+    it('when drawing the arrow between steps, should center it in the gap and drop the hexagon', () => {
+      const { container } = render(<InfographicView data={one('steps')} />);
+      const arrow = container.querySelector('[data-step-arrow]') as HTMLElement;
+
+      // ocupa o vão inteiro (gap-10 = w-10) na altura da peça, com o ícone no meio
+      expect(arrow.className).toContain('-right-10');
+      expect(arrow.className).toContain('w-10');
+      expect(arrow.className).toContain('inset-y-0');
+      expect(arrow.className).toContain('items-center');
+      expect(arrow.className).toContain('justify-center');
+      expect(arrow.className).not.toContain('clip-path');
+      expect(arrow.querySelector('svg')?.getAttribute('stroke-width')).toBe('3.5');
+      expect(arrow.textContent).toBe('');
+    });
+
+    it('when listing the tips, should give each one 8px of inner spacing', () => {
+      render(<InfographicView data={one('steps')} />);
+
+      expect(screen.getByText('Dica dois').closest('li')?.className).toContain('p-2');
     });
 
     it('when there are tips, should list them', () => {
@@ -317,6 +338,14 @@ describe('InfographicView: os modelos', () => {
   });
 
   describe('myths', () => {
+    it('when rendering, should not draw a divider line under the title', () => {
+      const { container } = render(<InfographicView data={one('myths')} />);
+      const section = container.querySelector('section') as HTMLElement;
+
+      // só o divisor da própria seção (acima do "Parte N de M"); nenhum abaixo do título
+      expect(section.querySelectorAll('.h-px')).toHaveLength(1);
+    });
+
     it('when rendering, should show every myth with its truth', () => {
       render(<InfographicView data={one('myths')} />);
 
@@ -324,6 +353,35 @@ describe('InfographicView: os modelos', () => {
       expect(screen.getAllByText('Texto 2').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Mito').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Verdade').length).toBeGreaterThan(0);
+    });
+
+    it('when painting the pairs, should make the myth red and the truth green, never the accent color', () => {
+      const { container } = render(<InfographicView data={one('myths')} />);
+      const myths = container.querySelectorAll('[data-myth="mito"]');
+      const truths = container.querySelectorAll('[data-myth="verdade"]');
+
+      expect(myths.length).toBeGreaterThan(0);
+      expect(truths).toHaveLength(myths.length);
+
+      for (const myth of myths) {
+        expect(myth.className).toContain('destructive');
+        expect(myth.className).not.toMatch(/primary|brand/);
+      }
+
+      for (const truth of truths) {
+        expect(truth.className).toContain('emerald');
+        expect(truth.className).not.toMatch(/primary|brand/);
+      }
+    });
+  });
+
+  describe('closing', () => {
+    it('when there are takeaways, should leave a gap between the last divider and the footer', () => {
+      const { container } = render(<InfographicView data={story([SAMPLES.steps])} />);
+      const rules = container.querySelectorAll('.h-px');
+      const last = rules[rules.length - 1] as HTMLElement;
+
+      expect(last.className).toContain('mb-6');
     });
   });
 
@@ -362,18 +420,60 @@ describe('InfographicView: os modelos', () => {
       expect(corner('tl')).toContain('@2xl:col-start-1 @2xl:row-start-1'); // 4 -> 1
     });
 
-    it('when drawing the arrows, should give each one a rounded 90 degree bend and an arrow head', () => {
+    it('when drawing the arrows, should draw a true quarter circle (a square with one fully rounded corner) next to a straight stretch', () => {
       const { container } = render(<InfographicView data={one('cycle')} />);
 
       for (const arrow of container.querySelectorAll('[data-arrow]')) {
-        const line = arrow.children[0];
-        const head = line.children[0];
+        const part = (name: string) => arrow.querySelector(`[data-part="${name}"]`) as HTMLElement;
 
-        expect(line.className).toMatch(/rounded-(tr|br|bl|tl)-/);
-        expect(line.className).toContain('[28px]');
-        expect(head.tagName.toLowerCase()).toBe('i');
-        expect(head.className).toContain('rotate-45');
+        expect(part('arc').className).toMatch(/rounded-(tr|br|bl|tl)-full/);
+        // quadrado com a altura da faixa: o raio é metade do lado, então o arco é circular
+        expect(part('arc').className).toContain('aspect-square');
+        expect(part('arc').className).toContain('h-full');
+        expect(part('line').className).toContain('flex-1');
+        expect(part('band').className).toContain('flex');
       }
+    });
+
+    it('when drawing the arrows, should start 8px from the source card and stop at the base of the head', () => {
+      const { container } = render(<InfographicView data={one('cycle')} />);
+      const band = (id: string) =>
+        (container.querySelector(`[data-arrow="${id}"] [data-part="band"]`) as HTMLElement)
+          .className;
+
+      expect(band('tr')).toContain('-left-4'); // começa a 8 px da borda do cartão 1
+      expect(band('tr')).toContain('-bottom-[5px]'); // termina na base da ponta, antes do cartão 2
+      expect(band('br')).toContain('-top-4');
+      expect(band('bl')).toContain('-right-4');
+      expect(band('tl')).toContain('-bottom-4');
+    });
+
+    it('when drawing the arrows, should end each one with a triangle 8px from the edge of the next step', () => {
+      const { container } = render(<InfographicView data={one('cycle')} />);
+      const head = (id: string) =>
+        (container.querySelector(`[data-arrow="${id}"] [data-part="head"]`) as HTMLElement)
+          .className;
+
+      expect(head('tr')).toContain('-bottom-4'); // entra pelo topo do 2, apontando para baixo
+      expect(head('tr')).toContain('border-t-[11px]');
+      expect(head('br')).toContain('-left-4'); // entra pela direita do 3, apontando para a esquerda
+      expect(head('br')).toContain('border-r-[11px]');
+      expect(head('bl')).toContain('-top-4'); // entra por baixo do 4, apontando para cima
+      expect(head('bl')).toContain('border-b-[11px]');
+      expect(head('tl')).toContain('-right-4'); // entra pela esquerda do 1, apontando para a direita
+      expect(head('tl')).toContain('border-l-[11px]');
+    });
+
+    it('when drawing the steps, should show a numbered badge on each card', () => {
+      const { container } = render(<InfographicView data={one('cycle')} />);
+      const cards = Array.from(container.querySelectorAll('h4')).map(
+        (title) => title.parentElement,
+      );
+
+      expect(cards).toHaveLength(4);
+      cards.forEach((card, index) => {
+        expect(card?.firstElementChild?.textContent).toBe(String(index + 1));
+      });
     });
 
     it('when the area is narrow, should hide the arrows (the steps become a plain list)', () => {
