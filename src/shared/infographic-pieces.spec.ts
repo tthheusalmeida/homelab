@@ -19,14 +19,28 @@ describe('catálogo de peças do infográfico', () => {
     }
   });
 
-  it('when counting by theme, should have ten pieces in each of the 20 themes', () => {
+  it('when counting by theme, should have at least ten pieces in each of the 20 themes', () => {
     const themes = Object.keys(INFOGRAPHIC_THEMES).filter((theme) => theme !== 'generico');
 
     expect(themes).toHaveLength(20);
 
     for (const theme of themes) {
-      expect(INFOGRAPHIC_PIECES.filter((piece) => piece.theme === theme)).toHaveLength(10);
+      expect(
+        INFOGRAPHIC_PIECES.filter((piece) => piece.theme === theme).length,
+      ).toBeGreaterThanOrEqual(10);
     }
+  });
+
+  it('when the first batch of new pieces was added, should have twenty pieces in Tecnologia, Finanças, Saúde and Educação', () => {
+    for (const theme of ['tecnologia', 'financas', 'saude', 'educacao']) {
+      expect(INFOGRAPHIC_PIECES.filter((piece) => piece.theme === theme)).toHaveLength(20);
+    }
+  });
+
+  it('when the same piece is the only one for a word, should not hide it behind another with the same name', () => {
+    const names = INFOGRAPHIC_PIECES.map((piece) => piece.name.toLowerCase());
+
+    expect(new Set(names).size).toBe(names.length);
   });
 
   it('when listing the generic pieces, should have some to combine with the theme ones', () => {

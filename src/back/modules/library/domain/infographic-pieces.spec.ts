@@ -51,6 +51,19 @@ describe('PieceResolver', () => {
     expect(new PieceResolver(null).resolve('xyzxyz qwerty').startsWith('generico.')).toBe(true);
   });
 
+  it.each([
+    ['O cofrinho da poupança infantil', 'financas.cofrinho'],
+    ['A radiografia do tórax mostrou o osso', 'saude.radiografia'],
+    ['Leia o QR code para pagar', 'tecnologia.qrcode'],
+    ['A prova de matemática vale nota', 'educacao.prova'],
+    ['O bug travou o sistema', 'tecnologia.bug'],
+    ['A inflação sobe os preços', 'financas.inflacao'],
+    ['Aula online por vídeo em casa', 'educacao.aula-online'],
+    ['Uma boa noite de sono e descanso', 'saude.sono'],
+  ])('when the text is "%s", should choose the new piece %s', (text, key) => {
+    expect(new PieceResolver(null).resolve(text)).toBe(key);
+  });
+
   it('when the fallbacks run out, should still answer a valid piece', () => {
     const resolver = new PieceResolver(null);
     const keys = Array.from({ length: 10 }, () => resolver.resolve('xyzxyz'));
