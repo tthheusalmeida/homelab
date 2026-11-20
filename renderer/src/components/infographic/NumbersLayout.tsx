@@ -1,6 +1,6 @@
 import { cn } from '#lib/utils';
 
-import { DOT_GRID, HighlightedTitle, Kicker, PieceBox } from './common';
+import { DOT_GRID, HighlightedTitle, Kicker, PieceBox, Txt } from './common';
 import type { LayoutProps } from './types';
 
 /** Números: destaques grandes, cada um com a sua peça, e uma observação final. */
@@ -12,7 +12,11 @@ export function NumbersLayout({ data }: LayoutProps) {
       <div className="space-y-1">
         <HighlightedTitle title={data.title} />
 
-        {data.subtitle && <p className="max-w-[60ch] text-muted-foreground">{data.subtitle}</p>}
+        {data.subtitle && (
+          <p className="max-w-[60ch] text-muted-foreground">
+            <Txt kind="subtitle">{data.subtitle}</Txt>
+          </p>
+        )}
       </div>
 
       <ul
@@ -35,10 +39,16 @@ export function NumbersLayout({ data }: LayoutProps) {
             </div>
 
             <span className="text-[clamp(1.75rem,4.4vw,2.5rem)] leading-none font-extrabold tracking-tighter text-brand-text tabular-nums">
-              {item.tag}
+              <Txt kind="item.tag" index={index}>
+                {item.tag}
+              </Txt>
             </span>
 
-            <span className="text-[13.5px] text-muted-foreground">{item.text}</span>
+            <span className="text-[13.5px] text-muted-foreground">
+              <Txt kind="item.text" index={index}>
+                {item.text}
+              </Txt>
+            </span>
           </li>
         ))}
       </ul>
@@ -47,7 +57,9 @@ export function NumbersLayout({ data }: LayoutProps) {
         <div className="grid items-center gap-4 rounded-lg border bg-background p-3 @lg:grid-cols-[96px_1fr]">
           <PieceBox pieceKey={data.piece} slot="section" className="mx-auto w-24" />
 
-          <p className="text-sm">{data.note}</p>
+          <p className="text-sm">
+            <Txt kind="note">{data.note}</Txt>
+          </p>
         </div>
       )}
     </div>

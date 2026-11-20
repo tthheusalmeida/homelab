@@ -1,6 +1,6 @@
 import { cn } from '#lib/utils';
 
-import { HexMark, HexNum, HighlightedTitle, Kicker, PieceBox } from './common';
+import { HexMark, HexNum, HighlightedTitle, Kicker, PieceBox, Txt } from './common';
 import type { LayoutProps } from './types';
 
 function Side({
@@ -21,7 +21,11 @@ function Side({
       <div className="space-y-0.5">
         <Kicker>{label}</Kicker>
 
-        <h4 className="text-lg font-semibold tracking-tight">{title}</h4>
+        <h4 className="text-lg font-semibold tracking-tight">
+          <Txt kind="side.title" index={side}>
+            {title}
+          </Txt>
+        </h4>
       </div>
     </div>
   );
@@ -40,7 +44,9 @@ export function VersusLayout({ data }: LayoutProps) {
         <HighlightedTitle title={data.title} />
 
         {data.subtitle && (
-          <p className="mx-auto max-w-[60ch] text-muted-foreground">{data.subtitle}</p>
+          <p className="mx-auto max-w-[60ch] text-muted-foreground">
+            <Txt kind="subtitle">{data.subtitle}</Txt>
+          </p>
         )}
       </div>
 
@@ -57,13 +63,23 @@ export function VersusLayout({ data }: LayoutProps) {
       <div className="space-y-2">
         {data.items.map((item, index) => (
           <div key={index} className="grid gap-1 @2xl:grid-cols-[1fr_8rem_1fr] @2xl:gap-3">
-            <Cell win={item.winner === 'a'}>{item.text}</Cell>
+            <Cell win={item.winner === 'a'}>
+              <Txt kind="item.text" index={index}>
+                {item.text}
+              </Txt>
+            </Cell>
 
             <div className="grid place-items-center text-center font-mono text-[11px] font-medium tracking-wider text-muted-foreground uppercase @max-2xl:order-first @max-2xl:place-items-start @max-2xl:pt-2">
-              {item.title}
+              <Txt kind="item.title" index={index}>
+                {item.title}
+              </Txt>
             </div>
 
-            <Cell win={item.winner === 'b'}>{item.extra}</Cell>
+            <Cell win={item.winner === 'b'}>
+              <Txt kind="item.extra" index={index}>
+                {item.extra}
+              </Txt>
+            </Cell>
           </div>
         ))}
       </div>

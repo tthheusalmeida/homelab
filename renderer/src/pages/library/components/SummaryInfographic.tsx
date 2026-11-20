@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, Download, ImageOff, LayoutPanelTop, Pencil, Trash2, X } from 'lucide-react';
 
 import { isDraftDirty, pieceAt, toSaveInput, withPiece } from '#lib/infographic-edit';
+import { textAt, withText, type TextTarget } from '#lib/infographic-text-edit';
 import { captureInfographicPng } from '#lib/infographic-image';
 import {
   AUTO_LAYOUT,
@@ -35,6 +36,7 @@ import {
 
 import { DeleteGeneratedDialog } from './DeleteGeneratedDialog';
 import { PiecePickerDialog } from './PiecePickerDialog';
+import { TextEditDialog } from './TextEditDialog';
 
 interface SummaryInfographicProps {
   documentId: string;
@@ -80,6 +82,7 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
     () => draftsThisSession.get(documentId) ?? null,
   );
   const [picking, setPicking] = useState<PieceTarget | null>(null);
+  const [typing, setTyping] = useState<TextTarget | null>(null);
   const [confirm, setConfirm] = useState<'discard' | 'regenerate' | null>(null);
   const stage = useRef<HTMLDivElement>(null);
 
@@ -110,6 +113,7 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
     draftsThisSession.delete(documentId);
     setDraft(null);
     setPicking(null);
+    setTyping(null);
   };
 
   const cancelEditing = () => (dirty ? setConfirm('discard') : closeEditing());
@@ -193,7 +197,8 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
   if (editing) {
     notice = (
       <Callout role="note">
-        Clique em uma peça para trocá-la. As trocas só valem depois de salvar.
+        Clique em uma peça para trocá-la ou em um texto para editá-lo. As mudanças só valem depois
+        de salvar.
       </Callout>
     );
   } else if (failed) {
@@ -336,6 +341,7 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
             ref={stage}
             data={draft ?? data}
             onPickPiece={draft ? setPicking : undefined}
+            onPickText={draft ? setTyping : undefined}
           />
         </div>
       ) : pending ? (
@@ -368,11 +374,25 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
         }}
       />
 
+      {draft && typing && (
+        <TextEditDialog
+          key={JSON.stringify(typing)}
+          open
+          onOpenChange={(open) => !open && setTyping(null)}
+          kind={typing.kind}
+          value={textAt(draft, typing)}
+          onSave={(value) => {
+            changeDraft(withText(draft, typing, value));
+            setTyping(null);
+          }}
+        />
+      )}
+
       <ConfirmDialog
         open={confirm === 'discard'}
         onOpenChange={(open) => !open && setConfirm(null)}
         title="Descartar as alterações?"
-        description="As peças que você trocou e ainda não salvou voltam como estavam."
+        description="As peças e os textos que você mudou e ainda não salvou voltam como estavam."
         confirmLabel="Descartar alterações"
         destructive
         onConfirm={() => {

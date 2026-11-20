@@ -2,7 +2,7 @@ import { ArrowRight } from 'lucide-react';
 
 import { cn } from '#lib/utils';
 
-import { HexMark, HighlightedTitle, Kicker, PieceBox } from './common';
+import { HexMark, HighlightedTitle, Kicker, PieceBox, Txt } from './common';
 import type { LayoutProps } from './types';
 
 const COLUMNS: Record<number, string> = {
@@ -28,7 +28,11 @@ export function StepsLayout({ data }: LayoutProps) {
         <div className="space-y-2">
           <HighlightedTitle title={data.title} />
 
-          {data.subtitle && <p className="max-w-[52ch] text-muted-foreground">{data.subtitle}</p>}
+          {data.subtitle && (
+            <p className="max-w-[52ch] text-muted-foreground">
+              <Txt kind="subtitle">{data.subtitle}</Txt>
+            </p>
+          )}
         </div>
         {data.piece && (
           <PieceBox pieceKey={data.piece} slot="section" className="mx-auto w-full max-w-44" />
@@ -57,9 +61,17 @@ export function StepsLayout({ data }: LayoutProps) {
 
             <Kicker className="mt-1 text-brand-text">Etapa {index + 1}</Kicker>
 
-            <h4 className="font-semibold tracking-tight">{item.title}</h4>
+            <h4 className="font-semibold tracking-tight">
+              <Txt kind="item.title" index={index}>
+                {item.title}
+              </Txt>
+            </h4>
 
-            <p className="text-sm text-muted-foreground">{item.text}</p>
+            <p className="text-sm text-muted-foreground">
+              <Txt kind="item.text" index={index}>
+                {item.text}
+              </Txt>
+            </p>
           </li>
         ))}
       </ol>
@@ -73,7 +85,9 @@ export function StepsLayout({ data }: LayoutProps) {
             >
               <HexMark />
 
-              {tip}
+              <Txt kind="tip" index={index}>
+                {tip}
+              </Txt>
             </li>
           ))}
         </ul>

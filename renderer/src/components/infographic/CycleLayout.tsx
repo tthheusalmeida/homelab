@@ -1,6 +1,6 @@
 import { cn } from '#lib/utils';
 
-import { HexNum, HighlightedTitle, PieceBox } from './common';
+import { HexNum, HighlightedTitle, PieceBox, Txt } from './common';
 import type { LayoutProps } from './types';
 
 /**
@@ -76,7 +76,9 @@ export function CycleLayout({ data }: LayoutProps) {
         <HighlightedTitle title={data.title} />
 
         {data.subtitle && (
-          <p className="mx-auto max-w-[60ch] text-muted-foreground">{data.subtitle}</p>
+          <p className="mx-auto max-w-[60ch] text-muted-foreground">
+            <Txt kind="subtitle">{data.subtitle}</Txt>
+          </p>
         )}
       </div>
 
@@ -95,9 +97,17 @@ export function CycleLayout({ data }: LayoutProps) {
 
             <PieceBox pieceKey={item.piece} slot={{ item: index }} className="w-14" />
 
-            <h4 className="text-[15px] font-semibold tracking-tight">{item.title}</h4>
+            <h4 className="text-[15px] font-semibold tracking-tight">
+              <Txt kind="item.title" index={index}>
+                {item.title}
+              </Txt>
+            </h4>
 
-            <p className="text-[13px] text-muted-foreground">{item.text}</p>
+            <p className="text-[13px] text-muted-foreground">
+              <Txt kind="item.text" index={index}>
+                {item.text}
+              </Txt>
+            </p>
           </div>
         ))}
 
@@ -122,7 +132,11 @@ export function CycleLayout({ data }: LayoutProps) {
         ))}
       </div>
 
-      {data.note && <p className="text-center text-sm text-muted-foreground">{data.note}</p>}
+      {data.note && (
+        <p className="text-center text-sm text-muted-foreground">
+          <Txt kind="note">{data.note}</Txt>
+        </p>
+      )}
     </div>
   );
 }

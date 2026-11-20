@@ -1,4 +1,4 @@
-import { HighlightedTitle, Kicker, PieceBox } from './common';
+import { HighlightedTitle, Kicker, PieceBox, Txt } from './common';
 import type { LayoutProps } from './types';
 
 /** Funil: etapas do topo à base, cada uma mais estreita, com a explicação e a peça ao lado. */
@@ -18,7 +18,11 @@ export function FunnelLayout({ data }: LayoutProps) {
         </div>
       </div>
 
-      {data.subtitle && <p className="max-w-[60ch] text-muted-foreground">{data.subtitle}</p>}
+      {data.subtitle && (
+        <p className="max-w-[60ch] text-muted-foreground">
+          <Txt kind="subtitle">{data.subtitle}</Txt>
+        </p>
+      )}
 
       <ol className="space-y-1.5">
         {items.map((item, index) => (
@@ -31,12 +35,16 @@ export function FunnelLayout({ data }: LayoutProps) {
               }}
             >
               <span className="block font-mono text-[11px] font-medium tracking-widest uppercase">
-                {item.title}
+                <Txt kind="item.title" index={index}>
+                  {item.title}
+                </Txt>
               </span>
 
               {item.tag && (
                 <b className="block text-[22px] leading-tight tracking-tight tabular-nums">
-                  {item.tag}
+                  <Txt kind="item.tag" index={index}>
+                    {item.tag}
+                  </Txt>
                 </b>
               )}
             </div>
@@ -44,7 +52,11 @@ export function FunnelLayout({ data }: LayoutProps) {
             <div className="grid grid-cols-[76px_1fr] items-center gap-3">
               <PieceBox pieceKey={item.piece} slot={{ item: index }} />
 
-              <p className="text-sm text-muted-foreground">{item.text}</p>
+              <p className="text-sm text-muted-foreground">
+                <Txt kind="item.text" index={index}>
+                  {item.text}
+                </Txt>
+              </p>
             </div>
           </li>
         ))}

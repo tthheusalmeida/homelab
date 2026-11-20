@@ -1,6 +1,5 @@
-import { PieceBox } from './common';
+import { Kicker, PieceBox, Txt } from './common';
 
-import { Kicker } from './common';
 import type { LayoutProps } from './types';
 
 /** Posição (em % da área) de cada faceta, em volta do centro, a partir do topo e no sentido horário. */
@@ -49,7 +48,7 @@ export function RadialLayout({ data }: LayoutProps) {
           </div>
 
           <h3 className="mt-1 text-[clamp(0.9rem,2.4vw,1.25rem)] leading-tight font-extrabold tracking-tight">
-            {data.title}
+            <Txt kind="title">{data.title}</Txt>
           </h3>
         </div>
 
@@ -61,9 +60,17 @@ export function RadialLayout({ data }: LayoutProps) {
           >
             <PieceBox pieceKey={item.piece} slot={{ item: index }} />
 
-            <h4 className="text-sm font-semibold tracking-tight">{item.title}</h4>
+            <h4 className="text-sm font-semibold tracking-tight">
+              <Txt kind="item.title" index={index}>
+                {item.title}
+              </Txt>
+            </h4>
 
-            <span className="text-xs leading-snug text-muted-foreground">{item.text}</span>
+            <span className="text-xs leading-snug text-muted-foreground">
+              <Txt kind="item.text" index={index}>
+                {item.text}
+              </Txt>
+            </span>
           </div>
         ))}
       </div>

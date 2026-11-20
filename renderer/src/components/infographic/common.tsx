@@ -2,6 +2,7 @@ import { createContext, useContext, type ReactNode } from 'react';
 
 import { Check, Pencil, X } from 'lucide-react';
 
+import type { TextKind, TextTarget } from '#lib/infographic-text-edit';
 import { cn } from '#lib/utils';
 
 import { InfographicPiece, pieceName } from '#components/InfographicPiece';
@@ -73,6 +74,11 @@ export function HexMark({ kind = 'ok' }: { kind?: 'ok' | 'bad' | 'true' }) {
     </span>
   );
 }
+
+const TextEditContext = createContext<((target: TextTarget) => void) | null>(null);
+
+/** Liga a edição de textos: com isso, clicar em um texto chama `onPick` com o lugar dele. */
+export const TextEditProvider = TextEditContext.Provider;
 
 /**
  * Onde uma peça mora no infográfico (para a edição saber qual trocar): a da capa, a da seção, a de
@@ -162,6 +168,55 @@ export function PieceBox({
   );
 }
 
+/**
+ * Um texto do infográfico. Fora da edição é só o texto (um `span` sem estilo). Em **edição** (quando
+ * o infográfico pede) vira um botão com contorno pontilhado: clicar nele pede para editar o texto.
+ * Fica **dentro** do elemento do modelo (título, parágrafo...), então não muda o layout. `scope`
+ * `cover` marca os textos da capa e do fechamento; os outros são da seção em que estão.
+ */
+export function Txt({
+  kind,
+  index,
+  scope,
+  children,
+}: {
+  kind: TextKind;
+  index?: number;
+  scope?: 'cover';
+  children: ReactNode;
+}) {
+  const onPick = useContext(TextEditContext);
+  const section = useContext(SectionContext);
+  const target: TextTarget | null =
+    scope === 'cover'
+      ? { section: null, kind, index }
+      : section === null
+        ? null
+        : { section, kind, index };
+
+  if (!onPick || !target) {
+    return <>{children}</>;
+  }
+
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      title="Editar este texto"
+      onClick={() => onPick(target)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onPick(target);
+        }
+      }}
+      className="cursor-text rounded-sm outline-1 outline-offset-2 outline-brand/50 outline-dashed hover:bg-brand/10 focus-visible:outline-2 focus-visible:outline-brand"
+    >
+      {children}
+    </span>
+  );
+}
+
 /** O último termo do título ganha a cor de destaque (o resto fica como está). */
 export function HighlightedTitle({
   title,
@@ -184,13 +239,15 @@ export function HighlightedTitle({
         className,
       )}
     >
-      {last ? (
-        <>
-          {words.join(' ')} <span className="text-brand-text">{last}</span>
-        </>
-      ) : (
-        <span className="text-brand-text">{title}</span>
-      )}
+      <Txt kind="title" scope={cover ? 'cover' : undefined}>
+        {last ? (
+          <>
+            {words.join(' ')} <span className="text-brand-text">{last}</span>
+          </>
+        ) : (
+          <span className="text-brand-text">{title}</span>
+        )}
+      </Txt>
     </h3>
   );
 }

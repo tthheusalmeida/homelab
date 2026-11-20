@@ -1,6 +1,6 @@
 import { cn } from '#lib/utils';
 
-import { HexMark, Kicker, PieceBox } from './common';
+import { HexMark, Kicker, PieceBox, Txt } from './common';
 import type { LayoutProps } from './types';
 
 const TILE = 'flex min-w-0 flex-col gap-1.5 rounded-lg border bg-background p-3.5';
@@ -24,10 +24,14 @@ export function MosaicLayout({ data }: LayoutProps) {
       >
         <div className="space-y-1.5">
           <h3 className="text-[clamp(1.5rem,4vw,2.2rem)] leading-[1.05] font-extrabold tracking-tight text-balance">
-            {data.title}
+            <Txt kind="title">{data.title}</Txt>
           </h3>
 
-          {data.subtitle && <p className="text-sm text-muted-foreground">{data.subtitle}</p>}
+          {data.subtitle && (
+            <p className="text-sm text-muted-foreground">
+              <Txt kind="subtitle">{data.subtitle}</Txt>
+            </p>
+          )}
         </div>
 
         <PieceBox pieceKey={data.piece} slot="section" className="w-[min(11rem,60%)] self-end" />
@@ -40,15 +44,25 @@ export function MosaicLayout({ data }: LayoutProps) {
         >
           {item.tag ? (
             <span className="text-4xl leading-none font-extrabold tracking-tighter text-brand-text">
-              {item.tag}
+              <Txt kind="item.tag" index={index}>
+                {item.tag}
+              </Txt>
             </span>
           ) : (
             <PieceBox pieceKey={item.piece} slot={{ item: index }} className="w-20" />
           )}
 
-          <h4 className="text-sm font-semibold tracking-tight">{item.title}</h4>
+          <h4 className="text-sm font-semibold tracking-tight">
+            <Txt kind="item.title" index={index}>
+              {item.title}
+            </Txt>
+          </h4>
 
-          <p className="text-[13px] text-muted-foreground">{item.text}</p>
+          <p className="text-[13px] text-muted-foreground">
+            <Txt kind="item.text" index={index}>
+              {item.text}
+            </Txt>
+          </p>
         </div>
       ))}
 
@@ -61,7 +75,9 @@ export function MosaicLayout({ data }: LayoutProps) {
               <li key={index} className="flex items-center gap-2">
                 <HexMark />
 
-                {tip}
+                <Txt kind="tip" index={index}>
+                  {tip}
+                </Txt>
               </li>
             ))}
           </ul>
@@ -76,7 +92,9 @@ export function MosaicLayout({ data }: LayoutProps) {
             !hasTips && '@2xl:col-span-4',
           )}
         >
-          <p className="text-sm font-medium">{note}</p>
+          <p className="text-sm font-medium">
+            <Txt kind="note">{note}</Txt>
+          </p>
         </div>
       )}
     </div>

@@ -638,3 +638,128 @@ describe('SummaryInfographic edit', () => {
     expect(editButton()).toBeDisabled();
   });
 });
+
+describe('SummaryInfographic text edit', () => {
+  const startEditing = async () =>
+    userEvent.click(screen.getByRole('button', { name: 'Editar as peças' }));
+  const textButton = (text: string) =>
+    screen
+      .getAllByTitle('Editar este texto')
+      .find((element) => element.textContent === text) as HTMLElement;
+  const dialog = () => within(screen.getByRole('dialog'));
+  const gone = () => waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+  it('when editing, should say that texts can be edited too', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+
+    await startEditing();
+
+    expect(screen.getByText(/ou em um texto para editá-lo/)).toBeInTheDocument();
+  });
+
+  it('when a text is clicked, should open the text editor with the current text', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await startEditing();
+
+    await userEvent.click(textButton('Primeiro passo'));
+
+    expect(screen.getByText('Editar o texto')).toBeInTheDocument();
+    expect(dialog().getByRole('textbox')).toHaveValue('Primeiro passo');
+  });
+
+  it('when a text is applied, should show it in the infographic and allow saving', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await startEditing();
+    await userEvent.click(textButton('Primeiro passo'));
+
+    await userEvent.clear(dialog().getByRole('textbox'));
+    await userEvent.type(dialog().getByRole('textbox'), 'Passo inicial');
+    await userEvent.click(dialog().getByRole('button', { name: 'Aplicar' }));
+    await gone();
+
+    expect(screen.getByText('Passo inicial')).toBeInTheDocument();
+    expect(screen.queryByText('Primeiro passo')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeEnabled();
+  });
+
+  it('when saving after editing a text, should send the new text with the unchanged rest', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await startEditing();
+    await userEvent.click(textButton('Primeiro passo'));
+    await userEvent.clear(dialog().getByRole('textbox'));
+    await userEvent.type(dialog().getByRole('textbox'), 'Passo inicial');
+    await userEvent.click(dialog().getByRole('button', { name: 'Aplicar' }));
+    await gone();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    await waitFor(() => expect(saveInfo.mutateAsync).toHaveBeenCalledTimes(1));
+
+    const [payload] = saveInfo.mutateAsync.mock.calls[0] as [
+      { infographic: { sections: Array<{ items: Array<{ title: string; piece: string }> }> } },
+    ];
+
+    expect(payload.infographic.sections[0].items[0].title).toBe('Passo inicial');
+    expect(payload.infographic.sections[0].items[0].piece).toBe('tecnologia.chip');
+    expect(payload.infographic.sections[0].items[1].title).toBe('Segundo passo');
+  });
+
+  it('when a text and a piece are changed, should keep both in the draft', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await startEditing();
+    await userEvent.click(textButton('Primeiro passo'));
+    await userEvent.clear(dialog().getByRole('textbox'));
+    await userEvent.type(dialog().getByRole('textbox'), 'Passo inicial');
+    await userEvent.click(dialog().getByRole('button', { name: 'Aplicar' }));
+    await gone();
+
+    await userEvent.click(screen.getAllByRole('button', { name: /^Trocar a peça:/ })[0]);
+    await userEvent.click(dialog().getByRole('button', { name: /Cruz médica/ }));
+    await gone();
+
+    expect(screen.getByText('Passo inicial')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Cruz médica' })).toBeInTheDocument();
+  });
+
+  it('when cancelling the text editor, should leave the draft as it was', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await startEditing();
+    await userEvent.click(textButton('Primeiro passo'));
+    await userEvent.type(dialog().getByRole('textbox'), ' x');
+
+    await userEvent.click(dialog().getByRole('button', { name: 'Cancelar' }));
+    await gone();
+
+    expect(screen.getByText('Primeiro passo')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeDisabled();
+  });
+
+  it('when cancelling the edition after changing a text, should ask before throwing it away', async () => {
+    saved.state = { isPending: false, data: infographic };
+    renderTab();
+    await startEditing();
+    await userEvent.click(textButton('Primeiro passo'));
+    await userEvent.type(dialog().getByRole('textbox'), ' x');
+    await userEvent.click(dialog().getByRole('button', { name: 'Aplicar' }));
+    await gone();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar edição' }));
+
+    expect(screen.getByText('Descartar as alterações?')).toBeInTheDocument();
+    expect(screen.getByText(/As peças e os textos que você mudou/)).toBeInTheDocument();
+  });
+
+  it('when not editing, should not make any text clickable', () => {
+    saved.state = { isPending: false, data: infographic };
+
+    renderTab();
+
+    expect(screen.queryAllByTitle('Editar este texto')).toHaveLength(0);
+  });
+});

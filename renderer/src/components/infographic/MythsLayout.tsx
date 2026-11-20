@@ -1,4 +1,4 @@
-import { HexMark, HighlightedTitle, PieceBox } from './common';
+import { HexMark, HighlightedTitle, PieceBox, Txt } from './common';
 import type { LayoutProps } from './types';
 
 /**
@@ -10,7 +10,11 @@ export function MythsLayout({ data }: LayoutProps) {
     <div className="space-y-2">
       <HighlightedTitle title={data.title} />
 
-      {data.subtitle && <p className="max-w-[60ch] text-muted-foreground">{data.subtitle}</p>}
+      {data.subtitle && (
+        <p className="max-w-[60ch] text-muted-foreground">
+          <Txt kind="subtitle">{data.subtitle}</Txt>
+        </p>
+      )}
 
       <div className="hidden grid-cols-[76px_1fr_1fr] gap-3 pb-1 font-mono text-[11px] font-medium tracking-widest uppercase @2xl:grid">
         <span />
@@ -39,7 +43,9 @@ export function MythsLayout({ data }: LayoutProps) {
                   Mito
                 </span>
 
-                {item.title}
+                <Txt kind="item.title" index={index}>
+                  {item.title}
+                </Txt>
               </span>
             </div>
 
@@ -54,7 +60,9 @@ export function MythsLayout({ data }: LayoutProps) {
                   Verdade
                 </span>
 
-                {item.text}
+                <Txt kind="item.text" index={index}>
+                  {item.text}
+                </Txt>
               </span>
             </div>
           </li>

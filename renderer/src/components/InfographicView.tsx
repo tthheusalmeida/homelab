@@ -5,6 +5,8 @@ import type { LibraryInfographic } from '#shared/contracts/library';
 
 import { cn } from '#lib/utils';
 
+import type { TextTarget } from '#lib/infographic-text-edit';
+
 import { CycleLayout } from './infographic/CycleLayout';
 import { FunnelLayout } from './infographic/FunnelLayout';
 import {
@@ -15,6 +17,8 @@ import {
   PieceBox,
   PieceEditProvider,
   SectionProvider,
+  TextEditProvider,
+  Txt,
   type PieceTarget,
 } from './infographic/common';
 import { MosaicLayout } from './infographic/MosaicLayout';
@@ -48,6 +52,11 @@ interface InfographicViewProps {
    * peça. Sem isso o infográfico só é desenhado.
    */
   onPickPiece?: (target: PieceTarget) => void;
+  /**
+   * Liga a edição dos textos: cada texto vira um botão e clicar nele chama esta função com o lugar
+   * do texto. Sem isso os textos são só texto.
+   */
+  onPickText?: (target: TextTarget) => void;
 }
 
 /** Capa: assunto, título, promessa, abertura (a definição ou o gancho) e a peça que resume o tema. */
@@ -55,17 +64,29 @@ function Cover({ data }: { data: LibraryInfographic }) {
   return (
     <header className="grid items-center gap-6 @2xl:grid-cols-[1.5fr_1fr]">
       <div className="space-y-3">
-        {data.kicker && <Kicker>{data.kicker}</Kicker>}
+        {data.kicker && (
+          <Kicker>
+            <Txt kind="kicker" scope="cover">
+              {data.kicker}
+            </Txt>
+          </Kicker>
+        )}
 
         <HighlightedTitle title={data.title} cover />
 
         {data.subtitle && (
-          <p className="max-w-[48ch] text-lg text-muted-foreground">{data.subtitle}</p>
+          <p className="max-w-[48ch] text-lg text-muted-foreground">
+            <Txt kind="subtitle" scope="cover">
+              {data.subtitle}
+            </Txt>
+          </p>
         )}
 
         {data.intro && (
           <p className="max-w-[56ch] border-l-[3px] border-brand pl-3.5 text-[15px]">
-            {data.intro}
+            <Txt kind="intro" scope="cover">
+              {data.intro}
+            </Txt>
           </p>
         )}
       </div>
@@ -86,7 +107,11 @@ function Takeaways({ items }: { items: string[] }) {
           <li key={index} className="flex items-start gap-2.5 text-sm">
             <HexMark />
 
-            <span>{item}</span>
+            <span>
+              <Txt kind="takeaway" index={index} scope="cover">
+                {item}
+              </Txt>
+            </span>
           </li>
         ))}
       </ul>
@@ -100,48 +125,50 @@ function Takeaways({ items }: { items: string[] }) {
  * tema e cor de destaque. O quadro (`ref`) é o que a imagem PNG fotografa.
  */
 export const InfographicView = forwardRef<HTMLDivElement, InfographicViewProps>(
-  function InfographicView({ data, className, onPickPiece }, ref) {
+  function InfographicView({ data, className, onPickPiece, onPickText }, ref) {
     const total = data.sections.length;
 
     return (
       <PieceEditProvider value={onPickPiece ?? null}>
-        <div
-          ref={ref}
-          className={cn(
-            '@container space-y-10 rounded-lg border bg-card p-5 text-card-foreground sm:p-6',
-            className,
-          )}
-        >
-          <Cover data={data} />
+        <TextEditProvider value={onPickText ?? null}>
+          <div
+            ref={ref}
+            className={cn(
+              '@container space-y-10 rounded-lg border bg-card p-5 text-card-foreground sm:p-6',
+              className,
+            )}
+          >
+            <Cover data={data} />
 
-          {data.sections.map((section, index) => {
-            const Layout = LAYOUTS[section.layout];
+            {data.sections.map((section, index) => {
+              const Layout = LAYOUTS[section.layout];
 
-            return (
-              <section key={index} className="space-y-3" aria-label={section.title}>
-                <HexRule className="my-0" />
+              return (
+                <section key={index} className="space-y-3" aria-label={section.title}>
+                  <HexRule className="my-0" />
 
-                {total > 1 && (
-                  <Kicker className="text-brand-text">
-                    Parte {index + 1} de {total}
-                  </Kicker>
-                )}
+                  {total > 1 && (
+                    <Kicker className="text-brand-text">
+                      Parte {index + 1} de {total}
+                    </Kicker>
+                  )}
 
-                <SectionProvider value={index}>
-                  <Layout data={section} />
-                </SectionProvider>
-              </section>
-            );
-          })}
+                  <SectionProvider value={index}>
+                    <Layout data={section} />
+                  </SectionProvider>
+                </section>
+              );
+            })}
 
-          {data.takeaways && data.takeaways.length > 0 && (
-            <>
-              <HexRule className="my-0 mb-6" />
+            {data.takeaways && data.takeaways.length > 0 && (
+              <>
+                <HexRule className="my-0 mb-6" />
 
-              <Takeaways items={data.takeaways} />
-            </>
-          )}
-        </div>
+                <Takeaways items={data.takeaways} />
+              </>
+            )}
+          </div>
+        </TextEditProvider>
       </PieceEditProvider>
     );
   },

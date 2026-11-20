@@ -1,6 +1,6 @@
 import { cn } from '#lib/utils';
 
-import { HexNum, HighlightedTitle, Kicker, PieceBox, TagChip } from './common';
+import { HexNum, HighlightedTitle, Kicker, PieceBox, TagChip, Txt } from './common';
 import type { LayoutProps } from './types';
 
 /** Linha do tempo: marcos alternando de lado ao longo de uma linha central (uma coluna no estreito). */
@@ -11,7 +11,9 @@ export function TimelineLayout({ data }: LayoutProps) {
         <HighlightedTitle title={data.title} />
 
         {data.subtitle && (
-          <p className="mx-auto max-w-[60ch] text-muted-foreground">{data.subtitle}</p>
+          <p className="mx-auto max-w-[60ch] text-muted-foreground">
+            <Txt kind="subtitle">{data.subtitle}</Txt>
+          </p>
         )}
       </div>
 
@@ -39,11 +41,25 @@ export function TimelineLayout({ data }: LayoutProps) {
                 <PieceBox pieceKey={item.piece} slot={{ item: index }} className="w-20 shrink-0" />
 
                 <div className="min-w-0 space-y-1">
-                  {item.tag && <TagChip>{item.tag}</TagChip>}
+                  {item.tag && (
+                    <TagChip>
+                      <Txt kind="item.tag" index={index}>
+                        {item.tag}
+                      </Txt>
+                    </TagChip>
+                  )}
 
-                  <h4 className="font-semibold tracking-tight">{item.title}</h4>
+                  <h4 className="font-semibold tracking-tight">
+                    <Txt kind="item.title" index={index}>
+                      {item.title}
+                    </Txt>
+                  </h4>
 
-                  <p className="text-sm text-muted-foreground">{item.text}</p>
+                  <p className="text-sm text-muted-foreground">
+                    <Txt kind="item.text" index={index}>
+                      {item.text}
+                    </Txt>
+                  </p>
                 </div>
               </div>
             </li>

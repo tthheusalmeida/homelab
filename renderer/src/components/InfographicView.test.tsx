@@ -652,3 +652,158 @@ describe('InfographicView: troca de peças', () => {
     expect(first).toHaveAttribute('type', 'button');
   });
 });
+
+describe('InfographicView: edição de textos', () => {
+  const texts = () => screen.queryAllByTitle('Editar este texto');
+  const clickAll = async (onPick: ReturnType<typeof vi.fn>) => {
+    for (const text of texts()) {
+      await userEvent.click(text);
+    }
+
+    return onPick.mock.calls.map(([target]) => target);
+  };
+
+  it('when no edit is asked, should never mark texts as editable', () => {
+    render(<InfographicView data={one('steps')} />);
+
+    expect(texts()).toHaveLength(0);
+  });
+
+  it('when editing, should make the texts of the cover and of the closing editable', async () => {
+    const onPick = vi.fn();
+
+    render(<InfographicView data={story([SAMPLES.steps])} onPickText={onPick} />);
+
+    const targets = await clickAll(onPick);
+
+    expect(targets).toContainEqual({ section: null, kind: 'kicker', index: undefined });
+    expect(targets).toContainEqual({ section: null, kind: 'title', index: undefined });
+    expect(targets).toContainEqual({ section: null, kind: 'subtitle', index: undefined });
+    expect(targets).toContainEqual({ section: null, kind: 'intro', index: undefined });
+    expect(targets).toContainEqual({ section: null, kind: 'takeaway', index: 0 });
+    expect(targets).toContainEqual({ section: null, kind: 'takeaway', index: 1 });
+  });
+
+  it('when editing the steps, should make the title, each item and each tip editable', async () => {
+    const onPick = vi.fn();
+
+    render(<InfographicView data={one('steps')} onPickText={onPick} />);
+
+    const targets = await clickAll(onPick);
+
+    expect(targets).toContainEqual({ section: 0, kind: 'title', index: undefined });
+
+    for (let index = 0; index < 4; index += 1) {
+      expect(targets).toContainEqual({ section: 0, kind: 'item.title', index });
+      expect(targets).toContainEqual({ section: 0, kind: 'item.text', index });
+    }
+
+    expect(targets).toContainEqual({ section: 0, kind: 'tip', index: 0 });
+    expect(targets).toContainEqual({ section: 0, kind: 'tip', index: 1 });
+  });
+
+  it('when a section has a subtitle and a note, should make them editable too', async () => {
+    const onPick = vi.fn();
+
+    render(
+      <InfographicView
+        data={one('cycle', { subtitle: 'Um subtítulo', note: 'Uma nota' })}
+        onPickText={onPick}
+      />,
+    );
+
+    const targets = await clickAll(onPick);
+
+    expect(targets).toContainEqual({ section: 0, kind: 'subtitle', index: undefined });
+    expect(targets).toContainEqual({ section: 0, kind: 'note', index: undefined });
+  });
+
+  it('when editing the second section, should name that section in the place of its texts', async () => {
+    const onPick = vi.fn();
+
+    render(<InfographicView data={story([SAMPLES.steps, SAMPLES.myths])} onPickText={onPick} />);
+
+    const targets = await clickAll(onPick);
+
+    expect(targets).toContainEqual({ section: 1, kind: 'item.title', index: 3 });
+    expect(targets).toContainEqual({ section: 1, kind: 'title', index: undefined });
+    expect(targets).toContainEqual({ section: 0, kind: 'item.title', index: 3 });
+  });
+
+  it('when editing the comparison, should make the sides and both texts of each criterion editable', async () => {
+    const onPick = vi.fn();
+
+    render(<InfographicView data={one('versus')} onPickText={onPick} />);
+
+    const targets = await clickAll(onPick);
+
+    expect(targets).toContainEqual({ section: 0, kind: 'side.title', index: 0 });
+    expect(targets).toContainEqual({ section: 0, kind: 'side.title', index: 1 });
+    expect(targets).toContainEqual({ section: 0, kind: 'item.text', index: 0 });
+    expect(targets).toContainEqual({ section: 0, kind: 'item.extra', index: 0 });
+    expect(targets).toContainEqual({ section: 0, kind: 'item.title', index: 0 });
+  });
+
+  it('when editing the ranking, should make the measure label editable', async () => {
+    const onPick = vi.fn();
+
+    render(<InfographicView data={one('ranking')} onPickText={onPick} />);
+
+    expect(await clickAll(onPick)).toContainEqual({
+      section: 0,
+      kind: 'meterLabel',
+      index: undefined,
+    });
+  });
+
+  it.each(INFOGRAPHIC_LAYOUT_IDS)(
+    'when editing the %s layout, should make its title and the title of each item editable',
+    async (layout) => {
+      const onPick = vi.fn();
+      const data = one(layout);
+
+      render(<InfographicView data={data} onPickText={onPick} />);
+
+      const targets = await clickAll(onPick);
+      const kinds = new Set(
+        targets.filter((target) => target.section === 0).map((target) => target.kind),
+      );
+
+      expect(kinds.has('title')).toBe(true);
+      expect(kinds.has('item.title') || kinds.has('item.text') || kinds.has('side.title')).toBe(
+        true,
+      );
+    },
+  );
+
+  it('when a text is focused and Enter or Space is pressed, should ask to edit it', async () => {
+    const onPick = vi.fn();
+
+    render(<InfographicView data={one('steps')} onPickText={onPick} />);
+
+    const first = texts()[0];
+
+    first.focus();
+    await userEvent.keyboard('{Enter}');
+    await userEvent.keyboard(' ');
+
+    expect(onPick).toHaveBeenCalledTimes(2);
+    expect(first).toHaveAttribute('role', 'button');
+    expect(first).toHaveAttribute('tabindex', '0');
+  });
+
+  it('when editing pieces and texts at the same time, should keep both working', async () => {
+    const onPickPiece = vi.fn();
+    const onPickText = vi.fn();
+
+    render(
+      <InfographicView data={one('steps')} onPickPiece={onPickPiece} onPickText={onPickText} />,
+    );
+
+    await userEvent.click(screen.getAllByRole('button', { name: /^Trocar a peça:/ })[0]);
+    await userEvent.click(texts()[0]);
+
+    expect(onPickPiece).toHaveBeenCalledTimes(1);
+    expect(onPickText).toHaveBeenCalledTimes(1);
+  });
+});

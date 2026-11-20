@@ -1,4 +1,4 @@
-import { DOT_GRID, HexNum, HighlightedTitle, Kicker, PieceBox } from './common';
+import { DOT_GRID, HexNum, HighlightedTitle, Kicker, PieceBox, Txt } from './common';
 import type { LayoutProps } from './types';
 
 import { cn } from '#lib/utils';
@@ -12,7 +12,11 @@ export function RankingLayout({ data }: LayoutProps) {
       <div className="space-y-1">
         <HighlightedTitle title={data.title} />
 
-        {data.subtitle && <p className="max-w-[60ch] text-muted-foreground">{data.subtitle}</p>}
+        {data.subtitle && (
+          <p className="max-w-[60ch] text-muted-foreground">
+            <Txt kind="subtitle">{data.subtitle}</Txt>
+          </p>
+        )}
       </div>
 
       <ol className="flex flex-col gap-2.5">
@@ -28,13 +32,23 @@ export function RankingLayout({ data }: LayoutProps) {
             </div>
 
             <div className="min-w-0">
-              <h4 className="font-semibold tracking-tight">{item.title}</h4>
+              <h4 className="font-semibold tracking-tight">
+                <Txt kind="item.title" index={index}>
+                  {item.title}
+                </Txt>
+              </h4>
 
-              <p className="text-sm text-muted-foreground">{item.text}</p>
+              <p className="text-sm text-muted-foreground">
+                <Txt kind="item.text" index={index}>
+                  {item.text}
+                </Txt>
+              </p>
             </div>
 
             <div className="col-span-3 @lg:col-span-1">
-              <Kicker>{meterLabel}</Kicker>
+              <Kicker>
+                <Txt kind="meterLabel">{meterLabel}</Txt>
+              </Kicker>
 
               <div
                 role="meter"
