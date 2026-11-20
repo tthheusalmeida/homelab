@@ -1,7 +1,7 @@
 import { Autocomplete } from "@base-ui/react/autocomplete";
 
 import { Input } from "#ui/input";
-import { popupItem, popupMotion, popupSurface } from "#ui/popup";
+import { popupItem, popupSurface } from "#ui/popup";
 import { cn } from "#lib/utils";
 
 interface SuggestInputProps {
@@ -47,7 +47,6 @@ export function SuggestInput({
               data-slot="suggest-content"
               className={cn(
                 popupSurface,
-                popupMotion,
                 "max-h-64 w-(--anchor-width) min-w-36 p-1",
               )}
             >

@@ -1,7 +1,7 @@
 import { Menu as MenuPrimitive } from "@base-ui/react/menu"
 
 import { cn } from "#lib/utils"
-import { popupItem, popupMotion, popupSurface } from "#ui/popup"
+import { popupItem, popupSurface } from "#ui/popup"
 
 const DropdownMenu = MenuPrimitive.Root
 
@@ -28,7 +28,6 @@ function DropdownMenuContent({
           data-slot="dropdown-menu-content"
           className={cn(
             popupSurface,
-            popupMotion,
             "min-w-52 p-1 text-sm",
             className
           )}

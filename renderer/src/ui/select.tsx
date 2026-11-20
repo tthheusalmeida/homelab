@@ -2,7 +2,7 @@ import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
 
 import { cn } from "#lib/utils"
-import { popupItem, popupLabel, popupMotion, popupSurface } from "#ui/popup"
+import { popupItem, popupLabel, popupSurface } from "#ui/popup"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
 const Select = SelectPrimitive.Root
@@ -85,8 +85,7 @@ function SelectContent({
           data-align-trigger={alignItemWithTrigger}
                     className={cn(
             popupSurface,
-            popupMotion,
-            "relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-36 data-[align-trigger=true]:animate-none",
+            "relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-36",
             className
           )}
           {...props}
