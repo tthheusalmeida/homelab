@@ -34,6 +34,16 @@ describe('SettingsApp navigation to a requested section', () => {
     expect(await screen.findByText('Seu computador')).toBeInTheDocument();
   });
 
+  it('when the infographic section is requested, should open the gallery with the models tab', async () => {
+    mockApi(handlers);
+
+    renderApp('infographic');
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Infográfico' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Modelos', pressed: true })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Peças' })).toBeVisible();
+  });
+
   it('when there is no requested section, should stay on the first section (appearance)', async () => {
     mockApi(handlers);
 

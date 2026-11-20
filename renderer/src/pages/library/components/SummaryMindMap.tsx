@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { Check, Pencil, Sparkles, X } from 'lucide-react';
+import { Check, Pencil, Sparkles, Trash2, X } from 'lucide-react';
 
 import { buildMindMap, fromAiMap } from '#lib/mind-map';
 import {
@@ -12,10 +12,10 @@ import {
   type MindMapDraft,
 } from '#lib/mind-map-edit';
 import { cn } from '#lib/utils';
-import { Button } from '#ui/button';
-
 import { Callout } from '#components/Callout';
 import { ConfirmDialog } from '#components/ConfirmDialog';
+import { DeleteGeneratedDialog } from './DeleteGeneratedDialog';
+import { GenerateButton } from '#components/GenerateButton';
 import { HexLoader } from '#components/Hex';
 import { IconButton } from '#components/IconButton';
 import { LoadingState } from '#components/LoadingState';
@@ -25,6 +25,7 @@ import { useSnackbar } from '#components/Snackbar';
 import {
   useGenerateMindMap,
   useMindMap,
+  useDeleteMindMap,
   useSaveMindMap,
   useSaveMindMapImage,
 } from '../hooks/useLibrary';
@@ -51,44 +52,6 @@ const requestedThisSession = new Set<string>();
  */
 const draftsThisSession = new Map<string, MindMapDraft>();
 
-/** Botão de gerar: enquanto a IA trabalha, mostra a colmeia carregando e fica desabilitado. */
-function GenerateButton({
-  pending,
-  onClick,
-  children,
-  primary = false,
-}: {
-  pending: boolean;
-  onClick: () => void;
-  children: ReactNode;
-  primary?: boolean;
-}) {
-  return (
-    <Button
-      type="button"
-      size="sm"
-      variant={primary ? 'default' : 'outline'}
-      disabled={pending}
-      aria-busy={pending}
-      onClick={onClick}
-    >
-      {pending ? (
-        <>
-          <span aria-hidden="true" className="inline-flex">
-            <HexLoader className="size-4" />
-          </span>
-          Gerando…
-        </>
-      ) : (
-        <>
-          <Sparkles />
-          {children}
-        </>
-      )}
-    </Button>
-  );
-}
-
 /**
  * Aba "Mapa mental" de um resumo (também a edição do mapa: termos, frases, subtítulo e nós a mais ou
  * a menos, guardados em disco). O mapa de **revisão** é gerado pela IA com um prompt próprio na
@@ -100,6 +63,7 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   const saved = useMindMap(documentId);
   const generate = useGenerateMindMap();
   const saveMap = useSaveMindMap();
+  const deleteMap = useDeleteMindMap();
   const saveImage = useSaveMindMapImage();
   const snackbar = useSnackbar();
 
@@ -107,7 +71,7 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   const [draft, setDraft] = useState<MindMapDraft | null>(
     () => draftsThisSession.get(documentId) ?? null,
   );
-  const [confirm, setConfirm] = useState<'discard' | 'regenerate' | null>(null);
+  const [confirm, setConfirm] = useState<'discard' | 'regenerate' | 'delete' | null>(null);
 
   const missing = saved.isSuccess && saved.data === null;
 
@@ -145,6 +109,17 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   const changeDraft = (next: MindMapDraft) => {
     draftsThisSession.set(documentId, next);
     setDraft(next);
+  };
+
+  // Excluir só o mapa: marca a página como "já tentada" antes, para a aba não gerar outro sozinha.
+  const deleteNow = () => {
+    requestedThisSession.add(documentId);
+    deleteMap.mutate(documentId, {
+      onSuccess: () => {
+        setConfirm(null);
+        snackbar.success('Mapa mental excluído.');
+      },
+    });
   };
 
   const closeEditing = () => {
@@ -262,6 +237,19 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
         <Pencil />
       </IconButton>
 
+      {hasMap && (
+        <IconButton
+          label="Excluir só o mapa mental"
+          disabled={pending}
+          onClick={() => {
+            deleteMap.reset();
+            setConfirm('delete');
+          }}
+        >
+          <Trash2 />
+        </IconButton>
+      )}
+
       {hasMap && !notice && (
         <IconButton
           label={pending ? 'Gerando…' : 'Gerar de novo com IA'}
@@ -310,6 +298,16 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
           setConfirm(null);
           closeEditing();
         }}
+      />
+
+      <DeleteGeneratedDialog
+        kind="mind-map"
+        open={confirm === 'delete'}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        isPending={deleteMap.isPending}
+        errorMessage={deleteMap.error?.message}
+        edited={saved.data?.edited}
+        onConfirm={deleteNow}
       />
 
       <ConfirmDialog

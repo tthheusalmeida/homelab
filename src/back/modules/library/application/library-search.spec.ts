@@ -3,7 +3,10 @@ import { BadRequestException } from '@nestjs/common';
 import { createTmpLibrary, type TmpLibrary } from '../../../testing/tmp-library';
 import { newPendingMeta } from '../domain/document';
 import type { DocumentMeta } from '../domain/library.types';
+import type { StoredInfographic } from '../domain/infographic';
+import { InfographicStore } from '../infrastructure/infographic-store';
 import { LibraryIndex } from '../infrastructure/library-index';
+import { MindMapStore } from '../infrastructure/mind-map-store';
 import { LibrarySearch } from './library-search';
 
 describe('LibrarySearch', () => {
@@ -217,6 +220,119 @@ describe('LibrarySearch', () => {
       });
       expect(result).not.toHaveProperty('body');
       expect(result).not.toHaveProperty('content');
+    });
+  });
+
+  describe('generated content', () => {
+    let infographics: InfographicStore;
+    let mindMaps: MindMapStore;
+
+    const infographic = {
+      contentHash: 'h',
+      model: 'm',
+      createdAt: '2026-11-20T00:00:00.000Z',
+      title: 'T',
+      piece: '',
+      sections: [],
+    } as StoredInfographic;
+    const map = { contentHash: 'h', model: 'm', createdAt: '2026-11-20T00:00:00.000Z', nodes: [] };
+
+    beforeEach(async () => {
+      infographics = new InfographicStore();
+      mindMaps = new MindMapStore();
+      search = new LibrarySearch(index, tmp.storage, infographics, mindMaps);
+
+      await add('1', 'Com os dois', 'x');
+      await add('2', 'Só infográfico', 'x');
+      await add('3', 'Só mapa', 'x');
+      await add('4', 'Nenhum', 'x');
+      infographics.set('1', infographic);
+      infographics.set('2', infographic);
+      mindMaps.set('1', map);
+      mindMaps.set('3', map);
+    });
+
+    it('when no content is requested, should return every page', async () => {
+      expect((await titles({})).sort()).toEqual([
+        'Com os dois',
+        'Nenhum',
+        'Só infográfico',
+        'Só mapa',
+      ]);
+      expect((await titles({ has: [] })).length).toBe(4);
+    });
+
+    it('when listing, should flag each page that has an infographic and/or a mind map (and only those)', async () => {
+      const all = await search.search({});
+      const by = (title: string) => all.find((doc) => doc.title === title);
+
+      expect(by('Com os dois')).toMatchObject({ hasInfographic: true, hasMindMap: true });
+      expect(by('Só infográfico')).toMatchObject({ hasInfographic: true });
+      expect(by('Só infográfico')).not.toHaveProperty('hasMindMap');
+      expect(by('Só mapa')).toMatchObject({ hasMindMap: true });
+      expect(by('Só mapa')).not.toHaveProperty('hasInfographic');
+      expect(by('Nenhum')).not.toHaveProperty('hasInfographic');
+      expect(by('Nenhum')).not.toHaveProperty('hasMindMap');
+    });
+
+    it('when an infographic was saved before the sections existed, should not flag it nor match the filter', async () => {
+      infographics.set('4', {
+        contentHash: 'h',
+        model: 'm',
+        createdAt: 'd',
+        title: 'x',
+      } as unknown as StoredInfographic);
+
+      expect((await search.search({})).find((doc) => doc.title === 'Nenhum')).not.toHaveProperty(
+        'hasInfographic',
+      );
+      expect(await titles({ has: ['infographic'] })).not.toContain('Nenhum');
+    });
+
+    it('when the stores are not available, should flag nothing', async () => {
+      const bare = new LibrarySearch(index, tmp.storage);
+      const all = await bare.search({});
+
+      expect(all.some((doc) => 'hasInfographic' in doc || 'hasMindMap' in doc)).toBe(false);
+    });
+
+    it('when asking for infographics, should return only the pages that have one', async () => {
+      expect((await titles({ has: ['infographic'] })).sort()).toEqual([
+        'Com os dois',
+        'Só infográfico',
+      ]);
+    });
+
+    it('when asking for mind maps, should return only the pages that have one', async () => {
+      expect((await titles({ has: ['mind-map'] })).sort()).toEqual(['Com os dois', 'Só mapa']);
+    });
+
+    it('when asking for both, should return only the pages that have everything', async () => {
+      expect(await titles({ has: ['infographic', 'mind-map'] })).toEqual(['Com os dois']);
+    });
+
+    it('when combined with other filters, should apply them together', async () => {
+      expect(await titles({ has: ['infographic'], q: 'só' })).toEqual(['Só infográfico']);
+    });
+
+    it('when an infographic is discarded, should leave the page out of the filter', async () => {
+      infographics.delete('2');
+
+      expect(await titles({ has: ['infographic'] })).toEqual(['Com os dois']);
+    });
+
+    it('when the value is not a known content, should reject the request', async () => {
+      await expect(search.search({ has: ['video'] })).rejects.toThrow('conteúdo gerado');
+      await expect(search.search({ has: 'infographic' as unknown as string[] })).rejects.toThrow(
+        'conteúdo gerado',
+      );
+    });
+
+    it('when the stores are not available, should not filter anything out by accident', async () => {
+      const bare = new LibrarySearch(index, tmp.storage);
+
+      expect((await bare.search({})).length).toBe(4);
+      expect(await bare.search({ has: ['infographic'] })).toEqual([]);
     });
   });
 });

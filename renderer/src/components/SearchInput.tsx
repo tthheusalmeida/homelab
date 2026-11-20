@@ -8,6 +8,8 @@ interface SearchInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  /** Há texto filtrando a lista: o campo ganha a cor de destaque (por padrão, quando tem texto). */
+  active?: boolean;
 }
 
 export function SearchInput({
@@ -15,6 +17,7 @@ export function SearchInput({
   onChange,
   placeholder = "Pesquisar...",
   className,
+  active = value.trim() !== "",
 }: SearchInputProps) {
   return (
     <div className={cn("relative", className)}>
@@ -26,7 +29,11 @@ export function SearchInput({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="pl-8"
+        data-active={active ? "true" : undefined}
+        className={cn(
+          "pl-8",
+          active && "border-primary/60 bg-primary/10 dark:bg-primary/15",
+        )}
       />
     </div>
   );

@@ -1,3 +1,5 @@
+import type { InfographicLayoutId } from '../infographic-layouts';
+
 export type LibraryDocumentType = 'summary' | 'transcription' | 'article';
 export type LibraryDocumentSource = 'video' | 'manual';
 export type LibraryDocumentStatus = 'pending' | 'published' | 'archived';
@@ -20,6 +22,10 @@ export interface LibraryDocumentSummary extends LibraryDocumentMeta {
   fileName: string;
   preview: string;
   matchedIn?: 'metadata' | 'content';
+  /** O resumo já tem infográfico guardado (só vem quando é verdade). */
+  hasInfographic?: boolean;
+  /** O resumo já tem mapa mental guardado (só vem quando é verdade). */
+  hasMindMap?: boolean;
 }
 
 export interface LibraryDocumentDetail {
@@ -53,12 +59,19 @@ export interface LibraryIndexStatus {
  * Payload de `library:documents:list` (os parâmetros de query do `GET library/documents`).
  * `status` vazio vale `published`; `sort` vazio vale `title`. Valor fora da lista → `VALIDATION`.
  */
+/** Conteúdo gerado que a página precisa ter para entrar na lista (todos os pedidos valem juntos). */
+export type LibraryContentFilter = 'infographic' | 'mind-map';
+
+export const LIBRARY_CONTENT_FILTERS: readonly LibraryContentFilter[] = ['infographic', 'mind-map'];
+
 export interface LibraryListFilters {
   q?: string;
   category?: string[];
   type?: LibraryDocumentType;
   source?: LibraryDocumentSource;
   tags?: string[];
+  /** Só páginas que têm o infográfico e/ou o mapa mental gerados. */
+  has?: LibraryContentFilter[];
   status?: LibraryDocumentStatus;
   sort?: LibrarySort;
 }
@@ -161,4 +174,98 @@ export interface LibraryMindMapImageResult {
   saved: boolean;
   /** Onde o arquivo foi gravado (só com `saved`). */
   path?: string;
+}
+
+/** Quem leva o lado de um comparativo (infográfico). */
+export type LibraryInfographicWinner = 'a' | 'b' | 'tie';
+
+/** Um espaço do infográfico: uma peça do banco, um título e o texto. Os campos extras variam por modelo. */
+export interface LibraryInfographicItem {
+  /** Chave de uma peça do banco (ex.: `jogos.controle`); vazia ou desconhecida vira um hexágono. */
+  piece: string;
+  title: string;
+  text: string;
+  /** Data, número ou valor curto (linha do tempo, funil, números, mosaico). */
+  tag?: string;
+  /** Texto do lado B (comparativo). */
+  extra?: string;
+  /** Medida de 0 a 100 (ranking). */
+  value?: number;
+  /** Quem se sai melhor no critério (comparativo). */
+  winner?: LibraryInfographicWinner;
+}
+
+/** Um dos dois lados do comparativo. */
+export interface LibraryInfographicSide {
+  piece: string;
+  title: string;
+}
+
+/**
+ * Uma seção do infográfico: um trecho da história, desenhado em um dos modelos. Os campos que cada
+ * modelo usa estão em `shared/infographic-layouts.ts`.
+ */
+export interface LibraryInfographicSection {
+  layout: InfographicLayoutId;
+  /** Título da seção (o que ela explica). */
+  title: string;
+  /** Uma linha sob o título da seção. */
+  subtitle?: string;
+  /** Peça da seção (centro, destaque ou cabeçalho, conforme o modelo); vazia se o modelo não usa. */
+  piece: string;
+  /** Só no comparativo: exatamente dois lados. */
+  sides?: LibraryInfographicSide[];
+  items: LibraryInfographicItem[];
+  tips?: string[];
+  note?: string;
+  /** O que o `value` do ranking mede (ex.: "Intensidade"). */
+  meterLabel?: string;
+}
+
+/**
+ * Infográfico de um resumo, gerado pela IA e guardado em disco. Conta uma história: uma **capa**
+ * (título, subtítulo, abertura e peça principal), uma sequência de **seções** que explicam o
+ * assunto em ordem (cada uma no modelo que melhor a mostra) e um **fechamento** com o que lembrar.
+ */
+export interface LibraryInfographic {
+  /** Assunto em poucas palavras, acima do título (ex.: "Saúde · Sono"). */
+  kicker?: string;
+  title: string;
+  subtitle?: string;
+  /** Texto de abertura: o que a pessoa precisa saber para acompanhar o resto (uma definição, um gancho). */
+  intro?: string;
+  /** Peça da capa. */
+  piece: string;
+  sections: LibraryInfographicSection[];
+  /** O que lembrar no fim (fechamento). */
+  takeaways?: string[];
+  /** Modelo do Gemini que gerou o infográfico. */
+  model: string;
+  createdAt: string;
+  /** O texto do resumo mudou depois que o infográfico foi gerado. */
+  stale: boolean;
+  /** O usuário editou o infográfico à mão (trocou peças): gerar de novo com a IA apagaria as edições. */
+  edited?: boolean;
+}
+
+/** O que o usuário envia ao salvar um infográfico editado (o servidor cuida do resto). */
+export type LibraryInfographicInput = Omit<
+  LibraryInfographic,
+  'model' | 'createdAt' | 'stale' | 'edited'
+>;
+
+export interface LibraryInfographicSaveRequest {
+  id: string;
+  infographic: LibraryInfographicInput;
+}
+
+export interface LibraryInfographicRequest {
+  id: string;
+  /** Modelo do Gemini; sem ele usa o mais barato cadastrado. */
+  modelId?: string;
+  /**
+   * Um único modelo para o infográfico todo (uma seção só). Sem ele a IA conta a história inteira,
+   * com várias seções, cada uma no modelo que melhor a mostra.
+   */
+  layout?: InfographicLayoutId;
 }

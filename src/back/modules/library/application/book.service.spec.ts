@@ -118,7 +118,7 @@ describe('BookService', () => {
     });
 
     it('when the color is invalid, should be a bad request', async () => {
-      await expect(books.create({ title: 'T', coverColor: 'pink' })).rejects.toThrow(
+      await expect(books.create({ title: 'T', coverColor: 'magenta' })).rejects.toThrow(
         'Cor de capa inválida',
       );
     });

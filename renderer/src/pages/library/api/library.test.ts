@@ -7,12 +7,17 @@ import {
   archiveDocument,
   createArticle,
   discardDocument,
+  deleteInfographic,
+  deleteMindMap,
+  generateInfographic,
+  saveInfographic,
   generateMindMap,
   getCategories,
   getDocument,
   getDocuments,
   getInbox,
   getIndexStatus,
+  getInfographic,
   getMindMap,
   saveMindMap,
   saveMindMapImage,
@@ -35,6 +40,13 @@ describe('toListFilters', () => {
   it('when text has spaces around, should send it trimmed; blank text is omitted', () => {
     expect(toListFilters({ q: '  devops  ' })).toEqual({ q: 'devops' });
     expect(toListFilters({ q: '   ' })).toEqual({});
+  });
+
+  it('when the content filter has items, should send them; an empty list is omitted', () => {
+    expect(toListFilters({ has: ['infographic', 'mind-map'] })).toEqual({
+      has: ['infographic', 'mind-map'],
+    });
+    expect(toListFilters({ has: [] })).toEqual({});
   });
 
   it('when category and tags are empty lists, should omit them', () => {
@@ -296,7 +308,14 @@ describe('mind map save api', () => {
   const nodes = [{ label: 'Termo', note: 'Frase', children: [{ label: 'Filho', children: [] }] }];
 
   it('when saving the edited map, should send the page id, the subtitle and the branches', async () => {
-    const saved = { subtitle: 'Sobre redes', nodes, model: 'm', createdAt: 'd', stale: false, edited: true };
+    const saved = {
+      subtitle: 'Sobre redes',
+      nodes,
+      model: 'm',
+      createdAt: 'd',
+      stale: false,
+      edited: true,
+    };
     const invoke = mockApi({ [IpcChannels.library.mindMap.save]: () => ok(saved) });
 
     await expect(saveMindMap('1', { subtitle: 'Sobre redes', nodes })).resolves.toEqual(saved);
@@ -324,5 +343,99 @@ describe('mind map save api', () => {
     await expect(saveMindMap('1', { nodes: [] })).rejects.toThrow(
       'O mapa precisa ter pelo menos um ramo com texto.',
     );
+  });
+});
+
+describe('infographic api', () => {
+  const infographic = {
+    layout: 'steps',
+    title: 'T',
+    piece: '',
+    items: [],
+    model: 'm',
+    createdAt: 'd',
+    stale: false,
+  };
+
+  it('when reading the saved infographic, should send the page id and return it or null', async () => {
+    const invoke = mockApi({ [IpcChannels.library.infographic.get]: () => ok(null) });
+
+    await expect(getInfographic('1')).resolves.toBeNull();
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.infographic.get, { id: '1' });
+  });
+
+  it('when saving the infographic, should send the id and the edited content', async () => {
+    const input = { title: 'T', piece: 'financas.moedas', sections: [] };
+    const invoke = mockApi({
+      [IpcChannels.library.infographic.save]: () => ok({ ...infographic, edited: true }),
+    });
+
+    await expect(saveInfographic('1', input)).resolves.toMatchObject({ edited: true });
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.infographic.save, {
+      id: '1',
+      infographic: input,
+    });
+  });
+
+  it('when saving fails, should reject with the message of the error', async () => {
+    mockApi({
+      [IpcChannels.library.infographic.save]: () =>
+        failure('VALIDATION', 'O infográfico editado precisa de título e de seções válidas.'),
+    });
+
+    await expect(saveInfographic('1', { title: '', piece: '', sections: [] })).rejects.toThrow(
+      'precisa de título',
+    );
+  });
+
+  it('when deleting the infographic, should send only the id of the page', async () => {
+    const invoke = mockApi({ [IpcChannels.library.infographic.delete]: () => ok(undefined) });
+
+    await expect(deleteInfographic('1')).resolves.toBeUndefined();
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.infographic.delete, { id: '1' });
+  });
+
+  it('when deleting the mind map, should send only the id of the page', async () => {
+    const invoke = mockApi({ [IpcChannels.library.mindMap.delete]: () => ok(undefined) });
+
+    await expect(deleteMindMap('1')).resolves.toBeUndefined();
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.mindMap.delete, { id: '1' });
+  });
+
+  it('when deleting fails, should reject with the message of the error', async () => {
+    mockApi({
+      [IpcChannels.library.infographic.delete]: () =>
+        failure('NOT_FOUND', 'Documento não encontrado'),
+    });
+
+    await expect(deleteInfographic('x')).rejects.toThrow('Documento não encontrado');
+  });
+
+  it('when generating without options, should send only the id', async () => {
+    const invoke = mockApi({ [IpcChannels.library.infographic.generate]: () => ok(infographic) });
+
+    await expect(generateInfographic('1')).resolves.toEqual(infographic);
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.infographic.generate, { id: '1' });
+  });
+
+  it('when generating with a layout and a model, should send them with the id', async () => {
+    const invoke = mockApi({ [IpcChannels.library.infographic.generate]: () => ok(infographic) });
+
+    await generateInfographic('1', { layout: 'funnel', modelId: 'gemini-x' });
+
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.infographic.generate, {
+      id: '1',
+      layout: 'funnel',
+      modelId: 'gemini-x',
+    });
+  });
+
+  it('when the AI fails, should reject with the message from the main process', async () => {
+    mockApi({
+      [IpcChannels.library.infographic.generate]: () =>
+        failure('PROVIDER_FAILED', 'O limite de uso foi atingido.'),
+    });
+
+    await expect(generateInfographic('1')).rejects.toThrow('O limite de uso foi atingido.');
   });
 });

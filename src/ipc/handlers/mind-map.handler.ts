@@ -12,6 +12,8 @@ import { IpcHandler, type IpcRoute } from '../ipc-handler';
 export interface MindMapPort {
   get(id: string): Promise<LibraryMindMap | null>;
   generate(id: string, modelId?: string): Promise<LibraryMindMap>;
+  /** Apaga só o mapa mental da página (o resumo e o infográfico ficam). */
+  delete(id: string): Promise<void>;
   /** Guarda o mapa como o usuário o editou. */
   save(
     id: string,
@@ -26,7 +28,7 @@ export interface MindMapImagePort {
 
 export const MindMapPayloadMessages = {
   nodes: 'Informe os ramos do mapa mental.',
-  image: 'Informe o nome e o conteúdo da imagem do mapa mental.',
+  image: 'Informe o nome e o conteúdo da imagem.',
 } as const;
 
 /**
@@ -46,6 +48,7 @@ export class MindMapHandler extends IpcHandler {
   routes(): IpcRoute[] {
     return [
       this.route(IpcChannels.library.mindMap.get, ({ id }) => this.mindMaps.get(id)),
+      this.route(IpcChannels.library.mindMap.delete, ({ id }) => this.mindMaps.delete(id)),
       this.route(IpcChannels.library.mindMap.generate, ({ id, modelId }: LibraryMindMapRequest) =>
         this.mindMaps.generate(id, modelId),
       ),

@@ -6,6 +6,7 @@ import {
   Download,
   Folder,
   KeyRound,
+  LayoutPanelTop,
   Palette,
   RefreshCw,
   type LucideIcon,
@@ -27,12 +28,14 @@ import { SnackbarProvider } from '#components/Snackbar';
 import { useCollapsedGroups } from '#hooks/use-collapsed-groups';
 import { useMarkRestartPending, useRestartPending } from '#hooks/use-restart-pending';
 import { relaunchApp } from '#lib/restart';
+import { cn } from '#lib/utils';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { BackupSection } from './sections/BackupSection';
 import { UpdatesSection } from './sections/UpdatesSection';
 import { AccessSection } from './sections/AccessSection';
 import { ComponentsSection } from './sections/ComponentsSection';
 import { ExternalProvidersSection } from './sections/ExternalProvidersSection';
+import { InfographicGallerySection } from './sections/InfographicGallerySection';
 import { LocalProvidersSection } from './sections/LocalProvidersSection';
 import { PathsSection } from './sections/PathsSection';
 import {
@@ -46,6 +49,7 @@ import {
 const SECTION_ICONS: Record<SectionId, LucideIcon> = {
   paths: Folder,
   appearance: Palette,
+  infographic: LayoutPanelTop,
   external: Cloud,
   local: Cpu,
   components: Download,
@@ -139,7 +143,11 @@ export function SettingsApp({ initialSection }: { initialSection?: string | null
             {/* A chave troca o bloco a cada seção, que entra com fade (como as páginas do app). */}
             <main
               key={sectionId}
-              className="mx-auto flex max-w-2xl animate-enter-fade flex-col gap-6 p-8"
+              className={cn(
+                'mx-auto flex animate-enter-fade flex-col gap-6 p-8',
+                // A galeria do infográfico precisa de mais largura que os formulários.
+                sectionId === 'infographic' ? 'max-w-5xl' : 'max-w-2xl',
+              )}
             >
               <header>
                 <h2 className="text-xl font-semibold tracking-tight">{section.label}</h2>
@@ -148,6 +156,7 @@ export function SettingsApp({ initialSection }: { initialSection?: string | null
 
               {sectionId === 'paths' && <PathsSection onSaved={handleSaved} />}
               {sectionId === 'appearance' && <AppearanceSection />}
+              {sectionId === 'infographic' && <InfographicGallerySection />}
               {sectionId === 'external' && <ExternalProvidersSection onSaved={handleSaved} />}
               {sectionId === 'local' && <LocalProvidersSection onSaved={handleSaved} />}
               {sectionId === 'components' && <ComponentsSection />}

@@ -22,7 +22,9 @@ const WITH_ARTICLE = {
 
 /** O que é dito ao concluir: serve de mensagem do aviso depois de excluir. */
 export const deletedMessage = (type: DocumentMeta['type']) =>
-  type === 'summary' ? 'Resumo e mapa mental excluídos' : `${documentTypeLabels[type]} excluída`;
+  type === 'summary'
+    ? 'Resumo, mapa mental e infográfico excluídos'
+    : `${documentTypeLabels[type]} excluída`;
 
 /**
  * Confirmação de **excluir a página de vez**. Diz com todas as letras o que será apagado (o texto
@@ -45,8 +47,12 @@ export function DeleteDocumentDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={`Excluir ${WITH_ARTICLE[meta.type]}?`}
-      description={`Você vai apagar ${WITH_ARTICLE[meta.type]} “${meta.title}” de vez do seu computador.`}
-      confirmLabel={isSummary ? 'Excluir resumo e mapa mental' : 'Excluir'}
+      description={
+        isSummary
+          ? `Você vai apagar o resumo “${meta.title}” e TUDO o que se baseia nele (o mapa mental e o infográfico) de vez do seu computador.`
+          : `Você vai apagar ${WITH_ARTICLE[meta.type]} “${meta.title}” de vez do seu computador.`
+      }
+      confirmLabel={isSummary ? 'Excluir resumo, mapa mental e infográfico' : 'Excluir'}
       destructive
       isPending={isPending}
       errorMessage={errorMessage}
@@ -69,6 +75,12 @@ export function DeleteDocumentDialog({
                   fez nele.
                 </li>
               )}
+
+              {isSummary && (
+                <li>
+                  <strong>O infográfico deste resumo.</strong>
+                </li>
+              )}
             </ul>
           </div>
 
@@ -76,6 +88,13 @@ export function DeleteDocumentDialog({
             <p>
               Ele também sai da biblioteca e dos livros em que estiver: nos livros, o capítulo passa
               a aparecer como “Página indisponível”.
+            </p>
+          )}
+
+          {isSummary && (
+            <p className="text-muted-foreground">
+              Quer apagar só o mapa mental ou só o infográfico? Faça isso nas abas do resumo: o
+              resumo e o outro conteúdo ficam.
             </p>
           )}
 

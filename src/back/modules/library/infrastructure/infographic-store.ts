@@ -1,0 +1,134 @@
+import { Injectable, Optional } from '@nestjs/common';
+
+import type { RecordImportResult, RestoreMode } from '../../../../shared/contracts/backup';
+import { JsonFile } from '../../../../storage/json-file';
+import { BackAlerts } from '../../../config/back-alerts';
+import { BackConfig } from '../../../config/back-config';
+
+import type { StoredInfographic } from '../domain/infographic';
+
+interface InfographicsFileData {
+  version: 1;
+  /** Por id da página. */
+  infographics: Record<string, StoredInfographic>;
+}
+
+function isStoredEntry(value: unknown): value is { id: string; infographic: StoredInfographic } {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const { id, infographic } = value as {
+    id?: unknown;
+    infographic?: Partial<StoredInfographic> | null;
+  };
+
+  return (
+    typeof id === 'string' &&
+    id !== '' &&
+    typeof infographic === 'object' &&
+    infographic !== null &&
+    typeof infographic.title === 'string' &&
+    Array.isArray(infographic.sections) &&
+    typeof infographic.createdAt === 'string'
+  );
+}
+
+/**
+ * Infográficos gerados, um por página, em `data/infographics.json` (sem arquivo no `BackConfig`, só
+ * em memória, como nos testes). Fica guardado em disco como o mapa mental: a IA roda quando o
+ * usuário pede, e o resultado volta a abrir depois sem gerar de novo.
+ */
+@Injectable()
+export class InfographicStore {
+  private readonly file: JsonFile<InfographicsFileData> | null;
+
+  private items: Record<string, StoredInfographic> | null = null;
+
+  constructor(
+    @Optional() config?: BackConfig,
+    @Optional() private readonly alerts?: BackAlerts,
+  ) {
+    this.file = config?.infographicsFile
+      ? new JsonFile<InfographicsFileData>(config.infographicsFile)
+      : null;
+  }
+
+  get(id: string): StoredInfographic | undefined {
+    return this.load()[id];
+  }
+
+  set(id: string, infographic: StoredInfographic): void {
+    this.load()[id] = infographic;
+    this.save();
+  }
+
+  delete(id: string): void {
+    if (id in this.load()) {
+      delete this.load()[id];
+      this.save();
+    }
+  }
+
+  /** Todos os infográficos, um por página, como lista (usado pelo backup). */
+  exportAll(): Array<{ id: string; infographic: StoredInfographic }> {
+    return Object.entries(this.load()).map(([id, infographic]) => ({
+      id,
+      infographic: structuredClone(infographic),
+    }));
+  }
+
+  /**
+   * Traz infográficos de um backup. `merge` só adiciona os de páginas que ainda não têm um (mantém o
+   * atual); `replace` troca todos. Ignora entradas inválidas.
+   */
+  importAll(raw: unknown[], mode: RestoreMode): RecordImportResult {
+    const incoming = raw.filter(isStoredEntry);
+    const base: Record<string, StoredInfographic> = mode === 'replace' ? {} : { ...this.load() };
+    let added = 0;
+
+    for (const { id, infographic } of incoming) {
+      if (!(id in base)) {
+        base[id] = infographic;
+        added += 1;
+      }
+    }
+
+    this.items = base;
+    this.save();
+
+    return { added, skipped: raw.length - added };
+  }
+
+  private load(): Record<string, StoredInfographic> {
+    if (this.items) {
+      return this.items;
+    }
+
+    try {
+      const data = this.file?.read();
+
+      this.items =
+        data && typeof data.infographics === 'object' && data.infographics !== null
+          ? { ...data.infographics }
+          : {};
+    } catch {
+      // ilegível (e sem cópia boa): começa vazio; os infográficos são gerados de novo quando pedidos
+      this.items = {};
+    }
+
+    return this.items;
+  }
+
+  private save(): void {
+    try {
+      this.file?.write({ version: 1, infographics: this.load() });
+    } catch (error) {
+      // o infográfico segue valendo em memória; o usuário precisa saber que não ficou em disco
+      this.alerts?.persistFailed(
+        'os infográficos',
+        error instanceof Error ? error.message : 'erro desconhecido',
+      );
+    }
+  }
+}

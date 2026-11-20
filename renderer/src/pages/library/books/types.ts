@@ -1,3 +1,5 @@
+import type { AccentId } from "#shared/contracts/appearance";
+
 export type BookKind = "pos" | "course" | "study" | "book";
 
 export const bookKindLabels: Record<BookKind, string> = {
@@ -11,8 +13,8 @@ export const bookKindOptions = (
   Object.entries(bookKindLabels) as [BookKind, string][]
 ).map(([id, label]) => ({ id, label }));
 
-export type BookCoverColor =
-  "blue" | "emerald" | "violet" | "amber" | "rose" | "slate";
+/** As 15 cores do tema mais `slate` (só livros antigos); o contrato é o mesmo do back. */
+export type BookCoverColor = AccentId | "slate";
 
 /** Campos da capa; o texto da capa é o título, o subtítulo e o tipo. */
 export interface BookCoverData {

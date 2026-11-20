@@ -26,11 +26,12 @@ const map = {
   edited: false,
 };
 
-function setup(overrides: Partial<Record<'get' | 'generate' | 'save', jest.Mock>> = {}) {
+function setup(overrides: Partial<Record<'get' | 'generate' | 'save' | 'delete', jest.Mock>> = {}) {
   const port = {
     get: jest.fn().mockResolvedValue(map),
     generate: jest.fn().mockResolvedValue(map),
     save: jest.fn().mockResolvedValue({ ...map, edited: true }),
+    delete: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   };
   const images = { save: jest.fn().mockResolvedValue({ saved: true, path: 'D:/mapa.png' }) };
@@ -42,6 +43,16 @@ function setup(overrides: Partial<Record<'get' | 'generate' | 'save', jest.Mock>
 }
 
 describe('MindMapHandler', () => {
+  it('when library:mind-map:delete is called, should delete only the mind map of that page', async () => {
+    const { ipc, port } = setup();
+
+    await expect(ipc.invoke(IpcChannels.library.mindMap.delete, { id: '1' })).resolves.toEqual({
+      ok: true,
+      data: undefined,
+    });
+    expect(port.delete).toHaveBeenCalledWith('1');
+  });
+
   it('when library:mind-map:get is called, should return the saved map of the page', async () => {
     const { ipc, port } = setup();
 

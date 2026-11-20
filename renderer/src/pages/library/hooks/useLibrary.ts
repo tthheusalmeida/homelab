@@ -13,12 +13,17 @@ import {
   getDocument,
   getDocuments,
   getIndexStatus,
+  deleteInfographic,
+  deleteMindMap,
+  generateInfographic,
   generateMindMap,
   getInbox,
+  getInfographic,
   getMindMap,
   getTags,
   publishDocument,
   reindex,
+  saveInfographic,
   saveMindMap,
   saveMindMapImage,
   suggestClassification,
@@ -29,6 +34,9 @@ import type {
   PublishInput,
   UpdateDocumentInput,
 } from "../types/library.types";
+
+import type { LibraryInfographicInput } from "#shared/contracts/library";
+import type { InfographicLayoutId } from "#shared/infographic-layouts";
 
 export const LIBRARY_KEY = ["library"] as const;
 
@@ -71,8 +79,11 @@ export function useGenerateMindMap() {
   return useMutation({
     mutationFn: ({ id, modelId }: { id: string; modelId?: string }) =>
       generateMindMap(id, modelId),
-    onSuccess: (map, { id }) =>
-      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map),
+    onSuccess: async (map, { id }) => {
+      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map);
+      // a lista de Páginas mostra a marca de "tem mapa mental"
+      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
+    },
   });
 }
 
@@ -93,8 +104,89 @@ export function useSaveMindMap() {
       subtitle?: string;
       nodes: MindMapNodeInput[];
     }) => saveMindMap(id, { subtitle, nodes }),
-    onSuccess: (map, { id }) =>
-      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map),
+    onSuccess: async (map, { id }) => {
+      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map);
+      // um mapa feito do zero também ganha a marca na lista de Páginas
+      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
+    },
+  });
+}
+
+/**
+ * Apaga só o mapa mental do resumo. Põe `null` direto na consulta do mapa (o resumo e o infográfico
+ * não mudam, então a biblioteca não é invalidada), e a lista de Páginas refaz o filtro "Com mapa mental".
+ */
+export function useDeleteMindMap() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteMindMap(id),
+    onSuccess: async (_result, id) => {
+      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], null);
+      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
+    },
+  });
+}
+
+/**
+ * Guarda o infográfico editado e o põe direto na consulta (não invalida a biblioteca toda), então a
+ * tela já mostra o que foi salvo.
+ */
+export function useSaveInfographic() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, infographic }: { id: string; infographic: LibraryInfographicInput }) =>
+      saveInfographic(id, infographic),
+    onSuccess: (infographic, { id }) =>
+      queryClient.setQueryData([...LIBRARY_KEY, "infographic", id], infographic),
+  });
+}
+
+/** Apaga só o infográfico do resumo. Igual ao do mapa mental, para o infográfico. */
+export function useDeleteInfographic() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteInfographic(id),
+    onSuccess: async (_result, id) => {
+      queryClient.setQueryData([...LIBRARY_KEY, "infographic", id], null);
+      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
+    },
+  });
+}
+
+/** O infográfico guardado de um resumo (`null` enquanto não foi gerado). */
+export function useInfographic(id: string, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: [...LIBRARY_KEY, "infographic", id],
+    queryFn: () => getInfographic(id),
+    enabled: options.enabled ?? true,
+  });
+}
+
+/**
+ * Gera o infográfico com a IA. Guarda o resultado direto na consulta do infográfico (não invalida a
+ * biblioteca toda); isso vale mesmo se a aba for fechada antes de a IA responder.
+ */
+export function useGenerateInfographic() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      modelId,
+      layout,
+    }: {
+      id: string;
+      modelId?: string;
+      layout?: InfographicLayoutId;
+    }) => generateInfographic(id, { modelId, layout }),
+    onSuccess: async (infographic, { id }) => {
+      queryClient.setQueryData([...LIBRARY_KEY, "infographic", id], infographic);
+      // a lista de Páginas mostra a marca de "tem infográfico"
+      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
+    },
   });
 }
 

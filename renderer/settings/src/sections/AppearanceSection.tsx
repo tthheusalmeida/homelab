@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { Check, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 
 import { Button } from '#ui/button';
-import { HexSwatch } from '#components/HexSwatch';
+import { HexColorPicker } from '#components/HexColorPicker';
 import { SettingsGroup, SettingsPanel, SettingsRow } from '#components/SettingsGroup';
 import { useAppearance } from '#hooks/use-appearance';
-import { accentLabels, themeLabels } from '#lib/appearance';
+import { accentOptions, themeLabels } from '#lib/appearance';
 import {
-  ACCENT_IDS,
   DEFAULT_APPEARANCE,
   THEME_MODES,
   type Appearance,
@@ -62,31 +61,12 @@ export function AppearanceSection() {
           </SettingsRow>
 
           <SettingsRow label={Strings.appearance.accent} hint={Strings.appearance.accentHint}>
-            <div
-              role="radiogroup"
-              aria-label={Strings.appearance.accent}
-              className="flex flex-wrap gap-1"
-            >
-              {ACCENT_IDS.map((accent) => {
-                const selected = appearance.accent === accent;
-
-                return (
-                  <HexSwatch
-                    key={accent}
-                    selected={selected}
-                    aria-label={accentLabels[accent]}
-                    title={accentLabels[accent]}
-                    // `data-accent` + `dark` fazem `bg-primary` mostrar a cor de destaque deste hexágono.
-                    data-accent={accent}
-                    className="dark"
-                    fillClassName="bg-primary text-primary-foreground"
-                    onClick={() => change({ accent })}
-                  >
-                    {selected && <Check className="size-3" aria-hidden />}
-                  </HexSwatch>
-                );
-              })}
-            </div>
+            <HexColorPicker
+              label={Strings.appearance.accent}
+              options={accentOptions}
+              value={appearance.accent}
+              onChange={(accent) => change({ accent })}
+            />
           </SettingsRow>
         </SettingsPanel>
       </SettingsGroup>

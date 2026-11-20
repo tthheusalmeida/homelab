@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, FileText, Network } from "lucide-react";
+import { ArrowLeft, FileText, LayoutPanelTop, Network } from "lucide-react";
 
 import { InboxStrings } from "#lib/inbox-text";
 import { Button } from "#ui/button";
@@ -30,6 +30,7 @@ import { DocumentActions } from "./components/DocumentActions";
 import { DocumentAboutDialog } from "./components/DocumentAboutDialog";
 import { DocumentOutline, OUTLINE_MIN_HEADINGS } from "./components/DocumentOutline";
 import { DocumentSidebar } from "./components/DocumentSidebar";
+import { SummaryInfographic } from "./components/SummaryInfographic";
 import { SummaryMindMap } from "./components/SummaryMindMap";
 import { EditDocumentDialog } from "./components/EditDocumentDialog";
 import { AddToBookDialog } from "./books/components/AddToBookDialog";
@@ -43,12 +44,13 @@ import { useSnackbar } from "#components/Snackbar";
 
 type Modal = "about" | "edit" | "remove" | "book" | "delete" | null;
 
-/** Formas de ver o mesmo resumo: o texto ou o mapa mental feito a partir dele. */
-type SummaryView = "text" | "mindmap";
+/** Formas de ver o mesmo resumo: o texto, o mapa mental ou o infográfico feitos a partir dele. */
+type SummaryView = "text" | "mindmap" | "infographic";
 
 const SUMMARY_VIEWS: readonly ToggleOption<SummaryView>[] = [
   { id: "text", label: "Resumo", icon: FileText },
   { id: "mindmap", label: "Mapa mental", icon: Network },
+  { id: "infographic", label: "Infográfico", icon: LayoutPanelTop },
 ];
 
 export function DocumentPage() {
@@ -89,8 +91,11 @@ export function DocumentPage() {
 
   // Coluna da esquerda: a barra de trechos (transcrição com tempo) ou o Sumário, se houver.
   const mindMapOpen = view === "mindmap" && data?.meta.type === "summary";
+  const infographicOpen = view === "infographic" && data?.meta.type === "summary";
+  // Mapa e infográfico trocam o sumário e as opções de leitura (ajustes do texto) pela própria tela.
+  const alternateView = mindMapOpen || infographicOpen;
   const hasLeftColumn =
-    !mindMapOpen &&
+    !alternateView &&
     (Boolean(excerpts) || sidebarHeadings.length >= OUTLINE_MIN_HEADINGS);
   const sides = useReadingSides(hasLeftColumn);
 
@@ -225,6 +230,12 @@ export function DocumentPage() {
     />
   );
 
+  // O infográfico não precisa da tela toda (diferente do mapa mental): fica numa coluna centralizada,
+  // no fluxo da página, e rola com ela (na leitura, dentro da própria área).
+  const infographic = (
+    <SummaryInfographic key={meta.id} documentId={meta.id} title={meta.title} />
+  );
+
   // O mesmo desenho na página e no modo leitura (só muda o que cerca o texto).
   const article = (
     <ReadingSection
@@ -248,10 +259,10 @@ export function DocumentPage() {
           actions={viewToggle}
           // Mapa mental: tela cheia, sem sumário nem opções (elas são ajustes de leitura de texto,
           // e mexer nelas ao alternar entre Resumo e Mapa mental seria mudar a leitura sem querer).
-          canvas={mindMapOpen}
+          canvas={alternateView}
           onExit={() => setReading(false)}
           follow={
-            mindMapOpen ? undefined : excerpts ? (
+            alternateView ? undefined : excerpts ? (
               <div ref={setRailSlot} />
             ) : (
               hasLeftColumn && (
@@ -260,7 +271,7 @@ export function DocumentPage() {
             )
           }
           options={
-            mindMapOpen ? undefined : (
+            alternateView ? undefined : (
               <DocumentSidebar
                 embedded
                 hideOutline
@@ -273,6 +284,10 @@ export function DocumentPage() {
         >
           {mindMapOpen ? (
             mindMap
+          ) : infographicOpen ? (
+            <div className="h-full overflow-y-auto p-4">
+              <div className="mx-auto w-full max-w-[50rem]">{infographic}</div>
+            </div>
           ) : (
             <div ref={setContainer} className="reading-column">
               {article}
@@ -322,6 +337,8 @@ export function DocumentPage() {
         <div className="h-[calc(100svh-13rem)] min-h-96 animate-enter-fade overflow-hidden rounded-lg border">
           {mindMap}
         </div>
+      ) : infographicOpen ? (
+        <div className="mx-auto w-full max-w-[50rem] animate-enter-fade">{infographic}</div>
       ) : (
         <div className={cn("grid gap-8", sides.columns)}>
           {excerpts ? (

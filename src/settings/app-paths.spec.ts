@@ -21,6 +21,7 @@ describe('createAppPaths', () => {
       chatsFile: path.join(root, 'data', 'chats.json'),
       usageFile: path.join(root, 'data', 'ai-usage.json'),
       mindMapsFile: path.join(root, 'data', 'mind-maps.json'),
+      infographicsFile: path.join(root, 'data', 'infographics.json'),
     });
   });
 
@@ -32,6 +33,7 @@ describe('createAppPaths', () => {
       paths.chatsFile,
       paths.usageFile,
       paths.mindMapsFile,
+      paths.infographicsFile,
       paths.settingsFile,
     ]) {
       expect(file.startsWith(path.join(root, 'temp'))).toBe(false);

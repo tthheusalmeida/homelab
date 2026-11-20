@@ -20,7 +20,8 @@ Status: **implementado** (ver "Como ficou" no fim; o smoke E2E fica para o usuá
 | Inbox e temporários | `settings.paths.inboxDir`, `videoTempDir`, `audioTempDir` | Sim |
 | Configurações / segredos | `userData/settings.json`, `userData/secrets.json` | Sim |
 | Consumo de IA | `userData/ai-usage.json` (limite de 5.000 registros) | Sim |
-| Mapas mentais (gerados pela IA e **editados pelo usuário**) | `data/mind-maps.json` (um por resumo; ver `mapa-mental.md`) | Sim. O mapa da IA é cache (pode ser gerado de novo), mas as **edições do usuário ficam neste mesmo arquivo e ainda não entram no backup** (pendência). Excluir o resumo apaga o mapa dele |
+| Mapas mentais (gerados pela IA e **editados pelo usuário**) | `data/mind-maps.json` (um por resumo; ver `mapa-mental.md`) | Sim, como o item **Mapas mentais** (opcional, caixa própria). O mapa da IA é cache, mas as **edições do usuário ficam neste mesmo arquivo**. Excluir o resumo apaga o mapa dele |
+| Infográficos (gerados pela IA: modelo, textos e peças) | `data/infographics.json` (um por resumo; ver `infografico.md`) | Sim, como o item **Infográficos** (opcional, caixa própria). Excluir o resumo apaga o infográfico dele |
 | Aparência (tema, cor e leitura) | `localStorage` + `settings.json` (duplicada) | Sim |
 
 ## Estrutura nova
@@ -33,7 +34,8 @@ Documentos/HomeLab/                  raiz FIXA (não é configurável)
 │  ├─ jobs.json                      histórico de jobs
 │  ├─ chats.json                     todas as conversas
 │  ├─ ai-usage.json                  consumo de IA (move de userData)
-│  └─ mind-maps.json                 mapas mentais, com as edições do usuário (fora do backup, por ora)
+│  ├─ mind-maps.json                 mapas mentais, com as edições do usuário
+│  └─ infographics.json              infográficos gerados
 ├─ config/
 │  └─ settings.json                  configurações (move de userData)
 └─ temp/{video,audio}/               temporários (nunca entram no backup)
@@ -216,7 +218,7 @@ Nada falha em silêncio. Um aviso único (snackbar com "ver detalhes" para erros
 
 ## Como ficou (diferenças em relação ao rascunho)
 - **Chat sem `chats:create`:** o `chatId` nasce na tela (uuid) e o chat é criado pelo main com a primeira mensagem (o doc previa um canal de criar). Cancelar é por `chat:cancel` com o `chatId`.
-- **Restauração aplicada ao vivo:** jobs, chats e consumo entram pelos serviços em execução (`importSnapshots`, `importChats`, `importRecords`), então não precisa reiniciar (só quando o endereço do Ollama muda). Job que estava rodando no backup volta como interrompido.
+- **Restauração aplicada ao vivo:** jobs, chats, consumo, mapas mentais e infográficos entram pelos serviços e armazenamentos em execução (`importSnapshots`, `importChats`, `importRecords`, `importAll`), então não precisa reiniciar (só quando o endereço do Ollama muda). Job que estava rodando no backup volta como interrompido.
 - **Desfazer:** cada item aplicado registra como se desfaz (coleções voltam ao que eram, arquivos mesclados são removidos, pasta substituída volta da cópia de segurança); se algo falhar a restauração desfaz e avisa. Antes de **Substituir**, o app guarda o que havia em `temp/safety-<data>` (arquivos, coleções e configurações).
 - **Mesclar não mexe nas configurações**; só **Substituir** aplica aparência e endereço do Ollama (nunca o caminho da biblioteca nem segredos).
 - **Mover a biblioteca** e a **migração do formato antigo** usam a mesma rotina de cópia conferida (`storage/tree.ts`); a migração é a única parte temporária.

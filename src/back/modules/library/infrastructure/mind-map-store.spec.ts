@@ -87,4 +87,84 @@ describe('MindMapStore', () => {
     expect(store.get('1')).toEqual(map);
     expect(persistFailed).toHaveBeenCalledWith('os mapas mentais', expect.any(String));
   });
+
+  describe('backup', () => {
+    it('when exporting, should list every map with the id of its page', () => {
+      const store = new MindMapStore(config(file));
+
+      store.set('1', map);
+      store.set('2', { ...map, edited: true });
+
+      expect(store.exportAll()).toEqual([
+        { id: '1', map },
+        { id: '2', map: { ...map, edited: true } },
+      ]);
+    });
+
+    it('when exporting, should hand out copies (changing them does not change the store)', () => {
+      const store = new MindMapStore(config(file));
+
+      store.set('1', map);
+      store.exportAll()[0].map.nodes.length = 0;
+
+      expect(store.get('1')?.nodes).toHaveLength(1);
+    });
+
+    it('when merging, should add only the pages without a map and keep the current one (with its edits)', () => {
+      const store = new MindMapStore(config(file));
+      const edited = { ...map, edited: true, model: 'usuario' };
+
+      store.set('1', edited);
+
+      const result = store.importAll(
+        [
+          { id: '1', map },
+          { id: '2', map },
+        ],
+        'merge',
+      );
+
+      expect(result).toEqual({ added: 1, skipped: 1 });
+      expect(store.get('1')).toEqual(edited);
+      expect(store.get('2')).toEqual(map);
+    });
+
+    it('when replacing, should drop every current map and keep only the ones from the backup', () => {
+      const store = new MindMapStore(config(file));
+
+      store.set('1', { ...map, edited: true });
+      store.set('9', map);
+
+      const result = store.importAll([{ id: '1', map }], 'replace');
+
+      expect(result).toEqual({ added: 1, skipped: 0 });
+      expect(store.get('1')).toEqual(map);
+      expect(store.get('9')).toBeUndefined();
+    });
+
+    it('when the backup has invalid entries, should ignore them and count them as skipped', () => {
+      const store = new MindMapStore(config(file));
+
+      const result = store.importAll(
+        [
+          null,
+          'x',
+          { id: '', map },
+          { id: '1' },
+          { id: '2', map: { nodes: 'x' } },
+          { id: '3', map },
+        ],
+        'merge',
+      );
+
+      expect(result).toEqual({ added: 1, skipped: 5 });
+      expect(store.get('3')).toEqual(map);
+    });
+
+    it('when importing, should write the result to disk so it survives a restart', () => {
+      new MindMapStore(config(file)).importAll([{ id: '1', map }], 'merge');
+
+      expect(new MindMapStore(config(file)).get('1')).toEqual(map);
+    });
+  });
 });

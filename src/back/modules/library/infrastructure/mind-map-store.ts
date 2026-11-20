@@ -1,5 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common';
 
+import type { RecordImportResult, RestoreMode } from '../../../../shared/contracts/backup';
 import { JsonFile } from '../../../../storage/json-file';
 import { BackAlerts } from '../../../config/back-alerts';
 import { BackConfig } from '../../../config/back-config';
@@ -10,6 +11,23 @@ interface MindMapsFileData {
   version: 1;
   /** Por id da página. */
   maps: Record<string, StoredMindMap>;
+}
+
+function isStoredEntry(value: unknown): value is { id: string; map: StoredMindMap } {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const { id, map } = value as { id?: unknown; map?: Partial<StoredMindMap> | null };
+
+  return (
+    typeof id === 'string' &&
+    id !== '' &&
+    typeof map === 'object' &&
+    map !== null &&
+    Array.isArray(map.nodes) &&
+    typeof map.createdAt === 'string'
+  );
 }
 
 /**
@@ -43,6 +61,34 @@ export class MindMapStore {
       delete this.load()[id];
       this.save();
     }
+  }
+
+  /** Todos os mapas, um por página, como lista (usado pelo backup). */
+  exportAll(): Array<{ id: string; map: StoredMindMap }> {
+    return Object.entries(this.load()).map(([id, map]) => ({ id, map: structuredClone(map) }));
+  }
+
+  /**
+   * Traz mapas de um backup. `merge` só adiciona os de páginas que ainda não têm mapa (mantém o
+   * atual, com as edições do usuário); `replace` troca todos. Ignora entradas inválidas.
+   */
+  importAll(raw: unknown[], mode: RestoreMode): RecordImportResult {
+    const incoming = raw.filter(isStoredEntry);
+    const current = this.load();
+    const base: Record<string, StoredMindMap> = mode === 'replace' ? {} : { ...current };
+    let added = 0;
+
+    for (const { id, map } of incoming) {
+      if (!(id in base)) {
+        base[id] = map;
+        added += 1;
+      }
+    }
+
+    this.maps = base;
+    this.save();
+
+    return { added, skipped: raw.length - added };
   }
 
   private load(): Record<string, StoredMindMap> {

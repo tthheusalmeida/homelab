@@ -43,6 +43,15 @@ export class MindMapService {
     return stored ? toView(stored, hashContent(content)) : null;
   }
 
+  /**
+   * Apaga **só o mapa mental** da página (com as edições do usuário). O resumo e o infográfico ficam
+   * como estão. Página inexistente é `NOT_FOUND`; página sem mapa não é erro (já está como se pede).
+   */
+  async delete(id: string): Promise<void> {
+    await this.library.get(id);
+    this.store.delete(id);
+  }
+
   /** Gera (ou gera de novo) o mapa da página e o guarda. */
   generate(id: string, modelId?: string): Promise<LibraryMindMap> {
     const running = this.inFlight.get(id);

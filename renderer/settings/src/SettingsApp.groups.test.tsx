@@ -52,6 +52,7 @@ describe('SettingsApp menu groups', () => {
     const items = [
       'Aparência',
       'Biblioteca',
+      'Infográfico',
       'IAs externas',
       'Serviços locais',
       'Componentes',

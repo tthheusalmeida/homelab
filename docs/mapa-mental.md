@@ -44,7 +44,7 @@ O mapa da IA (ou o mapa simples) pode ser melhorado à mão: o ícone **Editar o
 - **O que fica parado durante a edição:** os ramos não recolhem (tudo à mão), "Recolher" fica desabilitado, arrastar o mapa e dar zoom continuam, mas arrastar **dentro de um campo** seleciona texto em vez de mover o mapa. Baixar PNG funciona (sai o que está na tela). Não dá para editar enquanto a IA gera.
 - **Rascunho que não se perde:** trocar para a aba Resumo, entrar no modo leitura ou sair da página no meio da edição **não perde o que foi digitado**: ao voltar ao mapa, a edição continua de onde parou (o rascunho vive na sessão do app; fechar o app descarta o que não foi salvo).
 - **Mapa editado e a IA:** o mapa fica marcado como editado. **Gerar de novo com a IA apagaria as edições**, então antes aparece **"Gerar de novo e perder as suas edições?"** (vale também para "Atualizar com IA" e "Tentar de novo"). Editar o mapa simples (quando a IA não gerou) cria um mapa "manual". Salvar também limpa o aviso "O resumo mudou…" (o usuário conferiu o mapa com o texto de agora); se o texto mudar depois, o aviso volta e o mapa continua editado.
-- **Backup:** as edições são dados do usuário e ficam em `data/mind-maps.json`, que **ainda não entra no backup** (pendência registrada em `persistencia.md`).
+- **Backup:** as edições são dados do usuário e ficam em `data/mind-maps.json`, que **entra no backup** como o item **Mapas mentais** (caixa própria em Configurações > Backup; ver `persistencia.md`). Restaurar em **Mesclar** só traz os mapas de páginas que ainda não têm um (o atual, com as suas edições, fica); **Substituir** troca todos.
 
 ## Excluir o resumo e o mapa
 Excluir um resumo (janela "Sobre a página" > **Excluir**) **apaga também o mapa mental dele**, inclusive as edições. A confirmação diz isso com clareza e que não há como desfazer (ver `regras/front/library.md`). No back, `LibraryService.discard` apaga o arquivo e o mapa (`MindMapStore.delete`); ver `regras/back/library.md`.
@@ -58,10 +58,10 @@ Excluir um resumo (janela "Sobre a página" > **Excluir**) **apaga também o map
 
 ## Dados e backup
 - `data/mind-maps.json` (um mapa por id de página; guarda também o hash do texto, o modelo, a data e se foi editado). O mapa **da IA** é cache e pode ser gerado de novo (centavos), mas as **edições do usuário** ficam neste mesmo arquivo e **ainda não entram no backup** (pendência: levar o arquivo para o `.zip`). Mapas guardados antes das frases curtas e do subtítulo continuam válidos (só mostram os termos); "Gerar de novo" traz as frases. Ver `persistencia.md`.
-- Excluir o resumo apaga o mapa dele (ver acima).
-- Canais IPC: `library:mind-map:get`, `library:mind-map:generate`, `library:mind-map:save` e `library:mind-map:save-image` (ver `ipc-canais.md`). **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`**: a lista de canais permitidos fica no preload, compilado na abertura, e um app aberto antes de um canal novo responde "Canal IPC não permitido".
+- **Excluir o resumo apaga o mapa dele** (e o infográfico). **Excluir só o mapa mental:** o ícone da lixeira ("Excluir só o mapa mental") entre os controles da aba abre `DeleteGeneratedDialog`, que diz "só", lista o que será apagado (o mapa, e as edições se foi editado) e o que continua (o texto do resumo e o infográfico). O resumo e o infográfico não mudam, a aba não gera outro mapa sozinha na mesma sessão (volta ao mapa simples com "Gerar com IA") e a lista de Páginas refaz o filtro "Com mapa mental".
+- Canais IPC: `library:mind-map:get`, `library:mind-map:generate`, `library:mind-map:save`, `library:mind-map:save-image` e `library:mind-map:delete` (ver `ipc-canais.md`). **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`**: a lista de canais permitidos fica no preload, compilado na abertura, e um app aberto antes de um canal novo responde "Canal IPC não permitido".
 
 ## O que ficou para as próximas fases
-- Infográfico gerado por IA (só quando o usuário pedir), com filtro "Com infográfico" em Páginas.
+- Filtro "Com infográfico" em Páginas (o infográfico em si já existe: ver `infografico.md`).
 - Exportar o mapa também como PDF ou SVG.
 - Escolher o modelo do mapa (hoje usa o mais barato) e usar o Ollama quando não houver chave do Gemini.

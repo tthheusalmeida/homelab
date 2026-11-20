@@ -9,6 +9,7 @@ Regra: **otimizar sem tirar o que deixa o app gostoso de usar**. Transições, f
   - `preloadRoutes` (chamado no `App`) baixa as outras telas **em segundo plano, uma por vez e só quando o app está ocioso** (`requestIdleCallback`), então depois de alguns segundos qualquer tela abre na hora. Falha ao baixar não derruba nada: a tela tenta de novo ao ser aberta.
   - Ao criar uma tela nova, acrescente-a em `loaders` e na lista de rotas com `lazyRoute`. `router.test.tsx` confere que todo nome exportado existe.
 - **Lista de tarefas sem consulta de 1 em 1 segundo à toa** (`useJobs`). O contador da barra lateral consultava a lista todo segundo, o tempo todo. Agora: com algo na fila ou rodando, continua a cada 1 s (o progresso segue igual); sem nada em andamento, a cada 5 s. Criar uma tarefa (e cancelar, repetir, excluir) já atualiza a lista na hora, então não há atraso perceptível.
+- **Catálogo de peças do infográfico** (`PieceCatalog` + `LazyRender`): com 416 peças, o desenho de cada cartão só é montado quando ele chega perto da tela (e fica montado depois). A lista, a contagem e a busca usam os dados, então nada muda para quem busca. Nos testes, `renderer/src/test/setup.ts` troca o `IntersectionObserver` por um que não dispara (tudo "fora da tela"), mantendo as listas leves.
 - **Relógio do cabeçalho** (`ClockAndTime`): os formatadores de data e hora são criados uma vez (antes, a cada segundo) e a linha da data só é refeita quando o dia muda.
 
 ## Como medir de novo

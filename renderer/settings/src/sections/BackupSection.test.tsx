@@ -386,3 +386,72 @@ describe('BackupSection: restaurar backup', () => {
     expect(screen.getByRole('button', { name: 'Escolher outro backup' })).toBeEnabled();
   });
 });
+
+describe('BackupSection: mapas mentais e infográficos', () => {
+  const withGenerated = {
+    items: [
+      { id: 'library', kind: 'files', count: 2, bytes: 2048, estimatedZipBytes: 512 },
+      { id: 'mindMaps', kind: 'records', count: 3, bytes: 3000, estimatedZipBytes: 600 },
+      { id: 'infographics', kind: 'records', count: 1, bytes: 2000, estimatedZipBytes: 400 },
+    ],
+    notIncluded: [],
+  };
+
+  const render = (handlers: Record<string, (payload: unknown) => unknown> = {}) => {
+    const invoke = mockApi({
+      [IpcChannels.backup.preview]: () => ok(withGenerated),
+      ...handlers,
+    });
+
+    renderWithProviders(<BackupSection onSaved={vi.fn()} />);
+
+    return invoke;
+  };
+
+  it('when opened, should list the mind maps and the infographics as separate items, both selected', async () => {
+    render();
+
+    await screen.findByTestId('backup-total');
+
+    expect(itemBox(/Mapas mentais/)).toBeChecked();
+    expect(itemBox(/Infográficos/)).toBeChecked();
+    expect(screen.getByText(/3 registros/)).toBeVisible();
+    expect(screen.getByText(/1 registro/)).toBeVisible();
+  });
+
+  it('when only the mind maps are unchecked, should send the infographics (and not the mind maps)', async () => {
+    const user = userEvent.setup();
+    const invoke = render({
+      [IpcChannels.backup.create]: () =>
+        ok({ cancelled: false, path: 'D:/backups/b.zip', bytes: 1024, files: 3 }),
+    });
+
+    await screen.findByTestId('backup-total');
+    await user.click(itemBox(/Mapas mentais/));
+    await user.click(screen.getByRole('button', { name: /Criar backup…/ }));
+
+    await waitFor(() =>
+      expect(payloadsOf(invoke, IpcChannels.backup.create)).toEqual([
+        { items: ['library', 'infographics'] },
+      ]),
+    );
+  });
+
+  it('when only the infographics are unchecked, should send the mind maps (and not the infographics)', async () => {
+    const user = userEvent.setup();
+    const invoke = render({
+      [IpcChannels.backup.create]: () =>
+        ok({ cancelled: false, path: 'D:/backups/b.zip', bytes: 1024, files: 3 }),
+    });
+
+    await screen.findByTestId('backup-total');
+    await user.click(itemBox(/Infográficos/));
+    await user.click(screen.getByRole('button', { name: /Criar backup…/ }));
+
+    await waitFor(() =>
+      expect(payloadsOf(invoke, IpcChannels.backup.create)).toEqual([
+        { items: ['library', 'mindMaps'] },
+      ]),
+    );
+  });
+});

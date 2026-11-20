@@ -115,3 +115,47 @@ describe("previewWithoutTitle", () => {
     }
   });
 });
+
+describe("DocumentCard grid fixed size", () => {
+  const long = {
+    ...document,
+    title: "Um título muito, muito comprido que certamente passa de três linhas na miniatura da página",
+    preview: "Uma prévia bem longa ".repeat(40),
+  } as unknown as DocumentSummary;
+
+  it("when the title is short or long, should reserve the same fixed height of three lines for it", () => {
+    for (const doc of [document, long]) {
+      const { unmount } = renderGrid(doc);
+      const link = screen.getByRole("link", { name: doc.title });
+
+      expect(link).toHaveClass("line-clamp-3", "h-[3.875rem]", "overflow-hidden");
+      unmount();
+    }
+  });
+
+  it("when the title does not fit in three lines, should keep the whole name in the tooltip", () => {
+    renderGrid(long);
+
+    expect(screen.getByRole("link", { name: long.title })).toHaveAttribute("title", long.title);
+  });
+
+  it("when the title is short, should also have the tooltip with the name", () => {
+    renderGrid();
+
+    expect(screen.getByRole("link", { name: document.title })).toHaveAttribute("title", document.title);
+  });
+
+  it("when the preview is long, should cut it in four lines with an ellipsis", () => {
+    renderGrid(long);
+
+    expect(screen.getByText(/Uma prévia bem longa/)).toHaveClass("line-clamp-4");
+  });
+
+  it("when the sheet has too much content, should clip it instead of growing taller than the others", () => {
+    const { container } = renderGrid(long);
+    const sheet = container.querySelector("[data-slot=paper-page]");
+
+    expect(sheet).toHaveClass("aspect-[3/4]", "overflow-hidden");
+    expect(sheet?.firstElementChild).toHaveClass("min-h-0", "overflow-hidden");
+  });
+});

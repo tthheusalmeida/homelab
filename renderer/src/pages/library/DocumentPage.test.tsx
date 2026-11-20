@@ -409,7 +409,7 @@ describe("DocumentPage", () => {
       );
       const user = await openDelete();
 
-      await user.click(screen.getByRole("button", { name: "Excluir resumo e mapa mental" }));
+      await user.click(screen.getByRole("button", { name: "Excluir resumo, mapa mental e infográfico" }));
 
       expect(discard.mutate).toHaveBeenCalledWith("id1", expect.any(Object));
       expect(screen.getByText(/^biblioteca/)).toBeInTheDocument();
