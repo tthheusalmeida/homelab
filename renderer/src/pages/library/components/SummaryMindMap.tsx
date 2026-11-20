@@ -12,10 +12,9 @@ import {
   type MindMapDraft,
 } from '#lib/mind-map-edit';
 import { cn } from '#lib/utils';
-import { Button } from '#ui/button';
-
 import { Callout } from '#components/Callout';
 import { ConfirmDialog } from '#components/ConfirmDialog';
+import { GenerateButton } from '#components/GenerateButton';
 import { HexLoader } from '#components/Hex';
 import { IconButton } from '#components/IconButton';
 import { LoadingState } from '#components/LoadingState';
@@ -50,44 +49,6 @@ const requestedThisSession = new Set<string>();
  * edição continua de onde parou. Sai daqui ao salvar ou descartar.
  */
 const draftsThisSession = new Map<string, MindMapDraft>();
-
-/** Botão de gerar: enquanto a IA trabalha, mostra a colmeia carregando e fica desabilitado. */
-function GenerateButton({
-  pending,
-  onClick,
-  children,
-  primary = false,
-}: {
-  pending: boolean;
-  onClick: () => void;
-  children: ReactNode;
-  primary?: boolean;
-}) {
-  return (
-    <Button
-      type="button"
-      size="sm"
-      variant={primary ? 'default' : 'outline'}
-      disabled={pending}
-      aria-busy={pending}
-      onClick={onClick}
-    >
-      {pending ? (
-        <>
-          <span aria-hidden="true" className="inline-flex">
-            <HexLoader className="size-4" />
-          </span>
-          Gerando…
-        </>
-      ) : (
-        <>
-          <Sparkles />
-          {children}
-        </>
-      )}
-    </Button>
-  );
-}
 
 /**
  * Aba "Mapa mental" de um resumo (também a edição do mapa: termos, frases, subtítulo e nós a mais ou

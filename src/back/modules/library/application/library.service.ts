@@ -25,6 +25,7 @@ import {
   type RebuildResult,
 } from '../infrastructure/library-index';
 import { LibraryStorage } from '../infrastructure/library-storage';
+import { InfographicStore } from '../infrastructure/infographic-store';
 import { MindMapStore } from '../infrastructure/mind-map-store';
 import {
   LibrarySearch,
@@ -78,6 +79,8 @@ export class LibraryService implements OnModuleInit {
     private readonly search: LibrarySearch,
     /** Mapas mentais guardados: sair da biblioteca de vez leva o mapa da página junto. */
     @Optional() private readonly mindMaps?: MindMapStore,
+    /** Infográficos guardados: idem, saem junto com a página. */
+    @Optional() private readonly infographics?: InfographicStore,
   ) {}
 
   /** Na inicialização, reconstrói o índice a partir dos arquivos. */
@@ -242,6 +245,8 @@ export class LibraryService implements OnModuleInit {
     this.index.remove(id);
     // O mapa mental (e as edições do usuário) pertence ao texto: apagou o texto, apaga o mapa.
     this.mindMaps?.delete(id);
+    // O mesmo vale para o infográfico.
+    this.infographics?.delete(id);
   }
 
   /** Cria um artigo escrito manualmente, já publicado. */

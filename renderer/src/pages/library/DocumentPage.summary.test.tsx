@@ -92,6 +92,12 @@ describe('DocumentPage — summary outline preference', () => {
   });
 });
 
+vi.mock('./components/SummaryInfographic', () => ({
+  SummaryInfographic: ({ documentId, title }: { documentId: string; title: string }) => (
+    <div data-testid="infographic" data-title={title} data-id={documentId} />
+  ),
+}));
+
 vi.mock('./components/SummaryMindMap', () => ({
   SummaryMindMap: ({
     documentId,
@@ -433,5 +439,75 @@ describe('DocumentPage — Modo leitura and Sobre a página on the top row', () 
 
     expect(screen.getByRole('button', { name: 'Modo leitura' })).toHaveTextContent('');
     expect(screen.getByRole('button', { name: 'Sobre a página' })).toHaveTextContent('');
+  });
+});
+
+describe('DocumentPage — infographic view', () => {
+  it('when the page is a summary, should offer the Infográfico view next to Resumo and Mapa mental', () => {
+    documentQuery.data = detail('summary');
+
+    renderPage(true);
+
+    expect(screen.getByRole('button', { name: 'Infográfico' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(screen.queryByTestId('infographic')).not.toBeInTheDocument();
+  });
+
+  it('when the user opens Infográfico, should show it instead of the text and hide the Sumário', async () => {
+    documentQuery.data = detail('summary');
+
+    renderPage(true);
+    await userEvent.click(screen.getByRole('button', { name: 'Infográfico' }));
+
+    expect(screen.getByTestId('infographic')).toHaveAttribute('data-title', 'Resumo de redes');
+    expect(screen.queryByRole('navigation', { name: 'Sumário' })).not.toBeInTheDocument();
+  });
+
+  it('when the user goes back to Resumo, should show the text again', async () => {
+    documentQuery.data = detail('summary');
+
+    renderPage(true);
+    await userEvent.click(screen.getByRole('button', { name: 'Infográfico' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Resumo' }));
+
+    expect(screen.queryByTestId('infographic')).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Sumário' })).toBeInTheDocument();
+  });
+
+  it('when the user switches from the mind map to the infographic, should show only the infographic', async () => {
+    documentQuery.data = detail('summary');
+
+    renderPage(true);
+    await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Infográfico' }));
+
+    expect(screen.getByTestId('infographic')).toBeInTheDocument();
+    expect(screen.queryByTestId('mind-map')).not.toBeInTheDocument();
+  });
+
+  it('when the page is not a summary, should not offer the infographic', () => {
+    documentQuery.data = detail('transcription');
+
+    renderPage(true);
+
+    expect(screen.queryByRole('button', { name: 'Infográfico' })).not.toBeInTheDocument();
+  });
+
+  it('when the infographic is open and the user enters reading mode, should keep the infographic', async () => {
+    documentQuery.data = detail('summary');
+
+    renderPage(true);
+    await userEvent.click(screen.getByRole('button', { name: 'Infográfico' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
+
+    const reading = screen.getByRole('region', { name: 'Modo leitura' });
+
+    expect(within(reading).getByTestId('infographic')).toHaveAttribute('data-id', expect.any(String));
+    expect(within(reading).getByRole('button', { name: 'Infográfico' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 });

@@ -6,6 +6,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { createTmpLibrary, type TmpLibrary } from '../../../testing/tmp-library';
 import { newPendingMeta } from '../domain/document';
 import type { DocumentMeta } from '../domain/library.types';
+import { InfographicStore } from '../infrastructure/infographic-store';
 import { MindMapStore } from '../infrastructure/mind-map-store';
 import { LibraryIndex } from '../infrastructure/library-index';
 import { LibrarySearch } from './library-search';
@@ -446,6 +447,35 @@ describe('LibraryService', () => {
 
       expect(mindMaps.get('job1')).toBeUndefined();
       expect(mindMaps.get('outra')).toBeDefined();
+    });
+
+    it('when the document is deleted, should delete its infographic too', async () => {
+      const infographics = new InfographicStore();
+      const withInfographics = new LibraryService(
+        tmp.storage,
+        index,
+        new LibrarySearch(index, tmp.storage),
+        undefined,
+        infographics,
+      );
+      const stored = {
+        contentHash: 'h',
+        model: 'm',
+        createdAt: 'd',
+        title: 'T',
+        piece: '',
+        sections: [],
+      };
+
+      await seedPending();
+      await withInfographics.publish('job1', publishInput);
+      infographics.set('job1', stored);
+      infographics.set('outra', stored);
+
+      await withInfographics.discard('job1');
+
+      expect(infographics.get('job1')).toBeUndefined();
+      expect(infographics.get('outra')).toBeDefined();
     });
 
     it('when the mind map store is not available, should still delete the document', async () => {

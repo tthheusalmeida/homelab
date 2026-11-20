@@ -13,8 +13,10 @@ import {
   getDocument,
   getDocuments,
   getIndexStatus,
+  generateInfographic,
   generateMindMap,
   getInbox,
+  getInfographic,
   getMindMap,
   getTags,
   publishDocument,
@@ -29,6 +31,8 @@ import type {
   PublishInput,
   UpdateDocumentInput,
 } from "../types/library.types";
+
+import type { InfographicLayoutId } from "#shared/infographic-layouts";
 
 export const LIBRARY_KEY = ["library"] as const;
 
@@ -95,6 +99,37 @@ export function useSaveMindMap() {
     }) => saveMindMap(id, { subtitle, nodes }),
     onSuccess: (map, { id }) =>
       queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map),
+  });
+}
+
+/** O infográfico guardado de um resumo (`null` enquanto não foi gerado). */
+export function useInfographic(id: string, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: [...LIBRARY_KEY, "infographic", id],
+    queryFn: () => getInfographic(id),
+    enabled: options.enabled ?? true,
+  });
+}
+
+/**
+ * Gera o infográfico com a IA. Guarda o resultado direto na consulta do infográfico (não invalida a
+ * biblioteca toda); isso vale mesmo se a aba for fechada antes de a IA responder.
+ */
+export function useGenerateInfographic() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      modelId,
+      layout,
+    }: {
+      id: string;
+      modelId?: string;
+      layout?: InfographicLayoutId;
+    }) => generateInfographic(id, { modelId, layout }),
+    onSuccess: (infographic, { id }) =>
+      queryClient.setQueryData([...LIBRARY_KEY, "infographic", id], infographic),
   });
 }
 

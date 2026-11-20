@@ -6,8 +6,8 @@ import type { LibraryMindMapImageResult } from '../shared/contracts/library';
 import { IpcError, IpcErrorCode } from '../shared/errors';
 
 export const MindMapImageMessages = {
-  invalid: 'A imagem do mapa mental não é válida. Tente baixar de novo.',
-  tooLarge: 'A imagem do mapa mental ficou grande demais para salvar.',
+  invalid: 'A imagem não é válida. Tente baixar de novo.',
+  tooLarge: 'A imagem ficou grande demais para salvar.',
   writeFailed: 'Não foi possível salvar a imagem. Verifique a pasta escolhida e o espaço em disco.',
 } as const;
 

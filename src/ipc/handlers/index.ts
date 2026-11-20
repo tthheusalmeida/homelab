@@ -28,6 +28,7 @@ import {
   type LibraryWriter,
 } from './library.handler';
 import { LocalProvidersHandler } from './local-providers.handler';
+import { InfographicHandler, type InfographicPort } from './infographic.handler';
 import { MindMapHandler, type MindMapImagePort, type MindMapPort } from './mind-map.handler';
 import { UpdatesHandler, type NotesTranslatorPort, type UpdatesPort } from './updates.handler';
 import { SettingsHandler, type FolderPicker, type LibraryFolderPort } from './settings.handler';
@@ -42,6 +43,7 @@ export interface BackReaders {
   library: LibraryReader & LibraryWriter;
   libraryClassifier: LibraryClassifierPort;
   mindMaps: MindMapPort;
+  infographics: InfographicPort;
   books: BookReader & BookWriter;
   jobs: {
     catalog: JobCatalogPort;
@@ -84,6 +86,7 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
     new ChatHandler(deps.back.chat),
     new LibraryHandler(deps.back.library, deps.back.libraryClassifier),
     new MindMapHandler(deps.back.mindMaps, deps.mindMapImages),
+    new InfographicHandler(deps.back.infographics),
     new BookHandler(deps.back.books),
     new BackupHandler(deps.backup),
     new NoticeHandler(deps.notices),

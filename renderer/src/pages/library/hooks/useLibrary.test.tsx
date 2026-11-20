@@ -20,6 +20,8 @@ vi.mock("../api/library", () => ({
   updateDocument: vi.fn(),
   getMindMap: vi.fn(),
   generateMindMap: vi.fn(),
+  getInfographic: vi.fn(),
+  generateInfographic: vi.fn(),
   saveMindMapImage: vi.fn(),
   saveMindMap: vi.fn(),
 }));
@@ -34,9 +36,11 @@ import {
   useDiscardDocument,
   useDocument,
   useDocuments,
+  useGenerateInfographic,
   useGenerateMindMap,
   useIndexStatus,
   useInbox,
+  useInfographic,
   useMindMap,
   usePublishDocument,
   useReindex,
@@ -434,5 +438,81 @@ describe('useSaveMindMap', () => {
 
     await waitFor(() => expect(result.current.save.error?.message).toBe('falhou'));
     expect(result.current.query.data).toBeNull();
+  });
+});
+
+describe('useInfographic', () => {
+  const infographic = {
+    title: 'T',
+    piece: '',
+    sections: [],
+    model: 'm',
+    createdAt: 'd',
+    stale: false,
+  };
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('when useInfographic mounts, should fetch the saved infographic of the page', async () => {
+    vi.mocked(library.getInfographic).mockResolvedValue(infographic);
+    const { wrapper } = setup();
+
+    const { result } = renderHook(() => useInfographic('id1'), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(library.getInfographic).toHaveBeenCalledWith('id1');
+    expect(result.current.data).toEqual(infographic);
+  });
+
+  it('when useInfographic is disabled, should not fetch', () => {
+    const { wrapper } = setup();
+
+    renderHook(() => useInfographic('id1', { enabled: false }), { wrapper });
+
+    expect(library.getInfographic).not.toHaveBeenCalled();
+  });
+
+  it('when it is generated, should store it in the infographic query without invalidating the library', async () => {
+    vi.mocked(library.generateInfographic).mockResolvedValue(infographic);
+    vi.mocked(library.getInfographic).mockResolvedValue(null);
+    const { wrapper, invalidate } = setup();
+    const { result } = renderHook(
+      () => ({ query: useInfographic('id1'), generate: useGenerateInfographic() }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
+    expect(result.current.query.data).toBeNull();
+
+    await act(async () => {
+      await result.current.generate.mutateAsync({ id: 'id1', layout: 'funnel' });
+    });
+
+    expect(library.generateInfographic).toHaveBeenCalledWith('id1', {
+      modelId: undefined,
+      layout: 'funnel',
+    });
+    await waitFor(() => expect(result.current.query.data).toEqual(infographic));
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it('when generating fails, should expose the error and keep the query as it was', async () => {
+    vi.mocked(library.generateInfographic).mockRejectedValue(new Error('falhou'));
+    vi.mocked(library.getInfographic).mockResolvedValue(infographic);
+    const { wrapper } = setup();
+    const { result } = renderHook(
+      () => ({ query: useInfographic('id1'), generate: useGenerateInfographic() }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
+    await act(async () => {
+      await result.current.generate.mutateAsync({ id: 'id1' }).catch(() => undefined);
+    });
+
+    await waitFor(() => expect(result.current.generate.error?.message).toBe('falhou'));
+    expect(result.current.query.data).toEqual(infographic);
   });
 });

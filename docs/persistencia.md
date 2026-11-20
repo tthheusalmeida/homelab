@@ -21,6 +21,7 @@ Status: **implementado** (ver "Como ficou" no fim; o smoke E2E fica para o usuá
 | Configurações / segredos | `userData/settings.json`, `userData/secrets.json` | Sim |
 | Consumo de IA | `userData/ai-usage.json` (limite de 5.000 registros) | Sim |
 | Mapas mentais (gerados pela IA e **editados pelo usuário**) | `data/mind-maps.json` (um por resumo; ver `mapa-mental.md`) | Sim. O mapa da IA é cache (pode ser gerado de novo), mas as **edições do usuário ficam neste mesmo arquivo e ainda não entram no backup** (pendência). Excluir o resumo apaga o mapa dele |
+| Infográficos (gerados pela IA: modelo, textos e peças) | `data/infographics.json` (um por resumo; ver `infografico.md`) | Sim, igual ao mapa mental: **ainda não entra no backup** (pendência). Excluir o resumo apaga o infográfico dele |
 | Aparência (tema, cor e leitura) | `localStorage` + `settings.json` (duplicada) | Sim |
 
 ## Estrutura nova
@@ -33,7 +34,8 @@ Documentos/HomeLab/                  raiz FIXA (não é configurável)
 │  ├─ jobs.json                      histórico de jobs
 │  ├─ chats.json                     todas as conversas
 │  ├─ ai-usage.json                  consumo de IA (move de userData)
-│  └─ mind-maps.json                 mapas mentais, com as edições do usuário (fora do backup, por ora)
+│  ├─ mind-maps.json                 mapas mentais, com as edições do usuário (fora do backup, por ora)
+│  └─ infographics.json              infográficos gerados (fora do backup, por ora)
 ├─ config/
 │  └─ settings.json                  configurações (move de userData)
 └─ temp/{video,audio}/               temporários (nunca entram no backup)

@@ -13,11 +13,13 @@ import type {
 
 import { IpcChannels } from '#shared/channels';
 import type {
+  LibraryInfographic,
   LibraryListFilters,
   LibraryMindMap,
   LibraryMindMapImageResult,
   LibraryMindMapNode,
 } from '#shared/contracts/library';
+import type { InfographicLayoutId } from '#shared/infographic-layouts';
 import { ipc } from '#lib/ipc';
 
 /**
@@ -120,4 +122,20 @@ export function saveMindMapImage(
   dataBase64: string,
 ): Promise<LibraryMindMapImageResult> {
   return ipc.invoke(IpcChannels.library.mindMap.saveImage, { fileName, dataBase64 });
+}
+
+/** O infográfico guardado do resumo, ou `null` se ainda não foi gerado. */
+export function getInfographic(id: string): Promise<LibraryInfographic | null> {
+  return ipc.invoke(IpcChannels.library.infographic.get, { id });
+}
+
+/**
+ * Pede à IA o infográfico do resumo (gera de novo se já havia um). Com `layout`, usa o modelo
+ * escolhido; sem ele a IA escolhe o que melhor serve ao resumo.
+ */
+export function generateInfographic(
+  id: string,
+  options: { modelId?: string; layout?: InfographicLayoutId } = {},
+): Promise<LibraryInfographic> {
+  return ipc.invoke(IpcChannels.library.infographic.generate, { id, ...options });
 }

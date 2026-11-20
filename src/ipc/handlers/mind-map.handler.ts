@@ -26,7 +26,7 @@ export interface MindMapImagePort {
 
 export const MindMapPayloadMessages = {
   nodes: 'Informe os ramos do mapa mental.',
-  image: 'Informe o nome e o conteúdo da imagem do mapa mental.',
+  image: 'Informe o nome e o conteúdo da imagem.',
 } as const;
 
 /**

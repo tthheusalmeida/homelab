@@ -71,6 +71,8 @@ import type {
   LibraryDocumentRequest,
   LibraryDocumentSummary,
   LibraryIndexStatus,
+  LibraryInfographic,
+  LibraryInfographicRequest,
   LibraryListFilters,
   LibraryMindMap,
   LibraryMindMapImageRequest,
@@ -252,6 +254,14 @@ export interface IpcContracts {
   [IpcChannels.library.mindMap.saveImage]: {
     request: LibraryMindMapImageRequest;
     response: LibraryMindMapImageResult;
+  };
+  [IpcChannels.library.infographic.get]: {
+    request: LibraryDocumentRequest;
+    response: LibraryInfographic | null;
+  };
+  [IpcChannels.library.infographic.generate]: {
+    request: LibraryInfographicRequest;
+    response: LibraryInfographic;
   };
   [IpcChannels.library.reindex]: { request: void; response: LibraryRebuildResult };
   [IpcChannels.library.books.list]: { request: BookListRequest; response: BookSummary[] };

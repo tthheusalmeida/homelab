@@ -38,6 +38,9 @@ export abstract class BackConfig {
   /** Arquivo dos mapas mentais gerados pela IA; sem valor, ficam só em memória (testes). */
   abstract readonly mindMapsFile: string | null;
 
+  /** Arquivo dos infográficos gerados pela IA; sem valor, ficam só em memória (testes). */
+  abstract readonly infographicsFile: string | null;
+
   /** Chave do Gemini; `null` quando não configurada (o provider responde `NOT_CONFIGURED`). */
   abstract readonly geminiApiKey: string | null;
 }

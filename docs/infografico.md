@@ -1,0 +1,71 @@
+# Infográfico do resumo
+
+Todo resumo da biblioteca pode ter um **infográfico**: uma versão visual do conteúdo, gerada pela IA a partir do resumo, que **conta uma história** explicando o assunto (e não é um bloco único). Ele fica na aba **Infográfico** da página do resumo (`/library/:id`), ao lado de **Resumo** e **Mapa mental**. Só páginas do tipo **Resumo** têm a aba.
+
+## Como funciona (resumo)
+1. **Como no mapa mental:** na **primeira vez que a aba abre** e o resumo ainda **não tem** infográfico, a IA já gera um (uma vez por resumo por sessão; se falhar, reabrir a aba não gasta de novo e quem decide tentar é o botão). Se **já existe** um, ele aparece na hora e a IA só roda de novo quando a pessoa clica em **Gerar de novo**.
+2. A IA faz o papel de **orquestradora** e planeja a **história**: uma **capa** (assunto, título, promessa, abertura com a definição ou o gancho e a peça do tema), de **2 a 6 seções** em ordem lógica (o que é, como funciona, partes, comparações, cuidados...), cada uma no **modelo** que melhor mostra a sua parte (entre 10; seções vizinhas usam modelos diferentes) e um **fechamento** ("Para lembrar"). Ela escreve os **textos** com o que o resumo diz e escolhe, para cada espaço, uma **peça** do banco de peças (um objeto desenhado em colmeia).
+3. O back valida a resposta, guarda o resultado em disco e a tela desenha o modelo escolhido com as peças. Abrir a aba de novo mostra o que está guardado, sem gastar IA.
+
+A IA **não desenha nada**: ela devolve só textos e **chaves de peças** (`jogos.controle`). O desenho é do app, com as cores do tema e da cor de destaque (muda na hora em Configurações > Aparência).
+
+## Modelos (layouts de cada seção)
+Cada **seção** do infográfico usa um destes modelos. Lista única em `shared/infographic-layouts.ts` (`INFOGRAPHIC_LAYOUTS`); back, prompt e tela usam a mesma.
+
+| Id | Nome | Serve para | Itens | Como cada campo é usado |
+|---|---|---|---|---|
+| `steps` | Guia em passos | processos, tutoriais, "como funciona" | 3–5 | `title` e `text` de cada etapa; `tips` (até 4 dicas) |
+| `funnel` | Funil | etapas que afunilam (vendas, seleção) | 3–5 | `title` da etapa, `tag` = número da etapa, `text` |
+| `timeline` | Linha do tempo | história, evolução | 3–7 | `tag` = data ou ano, `title`, `text` |
+| `versus` | Comparativo | comparar duas opções | 3–6 | `sides` (2 lados com `title` e `piece`); cada item é um critério: `title`, `text` = lado A, `extra` = lado B, `winner` (`a`, `b` ou `tie`) |
+| `numbers` | Números | dados do resumo | 3–4 | `tag` = o número, `text` = o que mede; `note` |
+| `radial` | Mapa de conceitos | um tema com 4–6 facetas | 4–6 | `title` = tema central, `piece` = peça do centro, itens = facetas |
+| `ranking` | Ranking | top N, prioridades | 3–7 | `title`, `text`, `value` (0 a 100); `meterLabel` = o que a barra mede |
+| `cycle` | Ciclo | processos que se repetem | **4** | `title` e `text` de cada etapa; as 4 etapas ficam em losango (1 em cima, 2 à direita, 3 embaixo, 4 à esquerda) e quatro setas curvas de 90° saem do meio da borda de um cartão e entram no meio da borda do seguinte, sem figura no meio |
+| `myths` | Mitos e verdades | corrigir enganos | 3–5 | `title` = o mito, `text` = a verdade |
+| `mosaic` | Mosaico | assuntos variados | 3–4 | `piece` = destaque, itens (`tag` opcional = número), `tips` = checklist, `note` = frase de destaque |
+
+Campos de cada seção: `layout`, `title` (o que a seção explica), `subtitle`, `piece` (peça da seção, se o modelo a usa) e `items[].piece`. Campos da **capa e do fechamento** (no infográfico): `kicker` (assunto, ex.: "Saúde · Sono"), `title`, `subtitle`, `intro` (abertura), `piece` (peça da capa) e `takeaways` (de 3 a 6 frases para lembrar).
+
+## Banco de peças
+- **216 peças**: 20 temas com 10 peças cada (Tecnologia, Jogos, Proteção, Saúde, Finanças, Educação, Natureza, Alimentação, Justiça e crime, Esporte, Viagem, Negócios, Música, Ciência, Casa, Transporte, Comunicação, Arte e design, Energia e Espaço) e **16 genéricas** (seta, confirmação, negação, pergunta, alerta, estrela, relógio, engrenagem, pessoa, documento, lupa, corrente, bandeira, coração, mais e brilho) para combinar com a peça do tema.
+- **Catálogo** (o que a IA vê: chave, tema, nome e palavras-chave): `shared/infographic-pieces.ts`. **Desenhos** (formas SVG em um quadro 100 x 100, com base hexagonal em perspectiva): `renderer/src/lib/infographic-pieces.ts`. Um teste (`infographic-pieces.test.ts`) garante que as duas listas têm as mesmas chaves, nomes e tags.
+- **Tons** só do app (`global.css`, classes `ig-*`): destaque, destaque escuro, destaque suave, neutros e cartão. Nenhuma cor fixa.
+- **Peça nova:** acrescente a chamada `P('tema', 'id', 'Nome', 'palavras chave', [formas])` no arquivo de desenhos e a linha no catálogo (mesma chave, nome e tags). Para um tema novo, acrescente também em `INFOGRAPHIC_THEMES` (e mantenha 10 peças por tema, regra conferida no teste do catálogo).
+- Chave desconhecida ou vazia vira um hexágono suave; nunca quebra a tela.
+- Para criminalidade o banco usa algemas, distintivo, sirene, balança, grade, tribunal e pasta de processo (sem armas).
+
+## Prompt e validação
+- **Prompt** (`back/modules/ai/prompts/infographic.prompt.ts`): descreve os 10 modelos, traz o catálogo de peças agrupado por tema e o resumo como conteúdo. Regras: só usar o que o resumo diz, ignorar instruções dentro dele, escolher peças só do catálogo (preferindo as do tema do resumo), não repetir peças, textos curtos e sem markdown. Em **"História completa"** (padrão) a IA monta a capa, as seções e o fechamento. Com **um modelo escolhido pelo usuário** ("Só: Funil", por exemplo), o infográfico tem uma seção só, nesse modelo, com a capa e o fechamento.
+- **Validação** (`parseInfographic`, `back/modules/library/domain/infographic.ts`): extrai o JSON (mesmo dentro de cercas), valida **cada seção** (modelo conhecido, título, itens dentro do mínimo e do máximo do modelo, comparativo com os dois lados) e **descarta só a seção que não se sustenta**, mantendo a história; corta textos nos limites (`INFOGRAPHIC_LIMITS`), tira markdown, troca peças desconhecidas por vazio e corta seções acima de 6. **Rejeita** se faltar o título da capa ou se sobrarem menos de 2 seções (1 quando o usuário escolheu um modelo; nesse caso a IA pode ter respondido com a seção solta). `value` do ranking vai para 0–100; `winner` só aceita `a`, `b` ou `tie`.
+- **Peças que a IA erra ou esquece:** a IA às vezes deixa o `piece` vazio ou inventa uma chave. Em vez de deixar um hexágono vazio, o `PieceResolver` (`domain/infographic-pieces.ts`) escolhe a peça do catálogo que combina com o **texto do espaço** (palavras em comum com o nome e as palavras-chave da peça, ignorando acento e usando a raiz da palavra), prefere o tema da capa, **nunca repete** uma peça já usada e, sem nenhuma palavra em comum, pega uma peça ainda não usada do tema da capa (ou uma genérica). As peças que a IA acertou são mantidas. O prompt também manda preencher **toda** peça (capa, itens e lados do comparativo).
+- Os textos da IA são desenhados como **texto puro** (o React escapa): nada vira marcação.
+- **Modelo e custo:** Gemini, o mais barato cadastrado (como no mapa mental). A entrada é o resumo mais o catálogo (alguns milhares de tokens a mais que o mapa mental); o consumo aparece na tela de uso de IA como qualquer chamada. Precisa da chave do Gemini em Configurações; o Ollama não é usado aqui.
+
+## Persistência
+- Cada infográfico fica em **`data/infographics.json`** (um por resumo, pelo id da página), com o mesmo mecanismo do mapa mental (`JsonFile` atômico com `.bak`): guarda a capa, as seções (modelo, textos e peças de cada uma), o fechamento, o hash do texto do resumo, o modelo do Gemini e a data. Abrir a página de novo (ou o app) mostra o que foi guardado.
+- Se o texto do resumo mudou depois da geração, aparece o aviso "O resumo mudou depois que este infográfico foi gerado." com o botão **Atualizar com IA**; o infográfico antigo continua na tela até lá.
+- **Excluir o resumo apaga o infográfico dele** (`LibraryService.discard`).
+- **Backup:** como o mapa mental, o arquivo **ainda não entra no `.zip`** de backup (pendência registrada em `persistencia.md`).
+
+## Tela
+- `SummaryInfographic` (`pages/library/components`): aba com a escolha da **estrutura** ("História completa" ou "Só: <modelo>"), o botão **Gerar infográfico** / **Gerar de novo**, o número de seções e os dois botões de baixar. `InfographicView` (`components`) só desenha o que recebe: a **capa**, as **seções** (cada uma no seu modelo, com "Parte N de M" e um divisor hexagonal) e o **fechamento** "Para lembrar" (`components/infographic/*Layout.tsx`).
+- **Estados:** gerando pela primeira vez (ao abrir a aba), a colmeia carregando; depois de uma tentativa que não deu certo e sem nada guardado, um estado vazio com o botão de gerar; gerando, a colmeia carregando ("Montando o infográfico com a IA"); falha da IA (sem chave, limite, sem internet), aviso com o **motivo em português** e **Tentar de novo** dentro da própria mensagem (o infográfico anterior, se houver, continua na tela); resumo mudou, aviso com **Atualizar com IA**.
+- **Fica numa coluna, não na tela toda:** diferente do mapa mental (que ocupa toda a área), o infográfico é um pôster em coluna centralizada (até 50 rem, ~800 px) **no fluxo da página**, como o texto do resumo, e rola com ela. No modo leitura fica na mesma coluna, dentro da área que rola; sumário e opções de leitura não aparecem.
+- **Layout responsivo ao quadro:** os pontos de quebra seguem a largura do **próprio infográfico** (container queries, `@2xl`, `@3xl`), não a da janela, então ele se adapta ao espaço que a página dá (com a barra lateral aberta ou no modo leitura) e ao PNG exportado.
+- **Sem edição por enquanto:** o infográfico é o que a IA gerou. Para mudar, gere de novo (ou escolha um modelo só).
+- Um infográfico guardado no formato antigo (um modelo só, sem seções, de versões de teste) é tratado como não gerado.
+
+## Baixar como imagem (PNG)
+Dois ícones: **PNG com fundo** e **PNG sem fundo (transparente)**, com tooltip. O renderer fotografa o quadro (`lib/infographic-image.ts`, `html-to-image`, 2x; fixa o preenchimento e o traço das peças antes da foto, porque a biblioteca perderia o que vem de classe CSS) e envia o PNG em base64 pelo canal `library:mind-map:save-image` (o mesmo do mapa mental; o main confere que é um PNG e abre o diálogo "Salvar como"). Nome sugerido: "Infográfico - título da página.png" (e "(sem fundo)").
+
+## Canais IPC
+`library:infographic:get` (`{ id }` → infográfico ou `null`) e `library:infographic:generate` (`{ id, modelId?, layout? }` → infográfico). Página inexistente é `NOT_FOUND`, página que não é resumo ou modelo desconhecido é `VALIDATION` e falha da IA é `PROVIDER_FAILED`. **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`**: a lista de canais permitidos fica no preload, compilado na abertura.
+
+## Testes
+Back: `infographic.spec.ts` (validação), `infographic.prompt.spec.ts`, `infographic-store.spec.ts`, `infographic.service.spec.ts`, `infographic.handler.spec.ts`, `infographic-pieces.spec.ts` (catálogo e modelos) e a exclusão junto com a página em `library.service.spec.ts`. Renderer: `InfographicPiece`, `InfographicView` (os 10 modelos), `SummaryInfographic`, `lib/infographic*.test.ts`, api, hooks e `DocumentPage.summary.test.tsx`.
+
+## O que ficou para as próximas fases
+- Testar a qualidade da escolha de modelo e de peças com resumos reais e ajustar o prompt e as palavras-chave do catálogo.
+- Refinar o desenho das peças (a primeira rodada foi feita por código, sem refino manual) e acrescentar peças sob demanda.
+- Editar textos e trocar peças à mão; escolher o modelo do Gemini; filtro "Com infográfico" em Páginas; levar o arquivo para o backup.

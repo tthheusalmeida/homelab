@@ -62,6 +62,6 @@ Excluir um resumo (janela "Sobre a página" > **Excluir**) **apaga também o map
 - Canais IPC: `library:mind-map:get`, `library:mind-map:generate`, `library:mind-map:save` e `library:mind-map:save-image` (ver `ipc-canais.md`). **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`**: a lista de canais permitidos fica no preload, compilado na abertura, e um app aberto antes de um canal novo responde "Canal IPC não permitido".
 
 ## O que ficou para as próximas fases
-- Infográfico gerado por IA (só quando o usuário pedir), com filtro "Com infográfico" em Páginas.
+- Filtro "Com infográfico" em Páginas (o infográfico em si já existe: ver `infografico.md`).
 - Exportar o mapa também como PDF ou SVG.
 - Escolher o modelo do mapa (hoje usa o mais barato) e usar o Ollama quando não houver chave do Gemini.

@@ -38,6 +38,7 @@ describe('BackContainer', () => {
     jobsFile: null,
     chatsFile: null,
     mindMapsFile: null,
+    infographicsFile: null,
   });
 
   beforeAll(async () => {

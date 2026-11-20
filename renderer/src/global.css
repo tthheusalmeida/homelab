@@ -1208,3 +1208,24 @@
 .shade-slider:focus-visible {
   outline: none;
 }
+
+/* Infográfico: tons das peças (desenhos em viewBox 100x100; ver docs/infografico.md). Só usam os
+   tokens do app, então acompanham tema e cor de destaque. */
+.ig-f-b { fill: var(--brand); }
+.ig-f-bd { fill: color-mix(in oklab, var(--brand) 62%, #000); }
+.ig-f-s { fill: color-mix(in oklab, var(--brand) 36%, var(--card)); }
+.ig-f-n { fill: color-mix(in oklab, var(--foreground) 22%, var(--card)); }
+.ig-f-nm { fill: color-mix(in oklab, var(--foreground) 38%, var(--card)); }
+.ig-f-d { fill: color-mix(in oklab, var(--foreground) 72%, var(--card)); }
+.ig-f-w { fill: var(--card); }
+.ig-k { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.ig-s-b { stroke: var(--brand); }
+.ig-s-bd { stroke: color-mix(in oklab, var(--brand) 62%, #000); }
+.ig-s-s { stroke: color-mix(in oklab, var(--brand) 36%, var(--card)); }
+.ig-s-n { stroke: color-mix(in oklab, var(--foreground) 22%, var(--card)); }
+.ig-s-nm { stroke: color-mix(in oklab, var(--foreground) 38%, var(--card)); }
+.ig-s-d { stroke: color-mix(in oklab, var(--foreground) 72%, var(--card)); }
+.ig-s-w { stroke: var(--card); }
+.ig-ped-t { fill: color-mix(in oklab, var(--foreground) 8%, var(--card)); }
+.ig-ped-l { fill: color-mix(in oklab, var(--foreground) 15%, var(--card)); }
+.ig-ped-r { fill: color-mix(in oklab, var(--foreground) 21%, var(--card)); }

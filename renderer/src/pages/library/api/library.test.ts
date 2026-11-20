@@ -7,12 +7,14 @@ import {
   archiveDocument,
   createArticle,
   discardDocument,
+  generateInfographic,
   generateMindMap,
   getCategories,
   getDocument,
   getDocuments,
   getInbox,
   getIndexStatus,
+  getInfographic,
   getMindMap,
   saveMindMap,
   saveMindMapImage,
@@ -324,5 +326,52 @@ describe('mind map save api', () => {
     await expect(saveMindMap('1', { nodes: [] })).rejects.toThrow(
       'O mapa precisa ter pelo menos um ramo com texto.',
     );
+  });
+});
+
+describe('infographic api', () => {
+  const infographic = {
+    layout: 'steps',
+    title: 'T',
+    piece: '',
+    items: [],
+    model: 'm',
+    createdAt: 'd',
+    stale: false,
+  };
+
+  it('when reading the saved infographic, should send the page id and return it or null', async () => {
+    const invoke = mockApi({ [IpcChannels.library.infographic.get]: () => ok(null) });
+
+    await expect(getInfographic('1')).resolves.toBeNull();
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.infographic.get, { id: '1' });
+  });
+
+  it('when generating without options, should send only the id', async () => {
+    const invoke = mockApi({ [IpcChannels.library.infographic.generate]: () => ok(infographic) });
+
+    await expect(generateInfographic('1')).resolves.toEqual(infographic);
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.infographic.generate, { id: '1' });
+  });
+
+  it('when generating with a layout and a model, should send them with the id', async () => {
+    const invoke = mockApi({ [IpcChannels.library.infographic.generate]: () => ok(infographic) });
+
+    await generateInfographic('1', { layout: 'funnel', modelId: 'gemini-x' });
+
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.infographic.generate, {
+      id: '1',
+      layout: 'funnel',
+      modelId: 'gemini-x',
+    });
+  });
+
+  it('when the AI fails, should reject with the message from the main process', async () => {
+    mockApi({
+      [IpcChannels.library.infographic.generate]: () =>
+        failure('PROVIDER_FAILED', 'O limite de uso foi atingido.'),
+    });
+
+    await expect(generateInfographic('1')).rejects.toThrow('O limite de uso foi atingido.');
   });
 });
