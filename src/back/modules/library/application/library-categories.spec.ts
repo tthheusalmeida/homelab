@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 import { createTmpLibrary, type TmpLibrary } from '../../../testing/tmp-library';
+import { parseDocument, serializeDocument } from '../domain/frontmatter';
 import { BOOKS_FOLDER } from '../infrastructure/book-storage';
 import { LibraryIndex } from '../infrastructure/library-index';
 
@@ -277,6 +278,136 @@ describe('LibraryService: categorias explícitas (pastas, mesmo vazias)', () => 
 
       await expect(service.renameCategory(['A'], ['B'])).rejects.toThrow('Já existe um arquivo');
       expect(fs.existsSync(dir('A', file))).toBe(true);
+    });
+
+    describe('frontmatter alinhado com a pasta', () => {
+      /** O que está gravado no próprio arquivo (a leitura normal já usa a pasta). */
+      const rawOf = async (title: string) => {
+        for (const file of await tmp.storage.listMarkdownFiles(tmp.lib)) {
+          const raw = fs.readFileSync(file, 'utf8');
+          const parsed = parseDocument(raw);
+
+          if (parsed.meta.title === title) {
+            return { file, raw, ...parsed };
+          }
+        }
+
+        throw new Error(`arquivo de "${title}" não encontrado`);
+      };
+
+      it('when a category is renamed, should write the new category in every page of it, and of the subcategories', async () => {
+        await article('Visão', ['Tecnologia']);
+        await article('Docker', ['Tecnologia', 'Containers']);
+
+        await service.renameCategory(['Tecnologia'], ['TI']);
+
+        expect((await rawOf('Visão')).meta.category).toEqual(['TI']);
+        expect((await rawOf('Docker')).meta.category).toEqual(['TI', 'Containers']);
+      });
+
+      it('when aligning, should change only the category: content, dates, tags and id stay', async () => {
+        const page = await article('Docker', ['Tecnologia']);
+        const before = await rawOf('Docker');
+
+        await service.renameCategory(['Tecnologia'], ['TI']);
+
+        const after = await rawOf('Docker');
+
+        expect(after.body).toBe(before.body);
+        expect(after.meta).toEqual({ ...before.meta, category: ['TI'] });
+        expect(after.meta.id).toBe(page.meta.id);
+        expect(after.meta.updatedAt).toBe(before.meta.updatedAt);
+        expect(after.raw.replace('TI', 'Tecnologia')).toBe(before.raw);
+      });
+
+      it('when only the capitals change, should write the new capitals in the page', async () => {
+        await article('Rock', ['musica']);
+
+        await service.renameCategory(['musica'], ['Música']);
+
+        expect((await rawOf('Rock')).meta.category).toEqual(['Música']);
+      });
+
+      it('when merging into an existing category, should align the pages that came and leave the others', async () => {
+        await article('Docker', ['A']);
+        await article('Podman', ['B']);
+
+        await service.renameCategory(['A'], ['B']);
+
+        expect((await rawOf('Docker')).meta.category).toEqual(['B']);
+        expect((await rawOf('Podman')).meta.category).toEqual(['B']);
+      });
+
+      it('when a page of the category is archived, should align it too and keep it archived', async () => {
+        const page = await article('Docker', ['Tecnologia']);
+
+        await service.archive(page.meta.id);
+        await service.renameCategory(['Tecnologia'], ['TI']);
+
+        const raw = await rawOf('Docker');
+
+        expect(raw.meta.category).toEqual(['TI']);
+        expect(raw.meta.status).toBe('archived');
+      });
+
+      it('when a page of another category is not part of the move, should not touch its file', async () => {
+        await article('Docker', ['Tecnologia']);
+        await article('Receita', ['Culinária']);
+
+        const before = await rawOf('Receita');
+
+        await service.renameCategory(['Tecnologia'], ['TI']);
+
+        expect((await rawOf('Receita')).raw).toBe(before.raw);
+      });
+
+      it('when the pages are already aligned, should not rewrite the file', async () => {
+        await article('Docker', ['Tecnologia']);
+
+        const { file } = await rawOf('Docker');
+
+        await expect(tmp.storage.alignCategory(file)).resolves.toBe(false);
+      });
+
+      it('when a page is not aligned, should align it once and then leave it alone', async () => {
+        await article('Docker', ['Tecnologia']);
+
+        const { file } = await rawOf('Docker');
+
+        fs.mkdirSync(dir('Outra'));
+        fs.renameSync(file, dir('Outra', path.basename(file)));
+
+        const moved = dir('Outra', path.basename(file));
+
+        await expect(tmp.storage.alignCategory(moved)).resolves.toBe(true);
+        await expect(tmp.storage.alignCategory(moved)).resolves.toBe(false);
+        expect(parseDocument(fs.readFileSync(moved, 'utf8')).meta.category).toEqual(['Outra']);
+      });
+
+      it('when a pending page is aligned, should not touch it (its category comes from the file)', async () => {
+        const pending = path.join(tmp.inbox, 'x_1.md');
+
+        fs.mkdirSync(tmp.inbox, { recursive: true });
+        fs.writeFileSync(
+          pending,
+          serializeDocument(
+            {
+              id: '1',
+              title: 'x',
+              type: 'summary',
+              source: 'video',
+              status: 'pending',
+              category: ['Qualquer'],
+              tags: [],
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-01-01T00:00:00.000Z',
+            },
+            'texto',
+          ),
+        );
+
+        await expect(tmp.storage.alignCategory(pending)).resolves.toBe(false);
+      });
     });
 
     it('when the moved pages are read again, should show the new category', async () => {

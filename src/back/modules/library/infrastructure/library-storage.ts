@@ -157,6 +157,37 @@ export class LibraryStorage {
   }
 
   /**
+   * Alinha o frontmatter com a pasta: se a `category` gravada no arquivo for diferente da que a pasta
+   * indica (ou só na caixa ou nos acentos), reescreve o arquivo (temporário e renomeia) com a da
+   * pasta, sem mexer em mais nada (nem em `updatedAt`). Só vale para publicado e arquivado; devolve
+   * `true` se reescreveu.
+   */
+  async alignCategory(filePath: string): Promise<boolean> {
+    const raw = await fs.promises.readFile(filePath, 'utf8');
+    const { meta, body } = parseDocument(raw);
+    const located = this.categoryFromLocation(filePath, meta);
+
+    if (
+      meta.status === DocumentStatusOptions.PENDING ||
+      (located.length === meta.category.length &&
+        located.every((name, i) => name === meta.category[i]))
+    ) {
+      return false;
+    }
+
+    const temporary = `${filePath}.tmp`;
+
+    await fs.promises.writeFile(
+      temporary,
+      serializeDocument({ ...meta, category: located }, body),
+      'utf8',
+    );
+    await fs.promises.rename(temporary, filePath);
+
+    return true;
+  }
+
+  /**
    * Apaga o arquivo. Com `prune` (o padrão), remove também as pastas de categoria que ficarem
    * vazias; o `LibraryService` passa `false`, porque a categoria é uma pasta que existe mesmo sem
    * páginas e só some quando o usuário a exclui.

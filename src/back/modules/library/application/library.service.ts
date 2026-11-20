@@ -294,33 +294,35 @@ export class LibraryService implements OnModuleInit {
       throw new BadRequestException('Uma categoria não pode ir para dentro dela mesma.');
     }
 
-    const count = this.index
+    const ids = this.index
       .all()
       .filter(
         (doc) =>
           doc.meta.status !== DocumentStatusOptions.PENDING &&
           startsWithCategory(doc.meta.category, source),
-      ).length;
+      )
+      .map((doc) => doc.meta.id);
 
     const sameKeys =
       source.length === target.length &&
       source.every((name, level) => normalizeKey(name) === normalizeKey(target[level]));
 
     if (sameKeys) {
-      return { moved: await this.renameFolders(source, target, count) };
+      return { moved: await this.renameFolders(source, target, ids) };
     }
 
     await this.storage.moveCategoryDir(source, target);
     await this.index.rebuild();
+    await this.alignPages(ids);
 
-    return { moved: count };
+    return { moved: ids.length };
   }
 
   /**
    * O caminho novo é o mesmo com outra caixa ou outros acentos: renomeia as pastas que mudaram (de
    * cima para baixo) e refaz o índice. Se nada mudou, não há o que fazer.
    */
-  private async renameFolders(source: string[], target: string[], count: number): Promise<number> {
+  private async renameFolders(source: string[], target: string[], ids: string[]): Promise<number> {
     let renamed = false;
 
     for (let level = 0; level < source.length; level += 1) {
@@ -339,9 +341,27 @@ export class LibraryService implements OnModuleInit {
     }
 
     await this.index.rebuild();
+    await this.alignPages(ids);
 
-    return count;
+    return ids.length;
   }
+
+  /**
+   * Alinha o frontmatter (`category`) das páginas com a pasta onde elas estão agora. Depois de mover a
+   * pasta de uma categoria, a pasta já manda na categoria ao ler, mas o arquivo ainda dizia a antiga:
+   * aqui cada um é reescrito (só se estiver diferente, e sem mexer em `updatedAt`, porque o conteúdo
+   * não mudou). Roda página por página, depois que a pasta já foi movida.
+   */
+  private async alignPages(ids: string[]): Promise<void> {
+    for (const id of ids) {
+      const indexed = this.index.get(id);
+
+      if (indexed) {
+        await this.storage.alignCategory(indexed.path);
+      }
+    }
+  }
+
   /**
    * Remoção lógica: o arquivo continua em `lib/`, mas deixa de aparecer na
    * biblioteca. Pode ser readicionado com `publish`.
