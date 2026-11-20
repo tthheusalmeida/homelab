@@ -14,6 +14,8 @@ import { LibraryClassifier } from '../back/modules/library/application/library-c
 import { InfographicService } from '../back/modules/library/application/infographic.service';
 import { MindMapService } from '../back/modules/library/application/mind-map.service';
 import { LibraryService } from '../back/modules/library/application/library.service';
+import { InfographicStore } from '../back/modules/library/infrastructure/infographic-store';
+import { MindMapStore } from '../back/modules/library/infrastructure/mind-map-store';
 import type { BackupCollection } from '../backup/backup.service';
 import type { BackReaders } from '../ipc/handlers';
 import { JobCatalog } from '../jobs/job-catalog';
@@ -55,11 +57,15 @@ export class BackServices {
   backupCollections(): {
     jobs: BackupCollection;
     chats: BackupCollection;
+    mindMaps: BackupCollection;
+    infographics: BackupCollection;
     usage: BackupCollection;
   } {
     const jobs = this.get<JobService>(JobService);
     const chats = this.get<ChatService>(ChatService);
     const usage = this.get<AiUsageService>(AiUsageService);
+    const mindMaps = this.get<MindMapStore>(MindMapStore);
+    const infographics = this.get<InfographicStore>(InfographicStore);
 
     return {
       jobs: {
@@ -69,6 +75,14 @@ export class BackServices {
       chats: {
         export: () => chats.exportChats(),
         import: (items, mode) => chats.importChats(items, mode),
+      },
+      mindMaps: {
+        export: () => mindMaps.exportAll(),
+        import: (items, mode) => mindMaps.importAll(items, mode),
+      },
+      infographics: {
+        export: () => infographics.exportAll(),
+        import: (items, mode) => infographics.importAll(items, mode),
       },
       usage: {
         export: () => usage.exportRecords(),

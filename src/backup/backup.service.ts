@@ -84,7 +84,13 @@ export interface BackupDeps {
   tempDir: string;
   libraryDir: () => string;
   inboxDir: () => string;
-  collections: { jobs: BackupCollection; chats: BackupCollection; usage: BackupCollection };
+  collections: {
+    jobs: BackupCollection;
+    chats: BackupCollection;
+    mindMaps: BackupCollection;
+    infographics: BackupCollection;
+    usage: BackupCollection;
+  };
   settings: BackupSettingsPort;
   /** Reconstrói o índice da biblioteca depois de trocar arquivos. */
   reindexLibrary: () => Promise<unknown>;
@@ -130,6 +136,8 @@ const RESTORE_ORDER: readonly BackupItemId[] = [
   'usage',
   'jobs',
   'chats',
+  'mindMaps',
+  'infographics',
   'inbox',
   'library',
 ];
@@ -380,6 +388,16 @@ export class BackupService {
 
         return { data: { version: BACKUP_VERSION, chats }, count: chats.length };
       }
+      case 'mindMaps': {
+        const maps = this.deps.collections.mindMaps.export();
+
+        return { data: { version: BACKUP_VERSION, maps }, count: maps.length };
+      }
+      case 'infographics': {
+        const infographics = this.deps.collections.infographics.export();
+
+        return { data: { version: BACKUP_VERSION, infographics }, count: infographics.length };
+      }
       case 'usage': {
         const records = this.deps.collections.usage.export();
 
@@ -496,10 +514,16 @@ export class BackupService {
   }
 
   private async applyCollection(
-    id: 'jobs' | 'chats' | 'usage',
+    id: 'jobs' | 'chats' | 'mindMaps' | 'infographics' | 'usage',
     run: RestoreRun,
   ): Promise<BackupRestoreItemResult> {
-    const key = { jobs: 'jobs', chats: 'chats', usage: 'records' }[id];
+    const key = {
+      jobs: 'jobs',
+      chats: 'chats',
+      mindMaps: 'maps',
+      infographics: 'infographics',
+      usage: 'records',
+    }[id];
     const data = this.readStaged(id, run) as Record<string, unknown> | null;
     const incoming = data?.[key];
 

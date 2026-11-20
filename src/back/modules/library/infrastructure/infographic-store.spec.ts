@@ -111,4 +111,83 @@ describe('InfographicStore', () => {
     expect(store.get('1')).toEqual(infographic);
     expect(persistFailed).toHaveBeenCalledWith('os infográficos', expect.any(String));
   });
+
+  describe('backup', () => {
+    it('when exporting, should list every infographic with the id of its page', () => {
+      const store = new InfographicStore(config(file));
+
+      store.set('1', infographic);
+      store.set('2', { ...infographic, title: 'Outro' });
+
+      expect(store.exportAll()).toEqual([
+        { id: '1', infographic },
+        { id: '2', infographic: { ...infographic, title: 'Outro' } },
+      ]);
+    });
+
+    it('when exporting, should hand out copies (changing them does not change the store)', () => {
+      const store = new InfographicStore(config(file));
+
+      store.set('1', infographic);
+      store.exportAll()[0].infographic.sections.length = 0;
+
+      expect(store.get('1')?.sections).toHaveLength(1);
+    });
+
+    it('when merging, should add only the pages without an infographic and keep the current one', () => {
+      const store = new InfographicStore(config(file));
+      const current = { ...infographic, title: 'Atual' };
+
+      store.set('1', current);
+
+      const result = store.importAll(
+        [
+          { id: '1', infographic },
+          { id: '2', infographic },
+        ],
+        'merge',
+      );
+
+      expect(result).toEqual({ added: 1, skipped: 1 });
+      expect(store.get('1')).toEqual(current);
+      expect(store.get('2')).toEqual(infographic);
+    });
+
+    it('when replacing, should drop every current infographic and keep only the ones from the backup', () => {
+      const store = new InfographicStore(config(file));
+
+      store.set('1', { ...infographic, title: 'Atual' });
+      store.set('9', infographic);
+
+      const result = store.importAll([{ id: '1', infographic }], 'replace');
+
+      expect(result).toEqual({ added: 1, skipped: 0 });
+      expect(store.get('1')).toEqual(infographic);
+      expect(store.get('9')).toBeUndefined();
+    });
+
+    it('when the backup has invalid entries, should ignore them and count them as skipped', () => {
+      const store = new InfographicStore(config(file));
+
+      const result = store.importAll(
+        [
+          null,
+          { id: '1' },
+          { id: '2', infographic: { title: 'x' } },
+          { id: '3', infographic: { ...infographic, sections: 'x' } },
+          { id: '4', infographic },
+        ],
+        'merge',
+      );
+
+      expect(result).toEqual({ added: 1, skipped: 4 });
+      expect(store.get('4')).toEqual(infographic);
+    });
+
+    it('when importing, should write the result to disk so it survives a restart', () => {
+      new InfographicStore(config(file)).importAll([{ id: '1', infographic }], 'merge');
+
+      expect(new InfographicStore(config(file)).get('1')).toEqual(infographic);
+    });
+  });
 });

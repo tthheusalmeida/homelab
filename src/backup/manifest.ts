@@ -17,6 +17,8 @@ export const FOLDER_ITEMS = { library: 'library/', inbox: 'inbox/' } as const;
 export const FILE_ITEMS = {
   jobs: 'data/jobs.json',
   chats: 'data/chats.json',
+  mindMaps: 'data/mind-maps.json',
+  infographics: 'data/infographics.json',
   usage: 'data/ai-usage.json',
   settings: 'config/settings.json',
 } as const;
@@ -26,6 +28,8 @@ export const ITEM_KINDS: Record<BackupItemId, BackupItemKind> = {
   inbox: 'files',
   jobs: 'records',
   chats: 'records',
+  mindMaps: 'records',
+  infographics: 'records',
   usage: 'records',
   settings: 'records',
 };

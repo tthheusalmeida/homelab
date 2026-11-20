@@ -62,6 +62,8 @@ export const ITEM_LABELS: Record<BackupItemId, { label: string; hint: string }> 
   inbox: { label: 'Classificação', hint: 'Páginas aguardando classificação' },
   jobs: { label: 'Jobs', hint: 'Histórico de processos' },
   chats: { label: 'Chats', hint: 'Todas as conversas' },
+  mindMaps: { label: 'Mapas mentais', hint: 'Os mapas das páginas, com as suas edições' },
+  infographics: { label: 'Infográficos', hint: 'Os infográficos das páginas, com as suas edições' },
   usage: { label: 'Consumo de IA', hint: 'Histórico de tokens e custo' },
   settings: { label: 'Aparência e configurações', hint: 'Tema, cor e endereço do Ollama' },
 };

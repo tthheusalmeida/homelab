@@ -1,5 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common';
 
+import type { RecordImportResult, RestoreMode } from '../../../../shared/contracts/backup';
 import { JsonFile } from '../../../../storage/json-file';
 import { BackAlerts } from '../../../config/back-alerts';
 import { BackConfig } from '../../../config/back-config';
@@ -10,6 +11,27 @@ interface InfographicsFileData {
   version: 1;
   /** Por id da página. */
   infographics: Record<string, StoredInfographic>;
+}
+
+function isStoredEntry(value: unknown): value is { id: string; infographic: StoredInfographic } {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const { id, infographic } = value as {
+    id?: unknown;
+    infographic?: Partial<StoredInfographic> | null;
+  };
+
+  return (
+    typeof id === 'string' &&
+    id !== '' &&
+    typeof infographic === 'object' &&
+    infographic !== null &&
+    typeof infographic.title === 'string' &&
+    Array.isArray(infographic.sections) &&
+    typeof infographic.createdAt === 'string'
+  );
 }
 
 /**
@@ -46,6 +68,36 @@ export class InfographicStore {
       delete this.load()[id];
       this.save();
     }
+  }
+
+  /** Todos os infográficos, um por página, como lista (usado pelo backup). */
+  exportAll(): Array<{ id: string; infographic: StoredInfographic }> {
+    return Object.entries(this.load()).map(([id, infographic]) => ({
+      id,
+      infographic: structuredClone(infographic),
+    }));
+  }
+
+  /**
+   * Traz infográficos de um backup. `merge` só adiciona os de páginas que ainda não têm um (mantém o
+   * atual); `replace` troca todos. Ignora entradas inválidas.
+   */
+  importAll(raw: unknown[], mode: RestoreMode): RecordImportResult {
+    const incoming = raw.filter(isStoredEntry);
+    const base: Record<string, StoredInfographic> = mode === 'replace' ? {} : { ...this.load() };
+    let added = 0;
+
+    for (const { id, infographic } of incoming) {
+      if (!(id in base)) {
+        base[id] = infographic;
+        added += 1;
+      }
+    }
+
+    this.items = base;
+    this.save();
+
+    return { added, skipped: raw.length - added };
   }
 
   private load(): Record<string, StoredInfographic> {

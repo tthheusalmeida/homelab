@@ -72,6 +72,8 @@ interface Env {
   tempDir: string;
   jobs: FakeCollection;
   chats: FakeCollection;
+  mindMaps: FakeCollection;
+  infographics: FakeCollection;
   usage: FakeCollection;
   settings: SettingsStore;
   events: FakeEventPublisher;
@@ -88,6 +90,8 @@ function makeEnv(label: string, overrides: Partial<BackupDeps> = {}): Env {
   const tempDir = path.join(dir, 'temp');
   const jobs = new FakeCollection();
   const chats = new FakeCollection();
+  const mindMaps = new FakeCollection();
+  const infographics = new FakeCollection();
   const usage = new FakeCollection();
   const settings = new SettingsStore(
     new JsonFile<SettingsPatch>(path.join(dir, 'config', 'settings.json')),
@@ -105,7 +109,7 @@ function makeEnv(label: string, overrides: Partial<BackupDeps> = {}): Env {
     tempDir,
     libraryDir: () => library,
     inboxDir: () => inbox,
-    collections: { jobs, chats, usage },
+    collections: { jobs, chats, mindMaps, infographics, usage },
     settings,
     reindexLibrary: reindex,
     filePicker: picker,
@@ -121,6 +125,8 @@ function makeEnv(label: string, overrides: Partial<BackupDeps> = {}): Env {
     tempDir,
     jobs,
     chats,
+    mindMaps,
+    infographics,
     usage,
     settings,
     events,
@@ -187,6 +193,8 @@ describe('BackupService', () => {
         'inbox',
         'jobs',
         'chats',
+        'mindMaps',
+        'infographics',
         'usage',
         'settings',
       ]);
@@ -195,6 +203,8 @@ describe('BackupService', () => {
       expect(byId.inbox).toMatchObject({ kind: 'files', count: 1, bytes: 100 });
       expect(byId.jobs).toMatchObject({ kind: 'records', count: 2 });
       expect(byId.chats).toMatchObject({ kind: 'records', count: 1 });
+      expect(byId.mindMaps).toMatchObject({ kind: 'records', count: 0 });
+      expect(byId.infographics).toMatchObject({ kind: 'records', count: 0 });
       expect(byId.usage).toMatchObject({ kind: 'records', count: 0 });
       expect(byId.settings).toMatchObject({ kind: 'records', count: 1 });
     });
@@ -298,6 +308,50 @@ describe('BackupService', () => {
         { id: 'chats', kind: 'records', count: 2, bytes: expect.any(Number) },
         { id: 'usage', kind: 'records', count: 0, bytes: expect.any(Number) },
         { id: 'settings', kind: 'records', count: 1, bytes: expect.any(Number) },
+      ]);
+    });
+
+    it('when saving mind maps and infographics, should write each one in its own file with its count', async () => {
+      const e = env();
+      const destination = destinationOf(e);
+
+      e.mindMaps.items = [{ id: 'p1', title: 'mapa' }];
+      e.infographics.items = [{ id: 'p1' }, { id: 'p2' }];
+
+      await e.service.create({ items: ['mindMaps', 'infographics'] });
+
+      expect((await listZip(destination)).map((entry) => entry.name).sort()).toEqual([
+        'data/infographics.json',
+        'data/mind-maps.json',
+        'manifest.json',
+      ]);
+
+      const maps = JSON.parse((await readZipText(destination, 'data/mind-maps.json')) ?? '{}');
+      const infographics = JSON.parse(
+        (await readZipText(destination, 'data/infographics.json')) ?? '{}',
+      );
+      const manifest = JSON.parse((await readZipText(destination, MANIFEST_ENTRY)) ?? '{}');
+
+      expect(maps).toEqual({ version: BACKUP_VERSION, maps: e.mindMaps.items });
+      expect(infographics).toEqual({ version: BACKUP_VERSION, infographics: e.infographics.items });
+      expect(manifest.items).toEqual([
+        { id: 'mindMaps', kind: 'records', count: 1, bytes: expect.any(Number) },
+        { id: 'infographics', kind: 'records', count: 2, bytes: expect.any(Number) },
+      ]);
+    });
+
+    it('when the mind maps are not chosen, should leave only them out of the backup', async () => {
+      const e = env();
+      const destination = destinationOf(e);
+
+      e.mindMaps.items = [{ id: 'p1' }];
+      e.infographics.items = [{ id: 'p1' }];
+
+      await e.service.create({ items: ['infographics'] });
+
+      expect((await listZip(destination)).map((entry) => entry.name).sort()).toEqual([
+        'data/infographics.json',
+        'manifest.json',
       ]);
     });
 
@@ -572,6 +626,61 @@ describe('BackupService', () => {
         local: { ollama: { url: 'http://outro:1234' } },
       });
     };
+
+    it('when restoring mind maps and infographics (merge), should add the missing ones and report the rest as kept', async () => {
+      const a = env('a');
+      const b = env('b');
+
+      a.mindMaps.items = [{ id: 'p1' }, { id: 'p2' }];
+      a.infographics.items = [{ id: 'p1' }];
+      b.mindMaps.items = [{ id: 'p1' }];
+      const { token } = await backupFrom(a, b, ['mindMaps', 'infographics']);
+
+      const result = await b.service.restore({
+        token,
+        items: ['mindMaps', 'infographics'],
+        mode: 'merge',
+      });
+
+      expect(b.mindMaps.items).toEqual([{ id: 'p1' }, { id: 'p2' }]);
+      expect(b.infographics.items).toEqual([{ id: 'p1' }]);
+      expect(result.items).toEqual([
+        { id: 'mindMaps', added: 1, skipped: 1 },
+        { id: 'infographics', added: 1, skipped: 0 },
+      ]);
+    });
+
+    it('when restoring mind maps (replace), should swap them for the backup and keep a safety copy', async () => {
+      const a = env('a');
+      const b = env('b');
+
+      a.mindMaps.items = [{ id: 'p1', title: 'do backup' }];
+      b.mindMaps.items = [{ id: 'p9', title: 'da máquina' }];
+      const { token } = await backupFrom(a, b, ['mindMaps']);
+
+      const result = await b.service.restore({ token, items: ['mindMaps'], mode: 'replace' });
+
+      expect(b.mindMaps.items).toEqual([{ id: 'p1', title: 'do backup' }]);
+      expect(result.safetyCopyPath).not.toBeNull();
+      expect(
+        fs.existsSync(path.join(result.safetyCopyPath as string, 'data', 'mind-maps.json')),
+      ).toBe(true);
+    });
+
+    it('when restoring only the infographics, should not touch the mind maps', async () => {
+      const a = env('a');
+      const b = env('b');
+
+      a.mindMaps.items = [{ id: 'p1' }];
+      a.infographics.items = [{ id: 'p1' }];
+      b.mindMaps.items = [{ id: 'keep' }];
+      const { token } = await backupFrom(a, b, ['mindMaps', 'infographics']);
+
+      await b.service.restore({ token, items: ['infographics'], mode: 'replace' });
+
+      expect(b.mindMaps.items).toEqual([{ id: 'keep' }]);
+      expect(b.infographics.items).toEqual([{ id: 'p1' }]);
+    });
 
     it('when restoring into a clean machine (merge), should bring pages, books, inbox, jobs, chats and usage', async () => {
       const a = env('a');
