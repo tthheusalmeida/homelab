@@ -4,8 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { ComponentChecklist } from '#components/ComponentChecklist';
 import { HardwareCard } from '#components/HardwareCard';
 import { HexLoader, Logo } from '#components/Hex';
-import { ProgressBar } from '#components/ProgressBar';
-import { useSnackbar } from '#components/Snackbar';
+import { InstallOverall } from '#components/InstallOverall';
 import { Button } from '#ui/button';
 import {
   Dialog,
@@ -19,15 +18,9 @@ import {
   cancelComponentsInstall,
   openComponentsSettings,
   useComponentsStatus,
-  useInstallComponents,
 } from '#hooks/use-components';
-import {
-  ComponentStrings,
-  idsToInstall,
-  overallPercent,
-  pendingBytes,
-} from '#lib/components-text';
-import { formatBytes } from '#lib/format';
+import { useInstallSelection } from '#hooks/use-install-selection';
+import { ComponentStrings } from '#lib/components-text';
 
 /**
  * Assistente de instalação: aparece sozinho quando falta algo para transcrever. Mostra o que o app
@@ -37,17 +30,12 @@ import { formatBytes } from '#lib/format';
  */
 export function InstallAssistant() {
   const { data: status } = useComponentsStatus();
-  const install = useInstallComponents();
-  const snackbar = useSnackbar();
   const [dismissed, setDismissed] = useState(false);
-  const [selected, setSelected] = useState<ReadonlySet<string> | null>(null);
   const [wasRunning, setWasRunning] = useState(false);
-
-  useEffect(() => {
-    if (status && selected === null) {
-      setSelected(new Set(status.hardware.recommendation.componentIds));
-    }
-  }, [status, selected]);
+  const { chosen, bytes, toggle, start, isStarting } = useInstallSelection(
+    status,
+    (current) => current.hardware.recommendation.componentIds,
+  );
 
   useEffect(() => {
     if (status?.running) {
@@ -61,29 +49,6 @@ export function InstallAssistant() {
 
   const finished = wasRunning && !status.running && !status.needsSetup;
   const open = !dismissed && (status.needsSetup || status.running || finished);
-  const chosen = selected ?? new Set<string>();
-  const bytes = pendingBytes(status.components, chosen);
-
-  const toggle = (id: string) => {
-    const next = new Set(chosen);
-
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      next.add(id);
-    }
-
-    setSelected(next);
-  };
-
-  const start = () => {
-    const ids = idsToInstall(status.components, chosen).map((component) => component.id);
-
-    install.mutate(ids, {
-      onError: (error) => snackbar.error(error.message || ComponentStrings.installFailed),
-    });
-  };
-
   const text = ComponentStrings.assistant;
   const title = finished ? text.doneTitle : status.running ? text.runningTitle : text.title;
   const description = finished
@@ -111,25 +76,7 @@ export function InstallAssistant() {
 
         {!status.running && !finished && <HardwareCard hardware={status.hardware} />}
 
-        {status.running && status.overall && (
-          <div role="status" className="flex flex-col gap-1.5">
-            <div className="flex items-baseline justify-between text-sm">
-              <span className="font-medium">
-                {ComponentStrings.overall(status.overall.done, status.overall.total)}
-              </span>
-              <span className="font-mono text-xs text-muted-foreground">
-                {formatBytes(status.overall.receivedBytes)} de{' '}
-                {formatBytes(status.overall.totalBytes)} · {overallPercent(status.overall)}%
-              </span>
-            </div>
-
-            <ProgressBar
-              value={status.overall.receivedBytes}
-              total={status.overall.totalBytes}
-              label="Progresso da instalação"
-            />
-          </div>
-        )}
+        {status.running && status.overall && <InstallOverall overall={status.overall} />}
 
         <ComponentChecklist
           components={status.components}
@@ -160,8 +107,8 @@ export function InstallAssistant() {
                 <Button variant="outline" onClick={() => setDismissed(true)}>
                   {text.later}
                 </Button>
-                <Button disabled={install.isPending || bytes === 0} onClick={start}>
-                  {install.isPending && <Loader2 className="animate-spin" />}
+                <Button disabled={isStarting || bytes === 0} onClick={start}>
+                  {isStarting && <Loader2 className="animate-spin" />}
                   {text.start}
                 </Button>
               </>
