@@ -6,7 +6,7 @@ import { DEFAULT_READING, READING_FONT_SIZE, READING_ZOOM } from '#shared/contra
 
 import { ReadingSteppers } from './ReadingSteppers';
 
-const setup = (reading = DEFAULT_READING, zoomHint?: string) => {
+const setup = (reading = DEFAULT_READING) => {
   const change = vi.fn();
 
   render(
@@ -15,7 +15,6 @@ const setup = (reading = DEFAULT_READING, zoomHint?: string) => {
       change={change}
       fontLabel="Letra"
       zoomLabel="Zoom"
-      zoomHint={zoomHint}
     />,
   );
 
@@ -52,13 +51,11 @@ describe('ReadingSteppers', () => {
     expect(screen.getByRole('button', { name: 'Diminuir o zoom' })).toBeDisabled();
   });
 
-  it('when there is a zoom hint, should show it in the tooltip', async () => {
-    setup(DEFAULT_READING, 'Alarga a coluna');
+  it('when the mouse goes over the zoom buttons, should not show any tooltip', async () => {
+    setup();
 
     await userEvent.hover(screen.getByRole('button', { name: 'Aumentar o zoom' }));
 
-    expect(
-      await screen.findByText('Alarga a coluna', { selector: '[data-slot="tooltip-content"]' }),
-    ).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="tooltip-content"]')).toBeNull();
   });
 });

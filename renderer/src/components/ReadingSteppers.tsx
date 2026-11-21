@@ -1,6 +1,5 @@
 import { Minus, Plus, ZoomIn, ZoomOut } from 'lucide-react';
 
-import { Tip } from '#components/Tip';
 import { ValueStepper } from '#components/ValueStepper';
 import { stepFontSize, stepZoom } from '#lib/reading';
 import {
@@ -15,8 +14,6 @@ interface ReadingSteppersProps {
   /** Rótulos dos dois controles (ex.: "Letra" e "Zoom"). */
   fontLabel: string;
   zoomLabel: string;
-  /** Explicação do zoom, em tooltip (some quando não há). */
-  zoomHint?: string;
 }
 
 /**
@@ -29,7 +26,6 @@ export function ReadingSteppers({
   change,
   fontLabel,
   zoomLabel,
-  zoomHint,
 }: ReadingSteppersProps) {
   const zoom = (
     <ValueStepper
@@ -61,13 +57,7 @@ export function ReadingSteppers({
         onIncrease={() => change({ fontSize: stepFontSize(reading.fontSize, 1) })}
       />
 
-      {zoomHint ? (
-        <Tip content={zoomHint} follow>
-          <span>{zoom}</span>
-        </Tip>
-      ) : (
-        zoom
-      )}
+      {zoom}
     </>
   );
 }

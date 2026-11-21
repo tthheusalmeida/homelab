@@ -71,7 +71,6 @@ export function ReadingSettings() {
               change={change}
               fontLabel={text.fontSize}
               zoomLabel={text.zoom}
-              zoomHint={text.zoomHint}
             />
           </div>
         </SettingsRow>

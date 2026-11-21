@@ -36,7 +36,6 @@ export const Strings = {
       size: 'Tamanho',
       fontSize: 'Letra',
       zoom: 'Zoom',
-      zoomHint: 'Amplia a letra e a largura do texto juntas, como o zoom de um PDF.',
       background: 'Cor de fundo',
       separator: 'Cor dos separadores',
       text: 'Cor do texto',
