@@ -19,6 +19,11 @@ interface TipProps {
    * focável recebe o mouse e o foco no lugar dele (use para explicar *por que* está desabilitado).
    */
   wrap?: boolean;
+  /**
+   * Para um contêiner largo (a linha de uma configuração, um grupo de botões): o tooltip acompanha o
+   * mouse na horizontal, em vez de centralizar no contêiner inteiro, longe do controle sob o cursor.
+   */
+  follow?: boolean;
 }
 
 /**
@@ -26,7 +31,14 @@ interface TipProps {
  * identidade. A árvore é sempre a mesma, com ou sem texto (só o tooltip liga e desliga), então o
  * controle não é remontado quando o texto aparece ou some.
  */
-export function Tip({ content, children, side = "top", delay = TIP_DELAY_MS, wrap = false }: TipProps) {
+export function Tip({
+  content,
+  children,
+  side = "top",
+  delay = TIP_DELAY_MS,
+  wrap = false,
+  follow = false,
+}: TipProps) {
   const enabled = content !== undefined && content !== null && content !== false && content !== "";
   const trigger = wrap ? (
     <span tabIndex={enabled ? 0 : undefined} className="inline-flex">
@@ -37,7 +49,7 @@ export function Tip({ content, children, side = "top", delay = TIP_DELAY_MS, wra
   );
 
   return (
-    <Tooltip disabled={!enabled}>
+    <Tooltip disabled={!enabled} trackCursorAxis={follow ? "x" : "none"}>
       <TooltipTrigger delay={delay} render={trigger} />
 
       <TooltipContent side={side}>{content}</TooltipContent>

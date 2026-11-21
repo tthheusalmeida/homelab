@@ -109,3 +109,22 @@ describe('Tip', () => {
     expect(screen.getByRole('button').parentElement).not.toHaveAttribute('tabindex');
   });
 });
+
+describe('Tip follow', () => {
+  it('when follow is on, should still show the text on hover', async () => {
+    render(
+      <Tip content="Segue o mouse" follow>
+        <div>
+          <button type="button">A</button>
+          <button type="button">B</button>
+        </div>
+      </Tip>,
+    );
+
+    await userEvent.hover(screen.getByRole('button', { name: 'B' }));
+
+    expect(
+      await screen.findByText('Segue o mouse', { selector: '[data-slot="tooltip-content"]' }),
+    ).toBeInTheDocument();
+  });
+});

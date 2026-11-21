@@ -62,7 +62,7 @@ export function SettingsRow({
   children: ReactNode;
 }) {
   return (
-    <Tip content={hint} side="bottom">
+    <Tip content={hint} side="bottom" follow>
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
         <p className="text-xs font-medium text-muted-foreground sm:w-24 sm:shrink-0">{label}</p>
 

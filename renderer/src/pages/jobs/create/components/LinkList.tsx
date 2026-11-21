@@ -36,7 +36,7 @@ function LinkRow({ link, position, disabled, onEdit, onRemove }: LinkRowProps) {
 
       <Link2 aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
 
-      <Tip content={link}>
+      <Tip content={link} follow>
         <span className="min-w-0 flex-1 truncate text-sm">
           <span className="font-medium">{host}</span>
           <span className="text-muted-foreground">{path}</span>

@@ -62,7 +62,7 @@ export function ReadingSteppers({
       />
 
       {zoomHint ? (
-        <Tip content={zoomHint}>
+        <Tip content={zoomHint} follow>
           <span>{zoom}</span>
         </Tip>
       ) : (
