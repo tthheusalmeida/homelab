@@ -43,7 +43,7 @@ describe('SettingsPanel', () => {
 });
 
 describe('SettingsStack', () => {
-  it('when stacking groups, should space them by 24px (gap-6) in a column', () => {
+  it('when stacking groups, should space them by 32px (gap-8) in a column', () => {
     render(
       <SettingsStack data-testid="stack">
         <SettingsGroup title="Tema">
@@ -55,12 +55,12 @@ describe('SettingsStack', () => {
       </SettingsStack>,
     );
 
-    expect(screen.getByTestId('stack')).toHaveClass('flex', 'flex-col', 'gap-6');
+    expect(screen.getByTestId('stack')).toHaveClass('flex', 'flex-col', 'gap-8');
   });
 
   it('when a class is given, should keep the standard spacing and add it', () => {
     render(<SettingsStack data-testid="stack" className="max-w-sm" />);
 
-    expect(screen.getByTestId('stack')).toHaveClass('gap-6', 'max-w-sm');
+    expect(screen.getByTestId('stack')).toHaveClass('gap-8', 'max-w-sm');
   });
 });

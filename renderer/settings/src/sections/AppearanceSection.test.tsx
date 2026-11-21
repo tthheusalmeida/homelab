@@ -142,14 +142,14 @@ describe('AppearanceSection', () => {
 });
 
 describe('AppearanceSection spacing', () => {
-  it('when opened, should keep Tema, Leitura, Transcrição and Resumo in one stack spaced by 24px', () => {
+  it('when opened, should keep Tema, Leitura, Transcrição and Resumo in one stack spaced by 32px', () => {
     mockApi({ [IpcChannels.appearance.get]: () => ok({ theme: 'system', accent: 'cyan' }) });
 
     renderSection();
 
     const stack = screen.getByRole('region', { name: 'Tema' }).parentElement;
 
-    expect(stack).toHaveClass('gap-6');
+    expect(stack).toHaveClass('gap-8');
     for (const name of ['Leitura', 'Transcrição', 'Resumo']) {
       expect(screen.getByRole('region', { name }).parentElement).toBe(stack);
     }

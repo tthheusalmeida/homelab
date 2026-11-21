@@ -31,12 +31,12 @@ export function SettingsGroup({ title, hint, children, className }: SettingsGrou
 }
 
 /**
- * Empilha os blocos de uma seção de Configurações com **24px** (`gap-6`) entre eles: é o espaço
+ * Empilha os blocos de uma seção de Configurações com **32px** (`gap-8`) entre eles: é o espaço
  * padrão entre grupos (Tema, Leitura, Transcrição, Resumo, Versão...). Todas as seções usam este
  * componente; não escolha outro espaçamento entre grupos.
  */
 export function SettingsStack({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('flex flex-col gap-6', className)} {...props} />;
+  return <div className={cn('flex flex-col gap-8', className)} {...props} />;
 }
 
 /** Caixa de um item de configuração: borda fina, fundo de card e destaque opcional (item ativo). */
