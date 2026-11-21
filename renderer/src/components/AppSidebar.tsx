@@ -107,7 +107,7 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar>
+    <Sidebar peek>
       <SidebarHeader>
         <div className="flex items-center gap-2.5 px-2 pt-1 font-semibold tracking-tight select-none">
           <Logo />
