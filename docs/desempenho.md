@@ -21,3 +21,6 @@ Regra: **otimizar sem tirar o que deixa o app gostoso de usar**. Transições, f
 - `will-change`/`transform-gpu` fixo nos cartões da biblioteca: com muitos itens ocupa memória de vídeo; tirar pode borrar o texto no começo do hover.
 - Subconjuntos de fonte: o CSS declara todos os alfabetos (cirílico, grego, vietnamita), mas o navegador só baixa o que o texto usa; podar economiza só alguns KB de CSS e arrisca símbolos gregos em textos de ciência.
 - Cache de código do V8 e opções de linha de comando do Electron: precisam ser medidos num PC fraco de verdade.
+
+## Fontes só com os alfabetos usados
+Os pacotes `@fontsource` trazem todos os alfabetos (cirílico, vietnamita, grego estendido...), e cada um vira um arquivo no instalador. `renderer/src/fonts.css` é **gerado** por `npm run fonts` (`scripts/build-fonts-css.mjs`) e traz só `latin`, `latin-ext`, `greek`, `math` e `symbols`, só em `woff2`: as fontes caíram de 896 kB para 583 kB. Para incluir outro alfabeto, mude o `KEEP` do script e rode `npm run fonts`. Depois de atualizar um pacote de fonte, rode `npm run fonts` de novo.
