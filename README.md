@@ -4,6 +4,8 @@
 
 <h1 align="center">HomeLab</h1>
 
+<p align="center"><strong>Transforme vídeos, aulas e PDFs em conhecimento organizado, no seu computador.</strong></p>
+
 <p align="center">
   <a href="https://github.com/tthheusalmeida/homelab/releases/latest"><img alt="Última versão" src="https://img.shields.io/github/v/release/tthheusalmeida/homelab?style=flat-square&color=0e7490&label=vers%C3%A3o" /></a>
   <img alt="Plataformas" src="https://img.shields.io/badge/plataformas-Windows%20%7C%20Linux-0e7490?style=flat-square" />
@@ -11,7 +13,9 @@
 </p>
 
 <p align="center">
-  <a href="#o-que-ele-faz">O que ele faz</a> ·
+  <a href="#como-funciona">Como funciona</a> ·
+  <a href="#recursos">Recursos</a> ·
+  <a href="#privacidade-e-seus-dados">Privacidade</a> ·
   <a href="#instalação">Instalação</a> ·
   <a href="#desenvolvimento">Desenvolvimento</a> ·
   <a href="docs/">Documentação</a>
@@ -19,20 +23,66 @@
 
 <br />
 
-App desktop para transformar vídeos e aulas em conhecimento organizado: baixa o vídeo, **transcreve no seu computador**, resume com IA e guarda tudo numa biblioteca de páginas em Markdown, com busca, livros e conversa com IA. Funciona no **Windows** e no **Linux**; seus dados ficam em pastas comuns do seu computador.
-
 <p align="center">
-  <img src="docs/img/biblioteca.png" alt="Biblioteca de páginas" width="860" />
+  <img src="docs/img/biblioteca.png" alt="Biblioteca de páginas do HomeLab" width="860" />
 </p>
 
-## O que ele faz
+O **HomeLab** é um app desktop (Windows e Linux) para quem aprende e pesquisa com vídeos, aulas e documentos. Você cola um link ou escolhe um PDF; o app **baixa, transcreve no seu computador, resume com IA** e guarda tudo numa biblioteca de páginas em Markdown, que você pesquisa, lê, organiza em livros e conversa com a IA. Cada resumo ainda vira **mapa mental** e **infográfico**.
 
-- 🎬 **Tarefas de vídeo:** cole o link do vídeo (YouTube e outras plataformas); o app extrai o áudio, transcreve e, se quiser, gera um resumo.
+## Como funciona
+
+1. **Traga o conteúdo:** link de vídeo (YouTube e outras plataformas) ou um PDF.
+2. **Deixe o app trabalhar:** extrai o áudio, transcreve, divide em partes e resume com a IA que você escolheu, com o progresso visível.
+3. **Revise e estude:** leia o resumo, abra o mapa mental, gere um infográfico e converse com a IA sobre o assunto.
+4. **Guarde:** tudo vira páginas na sua biblioteca, numa pasta sua, com busca e backup.
+
+## Recursos
+
+### Tarefas: do vídeo ou PDF ao resumo
+
+- 🎬 **Transcrição e resumo de vídeo:** cole o link; o app cuida do download, do áudio e da transcrição. Vídeos que pedem login abrem uma janela própria do app, com cookies temporários.
+- 📄 **Resumo de PDF:** lê o texto, divide em partes e resume cada uma. O progresso fica em disco, então dá para **retomar** de onde parou.
 - 🔒 **Transcrição local:** roda no seu computador (no Windows usa a placa NVIDIA quando existe), sem enviar o áudio para a nuvem.
-- 📚 **Biblioteca:** páginas em Markdown organizadas por categorias e tags, com busca pelo título e pelo texto, modo leitura e livros.
-- 🤖 **IA à sua escolha:** Gemini (com a sua chave, guardada cifrada) ou Ollama local, com conversa e controle de consumo.
-- ⌨️ **Atalhos e paleta de comandos:** `Ctrl K` abre a busca em qualquer tela; `G` e uma letra navegam entre as telas.
-- 🗂️ **Seus dados, sua pasta:** tudo fica numa pasta única, com backup e restauração em `.zip`.
+- ⏱️ **Transcrição com tempo:** marcas `[HH:MM:SS]`, linha do tempo lateral e horários que abrem o vídeo no ponto certo.
+- 🔔 **Aviso do sistema** quando uma tarefa termina.
+
+<p align="center">
+  <img src="docs/img/nova-tarefa.png" alt="Nova tarefa: transcrição, resumo de vídeo e resumo de PDF" width="860" />
+</p>
+
+### Estudo: mapa mental e infográfico
+
+- 🧠 **Mapa mental:** gerado pela IA quando você abre a aba, em colmeia. Você edita, guarda e baixa em PNG, com ou sem fundo.
+- 🗺️ **Infográfico:** a IA conta a história do resumo em seções, cada uma no modelo que melhor a mostra (passos, comparativo, números, ranking, ciclo e outros), com um banco de peças ilustradas. Baixe em PNG, SVG ou PDF.
+
+<table>
+  <tr>
+    <th align="center" width="50%">Mapa mental</th>
+    <th align="center" width="50%">Infográfico</th>
+  </tr>
+  <tr>
+    <td><img src="docs/img/mapa-mental.png" alt="Mapa mental de um resumo, em colmeia" /></td>
+    <td><img src="docs/img/infografico.png" alt="Infográfico com comparativo e passos" /></td>
+  </tr>
+</table>
+
+### Biblioteca e leitura
+
+- 📚 **Páginas em Markdown** organizadas por categorias e tags, com busca pelo título e pelo texto.
+- 📖 **Modo leitura** com sumário, tamanho de letra e zoom, e **livros** para agrupar páginas.
+- 🗂️ **Classificação:** páginas novas chegam a uma caixa de entrada para você revisar antes de publicar.
+
+### IA à sua escolha
+
+- 🤖 **Gemini** (com a sua chave, guardada cifrada) ou **Ollama** local.
+- 💬 **Várias conversas** salvas, com aviso quando o contexto fica grande.
+- 📊 **Consumo:** acompanhe requisições e custo da IA.
+
+### Rápido e agradável de usar
+
+- ⌨️ **Paleta de comandos:** `Ctrl K` abre a busca em qualquer tela; `G` e uma letra navegam entre as telas.
+- 🎨 **Identidade Colmeia:** tema claro, escuro ou do sistema, cor de destaque à escolha e animações suaves (respeita "reduzir movimento").
+- 🪶 **Leve em PCs fracos:** telas carregadas sob demanda e consultas mais calmas.
 
 <table>
   <tr>
@@ -47,7 +97,19 @@ App desktop para transformar vídeos e aulas em conhecimento organizado: baixa o
   </tr>
 </table>
 
-Tema claro, escuro ou do sistema, e cor de destaque à escolha em **Configurações > Aparência**.
+### Instalação e manutenção sem dor de cabeça
+
+- 🧩 **Componentes sob demanda:** o assistente de primeiro uso baixa só o que o seu computador precisa, com conferência de integridade.
+- 🔄 **Atualização:** o app avisa quando há versão nova e, no Windows, baixa só a diferença.
+- 💾 **Backup e restauração** em um único `.zip`, escolhendo o que entra.
+
+## Privacidade e seus dados
+
+- A transcrição acontece **no seu computador**; o áudio não vai para a nuvem.
+- Só o **texto** vai para a IA que você configurou (Gemini ou Ollama local).
+- A chave do Gemini fica **cifrada** pelo sistema e não entra no backup.
+- Páginas, livros, conversas e histórico ficam numa **pasta única** de fácil backup, em formatos abertos (Markdown e JSON).
+- Não existe servidor do HomeLab nem conta: o app não abre portas.
 
 ## Instalação
 
@@ -65,7 +127,7 @@ chmod +x HomeLab-*.AppImage
 > [!NOTE]
 > Em distribuições recentes pode ser preciso instalar o FUSE 2 (`sudo apt install libfuse2`, ou `libfuse2t64` no Ubuntu 24.04).
 
-No primeiro uso, o assistente de instalação baixa só o que o seu computador precisa (transcrição, processamento de áudio e modelos). No Windows o app avisa quando há versão nova e atualiza baixando só o que mudou; no Linux ele avisa e abre a página do Release.
+No primeiro uso, o assistente de instalação baixa só o que o seu computador precisa (transcrição, processamento de áudio e modelos). No Linux o app avisa de versão nova e abre a página do Release.
 
 ## Desenvolvimento
 
