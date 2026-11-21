@@ -101,6 +101,7 @@ Detalhes em `docs/versionamento.md`. Vale para toda mudança feita **depois** da
 ## Regra de entrega (OBRIGATÓRIO)
 - Entregas **faseadas** quando o trabalho for grande: uma etapa por vez, e **não comece a seguinte sem o "ok" do usuário**.
 - Cada entrega traz: código + testes unitários + atualização de `docs/`.
+- **README é a vitrine do app (OBRIGATÓRIO):** feature nova que o usuário final enxerga entra no `README.md` (seção "Recursos", em uma frase de benefício, com print em `docs/img/` quando fizer sentido); feature removida ou que mudou de comportamento sai ou é corrigida no mesmo MR. Mudança interna, de infraestrutura ou de documentação não entra. Se a feature for visual, o print deve vir do app real.
 - Ao terminar, dizer que terminou **e** listar "O que testar" (passos numerados e resultado esperado) do lado do usuário.
 - O que uma entrega deixar de novo vira documentação de uso em `docs/`, não arquivos de plano.
 
