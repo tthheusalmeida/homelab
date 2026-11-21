@@ -1,8 +1,6 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogForm,
@@ -12,6 +10,7 @@ import {
 import { Input } from '#ui/input';
 import { Label } from '#ui/label';
 
+import { BusyDialog, useReportBusy } from '#components/BusyDialog';
 import { Callout } from '#components/Callout';
 import { FormButtons } from '#components/FormButtons';
 import { OptionSelect } from '#components/OptionSelect';
@@ -66,23 +65,21 @@ export function CategoryCreateDialog({
   onOpenChange,
   onCreated,
 }: CategoryCreateDialogProps) {
-  const [busy, setBusy] = useState(false);
-
   return (
-    <Dialog open={parent !== null} onOpenChange={(open) => (open || !busy) && onOpenChange(open)}>
-      <DialogContent bare className="sm:max-w-md">
-        {parent && (
+    <BusyDialog open={parent !== null} onOpenChange={onOpenChange} className="sm:max-w-md">
+      {(onBusyChange) =>
+        parent && (
           <CategoryCreateForm
             key={parent.join('\u0000')}
             initialParent={parent}
             tree={tree}
             onDone={() => onOpenChange(false)}
-            onBusyChange={setBusy}
+            onBusyChange={onBusyChange}
             onCreated={onCreated}
           />
-        )}
-      </DialogContent>
-    </Dialog>
+        )
+      }
+    </BusyDialog>
   );
 }
 
@@ -121,11 +118,7 @@ function CategoryCreateForm({
   const canCreate = names.length > 0 && !tooDeep && !exists && !create.isPending;
 
   // enquanto cria, o diálogo não fecha (Esc, clique fora ou X)
-  useEffect(() => {
-    onBusyChange(create.isPending);
-
-    return () => onBusyChange(false);
-  }, [create.isPending, onBusyChange]);
+  useReportBusy(create.isPending, onBusyChange);
 
   function chooseParent(id: string | null) {
     const place = places.find((_own, index) => options[index].id === id);

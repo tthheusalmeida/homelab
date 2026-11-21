@@ -1,9 +1,7 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 import { Button } from '#ui/button';
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogForm,
@@ -13,6 +11,7 @@ import {
 import { Input } from '#ui/input';
 import { Label } from '#ui/label';
 
+import { BusyDialog, useReportBusy } from '#components/BusyDialog';
 import { Callout } from '#components/Callout';
 import { FormButtons } from '#components/FormButtons';
 import { ConfirmDialog } from '#components/ConfirmDialog';
@@ -84,24 +83,22 @@ export function CategoryEditDialog({
 }: CategoryEditDialogProps) {
   // Enquanto as páginas se mexem, o diálogo não fecha (Esc, clique fora ou X): fechar no meio faria
   // a operação continuar sem nenhum sinal na tela.
-  const [busy, setBusy] = useState(false);
-
   return (
-    <Dialog open={category !== null} onOpenChange={(open) => (open || !busy) && onOpenChange(open)}>
-      <DialogContent bare className="sm:max-w-md">
-        {category && (
+    <BusyDialog open={category !== null} onOpenChange={onOpenChange} className="sm:max-w-md">
+      {(onBusyChange) =>
+        category && (
           <CategoryEditForm
             key={category.path.join('\u0000')}
             category={category}
             tree={tree}
             onDone={() => onOpenChange(false)}
-            onBusyChange={setBusy}
+            onBusyChange={onBusyChange}
             onRenamed={onRenamed}
             onDeleted={onDeleted}
           />
-        )}
-      </DialogContent>
-    </Dialog>
+        )
+      }
+    </BusyDialog>
   );
 }
 
@@ -135,12 +132,8 @@ function CategoryEditForm({
   // Só uma categoria sem páginas (e sem páginas nas subcategorias) pode ser excluída.
   const deletable = category.count === 0;
 
-  useEffect(() => {
-    onBusyChange(working);
-
-    // se o formulário sair da tela, o diálogo volta a poder fechar
-    return () => onBusyChange(false);
-  }, [working, onBusyChange]);
+  // se o formulário sair da tela, o diálogo volta a poder fechar
+  useReportBusy(working, onBusyChange);
 
   const places = useMemo(
     () => placesFor(category, tree, CategoryEditStrings.root),
