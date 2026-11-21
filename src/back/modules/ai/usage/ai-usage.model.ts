@@ -15,6 +15,8 @@ export interface AIUsageRecord {
 
   latencyMs: number;
   success: boolean;
+  /** O motivo, quando a requisição falhou (mostrado em Consumo). */
+  error?: string;
 
   createdAt: string;
 }

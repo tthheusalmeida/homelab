@@ -194,6 +194,30 @@ describe('GeminiProvider', () => {
       expect(usage.getUsage().recentRequests[0].success).toBe(false);
     });
 
+    it('when the API fails, should keep the reason the user sees in the recorded failure', async () => {
+      generateContent.mockRejectedValue(new Error('api'));
+
+      await expect(build().chat({ message: 'a', model: 'm' })).rejects.toThrow();
+
+      expect(usage.getUsage().recentRequests[0]).toMatchObject({
+        success: false,
+        error: expect.stringContaining('chat do Gemini falhou'),
+      });
+    });
+
+    it('when there is no key, chat should record the failure so it shows in the usage', async () => {
+      await expect(build(null).chat({ message: 'a', model: 'm' })).rejects.toMatchObject({
+        code: 'NOT_CONFIGURED',
+      });
+
+      expect(usage.getUsage().recentRequests[0]).toMatchObject({
+        provider: 'gemini',
+        success: false,
+        error: GEMINI_NOT_CONFIGURED,
+        totalTokens: 0,
+      });
+    });
+
     it('when the first call is overloaded (503) and the second works, should return the text without failing', async () => {
       generateContent.mockRejectedValueOnce(apiError(503)).mockResolvedValueOnce({ text: 'resp' });
 

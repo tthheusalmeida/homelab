@@ -62,7 +62,7 @@ export function BarChart({ data, formatTick, ariaLabel, className }: BarChartPro
 
           <ol className="absolute inset-0 flex items-stretch gap-2 px-1">
             {data.map((item) => (
-              <Tip key={item.id} content={item.tooltip} side="top" follow>
+              <Tip key={item.id} content={item.tooltip} side="top" follow="both">
                 <li
                   data-slot="chart-column"
                   aria-label={`${item.label}: ${item.value}`}

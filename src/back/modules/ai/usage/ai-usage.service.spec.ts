@@ -4,7 +4,7 @@ import * as path from 'node:path';
 
 import type { BackConfig } from '../../../config/back-config';
 
-import { AiUsageService, MAX_USAGE_RECORDS } from './ai-usage.service';
+import { AiUsageService, MAX_USAGE_RECORDS, RECENT_REQUESTS_LIMIT } from './ai-usage.service';
 import type { AIUsageRecord } from './ai-usage.model';
 
 type Input = Omit<AIUsageRecord, 'id' | 'createdAt'>;
@@ -148,12 +148,38 @@ describe('AiUsageService', () => {
       });
     });
 
-    it('when there are more than 100 records, should limit recentRequests to 100', () => {
-      for (let i = 0; i < 150; i++) {
-        service.record(base);
+    it('when there are more than 10 records, should limit recentRequests to the 10 newest', () => {
+      for (let i = 0; i < 25; i++) {
+        service.record({ ...base, model: `m${i}` });
       }
 
-      expect(service.getUsage().recentRequests).toHaveLength(100);
+      const { recentRequests } = service.getUsage();
+
+      expect(recentRequests).toHaveLength(RECENT_REQUESTS_LIMIT);
+      expect(recentRequests[0].model).toBe('m24');
+      expect(recentRequests[9].model).toBe('m15');
+    });
+
+    it('when a request failed, should keep it in recentRequests with the reason', () => {
+      service.record(base);
+      service.recordFailure({ provider: 'gemini', model: 'm', latencyMs: 40, error: 'Limite de uso atingido.' });
+
+      const [latest] = service.getUsage().recentRequests;
+
+      expect(latest).toMatchObject({
+        success: false,
+        error: 'Limite de uso atingido.',
+        totalTokens: 0,
+        estimatedCost: 0,
+        operation: 'chat',
+      });
+    });
+
+    it('when failures are among the recent ones, should not count them as spent tokens', () => {
+      service.record(base);
+      service.recordFailure({ provider: 'gemini', model: 'm', latencyMs: 40, error: 'x' });
+
+      expect(service.getUsage().summary.totalTokens).toBe(base.totalTokens);
     });
   });
 });

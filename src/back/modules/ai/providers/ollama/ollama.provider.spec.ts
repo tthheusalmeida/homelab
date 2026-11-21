@@ -120,7 +120,10 @@ describe('OllamaProvider', () => {
         'chat do Ollama falhou',
       );
 
-      expect(usage.getUsage().recentRequests[0].success).toBe(false);
+      expect(usage.getUsage().recentRequests[0]).toMatchObject({
+        success: false,
+        error: expect.stringContaining('chat do Ollama falhou'),
+      });
     });
 
     it('when Ollama is not running, should explain it could not be reached and keep the cause', async () => {

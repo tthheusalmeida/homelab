@@ -22,8 +22,9 @@ interface TipProps {
   /**
    * Para um contêiner largo (a linha de uma configuração, um grupo de botões): o tooltip acompanha o
    * mouse na horizontal, em vez de centralizar no contêiner inteiro, longe do controle sob o cursor.
+   * `'both'` acompanha também na vertical (o gráfico de barras: o tooltip fica junto do cursor, não no topo da coluna).
    */
-  follow?: boolean;
+  follow?: boolean | "both";
 }
 
 /**
@@ -49,7 +50,7 @@ export function Tip({
   );
 
   return (
-    <Tooltip disabled={!enabled} trackCursorAxis={follow ? "x" : "none"}>
+    <Tooltip disabled={!enabled} trackCursorAxis={follow === "both" ? "both" : follow ? "x" : "none"}>
       <TooltipTrigger delay={delay} render={trigger} />
 
       <TooltipContent side={side}>{content}</TooltipContent>
