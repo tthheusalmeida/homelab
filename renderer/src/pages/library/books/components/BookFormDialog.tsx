@@ -30,6 +30,7 @@ import {
 import { BookCover } from "./BookCover";
 import { useSnackbar } from "#components/Snackbar";
 import { FormButtons } from "#components/FormButtons";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 interface BookFormDialogProps {
   open: boolean;
@@ -93,6 +94,7 @@ function BookForm({
   const snackbar = useSnackbar();
 
   const mutation = book ? update : create;
+  useErrorAlert(mutation.isError && "Não foi possível salvar o livro. Tente novamente.");
   const imageValid = isValidCoverImageUrl(imageUrl);
   const canSave = title.trim() !== "" && imageValid && !mutation.isPending;
 
@@ -241,12 +243,6 @@ function BookForm({
           />
         </div>
       </div>
-
-      {mutation.isError && (
-        <p role="alert" className="animate-enter-fade text-sm text-destructive">
-          Não foi possível salvar o livro. Tente novamente.
-        </p>
-      )}
 
       <DialogFooter>
         <FormButtons

@@ -281,7 +281,7 @@ describe('CategoryEditDialog', () => {
 
     setup();
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Categoria não encontrada.');
+    expect(snackbar.error).toHaveBeenCalledWith('Categoria não encontrada.');
     expect(screen.getByText('Editar categoria')).toBeInTheDocument();
   });
 
@@ -290,7 +290,7 @@ describe('CategoryEditDialog', () => {
 
     setup();
 
-    expect(screen.getByRole('alert')).toHaveTextContent(CategoryEditStrings.failed);
+    expect(snackbar.error).toHaveBeenCalledWith(CategoryEditStrings.failed);
   });
 
   it('when saving, should lock the fields and the buttons', () => {
@@ -412,7 +412,7 @@ describe('CategoryEditDialog: categoria vazia e exclusão', () => {
 
     await user.click(screen.getByRole('button', { name: CategoryEditStrings.delete }));
 
-    expect(screen.getByText('A categoria tem páginas ou arquivos.')).toBeInTheDocument();
+    expect(snackbar.error).toHaveBeenCalledWith('A categoria tem páginas ou arquivos.');
   });
 
   it('when the category is empty, should still be possible to rename it', async () => {

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
+import { renderWithSnackbar as render } from "#test/utils";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 

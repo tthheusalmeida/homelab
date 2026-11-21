@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import type { UseQueryResult } from '@tanstack/react-query';
 
+import { useErrorAlert } from '#hooks/use-error-alert';
 import { Button } from '#ui/button';
 import { ErrorState } from '#components/ErrorState';
 import { LoadingState } from '#components/LoadingState';
@@ -81,15 +82,12 @@ export function ProviderFeedback({
   testResult: ProviderTestResult | null;
   saveError?: string;
 }) {
+  useErrorAlert(saveError);
+
   return (
     <>
       <TestResultSlot result={testResult} />
 
-      {saveError && (
-        <p role="alert" className="text-sm text-destructive">
-          {saveError}
-        </p>
-      )}
     </>
   );
 }

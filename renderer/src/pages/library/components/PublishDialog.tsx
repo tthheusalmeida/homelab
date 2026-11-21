@@ -18,6 +18,7 @@ import { SuggestionPanel } from "./SuggestionPanel";
 import type { DocumentSummary } from "../types/library.types";
 import { useSnackbar } from "#components/Snackbar";
 import { FormButtons } from "#components/FormButtons";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 interface PublishDialogProps {
   /** Documento a adicionar; `null` mantém o diálogo fechado. */
@@ -54,6 +55,7 @@ function PublishForm({ document, onDone }: PublishFormProps) {
   const categories = useCategories();
   const publish = usePublishDocument();
   const snackbar = useSnackbar();
+  useErrorAlert(publish.isError && "Não foi possível adicionar. Verifique a categoria e tente novamente.");
 
   const isReadd = document.status === "archived";
   const canSubmit =
@@ -114,12 +116,6 @@ function PublishForm({ document, onDone }: PublishFormProps) {
           tags={tags}
           excerpt={document.preview}
         />
-
-        {publish.isError && (
-          <p className="text-sm text-destructive">
-            Não foi possível adicionar. Verifique a categoria e tente novamente.
-          </p>
-        )}
 
       <DialogFooter>
         <FormButtons

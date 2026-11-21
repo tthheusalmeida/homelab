@@ -218,7 +218,7 @@ describe('CategoryCreateDialog', () => {
 
     setup();
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Já existe.');
+    expect(snackbar.error).toHaveBeenCalledWith('Já existe.');
   });
 
   it('when creating fails with no message, should show a generic one', () => {
@@ -226,7 +226,7 @@ describe('CategoryCreateDialog', () => {
 
     setup();
 
-    expect(screen.getByRole('alert')).toHaveTextContent(CategoryCreateStrings.failed);
+    expect(snackbar.error).toHaveBeenCalledWith(CategoryCreateStrings.failed);
   });
 
   it('when creating, should lock the fields and not close with Esc', async () => {

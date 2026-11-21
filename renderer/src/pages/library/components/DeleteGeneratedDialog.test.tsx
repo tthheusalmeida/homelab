@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithSnackbar as render } from '#test/utils';
 import userEvent from '@testing-library/user-event';
 
 import { DeleteGeneratedDialog, type GeneratedKind } from './DeleteGeneratedDialog';

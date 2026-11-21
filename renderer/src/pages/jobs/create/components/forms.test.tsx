@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithSnackbar as render } from "#test/utils";
 import userEvent from "@testing-library/user-event";
 
 const mutate = vi.fn();
@@ -226,9 +227,10 @@ describe("JobForm", () => {
   });
 
   it("when type is unknown, should render nothing", () => {
-    const { container } = render(<JobForm jobType={jobType("outro")} />);
+    render(<JobForm jobType={jobType("outro")} />);
 
-    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
   });
 });
 

@@ -42,6 +42,7 @@ import {
 } from "../organizer";
 import type { BookDetail } from "../types";
 import { FormButtons } from "#components/FormButtons";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 interface BookOrganizerDialogProps {
   open: boolean;
@@ -103,6 +104,7 @@ function Organizer({
   const [over, setOver] = useState<Over>(null);
 
   const save = useSetBookStructure();
+  useErrorAlert(save.isError && "Não foi possível salvar o livro. Tente novamente.");
   const q = useDebouncedValue(search);
   const documents = useDocuments({ q, sort: "title" });
 
@@ -428,12 +430,6 @@ function Organizer({
           )}
         </section>
       </div>
-
-      {save.isError && (
-        <p role="alert" className="animate-enter-fade text-sm text-destructive">
-          Não foi possível salvar o livro. Tente novamente.
-        </p>
-      )}
 
       <DialogFooter>
         <FormButtons

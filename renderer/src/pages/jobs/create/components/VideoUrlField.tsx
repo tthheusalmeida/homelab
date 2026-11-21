@@ -3,6 +3,7 @@ import { useRef, type ClipboardEvent, type KeyboardEvent } from 'react';
 import { Info } from 'lucide-react';
 
 import { Callout } from '#components/Callout';
+import { useErrorAlert } from '#hooks/use-error-alert';
 import { Button } from '#ui/button';
 import { Input } from '#ui/input';
 import { Label } from '#ui/label';
@@ -23,6 +24,8 @@ interface VideoUrlFieldProps {
  */
 export function VideoUrlField({ field, disabled }: VideoUrlFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useErrorAlert(field.error);
 
   const handlePaste = (event: ClipboardEvent<HTMLInputElement>) => {
     const text = event.clipboardData.getData('text');
@@ -70,12 +73,6 @@ export function VideoUrlField({ field, disabled }: VideoUrlFieldProps) {
           {VideoUrlStrings.add}
         </Button>
       </div>
-
-      {field.error && (
-        <Callout tone="warning" role="alert">
-          {field.error}
-        </Callout>
-      )}
 
       {field.partialMessage && (
         <Callout tone="warning" role="status">

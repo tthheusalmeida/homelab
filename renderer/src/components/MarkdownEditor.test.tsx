@@ -1,7 +1,8 @@
 import { useState } from "react";
 
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithSnackbar as render } from "#test/utils";
 import userEvent from "@testing-library/user-event";
 
 import {
@@ -204,16 +205,18 @@ describe("MarkdownEditor", () => {
       expect(editor()).toHaveValue("texto");
     });
 
-    it("when the user edits the url after an error, should hide the error", async () => {
+    it("when the user edits the url after an error, should clear the invalid mark on the field", async () => {
       const user = userEvent.setup();
       render(<Controlled />);
 
       await openPanel(user);
       await user.type(screen.getByLabelText("URL da imagem"), "x");
       await user.click(screen.getByRole("button", { name: "Inserir imagem" }));
+      expect(screen.getByLabelText("URL da imagem")).toHaveAttribute("aria-invalid", "true");
+
       await user.type(screen.getByLabelText("URL da imagem"), "y");
 
-      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.getByLabelText("URL da imagem")).toHaveAttribute("aria-invalid", "false");
     });
 
     it("when the image is inserted, should clear the fields for the next one", async () => {

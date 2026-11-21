@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { render, cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { dismissGeneration, isGenerationDismissed } from '#lib/dismissed-generation';
@@ -219,7 +219,7 @@ describe('SummaryInfographic', () => {
     expect(generate.mutate).toHaveBeenCalledWith({ id: currentId, layout: undefined });
   });
 
-  it('when the AI fails, should show the reason in Portuguese with a retry button inside the message', async () => {
+  it('when the AI fails, should raise the error alert with the reason in Portuguese and a retry button', () => {
     burnAutoRequest();
     generate.state = {
       isPending: false,
@@ -229,13 +229,12 @@ describe('SummaryInfographic', () => {
 
     renderTab();
 
-    const alert = screen.getByRole('alert');
-
-    expect(alert).toHaveTextContent(
+    expect(snackbar.error).toHaveBeenCalledWith(
       'Não foi possível gerar com a IA: O limite de uso foi atingido.',
+      expect.objectContaining({ label: 'Tentar de novo' }),
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /Tentar de novo/ }));
+    snackbar.error.mock.calls.at(-1)?.[1].onClick();
 
     expect(generate.mutate).toHaveBeenCalledTimes(1);
   });
@@ -246,7 +245,10 @@ describe('SummaryInfographic', () => {
 
     renderTab();
 
-    expect(screen.getByRole('alert')).toHaveTextContent('O infográfico anterior continua aqui.');
+    expect(snackbar.error).toHaveBeenCalledWith(
+      expect.stringContaining('O infográfico anterior continua aqui.'),
+      expect.anything(),
+    );
     expect(screen.getByText('Primeiro passo')).toBeInTheDocument();
   });
 
@@ -497,7 +499,7 @@ describe('SummaryInfographic delete', () => {
 
     await userEvent.click(deleteButton());
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Falha ao apagar');
+    expect(snackbar.error).toHaveBeenCalledWith('Falha ao apagar');
     expect(screen.getByText('Excluir só o infográfico?')).toBeInTheDocument();
   });
 

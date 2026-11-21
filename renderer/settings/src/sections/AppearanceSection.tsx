@@ -16,6 +16,7 @@ import { Strings } from '../strings';
 import { ReadingSettings } from './ReadingSettings';
 import { SummarySettings } from './SummarySettings';
 import { TranscriptSettings } from './TranscriptSettings';
+import { useErrorAlert } from '#hooks/use-error-alert';
 
 /**
  * Tema e cor de destaque. Diferente das outras seções, vale na hora e não pede reinício:
@@ -24,6 +25,7 @@ import { TranscriptSettings } from './TranscriptSettings';
 export function AppearanceSection() {
   const { appearance, update } = useAppearance();
   const [error, setError] = useState<string | null>(null);
+  useErrorAlert(error);
 
   const change = (patch: Partial<Appearance>) => {
     setError(null);
@@ -74,12 +76,6 @@ export function AppearanceSection() {
       <ReadingSettings />
       <TranscriptSettings />
       <SummarySettings />
-
-      {error && (
-        <p role="alert" className="animate-enter-fade text-sm text-destructive">
-          {error}
-        </p>
-      )}
 
       <div>
         <Button

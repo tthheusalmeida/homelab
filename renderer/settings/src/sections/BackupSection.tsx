@@ -38,6 +38,7 @@ import {
   useRestoreBackup,
 } from '../hooks';
 import { Strings } from '../strings';
+import { useErrorAlert } from '#hooks/use-error-alert';
 
 interface SectionProps {
   onSaved: (restartRequired: boolean) => void;
@@ -169,6 +170,7 @@ function toggled(current: ReadonlySet<BackupItemId>, id: BackupItemId, checked: 
 function CreateBackupCard() {
   const preview = useBackupPreview();
   const create = useCreateBackup();
+  useErrorAlert(create.isError && create.error.message);
   const savedNotice = useSavedNotice();
   const [selected, setSelected] = useState<ReadonlySet<BackupItemId> | null>(null);
   const [outcome, setOutcome] = useState<string | null>(null);
@@ -247,12 +249,6 @@ function CreateBackupCard() {
 
         {create.isPending && <BackupProgress title={BackupStrings.creating} />}
 
-        {create.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            {create.error.message}
-          </p>
-        )}
-
         {outcome && !create.isPending && <p className="text-sm text-muted-foreground">{outcome}</p>}
         <div className="flex justify-end gap-2">
           <Button disabled={picked.length === 0 || create.isPending} onClick={start} loading={create.isPending}>
@@ -273,6 +269,7 @@ function RestoreBackupCard({ onSaved }: SectionProps) {
   const [mode, setMode] = useState<RestoreMode>('merge');
   const [confirming, setConfirming] = useState(false);
   const [result, setResult] = useState<BackupRestoreResult | null>(null);
+  useErrorAlert((inspect.isError || restore.isError) && (inspect.error ?? restore.error)?.message);
 
   const choose = () => {
     setResult(null);
@@ -356,12 +353,6 @@ function RestoreBackupCard({ onSaved }: SectionProps) {
         )}
 
         {restore.isPending && <BackupProgress title={BackupStrings.restoring} />}
-
-        {(inspect.isError || restore.isError) && (
-          <p role="alert" className="text-sm text-destructive">
-            {(inspect.error ?? restore.error)?.message}
-          </p>
-        )}
 
         {result && (
           <div role="status" className="flex flex-col gap-1 text-sm">

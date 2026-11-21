@@ -26,6 +26,7 @@ import { IconButton } from '#components/IconButton';
 import { LoadingState } from '#components/LoadingState';
 import { MindMapView } from '#components/MindMapView';
 import { useSnackbar } from '#components/Snackbar';
+import { useErrorAlert } from '#hooks/use-error-alert';
 import { useSavedNotice } from '#hooks/use-saved-notice';
 
 import {
@@ -109,6 +110,13 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   const regenerate = () => (saved.data?.edited ? setConfirm('regenerate') : generateNow());
 
   const editing = draft !== null;
+  useErrorAlert(
+    generate.isError &&
+      !pending &&
+      !editing &&
+      `Não foi possível gerar com a IA: ${generate.error?.message ?? ''}${saved.data ? ' O mapa anterior continua aqui.' : ' Este é um mapa simples feito do texto.'}`,
+    { label: 'Tentar de novo', onClick: regenerate },
+  );
   const base = useMemo(() => draftFromMap(map), [map]);
   const dirty = draft ? isDraftDirty(draft, base) : false;
   const problem = draft ? validateDraft(draft) : null;
@@ -181,21 +189,6 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
         {draftProblemMessages[problem]}
       </Callout>
     ) : null;
-  } else if (failed) {
-    notice = (
-      <Callout
-        tone="danger"
-        role="alert"
-        action={
-          <GenerateButton pending={pending} onClick={regenerate} primary>
-            Tentar de novo
-          </GenerateButton>
-        }
-      >
-        {`Não foi possível gerar com a IA: ${generate.error?.message ?? ''}`}
-        {hasMap ? ' O mapa anterior continua aqui.' : ' Este é um mapa simples feito do texto.'}
-      </Callout>
-    );
   } else if (!hasMap) {
     notice = pending ? (
       <Callout role="status">

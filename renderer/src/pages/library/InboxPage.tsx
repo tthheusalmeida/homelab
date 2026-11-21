@@ -24,6 +24,7 @@ import { PageHeader } from "#components/PageHeader";
 import { PageError } from "#components/PageState";
 import { Card, CardContent } from "#ui/card";
 import { LoadingState } from "#components/LoadingState";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 type View = "pending" | "archived";
 
@@ -43,6 +44,7 @@ export function InboxPage() {
   const discard = useDiscardDocument();
   const reindex = useReindex();
   const snackbar = useSnackbar();
+  useErrorAlert(discard.isError && "Não foi possível descartar. Tente novamente.");
 
   const current = view === "pending" ? pending : archived;
 
@@ -216,11 +218,6 @@ export function InboxPage() {
         onConfirm={handleDiscard}
       />
 
-      {discard.isError && (
-        <p className="text-sm text-destructive">
-          Não foi possível descartar. Tente novamente.
-        </p>
-      )}
     </div>
   );
 }

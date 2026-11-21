@@ -42,6 +42,7 @@ import { LoadingState } from '#components/LoadingState';
 import { OptionSelect } from '#components/OptionSelect';
 import type { PieceTarget } from '#components/infographic/common';
 import { useSnackbar } from '#components/Snackbar';
+import { useErrorAlert } from '#hooks/use-error-alert';
 import { useSavedNotice } from '#hooks/use-saved-notice';
 import type { LibraryInfographic } from '#shared/contracts/library';
 
@@ -120,6 +121,12 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
   };
   // Infográfico editado à mão: gerar de novo apagaria as edições, então pergunta antes.
   const requestGenerate = () => (saved.data?.edited ? setConfirm('regenerate') : generateNow());
+  useErrorAlert(
+    failed &&
+      draft === null &&
+      `Não foi possível gerar com a IA: ${generate.error?.message ?? ''}${data ? ' O infográfico anterior continua aqui.' : ''}`,
+    { label: 'Tentar de novo', onClick: requestGenerate },
+  );
 
   const editing = draft !== null;
   const dirty = draft && data ? isDraftDirty(draft, data) : false;
@@ -242,21 +249,6 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
       <Callout role="note">
         Clique em uma peça para trocá-la ou em um texto para editá-lo. As mudanças só valem depois
         de salvar.
-      </Callout>
-    );
-  } else if (failed) {
-    notice = (
-      <Callout
-        tone="danger"
-        role="alert"
-        action={
-          <GenerateButton pending={pending} onClick={requestGenerate} primary>
-            Tentar de novo
-          </GenerateButton>
-        }
-      >
-        {`Não foi possível gerar com a IA: ${generate.error?.message ?? ''}`}
-        {data ? ' O infográfico anterior continua aqui.' : ''}
       </Callout>
     );
   } else if (data?.stale && !pending) {

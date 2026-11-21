@@ -4,6 +4,7 @@ import type { AiMessage, ChatStatus } from "../types/chat";
 
 import { ChatMessage } from "./ChatMessage";
 import { LoadingState } from "#components/LoadingState";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 interface ChatMessageListProps {
   messages: AiMessage[];
@@ -18,6 +19,7 @@ export function ChatMessageList({
   error = null,
 }: ChatMessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  useErrorAlert(error);
 
   // Rola só esta lista até o fim (scrollIntoView também moveria a página e a barra de envio).
   useEffect(() => {
@@ -51,11 +53,6 @@ export function ChatMessageList({
           </div>
         )}
 
-        {error && (
-          <p role="alert" className="animate-enter-fade text-sm text-destructive">
-            {error}
-          </p>
-        )}
       </div>
     </div>
   );

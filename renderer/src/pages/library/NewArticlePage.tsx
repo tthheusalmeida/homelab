@@ -18,6 +18,7 @@ import { useCategories, useCreateArticle } from "./hooks/useLibrary";
 import { useSnackbar } from "#components/Snackbar";
 import { PageHeader } from "#components/PageHeader";
 import { FormButtons } from "#components/FormButtons";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 export function NewArticlePage() {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ export function NewArticlePage() {
   const categories = useCategories();
   const createArticle = useCreateArticle();
   const snackbar = useSnackbar();
+  useErrorAlert(createArticle.isError && "Não foi possível salvar a página. Verifique a categoria e tente novamente.");
 
   const words = countWords(content);
 
@@ -126,13 +128,6 @@ export function NewArticlePage() {
           </CardContent>
         </Card>
       </section>
-
-      {createArticle.isError && (
-        <p role="alert" className="animate-enter-fade text-sm text-destructive">
-          Não foi possível salvar a página. Verifique a categoria e tente
-          novamente.
-        </p>
-      )}
 
       <div className="sticky bottom-0 z-10 -mx-4 -mb-4 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur">
         <p className="text-sm text-muted-foreground">

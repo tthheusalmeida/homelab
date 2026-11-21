@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { act, render, renderHook, screen } from '@testing-library/react';
+import { act, renderHook, screen } from '@testing-library/react';
+import { renderWithSnackbar as render } from '#test/utils';
 import userEvent from '@testing-library/user-event';
 
 import { CheckboxField } from './CheckboxField';
@@ -68,9 +69,9 @@ describe('PreferenceError', () => {
   });
 
   it('when the message is null, should render nothing', () => {
-    const { container } = render(<PreferenceError message={null} />);
+    render(<PreferenceError message={null} />);
 
-    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
 

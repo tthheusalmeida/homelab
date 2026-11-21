@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
+import { renderWithSnackbar as render } from '#test/utils';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 

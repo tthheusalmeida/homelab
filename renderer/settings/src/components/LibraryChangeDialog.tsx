@@ -18,6 +18,7 @@ import { IpcEvents } from '#shared/events';
 
 import { useMoveLibrary } from '../hooks';
 import { Strings } from '../strings';
+import { useErrorAlert } from '#hooks/use-error-alert';
 
 interface LibraryChangeDialogProps {
   /** Pasta escolhida e o que há nela; o diálogo abre enquanto houver uma pasta. */
@@ -47,6 +48,7 @@ export function LibraryChangeDialog({ folder, onClose, onDone }: LibraryChangeDi
   const [deleteOrigin, setDeleteOrigin] = useState(false);
   const [progress, setProgress] = useState<ProgressEventPayload | null>(null);
   const move = useMoveLibrary();
+  useErrorAlert(move.isError && move.error.message);
 
   useIpcEvent(IpcEvents.libraryMoveProgress, setProgress);
 
@@ -129,12 +131,6 @@ export function LibraryChangeDialog({ folder, onClose, onDone }: LibraryChangeDi
 
             <p className="text-xs text-muted-foreground">{progressText(progress)}</p>
           </div>
-        )}
-
-        {move.isError && (
-          <p role="alert" className="animate-enter-fade text-sm text-destructive">
-            {move.error.message}
-          </p>
         )}
 
         <DialogFooter>

@@ -12,6 +12,7 @@ import { ErrorState } from '#components/ErrorState';
 import { LoadingState } from '#components/LoadingState';
 import { MarkdownMessage } from '#components/MarkdownMessage';
 import { ProgressBar } from '#components/ProgressBar';
+import { useErrorAlert } from '#hooks/use-error-alert';
 import { SettingsGroup, SettingsPanel, SettingsRow, SettingsStack } from '#components/SettingsGroup';
 import {
   useCheckForUpdates,
@@ -43,6 +44,11 @@ export function UpdatesSection() {
   // Só oferece traduzir com a IA local (Ollama) ligada; sem ela as notas ficam em inglês.
   const translationAvailable = useTranslationAvailable(hasNotes);
   const translate = useTranslateNotes();
+  useErrorAlert(
+    status?.error ??
+      (check.isError || install.isError || setAutoCheck.isError ? UpdateStrings.requestFailed : null),
+  );
+  useErrorAlert(translate.isError && UpdateStrings.translateFailed);
 
   if (isPending) {
     return <LoadingState message={Strings.loading} />;
@@ -60,9 +66,6 @@ export function UpdatesSection() {
   const downloading = status.state === 'downloading';
   const ready = status.state === 'ready';
   const busy = checking || downloading || status.state === 'installing' || install.isPending;
-  const error =
-    status.error ??
-    (check.isError || install.isError || setAutoCheck.isError ? UpdateStrings.requestFailed : null);
 
   return (
     <SettingsStack>
@@ -109,12 +112,6 @@ export function UpdatesSection() {
           {status.state === 'installing' && (
             <p role="status" className="text-sm text-muted-foreground">
               {UpdateStrings.installing}
-            </p>
-          )}
-
-          {error && (
-            <p role="alert" className="animate-enter-fade text-sm text-destructive">
-              {error}
             </p>
           )}
 
@@ -205,11 +202,6 @@ export function UpdatesSection() {
                   </>
                 )}
 
-                {translate.isError && (
-                  <p role="alert" className="animate-enter-fade text-sm text-destructive">
-                    {UpdateStrings.translateFailed}
-                  </p>
-                )}
               </div>
             )}
 

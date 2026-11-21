@@ -21,6 +21,7 @@ import { useSnackbar } from '#components/Snackbar';
 import { findCategory, placesFor, startsWithPath } from '../categories';
 import { useDeleteCategory, useRenameCategory } from '../hooks/useLibrary';
 import type { CategoryNode } from '../types/library.types';
+import { useErrorAlert } from '#hooks/use-error-alert';
 
 /** Tamanho máximo do nome de uma categoria (o mesmo do back). */
 const MAX_NAME_LENGTH = 60;
@@ -128,6 +129,7 @@ function CategoryEditForm({
   const rename = useRenameCategory();
   const remove = useDeleteCategory();
   const snackbar = useSnackbar();
+  useErrorAlert(rename.isError && (rename.error.message || CategoryEditStrings.failed));
   const working = rename.isPending || remove.isPending;
   // Só uma categoria sem páginas (e sem páginas nas subcategorias) pode ser excluída.
   const deletable = category.count === 0;
@@ -227,12 +229,6 @@ function CategoryEditForm({
         </div>
 
         {merging && <Callout tone="info">{CategoryEditStrings.merge}</Callout>}
-
-        {rename.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            {rename.error.message || CategoryEditStrings.failed}
-          </p>
-        )}
 
         <DialogFooter>
           {deletable && (

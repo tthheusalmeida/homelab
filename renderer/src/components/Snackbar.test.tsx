@@ -169,7 +169,7 @@ describe('Snackbar', () => {
     expect(bar).toHaveStyle({ animationDuration: `${SNACKBAR_DURATION_MS}ms` });
   });
 
-  it('when an error is shown, should use an alert in the corner that stays longer', async () => {
+  it('when an error is shown, should use an alert at the bottom center that stays longer', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(
       <SnackbarProvider>
@@ -181,7 +181,7 @@ describe('Snackbar', () => {
 
     const alert = screen.getByRole('alert');
     expect(alert).toHaveTextContent('Deu ruim');
-    expect(alert.closest('[data-region]')).toHaveAttribute('data-region', 'corner');
+    expect(alert.closest('[data-region]')).toHaveAttribute('data-region', 'center');
     expect(screen.getByTestId('snackbar-progress')).toHaveStyle({
       animationDuration: `${SNACKBAR_ERROR_DURATION_MS}ms`,
     });
@@ -237,5 +237,87 @@ describe('Snackbar', () => {
 
     expect(() => screen.getByRole('button').click()).not.toThrow();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+});
+
+describe('Snackbar error alert', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('when an error and a creation are shown together, should keep both stacked at the bottom center', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(
+      <SnackbarProvider>
+        <ErrorTrigger />
+        <CreatedTrigger onClick={vi.fn()} />
+      </SnackbarProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'criar' }));
+    await user.click(screen.getByRole('button', { name: 'falhar' }));
+
+    const center = document.querySelector('[data-region=center]');
+
+    expect(center).toContainElement(screen.getByRole('status'));
+    expect(center).toContainElement(screen.getByRole('alert'));
+  });
+
+  it('when an error is shown, should not use the corner of the screen', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(
+      <SnackbarProvider>
+        <ErrorTrigger />
+      </SnackbarProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'falhar' }));
+
+    expect(document.querySelector('[data-region=corner]')).toBeEmptyDOMElement();
+  });
+
+  it('when the error has an action, should show a button that runs it and closes the alert', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const retry = vi.fn();
+
+    function RetryTrigger() {
+      const snackbar = useSnackbar();
+
+      return (
+        <button onClick={() => snackbar.error('Falhou', { label: 'Tentar de novo', onClick: retry })}>
+          falhar
+        </button>
+      );
+    }
+
+    render(
+      <SnackbarProvider>
+        <RetryTrigger />
+      </SnackbarProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'falhar' }));
+    await user.click(screen.getByRole('button', { name: 'Tentar de novo' }));
+
+    expect(retry).toHaveBeenCalledTimes(1);
+    act(() => {
+      vi.advanceTimersByTime(SNACKBAR_EXIT_MS + 10);
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('when the regions are rendered, should be live regions above the dialogs', () => {
+    render(<SnackbarProvider>{null}</SnackbarProvider>);
+
+    for (const region of ['corner', 'center']) {
+      const element = document.querySelector(`[data-region=${region}]`);
+
+      expect(element).toHaveAttribute('aria-live', 'polite');
+      expect(element).toHaveClass('z-[70]');
+    }
   });
 });

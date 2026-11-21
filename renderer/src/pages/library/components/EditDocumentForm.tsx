@@ -11,6 +11,7 @@ import type { DocumentDetail } from "../types/library.types";
 import { DocumentPreview } from "./DocumentPreview";
 import { useSnackbar } from "#components/Snackbar";
 import { FormButtons } from "#components/FormButtons";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 interface EditDocumentFormProps {
   document: DocumentDetail;
@@ -37,6 +38,7 @@ export function EditDocumentForm({ document, onClose, dialog = false }: EditDocu
   const categories = useCategories();
   const update = useUpdateDocument();
   const snackbar = useSnackbar();
+  useErrorAlert(update.isError && "Não foi possível salvar as alterações. Verifique a categoria e tente novamente.");
 
   const hasChanges =
     title.trim() !== meta.title ||
@@ -95,13 +97,6 @@ export function EditDocumentForm({ document, onClose, dialog = false }: EditDocu
         tags={tags}
         excerpt={content.replace(/[#*>`|-]/g, "")}
       />
-
-      {update.isError && (
-        <p className="text-sm text-destructive">
-          Não foi possível salvar as alterações. Verifique a categoria e tente
-          novamente.
-        </p>
-      )}
 
       <Actions className={dialog ? undefined : "flex justify-end gap-2"}>
         <FormButtons

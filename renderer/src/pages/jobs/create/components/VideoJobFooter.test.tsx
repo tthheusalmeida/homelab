@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithSnackbar as render } from "#test/utils";
 
 import { Dialog, DialogContent, DialogForm, DialogHeader, DialogTitle } from "#ui/dialog";
 
@@ -70,12 +71,13 @@ describe("VideoJobFooter inside a dialog", () => {
     expect(button.parentElement).toHaveAttribute("data-slot", "dialog-footer");
   });
 
-  it("when the creation failed, should show the error in the footer, not in the body", () => {
+  it("when the creation failed, should raise the error alert outside the form, without pushing the content", () => {
     renderInDialog(true);
 
-    const error = screen.getByText("Não foi possível criar o job. Tente novamente.");
+    const error = screen.getByRole("alert");
 
-    expect(body()).not.toContainElement(error);
-    expect(error.parentElement).toHaveAttribute("data-slot", "dialog-footer");
+    expect(error).toHaveTextContent("Não foi possível criar o job. Tente novamente.");
+    expect(screen.getByRole("dialog")).not.toContainElement(error);
+    expect(error.closest("[data-region]")).toHaveAttribute("data-region", "center");
   });
 });

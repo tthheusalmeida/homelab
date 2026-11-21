@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { RotateCcw } from 'lucide-react';
 
+import { useErrorAlert } from '#hooks/use-error-alert';
 import { Button } from '#ui/button';
 
 /**
@@ -35,15 +36,9 @@ export function RestoreButton({
   );
 }
 
-/** Erro ao gravar uma preferência (some quando não há). */
+/** Erro ao gravar uma preferência: vira o alerta de erro do app (centralizado no rodapé). */
 export function PreferenceError({ message }: { message: string | null }) {
-  if (!message) {
-    return null;
-  }
+  useErrorAlert(message);
 
-  return (
-    <p role="alert" className="animate-enter-fade text-sm text-destructive">
-      {message}
-    </p>
-  );
+  return null;
 }

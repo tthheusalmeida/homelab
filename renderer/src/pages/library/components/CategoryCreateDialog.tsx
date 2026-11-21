@@ -19,6 +19,7 @@ import { useSnackbar } from '#components/Snackbar';
 import { findCategory, MAX_CATEGORY_LEVELS, parseCategoryNames, placesForNew } from '../categories';
 import { useCreateCategory } from '../hooks/useLibrary';
 import type { CategoryNode } from '../types/library.types';
+import { useErrorAlert } from '#hooks/use-error-alert';
 
 /** Tamanho máximo do nome de um nível (o mesmo do back). */
 const MAX_NAME_LENGTH = 60;
@@ -103,6 +104,7 @@ function CategoryCreateForm({
   const [parent, setParent] = useState(initialParent);
   const create = useCreateCategory();
   const snackbar = useSnackbar();
+  useErrorAlert(create.isError && (create.error.message || CategoryCreateStrings.failed));
 
   const places = useMemo(() => placesForNew(tree, CategoryCreateStrings.root), [tree]);
   const options = places.map((place) => ({
@@ -190,12 +192,6 @@ function CategoryCreateForm({
       {exists && <Callout tone="warning">{CategoryCreateStrings.exists}</Callout>}
 
       {tooDeep && <Callout tone="warning">{CategoryCreateStrings.tooDeep}</Callout>}
-
-      {create.isError && (
-        <p role="alert" className="text-sm text-destructive">
-          {create.error.message || CategoryCreateStrings.failed}
-        </p>
-      )}
 
       <DialogFooter>
         <FormButtons
