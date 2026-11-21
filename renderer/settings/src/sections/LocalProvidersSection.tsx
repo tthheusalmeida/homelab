@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { Badge } from '#ui/badge';
-import { SettingsGroup } from '#components/SettingsGroup';
+import { SettingsGroup, SettingsStack } from '#components/SettingsGroup';
 
 import type { LocalProviderInfo } from '#shared/contracts/providers';
 import { Field } from '../components/Field';
@@ -31,7 +31,7 @@ export function LocalProvidersSection({ onSaved }: SectionProps) {
   return (
     <ProvidersGate query={providers}>
       {(data) => (
-        <div className="flex flex-col gap-6">
+        <SettingsStack>
           <LocalGroup
             title={Strings.groups.localTools}
             hint={Strings.groups.localToolsHint}
@@ -44,7 +44,7 @@ export function LocalProvidersSection({ onSaved }: SectionProps) {
             providers={data.filter((provider) => provider.editable)}
             onSaved={onSaved}
           />
-        </div>
+        </SettingsStack>
       )}
     </ProvidersGate>
   );

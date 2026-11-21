@@ -12,7 +12,7 @@ import { ErrorState } from '#components/ErrorState';
 import { LoadingState } from '#components/LoadingState';
 import { MarkdownMessage } from '#components/MarkdownMessage';
 import { ProgressBar } from '#components/ProgressBar';
-import { SettingsGroup, SettingsPanel, SettingsRow } from '#components/SettingsGroup';
+import { SettingsGroup, SettingsPanel, SettingsRow, SettingsStack } from '#components/SettingsGroup';
 import {
   useCheckForUpdates,
   useInstallUpdate,
@@ -65,7 +65,7 @@ export function UpdatesSection() {
     (check.isError || install.isError || setAutoCheck.isError ? UpdateStrings.requestFailed : null);
 
   return (
-    <div className="flex flex-col gap-6">
+    <SettingsStack>
       <SettingsGroup title="Versão">
         <SettingsPanel highlight={Boolean(latest)}>
           <div className="flex flex-col gap-2">
@@ -234,6 +234,6 @@ export function UpdatesSection() {
           install.mutate();
         }}
       />
-    </div>
+    </SettingsStack>
   );
 }

@@ -3,7 +3,7 @@ import { RotateCcw } from 'lucide-react';
 
 import { Button } from '#ui/button';
 import { HexColorPicker } from '#components/HexColorPicker';
-import { SettingsGroup, SettingsPanel, SettingsRow } from '#components/SettingsGroup';
+import { SettingsGroup, SettingsPanel, SettingsRow, SettingsStack } from '#components/SettingsGroup';
 import { useAppearance } from '#hooks/use-appearance';
 import { accentOptions, themeLabels } from '#lib/appearance';
 import {
@@ -35,7 +35,7 @@ export function AppearanceSection() {
     appearance.accent === DEFAULT_APPEARANCE.accent;
 
   return (
-    <div className="flex flex-col gap-4">
+    <SettingsStack>
       <SettingsGroup title={Strings.appearance.group} hint={Strings.appearance.groupHint}>
         <SettingsPanel className="gap-2.5 p-3">
           <SettingsRow label={Strings.appearance.theme} hint={Strings.appearance.themeHint}>
@@ -97,6 +97,6 @@ export function AppearanceSection() {
           <RotateCcw /> {Strings.appearance.restore}
         </Button>
       </div>
-    </div>
+    </SettingsStack>
   );
 }

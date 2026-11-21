@@ -4,6 +4,7 @@ import { HardwareCard } from '#components/HardwareCard';
 import { LoadingState } from '#components/LoadingState';
 import { InstallOverall } from '#components/InstallOverall';
 import { useSnackbar } from '#components/Snackbar';
+import { SettingsStack } from '#components/SettingsGroup';
 import { Button } from '#ui/button';
 import {
   cancelComponentsInstall,
@@ -85,7 +86,7 @@ export function ComponentsSection() {
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <SettingsStack>
       <HardwareCard hardware={status.hardware} />
 
       {status.running && status.overall && (
@@ -118,6 +119,6 @@ export function ComponentsSection() {
           </Button>
         )}
       </div>
-    </div>
+    </SettingsStack>
   );
 }

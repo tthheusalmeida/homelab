@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { TriangleAlert } from 'lucide-react';
 
 import { Button } from '#ui/button';
-import { SettingsGroup, SettingsPanel } from '#components/SettingsGroup';
+import { SettingsGroup, SettingsPanel, SettingsStack } from '#components/SettingsGroup';
 import { Label } from '#ui/label';
 import { ConfirmDialog } from '#components/ConfirmDialog';
 import { ErrorState } from '#components/ErrorState';
@@ -45,10 +45,10 @@ interface SectionProps {
 
 export function BackupSection({ onSaved }: SectionProps) {
   return (
-    <div className="flex flex-col gap-6">
+    <SettingsStack>
       <CreateBackupCard />
       <RestoreBackupCard onSaved={onSaved} />
-    </div>
+    </SettingsStack>
   );
 }
 
