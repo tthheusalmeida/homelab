@@ -1,10 +1,13 @@
 import { Button } from "#ui/button";
-import { DialogFooter } from "#ui/dialog";
+import { asDialogSlot, DialogFooter } from "#ui/dialog";
 
 import { VideoUrlStrings } from "../video-url-text";
 
-/** Erro e botão de enviar iguais nos formulários de vídeo; `ready` é o que falta além dos links. */
-export function VideoJobFooter({
+/**
+ * Rodapé fixo dos formulários de vídeo: erro à esquerda (quando há) e o botão de enviar à direita.
+ * Marcado como rodapé para o diálogo mantê-lo fora da rolagem.
+ */
+export const VideoJobFooter = asDialogSlot(function VideoJobFooter({
   linkCount,
   canSubmit,
   isPending,
@@ -17,16 +20,16 @@ export function VideoJobFooter({
   isError: boolean;
 }) {
   return (
-    <>
+    <DialogFooter className="sm:items-center">
       {isError && (
-        <p className="text-sm text-destructive">Não foi possível criar o job. Tente novamente.</p>
+        <p role="alert" className="text-sm text-destructive sm:mr-auto">
+          Não foi possível criar o job. Tente novamente.
+        </p>
       )}
 
-      <DialogFooter>
-        <Button type="submit" disabled={!canSubmit} loading={isPending}>
-          {VideoUrlStrings.submit(linkCount)}
-        </Button>
-      </DialogFooter>
-    </>
+      <Button type="submit" disabled={!canSubmit} loading={isPending}>
+        {VideoUrlStrings.submit(linkCount)}
+      </Button>
+    </DialogFooter>
   );
-}
+}, "footer");

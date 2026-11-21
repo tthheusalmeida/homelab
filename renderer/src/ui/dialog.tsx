@@ -108,6 +108,36 @@ function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+const DIALOG_FOOTER_IN_BODY =
+  "DialogFooter dentro do miolo do diálogo: ele rola junto com o conteúdo. Ponha-o como filho direto " +
+  "do DialogContent/DialogForm ou marque o componente que o renderiza com asDialogSlot(..., 'footer')."
+
+type DialogSlot = "header" | "footer"
+
+type SlotComponent = React.ComponentType<never> & { dialogSlot?: DialogSlot }
+
+/**
+ * Marca um componente que renderiza um `DialogFooter` (ou `DialogHeader`) como sendo essa faixa:
+ * `DialogSections` só enxerga o tipo do filho direto, então sem a marca o rodapé embrulhado cairia
+ * no miolo e rolaria junto com ele.
+ */
+function asDialogSlot<T extends React.ComponentType<never>>(
+  component: T,
+  slot: DialogSlot
+): T {
+  ;(component as SlotComponent).dialogSlot = slot
+  return component
+}
+
+function dialogSlotOf(child: React.ReactNode): DialogSlot | undefined {
+  if (!React.isValidElement(child)) return undefined
+  if (child.type === DialogHeader) return "header"
+  if (child.type === DialogFooter) return "footer"
+  return typeof child.type === "function" || typeof child.type === "object"
+    ? (child.type as SlotComponent).dialogSlot
+    : undefined
+}
+
 /**
  * Distribui os filhos nas três faixas: `DialogHeader` no topo e `DialogFooter` na base, ambos
  * fixos, e todo o resto num `DialogBody` que rola. Dentro de um `DialogContent` (ou de um
@@ -125,9 +155,10 @@ function DialogSections({
   const body: React.ReactNode[] = []
 
   React.Children.toArray(children).forEach((child) => {
-    if (React.isValidElement(child) && child.type === DialogHeader) {
+    const slot = dialogSlotOf(child)
+    if (slot === "header") {
       headers.push(child)
-    } else if (React.isValidElement(child) && child.type === DialogFooter) {
+    } else if (slot === "footer") {
       footers.push(child)
     } else {
       body.push(child)
@@ -188,8 +219,19 @@ function DialogFooter({
 }: React.ComponentProps<"div"> & {
   showCloseButton?: boolean
 }) {
+  const ref = React.useRef<HTMLDivElement>(null)
+
+  // Só em desenvolvimento e nos testes: rodapé dentro do miolo rola junto com ele (foi o que
+  // aconteceu quando o rodapé vinha embrulhado em outro componente sem `asDialogSlot`).
+  React.useEffect(() => {
+    if (import.meta.env.DEV && ref.current?.closest("[data-slot=dialog-body]")) {
+      console.error(DIALOG_FOOTER_IN_BODY)
+    }
+  }, [])
+
   return (
     <div
+      ref={ref}
       data-slot="dialog-footer"
       className={cn(
         "flex shrink-0 flex-col-reverse gap-2 border-t bg-popover px-5 py-3 sm:flex-row sm:justify-end",
@@ -234,6 +276,7 @@ function DialogDescription({
 }
 
 export {
+  asDialogSlot,
   Dialog,
   DialogBody,
   DialogClose,

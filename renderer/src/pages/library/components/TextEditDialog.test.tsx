@@ -159,3 +159,16 @@ describe('TextEditDialog', () => {
     expect(screen.queryByText('Editar o texto')).not.toBeInTheDocument();
   });
 });
+
+describe('TextEditDialog layout', () => {
+  it('when opened, should keep the buttons in the fixed footer, outside the scrolling body', () => {
+    setup('item.title', 'Arrecadação');
+
+    const apply = screen.getByRole('button', { name: 'Aplicar' });
+    const body = screen.getByRole('dialog').querySelector('[data-slot=dialog-body]');
+
+    expect(apply.parentElement).toHaveAttribute('data-slot', 'dialog-footer');
+    expect(body).not.toContainElement(apply);
+    expect(body).toContainElement(screen.getByRole('textbox'));
+  });
+});

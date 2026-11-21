@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogTitle,
 } from '#ui/dialog';
@@ -46,7 +47,7 @@ export function TextEditDialog({ open, onOpenChange, kind, value, onSave }: Text
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent bare>
         <DialogHeader>
           <DialogTitle>Editar o texto</DialogTitle>
 
@@ -57,8 +58,7 @@ export function TextEditDialog({ open, onOpenChange, kind, value, onSave }: Text
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          className="space-y-2"
+        <DialogForm
           onSubmit={(event) => {
             event.preventDefault();
             save();
@@ -118,7 +118,7 @@ export function TextEditDialog({ open, onOpenChange, kind, value, onSave }: Text
               Aplicar
             </Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       </DialogContent>
     </Dialog>
   );
