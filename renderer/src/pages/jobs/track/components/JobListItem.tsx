@@ -13,6 +13,7 @@ import {
 import { Badge } from "#ui/badge";
 import { Button } from "#ui/button";
 import { Card, CardContent, CardHeader } from "#ui/card";
+import { ProgressBar } from "#components/ProgressBar";
 import { Tip } from "#components/Tip";
 
 import { isActiveJob } from "../active";
@@ -38,6 +39,8 @@ interface JobListItemProps {
   onSelectedChange?: (checked: boolean) => void;
   onCancel?: () => void;
   onRetry?: () => void;
+  /** Resumo de PDF que parou: continuar com outro modelo (as partes prontas são mantidas). */
+  onChangeModel?: () => void;
   /** Abre o login do site de um vídeo que pediu acesso (e tenta de novo ao fechar). */
   onGrantAccess?: () => void;
   /** Há uma ação (cancelar, entrar no site ou tentar de novo) em andamento neste job. */
@@ -51,6 +54,7 @@ export function JobListItem({
   onSelectedChange,
   onCancel,
   onRetry,
+  onChangeModel,
   onGrantAccess,
   busy = false,
 }: JobListItemProps) {
@@ -110,6 +114,21 @@ export function JobListItem({
                   <JobLiveProgress job={job} />
                 </div>
               )}
+
+              {!active && job.resume && (
+                <div className="mt-2 space-y-1">
+                  <ProgressBar
+                    value={job.resume.done}
+                    total={job.resume.total}
+                    label={TrackStrings.resume(job.resume.done, job.resume.total)}
+                    className="h-1.5 max-w-xs"
+                  />
+
+                  <p className="text-xs text-muted-foreground">
+                    {TrackStrings.resume(job.resume.done, job.resume.total)}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -124,6 +143,14 @@ export function JobListItem({
                   <Button size="sm" disabled={busy} onClick={onGrantAccess}>
                     <LogIn />
                     {TrackStrings.signIn}
+                  </Button>
+                </Tip>
+              )}
+
+              {job.retryable && job.resume && (
+                <Tip content={TrackStrings.changeModel.hint}>
+                  <Button size="sm" variant="outline" disabled={busy} onClick={onChangeModel}>
+                    {TrackStrings.changeModel.button}
                   </Button>
                 </Tip>
               )}

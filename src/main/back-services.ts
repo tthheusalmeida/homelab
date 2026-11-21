@@ -7,7 +7,9 @@ import { JobRunner } from '../back/modules/jobs/application/job-runner.service';
 import { JobService } from '../back/modules/jobs/application/job.service';
 import { parseDocumentHints } from '../back/modules/jobs/domain/document-hints';
 import { JobTypeConfig } from '../back/modules/jobs/jobs.types';
+import { PdfToSummaryJobProcessor } from '../back/modules/jobs/processors/pdf-to-summary/processor';
 import { VideoToSummaryJobProcessor } from '../back/modules/jobs/processors/video-to-resume/processor';
+import { PdfCheckpointStore } from '../back/modules/pdf/pdf-checkpoint.store';
 import { VideoToTranscriptJobProcessor } from '../back/modules/jobs/processors/video-to-transcript/processor';
 import { BookService } from '../back/modules/library/application/book.service';
 import { LibraryClassifier } from '../back/modules/library/application/library-classifier';
@@ -20,6 +22,11 @@ import type { BackupCollection } from '../backup/backup.service';
 import type { BackReaders } from '../ipc/handlers';
 import { JobCatalog } from '../jobs/job-catalog';
 import { JobLauncher } from '../jobs/job-launcher';
+import { LeftoverCleaner } from '../jobs/leftover-cleaner';
+import { BackConfig } from '../back/config/back-config';
+import { JobStatus } from '../back/modules/jobs/domain/job-status.enum';
+import { PdfJobPreparer } from '../pdf/pdf-job-preparer';
+import { PdfSessionStore } from '../pdf/pdf-session.store';
 import type { LocalAiPort } from '../updates/release-notes-translator';
 
 /** Obtém a instância de um service do contêiner do back. */
@@ -30,7 +37,11 @@ export type ServiceResolver = <T>(token: unknown) => T;
  * porta mínima que o handler declara, e monta o catálogo e o lançador de jobs.
  */
 export class BackServices {
-  constructor(private readonly get: ServiceResolver) {}
+  constructor(
+    private readonly get: ServiceResolver,
+    /** Textos de PDF lidos e ainda não transformados em job (os mesmos de `pdf:inspect`). */
+    private readonly pdfSessions: PdfSessionStore = new PdfSessionStore(),
+  ) {}
 
   readers(): BackReaders {
     return {
@@ -98,15 +109,37 @@ export class BackServices {
 
   /** Catálogo e lançador de jobs, montados com as instâncias do `JobsModule`. */
   private jobs(): BackReaders['jobs'] {
+    const checkpoints = this.get<PdfCheckpointStore>(PdfCheckpointStore);
     return {
-      catalog: new JobCatalog(this.get(JobService), () => JobTypeConfig),
+      catalog: new JobCatalog(
+        this.get(JobService),
+        () => JobTypeConfig,
+        (key) => checkpoints.progressSync(key),
+      ),
       deleter: this.get(JobService),
       canceller: this.get(JobRunner),
+      leftovers: new LeftoverCleaner({
+        activeJobs: () =>
+          this.get<JobService>(JobService)
+            .findAll()
+            .filter((job) => job.status === JobStatus.PENDING || job.status === JobStatus.RUNNING)
+            .map((job) => ({ id: job.id, request: job.request })),
+        dirs: () => {
+          const config = this.get<BackConfig>(BackConfig);
+
+          return {
+            pdfWorkDir: config.pdfWorkDir,
+            mediaDirs: [config.videoTempDir, config.audioTempDir],
+          };
+        },
+      }),
       launcher: new JobLauncher({
         jobs: this.get(JobService),
         runner: this.get(JobRunner),
         transcriptProcessor: this.get(VideoToTranscriptJobProcessor),
         summaryProcessor: this.get(VideoToSummaryJobProcessor),
+        pdfProcessor: this.get(PdfToSummaryJobProcessor),
+        pdf: new PdfJobPreparer({ sessions: this.pdfSessions, checkpoints }),
         parseHints: (raw) => parseDocumentHints(raw as Parameters<typeof parseDocumentHints>[0]),
       }),
     };

@@ -1,5 +1,6 @@
 import { IpcChannels } from '../../shared/channels';
 import type {
+  CreatePdfToSummaryRequest,
   CreateVideoToSummaryRequest,
   CreateVideoToTranscriptRequest,
   JobAccessResult,
@@ -10,6 +11,7 @@ import type {
   JobUndoDeleteResult,
   JobTypeView,
   JobRequest,
+  JobRetryRequest,
   JobView,
 } from '../../shared/contracts/jobs';
 import { IpcHandler, type IpcRoute } from '../ipc-handler';
@@ -25,8 +27,12 @@ export interface JobCatalogPort {
 export interface JobLauncherPort {
   startVideoToTranscript(request: CreateVideoToTranscriptRequest): JobCreated;
   startVideoToSummary(request: CreateVideoToSummaryRequest): JobCreated;
+  startPdfToSummary(request: CreatePdfToSummaryRequest): Promise<JobCreated>;
   /** Cria outro job com os dados de um que falhou. */
-  retry(id: JobRequest['id']): JobCreated;
+  retry(
+    id: JobRetryRequest['id'],
+    overrides?: Omit<JobRetryRequest, 'id'>,
+  ): JobCreated | Promise<JobCreated>;
 }
 
 /** Exclusão de jobs do histórico (jobs na fila ou rodando nunca são excluídos). */
@@ -75,11 +81,16 @@ export class JobHandler extends IpcHandler {
       this.route(IpcChannels.jobs.createVideoToSummary, (request) =>
         this.launcher.startVideoToSummary(request),
       ),
+      this.route(IpcChannels.jobs.createPdfToSummary, (request) =>
+        this.launcher.startPdfToSummary(request),
+      ),
       this.route(IpcChannels.jobs.delete, ({ ids }) => this.deleter.deleteMany(ids)),
       this.route(IpcChannels.jobs.deleteAll, () => this.deleter.deleteAll()),
       this.route(IpcChannels.jobs.undoDelete, () => this.deleter.undoDelete()),
       this.route(IpcChannels.jobs.cancel, ({ id }) => this.canceller.cancel(id)),
-      this.route(IpcChannels.jobs.retry, ({ id }) => this.launcher.retry(id)),
+      this.route(IpcChannels.jobs.retry, ({ id, ...overrides }) =>
+        this.launcher.retry(id, overrides),
+      ),
       this.route(IpcChannels.jobs.grantAccess, ({ id }) => this.access.grantAccess(id)),
     ];
   }

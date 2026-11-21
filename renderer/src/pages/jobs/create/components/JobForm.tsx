@@ -1,4 +1,5 @@
 import { JobNameOptions, type JobType } from "../../types/job.types";
+import { PdfToSummaryForm } from "./PdfToSummaryForm";
 import { VideoToSummaryForm } from "./VideoToSummaryForm";
 
 import { VideoToTranscriptForm } from "./VideoToTranscriptForm";
@@ -15,6 +16,8 @@ export function JobForm({ jobType, onCreated }: JobFormProps) {
       return <VideoToTranscriptForm onCreated={onCreated} />;
     case JobNameOptions.VIDEO_TO_SUMMARY:
       return <VideoToSummaryForm onCreated={onCreated} />;
+    case JobNameOptions.PDF_TO_SUMMARY:
+      return <PdfToSummaryForm onCreated={onCreated} />;
 
     default:
       return null;

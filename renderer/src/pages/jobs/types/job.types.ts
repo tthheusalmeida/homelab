@@ -15,6 +15,7 @@ export const JobStepStateOptions: Record<string, string> = {
 export const JobNameOptions = {
   VIDEO_TO_TRANSCRIPT: "video-to-transcript",
   VIDEO_TO_SUMMARY: "video-to-summary",
+  PDF_TO_SUMMARY: "pdf-to-summary",
 } as const;
 
 export type JobStatus =
@@ -46,6 +47,8 @@ export interface Job {
   errorCode?: "ACCESS_REQUIRED";
   /** Endereço do vídeo que pediu login. */
   accessUrl?: string;
+  /** Resumo de PDF que falhou ou foi interrompido: quantas partes já estão prontas em disco. */
+  resume?: { done: number; total: number };
   steps: JobStepType[];
 }
 

@@ -12,6 +12,7 @@ interface JobListProps {
   onSelectedChange?: (id: string, checked: boolean) => void;
   onCancel?: (id: string) => void;
   onRetry?: (job: Job) => void;
+  onChangeModel?: (job: Job) => void;
   onGrantAccess?: (job: Job) => void;
   /** Job com cancelar, entrar no site ou tentar de novo em andamento (desabilita os botões dele). */
   busyId?: string;
@@ -24,6 +25,7 @@ export function JobList({
   onSelectedChange,
   onCancel,
   onRetry,
+  onChangeModel,
   onGrantAccess,
   busyId,
 }: JobListProps) {
@@ -46,6 +48,7 @@ export function JobList({
             onSelectedChange={(checked) => onSelectedChange?.(job.id, checked)}
             onCancel={() => onCancel?.(job.id)}
             onRetry={() => onRetry?.(job)}
+            onChangeModel={() => onChangeModel?.(job)}
             onGrantAccess={() => onGrantAccess?.(job)}
             busy={busyId === job.id}
           />

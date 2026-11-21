@@ -33,6 +33,7 @@ export interface AppPaths {
   inboxDir: string;
   videoTempDir: string;
   audioTempDir: string;
+  pdfWorkDir: string;
   dataDir: string;
   configDir: string;
   settingsFile: string;
@@ -54,6 +55,7 @@ export function createAppPaths(rootDir: string): AppPaths {
     inboxDir: path.join(rootDir, RootFolders.inbox),
     videoTempDir: path.join(tempDir, 'video'),
     audioTempDir: path.join(tempDir, 'audio'),
+    pdfWorkDir: path.join(tempDir, 'pdf'),
     dataDir,
     configDir,
     settingsFile: path.join(configDir, StateFiles.settings),

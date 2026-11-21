@@ -1,7 +1,7 @@
 import type { InfographicLayoutId } from '../infographic-layouts';
 
 export type LibraryDocumentType = 'summary' | 'transcription' | 'article';
-export type LibraryDocumentSource = 'video' | 'manual';
+export type LibraryDocumentSource = 'video' | 'manual' | 'pdf';
 export type LibraryDocumentStatus = 'pending' | 'published' | 'archived';
 export type LibrarySort = 'title' | 'recent';
 

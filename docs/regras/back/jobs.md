@@ -1,13 +1,14 @@
 # Jobs (modules/jobs)
 
 ## Tipos
-- Dois tipos: `video-to-transcript` ("Transcrição de vídeo") e `video-to-summary` ("Resumo de vídeo"). Definidos em `jobs.types.ts`.
+- Três tipos: `video-to-transcript` ("Transcrição de vídeo"), `video-to-summary` ("Resumo de vídeo") e `pdf-to-summary` ("Resumo de PDF"; ver `leitura-de-pdf.md`). Definidos em `jobs.types.ts`.
 - Criar job com tipo desconhecido gera erro.
 - `GET jobs/types` devolve a configuração de cada tipo (label, descrição, etapas).
 
 ## Pipelines (ordem das etapas)
 - Transcrição: baixar vídeo → converter para áudio → remover vídeo → transcrever → salvar transcrição → remover áudio.
 - Resumo: igual, mas com **resumir conteúdo** entre transcrever e salvar.
+- Resumo de PDF: ler texto do PDF → resumir partes → preencher dados da página → salvar resumo → limpar arquivos temporários (`read-pdf`, `summarize-parts`, `fill-page`, `save-file`, `clean-up`). Cada parte resumida é gravada em disco na hora e o job retomado pula as partes já prontas.
 - Nomes das etapas: `download-video`, `convert-to-audio`, `delete-video`, `transcribe`, `summarize`, `save-file`, `delete-audio`.
 
 ## Job (entidade)

@@ -7,6 +7,7 @@ export const DocumentTypeOptions = {
 export const DocumentSourceOptions = {
   VIDEO: 'video',
   MANUAL: 'manual',
+  PDF: 'pdf',
 } as const;
 
 /**

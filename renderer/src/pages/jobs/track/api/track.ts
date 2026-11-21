@@ -5,7 +5,10 @@ import type {
   JobAccessResult,
   JobCancelResult,
   JobCreated,
+  JobCleanResult,
   JobDeleteResult,
+  JobLeftovers,
+  JobRetryRequest,
   JobUndoDeleteResult,
 } from '#shared/contracts/jobs';
 import { ipc } from '#lib/ipc';
@@ -30,9 +33,25 @@ export async function cancelJob(id: string): Promise<JobCancelResult> {
   return ipc.invoke(IpcChannels.jobs.cancel, { id });
 }
 
-/** Cria outro job com os mesmos dados de um que falhou. */
-export async function retryJob(id: string): Promise<JobCreated> {
-  return ipc.invoke(IpcChannels.jobs.retry, { id });
+/**
+ * Cria outro job com os mesmos dados de um que falhou. Num resumo de PDF dá para trocar o modelo: o
+ * trabalho continua de onde parou e só as partes que faltam usam o modelo novo.
+ */
+export async function retryJob(
+  id: string,
+  model?: Pick<JobRetryRequest, 'providerId' | 'modelId' | 'thinking'>,
+): Promise<JobCreated> {
+  return ipc.invoke(IpcChannels.jobs.retry, { id, ...model });
+}
+
+/** Mede os arquivos que processos não terminados deixaram no disco. */
+export async function scanLeftovers(): Promise<JobLeftovers> {
+  return ipc.invoke(IpcChannels.jobs.leftovers);
+}
+
+/** Apaga esses arquivos (o que um processo em andamento usa nunca é apagado). */
+export async function cleanLeftovers(): Promise<JobCleanResult> {
+  return ipc.invoke(IpcChannels.jobs.cleanLeftovers);
 }
 
 /** Abre a janela de login do site do vídeo e guarda o acesso quando o usuário a fecha. */

@@ -47,6 +47,10 @@ export const IpcChannels = {
     inspect: 'backup:inspect',
     restore: 'backup:restore',
   },
+  pdf: {
+    inspect: 'pdf:inspect',
+    cancel: 'pdf:cancel',
+  },
   notices: {
     pending: 'notices:pending',
   },
@@ -127,12 +131,15 @@ export const IpcChannels = {
     get: 'jobs:get',
     createVideoToTranscript: 'jobs:create-video-to-transcript',
     createVideoToSummary: 'jobs:create-video-to-summary',
+    createPdfToSummary: 'jobs:create-pdf-to-summary',
     delete: 'jobs:delete',
     deleteAll: 'jobs:delete-all',
     undoDelete: 'jobs:undo-delete',
     cancel: 'jobs:cancel',
     retry: 'jobs:retry',
     grantAccess: 'jobs:grant-access',
+    leftovers: 'jobs:leftovers',
+    cleanLeftovers: 'jobs:clean-leftovers',
   },
   platform: {
     forgetLogins: 'platform:forget-logins',
