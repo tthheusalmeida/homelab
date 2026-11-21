@@ -35,6 +35,8 @@ export interface CompositionOptions {
   rootDir: string;
   /** Pasta `resources` (do projeto em dev, ao lado do executável no instalador). */
   resourcesDir: string;
+  /** App instalado (binários nos dados do usuário) ou em desenvolvimento. Padrão: instalado. */
+  packaged?: boolean;
   platform: NodeJS.Platform;
   arch: string;
   cipher: SecretCipher;
@@ -60,10 +62,14 @@ export interface CompositionOptions {
 /** Monta stores e serviços de configuração a partir de dependências injetadas. */
 export function createServices(options: CompositionOptions) {
   const appPaths = createAppPaths(options.rootDir);
-  const whisperConfig = createWhisperConfig(
-    resolveBinDir(options.resourcesDir, options.platform, options.arch, options.userDataDir),
+  const binDir = resolveBinDir(
+    options.resourcesDir,
     options.platform,
+    options.arch,
+    options.userDataDir,
+    options.packaged,
   );
+  const whisperConfig = createWhisperConfig(binDir, options.platform);
 
   const settings = new SettingsStore(
     new JsonFile(appPaths.settingsFile),
@@ -74,12 +80,6 @@ export function createServices(options: CompositionOptions) {
     options.cipher,
   );
 
-  const binDir = resolveBinDir(
-    options.resourcesDir,
-    options.platform,
-    options.arch,
-    options.userDataDir,
-  );
   const components = new ComponentsService({
     binDir,
     modelsDir: path.join(options.userDataDir, 'components', 'models'),

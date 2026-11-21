@@ -24,19 +24,23 @@ export function resolveResourcesDir(
 
 /**
  * Pasta dos binários nativos do sistema (`bin/<platform>-<arch>`).
- * - Windows: a que vem no instalador, em `<resources>/bin` (o app é instalado para o usuário, então
- *   dá para gravar nela).
- * - Linux e macOS: nos dados do usuário, porque o AppImage e o `.app` são somente leitura; o
- *   assistente baixa os programas para lá.
+ * - Instalado (Windows incluso): nos dados do usuário, que sobrevivem às atualizações. O instalador
+ *   apaga a pasta de instalação a cada versão, então o que o assistente baixou (CUDA, programas)
+ *   não pode morar nela; o que vem no instalador é levado para cá por `seedBinDir`. No Linux e no
+ *   macOS também é aqui, porque o AppImage e o `.app` são somente leitura.
+ * - Windows em desenvolvimento: `resources/bin` do projeto.
  */
 export function resolveBinDir(
   resourcesDir: string,
   platform: NodeJS.Platform,
   arch: string,
   userDataDir: string,
+  packaged = true,
 ): string {
   const base =
-    platform === 'win32' ? path.join(resourcesDir, 'bin') : path.join(userDataDir, 'bin');
+    platform === 'win32' && !packaged
+      ? path.join(resourcesDir, 'bin')
+      : path.join(userDataDir, 'bin');
 
   return path.join(base, `${platform}-${arch}`);
 }

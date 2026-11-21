@@ -73,6 +73,7 @@ import { detectDefaultBrowser } from '../platform/default-browser';
 import { PlatformSessions } from '../platform/platform-sessions';
 import { resolveFfmpegPath } from '../providers/ffmpeg-binary-resolver';
 import { resolveYtDlpPath } from '../providers/ytdlp-binary-resolver';
+import { seedBinDir } from './bin-seed';
 import { resolveBinDir, resolveDataRoot, resolveFrontDist, resolveResourcesDir } from './paths';
 import { isSettingsShortcut } from './shortcuts';
 import { createAppUpdater } from './app-updater-factory';
@@ -289,7 +290,15 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     process.platform,
     process.arch,
     app.getPath('userData'),
+    app.isPackaged,
   );
+  if (app.isPackaged) {
+    // O instalador apaga a pasta do app a cada versão; o que mora nos dados do usuário fica.
+    await seedBinDir(
+      path.join(resourcesDir, 'bin', `${process.platform}-${process.arch}`),
+      binDir,
+    ).catch((error) => console.error('[bin-seed]', error));
+  }
   // Resolvido a cada uso: o ffmpeg baixado pelo assistente vale sem reiniciar o app.
   const ffmpegPath = () =>
     resolveFfmpegPath({ binDir, platform: process.platform, exists: fs.existsSync });
@@ -298,6 +307,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     userDataDir: app.getPath('userData'),
     rootDir: resolveDataRoot(app.getPath('documents'), process.env),
     resourcesDir,
+    packaged: app.isPackaged,
     platform: process.platform,
     arch: process.arch,
     cipher: electronCipher,
