@@ -1,7 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 
+import type { AiProviderId } from '../shared/contracts/ai';
+
 import {
   JobTypeIds,
+  type CreatePdfToSummaryRequest,
   type CreateVideoToSummaryRequest,
   type CreateVideoToTranscriptRequest,
   type JobCreated,
@@ -22,6 +25,20 @@ export interface JobFactory {
   findById(id: string): JobLike;
 }
 
+/** Prepara o resumo de PDF: grava o texto em disco e devolve os dados do job (ver `PdfJobPreparer`). */
+export interface PdfPreparer {
+  prepare(request: CreatePdfToSummaryRequest): Promise<{ checkpointKey: string }>;
+  /** Falha com mensagem clara se o progresso do job não está mais em disco. */
+  assertProgressExists(key: string): Promise<void>;
+}
+
+/** O objeto sem as chaves vazias (`undefined`), para não apagar o valor original ao mesclar. */
+function definedOnly<T extends object>(value: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined),
+  ) as Partial<T>;
+}
+
 /** Fila do back (`JobRunner`): um job por vez, na ordem de chegada. */
 export interface JobQueue {
   run(job: JobLike, processor: unknown, input: unknown): void;
@@ -32,6 +49,8 @@ export interface JobLauncherDeps {
   runner: JobQueue;
   transcriptProcessor: unknown;
   summaryProcessor: unknown;
+  pdfProcessor: unknown;
+  pdf: PdfPreparer;
   /** `parseDocumentHints` do back: valida título, categoria e tags (lança 400 se inválidos). */
   parseHints: (raw: unknown) => unknown;
 }
@@ -68,8 +87,39 @@ export class JobLauncher {
     return this.created(job);
   }
 
-  /** Cria outro job com os mesmos dados de um que falhou (o original continua no histórico). */
-  retry(id: string): JobCreated {
+  /**
+   * Cria o resumo de um PDF já lido: o texto vai para o disco **antes** de o job existir, e o job
+   * guarda só a chave dessa pasta (por isso pode ser retomado depois de reiniciar o app).
+   */
+  async startPdfToSummary(request: CreatePdfToSummaryRequest): Promise<JobCreated> {
+    // valida as dicas antes de gravar qualquer coisa em disco
+    this.deps.parseHints(request);
+
+    const input = await this.deps.pdf.prepare(request);
+
+    return this.enqueuePdf(input);
+  }
+
+  private enqueuePdf(input: { checkpointKey: string }): JobCreated {
+    const job = this.deps.jobs.create(
+      JobTypeIds.PDF_TO_SUMMARY,
+      this.deps.parseHints(input),
+      input,
+    );
+
+    this.deps.runner.run(job, this.deps.pdfProcessor, input);
+
+    return this.created(job);
+  }
+
+  /**
+   * Cria outro job com os mesmos dados de um que falhou (o original continua no histórico). Nos
+   * resumos de PDF o novo job continua da parte seguinte à última que ficou pronta em disco.
+   */
+  retry(
+    id: string,
+    overrides: { providerId?: AiProviderId; modelId?: string; thinking?: string } = {},
+  ): JobCreated | Promise<JobCreated> {
     const original = this.deps.jobs.findById(id);
 
     if (original.status !== 'failed') {
@@ -87,6 +137,16 @@ export class JobLauncher {
         return this.startVideoToTranscript(original.request as CreateVideoToTranscriptRequest);
       case JobTypeIds.VIDEO_TO_SUMMARY:
         return this.startVideoToSummary(original.request as CreateVideoToSummaryRequest);
+      case JobTypeIds.PDF_TO_SUMMARY: {
+        const input = {
+          ...(original.request as { checkpointKey: string }),
+          ...definedOnly(overrides),
+        };
+
+        return this.deps.pdf
+          .assertProgressExists(input.checkpointKey)
+          .then(() => this.enqueuePdf(input));
+      }
       default:
         throw new BadRequestException('Este tipo de job não pode ser repetido.');
     }

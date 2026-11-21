@@ -18,6 +18,9 @@ export abstract class BackConfig {
 
   abstract readonly audioTempDir: string;
 
+  /** Pasta do progresso dos resumos de PDF (texto das partes e resumos prontos); sem valor, usa uma temporária. */
+  abstract readonly pdfWorkDir?: string;
+
   /** Executável do ffmpeg (embutido ou `ffmpeg` do PATH); sem valor, usa o do PATH. */
   ffmpegPath?(): string | undefined;
 

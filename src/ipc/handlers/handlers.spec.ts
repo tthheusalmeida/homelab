@@ -46,6 +46,7 @@ describe('createHandlers', () => {
           inspect: jest.fn(),
           restore: jest.fn(),
         },
+        pdf: { inspect: jest.fn(), cancel: jest.fn() },
         settings: {} as SettingsService,
         externalProviders: {} as ExternalProvidersService,
         localProviders: {} as LocalProvidersService,
@@ -89,10 +90,12 @@ describe('createHandlers', () => {
             launcher: {
               startVideoToTranscript: jest.fn(),
               startVideoToSummary: jest.fn(),
+              startPdfToSummary: jest.fn(),
               retry: jest.fn(),
             },
             deleter: { deleteMany: jest.fn(), deleteAll: jest.fn(), undoDelete: jest.fn() },
             canceller: { cancel: jest.fn() },
+            leftovers: { scan: jest.fn(), clean: jest.fn() },
           },
           books: {
             list: jest.fn(),

@@ -3,6 +3,7 @@ import type { AiProviderId } from './ai';
 export const JobTypeIds = {
   VIDEO_TO_TRANSCRIPT: 'video-to-transcript',
   VIDEO_TO_SUMMARY: 'video-to-summary',
+  PDF_TO_SUMMARY: 'pdf-to-summary',
 } as const;
 
 export type JobTypeId = (typeof JobTypeIds)[keyof typeof JobTypeIds];
@@ -36,6 +37,14 @@ export interface JobView {
   errorCode?: 'ACCESS_REQUIRED';
   /** Endereço do vídeo que pediu login (junto com `errorCode`). */
   accessUrl?: string;
+  /** Resumo de PDF que falhou ou foi interrompido: quantas partes já estão prontas em disco. */
+  resume?: JobResume;
+}
+
+/** Progresso guardado em disco de um resumo de PDF: `done` de `total` partes já resumidas. */
+export interface JobResume {
+  done: number;
+  total: number;
 }
 
 /** Resultado de `jobs:grant-access`: `granted` é falso se a janela de login foi fechada sem entrar. */
@@ -54,6 +63,16 @@ export interface JobTypeView {
 
 export interface JobRequest {
   id: string;
+}
+
+/**
+ * Tentar de novo. Num resumo de PDF dá para trocar o modelo (`providerId`, `modelId`, `thinking`):
+ * o trabalho continua de onde parou, só que as partes que faltam usam o modelo novo.
+ */
+export interface JobRetryRequest extends JobRequest {
+  providerId?: AiProviderId;
+  modelId?: string;
+  thinking?: string;
 }
 
 /** Título, categoria e tags opcionais do documento gerado (validados antes de enfileirar). */
@@ -77,6 +96,29 @@ export interface CreateVideoToSummaryRequest extends JobHints {
   modelId: string;
   thinking?: string;
   detail?: SummaryDetailId;
+}
+
+/** Cria o resumo de um PDF lido antes por `pdf:inspect`. */
+export interface CreatePdfToSummaryRequest extends JobHints {
+  /** Token devolvido por `pdf:inspect` (o caminho do arquivo nunca sai do main). */
+  token: string;
+  providerId: AiProviderId;
+  modelId: string;
+  thinking?: string;
+  detail?: SummaryDetailId;
+}
+
+/** Arquivos que processos não terminados deixaram no disco (resposta de `jobs:leftovers`). */
+export interface JobLeftovers {
+  files: number;
+  bytes: number;
+}
+
+/** O que `jobs:clean-leftovers` apagou; `failed` conta o que não foi possível apagar (em uso). */
+export interface JobCleanResult {
+  files: number;
+  bytes: number;
+  failed: number;
 }
 
 /** Resposta de criação: o job entra na fila e o acompanhamento é por `jobs:list`/`jobs:get`. */

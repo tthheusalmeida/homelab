@@ -4,6 +4,7 @@ import { JobLauncher } from './job-launcher';
 
 const transcriptProcessor = { name: 'transcript' };
 const summaryProcessor = { name: 'summary' };
+const pdfProcessor = { name: 'pdf' };
 
 function setup(
   parseHints: (raw: unknown) => unknown = (raw) => ({ parsed: raw }),
@@ -34,15 +35,21 @@ function setup(
 
     return parseHints(raw);
   });
+  const pdf = {
+    prepare: jest.fn(async () => ({ checkpointKey: 'a'.repeat(24) })),
+    assertProgressExists: jest.fn().mockResolvedValue(undefined),
+  };
   const launcher = new JobLauncher({
     jobs,
     runner,
     transcriptProcessor,
     summaryProcessor,
+    pdfProcessor,
+    pdf,
     parseHints: parse,
   });
 
-  return { launcher, jobs, runner, parse, job, calls };
+  return { launcher, jobs, runner, parse, job, calls, pdf };
 }
 
 describe('JobLauncher: transcrição', () => {
@@ -182,7 +189,7 @@ describe('JobLauncher: tentar de novo', () => {
       request: summary,
     });
 
-    launcher.retry('old');
+    void launcher.retry('old');
 
     expect(runner.run).toHaveBeenCalledWith(job, summaryProcessor, summary);
   });
@@ -208,5 +215,149 @@ describe('JobLauncher: tentar de novo', () => {
 
     expect(() => launcher.retry('old')).toThrow('não guardou os dados');
     expect(jobs.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('JobLauncher: resumo de PDF', () => {
+  const key = 'a'.repeat(24);
+  const request = {
+    token: 'tok',
+    providerId: 'gemini' as const,
+    modelId: 'm',
+    title: 'Livro',
+  };
+  const input = { checkpointKey: key };
+
+  it('when starting, should validate the hints before saving anything to disk', async () => {
+    const { launcher, pdf } = setup(() => {
+      throw new Error('título inválido');
+    });
+
+    await expect(launcher.startPdfToSummary(request)).rejects.toThrow('título inválido');
+    expect(pdf.prepare).not.toHaveBeenCalled();
+  });
+
+  it('when starting, should prepare the text on disk and then create the job with the key as request', async () => {
+    const { launcher, jobs, pdf } = setup();
+
+    await launcher.startPdfToSummary(request);
+
+    expect(pdf.prepare).toHaveBeenCalledWith(request);
+    expect(jobs.create).toHaveBeenCalledWith('pdf-to-summary', { parsed: input }, input);
+  });
+
+  it('when starting, should queue the job with the pdf processor and answer id and status', async () => {
+    const { launcher, runner, job } = setup();
+
+    await expect(launcher.startPdfToSummary(request)).resolves.toEqual({
+      id: 'job-1',
+      status: 'pending',
+    });
+    expect(runner.run).toHaveBeenCalledWith(job, pdfProcessor, input);
+  });
+
+  it('when the text cannot be prepared, should create no job', async () => {
+    const { launcher, jobs, runner, pdf } = setup();
+
+    pdf.prepare.mockRejectedValue(new Error('A leitura deste PDF não está mais disponível'));
+
+    await expect(launcher.startPdfToSummary(request)).rejects.toThrow('não está mais disponível');
+    expect(jobs.create).not.toHaveBeenCalled();
+    expect(runner.run).not.toHaveBeenCalled();
+  });
+
+  it('when a failed pdf job is retried, should check the progress and queue a new job with the same key', async () => {
+    const { launcher, jobs, runner, job, pdf } = setup(undefined, {
+      id: 'old',
+      status: 'failed',
+      name: 'pdf-to-summary',
+      request: input,
+    });
+
+    await expect(launcher.retry('old')).resolves.toEqual({ id: 'job-1', status: 'pending' });
+
+    expect(pdf.assertProgressExists).toHaveBeenCalledWith(key);
+    expect(pdf.prepare).not.toHaveBeenCalled();
+    expect(jobs.create).toHaveBeenCalledWith('pdf-to-summary', { parsed: input }, input);
+    expect(runner.run).toHaveBeenCalledWith(job, pdfProcessor, input);
+  });
+
+  it('when the progress of a pdf job is gone, should refuse the retry and create nothing', async () => {
+    const { launcher, jobs, pdf } = setup(undefined, {
+      id: 'old',
+      status: 'failed',
+      name: 'pdf-to-summary',
+      request: input,
+    });
+
+    pdf.assertProgressExists.mockRejectedValue(new Error('não está mais guardado'));
+
+    await expect(launcher.retry('old')).rejects.toThrow('não está mais guardado');
+    expect(jobs.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('JobLauncher: tentar de novo trocando o modelo', () => {
+  const key = 'a'.repeat(24);
+  const original = {
+    id: 'old',
+    status: 'failed',
+    name: 'pdf-to-summary',
+    request: {
+      checkpointKey: key,
+      providerId: 'gemini',
+      modelId: 'm1',
+      thinking: 'on',
+      title: 'T',
+    },
+  };
+
+  it('when a new model is given, should queue the new job with it and the same key', async () => {
+    const { launcher, jobs, runner, job } = setup(undefined, original);
+
+    await launcher.retry('old', { providerId: 'ollama', modelId: 'qwen', thinking: 'off' });
+
+    const expected = {
+      ...original.request,
+      providerId: 'ollama',
+      modelId: 'qwen',
+      thinking: 'off',
+    };
+
+    expect(jobs.create).toHaveBeenCalledWith('pdf-to-summary', { parsed: expected }, expected);
+    expect(runner.run).toHaveBeenCalledWith(job, pdfProcessor, expected);
+  });
+
+  it('when no model is given, should keep the original one', async () => {
+    const { launcher, runner, job } = setup(undefined, original);
+
+    await launcher.retry('old', { modelId: undefined });
+
+    expect(runner.run).toHaveBeenCalledWith(job, pdfProcessor, original.request);
+  });
+
+  it('when only the model id is given, should change only that field', async () => {
+    const { launcher, runner, job } = setup(undefined, original);
+
+    await launcher.retry('old', { modelId: 'm2' });
+
+    expect(runner.run).toHaveBeenCalledWith(job, pdfProcessor, {
+      ...original.request,
+      modelId: 'm2',
+    });
+  });
+
+  it('when the job is a video job, should ignore the model overrides', () => {
+    const request = { url: 'https://exemplo.com/v.mp4', providerId: 'gemini', modelId: 'm1' };
+    const { launcher, runner, job } = setup(undefined, {
+      id: 'old',
+      status: 'failed',
+      name: 'video-to-summary',
+      request,
+    });
+
+    void launcher.retry('old', { modelId: 'outro' });
+
+    expect(runner.run).toHaveBeenCalledWith(job, summaryProcessor, request);
   });
 });

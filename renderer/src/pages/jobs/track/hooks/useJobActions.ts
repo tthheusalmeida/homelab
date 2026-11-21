@@ -17,7 +17,8 @@ export function useRetryJob() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: retryJob,
+    mutationFn: ({ id, model }: { id: string; model?: Parameters<typeof retryJob>[1] }) =>
+      retryJob(id, model),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["jobs"] }),
   });
 }

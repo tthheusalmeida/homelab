@@ -14,6 +14,7 @@ describe('createAppPaths', () => {
       inboxDir: path.join(root, 'inbox'),
       videoTempDir: path.join(root, 'temp', 'video'),
       audioTempDir: path.join(root, 'temp', 'audio'),
+      pdfWorkDir: path.join(root, 'temp', 'pdf'),
       dataDir: path.join(root, 'data'),
       configDir: path.join(root, 'config'),
       settingsFile: path.join(root, 'config', 'settings.json'),

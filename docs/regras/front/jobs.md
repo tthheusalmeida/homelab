@@ -34,11 +34,20 @@
 - Envia `POST /jobs/video-to-summary` com `{ url, providerId, modelId, thinking, detail }` para cada link (mais título, categoria e tags se preenchidos; título só com um link).
 - Durante a criação, campos e botão ficam desabilitados.
 
+## Resumo de PDF (Nova tarefa)
+- O tipo "Resumo de PDF" vem de `jobs:types` como os outros; o formulário (`PdfToSummaryForm`) tem o botão **Escolher PDF** (só `.pdf`, até 50 MB e 1500 páginas), mostra a leitura com barra de progresso e **Cancelar leitura** e, pronta a leitura, nome, tamanho, páginas, estimativa de tokens, partes, chamadas à IA e os avisos (`Callout`, `warning` ou `info`).
+- Depois do arquivo aparecem a IA (provedor, modelo, raciocínio), o nível de detalhe, os dados opcionais da página (título padrão: o nome do arquivo) e o aviso de **para onde o texto vai** (Gemini: serviço externo; Ollama: no computador). O botão **Criar resumo do PDF** só habilita com arquivo lido e IA escolhida; depois de criar, tudo trava (não cria o job duas vezes).
+- Erro de leitura (senha, sem texto, grande demais...) vira o alerta do rodapé com a mensagem do main.
+
 ## Em andamento (`/jobs/track`, antes "Acompanhar"; o item do menu mostra um contador com os jobs na fila ou rodando)
 - Busca `GET /jobs` a cada **1 s**. Carregando: "Carregando". Erro: "Oops! houve uma falha ao carregar os jobs."
 - Lista ordenada do **mais novo para o mais antigo** (por `createdAt`), sem alterar o array original.
 - Cada item mostra label, id, status, "Criado em" (data e hora pt-BR) e, ao expandir, o fluxo.
 - **Duração**: só aparece com `startedAt` e `completedAt`; formatada como `ms/s/m/h`.
+
+### Resumo de PDF que parou e arquivos temporários
+- Resumo de PDF falho ou interrompido mostra **"N de M partes já estão salvas em disco"** (barra fina) e, além de **Tentar de novo** (mesmo modelo), o botão **Trocar modelo**: abre uma janela para escolher outra IA e continua de onde parou, sem refazer as partes prontas.
+- **Limpar arquivos temporários** (cabeçalho, sempre visível): mede o que processos não terminados deixaram (progresso de PDF, vídeos e áudios temporários), mostra a quantidade e o tamanho e só apaga depois de confirmar, avisando que resumos de PDF parados não poderão mais ser continuados. Não mexe em processos em andamento nem nos documentos gerados.
 
 ### Status (badge)
 - `pending` "Pendente", `running` "Em execução" (ícone girando), `completed` "Concluído" (verde), `failed` "Falhou" (destrutivo).

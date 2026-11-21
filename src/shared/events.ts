@@ -8,6 +8,7 @@ import type { AppNotice, ProgressEventPayload } from './contracts/events';
  */
 export const IpcEvents = {
   backupProgress: 'backup:progress',
+  pdfProgress: 'pdf:progress',
   libraryMoveProgress: 'library-move:progress',
   notice: 'app:notice',
   componentsProgress: 'components:progress',
@@ -21,6 +22,8 @@ export type IpcEvent = (typeof IpcEvents)[keyof typeof IpcEvents];
 /** Payload de cada evento. */
 export interface IpcEventPayloads {
   [IpcEvents.backupProgress]: ProgressEventPayload;
+  /** Leitura do PDF: páginas lidas do total. */
+  [IpcEvents.pdfProgress]: ProgressEventPayload;
   [IpcEvents.libraryMoveProgress]: ProgressEventPayload;
   [IpcEvents.notice]: AppNotice;
   [IpcEvents.componentsProgress]: ComponentsStatus;

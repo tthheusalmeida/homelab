@@ -109,3 +109,61 @@ describe('JobCatalog', () => {
     expect(typeConfig).not.toHaveBeenCalled();
   });
 });
+
+describe('JobCatalog: resumo de PDF', () => {
+  const pdfJob = (
+    status: string,
+    request: unknown = { checkpointKey: 'k1' },
+    name = 'pdf-to-summary',
+  ) => ({
+    id: 'p1',
+    request,
+    toJSON: () => ({ id: 'p1', name, status }),
+  });
+
+  const catalogFor = (
+    job: unknown,
+    resumeOf: (key: string) => { done: number; total: number } | null,
+  ) => new JobCatalog({ findAll: () => [job], findById: () => job }, () => ({}), resumeOf);
+
+  it('when a pdf job failed and has progress on disk, should tell how many parts are ready', () => {
+    const catalog = catalogFor(pdfJob('failed'), () => ({ done: 3, total: 8 }));
+
+    expect(catalog.list()[0].resume).toEqual({ done: 3, total: 8 });
+    expect(catalog.get('p1').resume).toEqual({ done: 3, total: 8 });
+  });
+
+  it('when the progress is gone, should not add resume info', () => {
+    expect(catalogFor(pdfJob('failed'), () => null).list()[0].resume).toBeUndefined();
+  });
+
+  it('when the pdf job is not failed, should not read the disk', () => {
+    const resumeOf = jest.fn(() => ({ done: 1, total: 2 }));
+    const catalog = catalogFor(pdfJob('running'), resumeOf);
+
+    expect(catalog.list()[0].resume).toBeUndefined();
+    expect(resumeOf).not.toHaveBeenCalled();
+  });
+
+  it('when the job is not a pdf job, should not add resume info', () => {
+    const resumeOf = jest.fn(() => ({ done: 1, total: 2 }));
+    const catalog = catalogFor(pdfJob('failed', { url: 'x' }, 'video-to-summary'), resumeOf);
+
+    expect(catalog.list()[0].resume).toBeUndefined();
+    expect(resumeOf).not.toHaveBeenCalled();
+  });
+
+  it('when an old pdf job has no stored key, should not add resume info', () => {
+    const resumeOf = jest.fn();
+
+    expect(catalogFor(pdfJob('failed', null), resumeOf).list()[0].resume).toBeUndefined();
+    expect(resumeOf).not.toHaveBeenCalled();
+  });
+
+  it('when no disk reader was given, should answer the plain job', () => {
+    const job = pdfJob('failed');
+    const catalog = new JobCatalog({ findAll: () => [job], findById: () => job }, () => ({}));
+
+    expect(catalog.list()[0]).toEqual({ id: 'p1', name: 'pdf-to-summary', status: 'failed' });
+  });
+});

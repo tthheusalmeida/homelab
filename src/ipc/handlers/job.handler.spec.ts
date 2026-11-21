@@ -47,6 +47,7 @@ function setup(
   const launcherFakes: LauncherFakes = {
     startVideoToTranscript: jest.fn().mockReturnValue({ id: 'j1', status: 'pending' }),
     startVideoToSummary: jest.fn().mockReturnValue({ id: 'j2', status: 'pending' }),
+    startPdfToSummary: jest.fn().mockResolvedValue({ id: 'j4', status: 'pending' }),
     retry: jest.fn().mockReturnValue({ id: 'j3', status: 'pending' }),
     ...launcher,
   };
@@ -310,7 +311,7 @@ describe('JobHandler: cancelar, tentar de novo e desfazer', () => {
       ok: true,
       data: { id: 'j3', status: 'pending' },
     });
-    expect(launcher.retry).toHaveBeenCalledWith('j9');
+    expect(launcher.retry).toHaveBeenCalledWith('j9', {});
   });
 
   it('when retrying is not allowed, should answer VALIDATION', async () => {
@@ -368,5 +369,51 @@ describe('JobHandler: cancelar, tentar de novo e desfazer', () => {
       data: { restored: ['a'] },
     });
     expect(deleter.undoDelete).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('JobHandler: resumo de PDF', () => {
+  const request = { token: 'tok', providerId: 'gemini', modelId: 'm' };
+
+  it('when jobs:create-pdf-to-summary is called, should answer id and status from the launcher', async () => {
+    const { ipc, launcher } = setup();
+
+    await expect(ipc.invoke(IpcChannels.jobs.createPdfToSummary, request)).resolves.toEqual({
+      ok: true,
+      data: { id: 'j4', status: 'pending' },
+    });
+    expect(launcher.startPdfToSummary).toHaveBeenCalledWith(request);
+  });
+
+  it('when the reading expired, should answer VALIDATION with the message', async () => {
+    const { ipc } = setup(
+      {},
+      { startPdfToSummary: jest.fn().mockRejectedValue(invalid('Escolha o arquivo de novo.')) },
+    );
+
+    await expect(ipc.invoke(IpcChannels.jobs.createPdfToSummary, request)).resolves.toEqual({
+      ok: false,
+      error: { code: 'VALIDATION', message: 'Escolha o arquivo de novo.' },
+    });
+  });
+
+  it('when retrying with another model, should pass the overrides to the launcher', async () => {
+    const { ipc, launcher } = setup();
+
+    await ipc.invoke(IpcChannels.jobs.retry, { id: 'old', providerId: 'ollama', modelId: 'qwen' });
+
+    expect(launcher.retry).toHaveBeenCalledWith('old', { providerId: 'ollama', modelId: 'qwen' });
+  });
+
+  it('when retrying a pdf job, should answer the new job even though the launcher is async', async () => {
+    const { ipc } = setup(
+      {},
+      { retry: jest.fn().mockResolvedValue({ id: 'n1', status: 'pending' }) },
+    );
+
+    await expect(ipc.invoke(IpcChannels.jobs.retry, { id: 'old' })).resolves.toEqual({
+      ok: true,
+      data: { id: 'n1', status: 'pending' },
+    });
   });
 });

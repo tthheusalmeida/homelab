@@ -1,7 +1,7 @@
 import type { LibraryContentFilter } from "#shared/contracts/library";
 
 export type DocumentType = "summary" | "transcription" | "article";
-export type DocumentSource = "video" | "manual";
+export type DocumentSource = "video" | "manual" | "pdf";
 export type DocumentStatus = "pending" | "published" | "archived";
 
 export const documentTypeLabels: Record<DocumentType, string> = {
@@ -13,6 +13,7 @@ export const documentTypeLabels: Record<DocumentType, string> = {
 export const documentSourceLabels: Record<DocumentSource, string> = {
   video: "Vídeo",
   manual: "Manual",
+  pdf: "PDF",
 };
 
 /** Filtro de conteúdo gerado: o infográfico, o mapa mental ou os dois (a página precisa ter tudo o que foi pedido). */
