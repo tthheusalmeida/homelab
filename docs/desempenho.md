@@ -3,7 +3,7 @@
 Regra: **otimizar sem tirar o que deixa o app gostoso de usar**. Transições, fades, o efeito de carta (`TiltCard`), o desfoque dos diálogos e o `prefers-reduced-motion` ficam como estão (ver `movimento.md`). Só entram mudanças que cortam trabalho invisível.
 
 ## O que foi feito
-- **Telas carregadas sob demanda** (`renderer/src/app/router.tsx`). Antes o app abria lendo **um arquivo de 1,4 MB** (430 KB comprimido) com todas as telas, o gráfico de consumo (recharts, ~380 KB) e o renderizador de Markdown. Agora a abertura lê **~440 KB**; cada tela é um arquivo separado.
+- **Telas carregadas sob demanda** (`renderer/src/app/router.tsx`). Antes o app abria lendo **um arquivo de 1,4 MB** (430 KB comprimido) com todas as telas, o gráfico de consumo (era a biblioteca recharts, ~380 KB) e o renderizador de Markdown. Agora a abertura lê **~440 KB**; cada tela é um arquivo separado.
   - A Início e o layout (barra lateral, cabeçalho) continuam no arquivo principal: o app aparece sem esperar nada.
   - O roteador espera o arquivo da tela chegar **antes** de trocar, então não há flash nem tela em branco; a transição de entrada (`animate-enter-fade`) é a mesma.
   - `preloadRoutes` (chamado no `App`) baixa as outras telas **em segundo plano, uma por vez e só quando o app está ocioso** (`requestIdleCallback`), então depois de alguns segundos qualquer tela abre na hora. Falha ao baixar não derruba nada: a tela tenta de novo ao ser aberta.
@@ -24,3 +24,6 @@ Regra: **otimizar sem tirar o que deixa o app gostoso de usar**. Transições, f
 
 ## Fontes só com os alfabetos usados
 Os pacotes `@fontsource` trazem todos os alfabetos (cirílico, vietnamita, grego estendido...), e cada um vira um arquivo no instalador. `renderer/src/fonts.css` é **gerado** por `npm run fonts` (`scripts/build-fonts-css.mjs`) e traz só `latin`, `latin-ext`, `greek`, `math` e `symbols`, só em `woff2`: as fontes caíram de 896 kB para 583 kB. Para incluir outro alfabeto, mude o `KEEP` do script e rode `npm run fonts`. Depois de atualizar um pacote de fonte, rode `npm run fonts` de novo.
+
+## Gráfico de Consumo sem biblioteca
+O gráfico de barras da tela de Consumo é o `BarChart` (`renderer/src/components/BarChart.tsx`, com a escala redonda em `lib/chart-scale.ts`): grade, eixo, barras e tooltip do app (`Tip`), tudo em HTML e CSS, nos dois temas. Tirou a dependência `recharts` (e o `redux`, `immer` e `d3` que ela trazia): o arquivo da tela caiu de 369 kB para 11 kB e o JS total de 1.761 kB para 1.402 kB. Para um gráfico de barras novo, reutilize o `BarChart`.
