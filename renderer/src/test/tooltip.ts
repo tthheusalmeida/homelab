@@ -1,5 +1,6 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { expect } from 'vitest';
 
 /** O tooltip do app (`Tip`) aberto ao passar o mouse no elemento; devolve o elemento do tooltip. */
 export async function showTooltip(target: HTMLElement): Promise<HTMLElement> {
@@ -14,6 +15,10 @@ export async function tooltipTextOf(target: HTMLElement): Promise<string> {
   const text = tooltip.textContent ?? '';
 
   await userEvent.unhover(target);
+  // O tooltip sai com uma animação: espera sumir para o próximo não ler o texto do anterior.
+  await waitFor(() =>
+    expect(document.querySelector('[data-slot="tooltip-content"]')).toBeNull(),
+  );
 
   return text;
 }
