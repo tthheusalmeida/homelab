@@ -893,6 +893,108 @@
   transform-origin: left;
 }
 
+/*
+ * Confete do agradecimento: sai do ponto crítico até `--dx`/`--dy` (abre e desacelera), depois cai
+ * `--fall` girando até `--rot` e some. `--i` escalona 8 ms por peça.
+ */
+@keyframes hl-confetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(0.3);
+    animation-timing-function: cubic-bezier(0.15, 0.7, 0.3, 1);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(var(--dx, 0), var(--dy, 0)) rotate(calc(var(--rot, 0deg) * 0.5)) scale(1);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.9, 0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--dx, 0) * 1.1), calc(var(--dy, 0) + var(--fall, 0px)))
+      rotate(var(--rot, 0deg)) scale(1);
+  }
+}
+
+@utility animate-confetti {
+  animation: hl-confetti calc(var(--duration-enter) * 4) linear both;
+  animation-delay: calc(var(--i, 0) * 8ms);
+}
+
+/*
+ * Implosão da logo (agradecimento do convite de apoio), numa linha do tempo só de 7,5 ×
+ * `--duration-enter` (~3,4 s):
+ *   0–47%   os três hexágonos giram e encolhem, cada vez mais rápido, como uma galáxia implodindo
+ *   47–53%  ponto crítico: tudo é um ponto (o flash e o confete acontecem aqui)
+ *   53–100% voltam crescendo e girando, sem pressa, até a posição certa (a logo normal)
+ * O conjunto gira em torno do centro; cada hexágono ainda gira em torno de si (`hl-hex-spin`).
+ * Com "reduzir movimento", cai direto no fim: a logo parada.
+ */
+@keyframes hl-implosion {
+  0% {
+    transform: rotate(0deg) scale(1);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.4);
+  }
+  47% {
+    transform: rotate(900deg) scale(0);
+  }
+  48%,
+  53% {
+    transform: rotate(-720deg) scale(0);
+    animation-timing-function: cubic-bezier(0.16, 0.84, 0.3, 1);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+@utility animate-implosion {
+  animation: hl-implosion calc(var(--duration-enter) * 7.5) linear both;
+}
+
+@keyframes hl-hex-spin {
+  0% {
+    transform: rotate(0deg);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.4);
+  }
+  47% {
+    transform: rotate(-1080deg);
+  }
+  48%,
+  53% {
+    transform: rotate(720deg);
+    animation-timing-function: cubic-bezier(0.16, 0.84, 0.3, 1);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@utility animate-hex-spin {
+  animation: hl-hex-spin calc(var(--duration-enter) * 7.5) linear both;
+}
+
+/* Clarão do ponto crítico: aparece quando os hexágonos viram um ponto e se dissolve. */
+@keyframes hl-critical {
+  0%,
+  40% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  47% {
+    opacity: 1;
+    transform: scale(1.4);
+  }
+  62%,
+  100% {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+
+@utility animate-critical {
+  animation: hl-critical calc(var(--duration-enter) * 7.5) var(--ease-out-soft) both;
+}
+
 @utility animate-collapse-down {
   animation: hl-collapse-down var(--duration-enter) var(--ease-out-soft) both;
   overflow: hidden;

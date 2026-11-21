@@ -26,6 +26,10 @@ export const IpcChannels = {
     get: 'appearance:get',
     update: 'appearance:update',
   },
+  support: {
+    get: 'support:get',
+    update: 'support:update',
+  },
   health: {
     system: 'health:system',
     ai: 'health:ai',

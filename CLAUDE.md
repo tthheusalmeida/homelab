@@ -27,6 +27,7 @@ Estado: app instalável e em uso (versão `0.1.x`). Todas as fases da migração
 | `docs/atalhos.md` | Paleta de comandos (Ctrl K), atalhos "G e uma letra" e notificação do sistema quando um job termina |
 | `docs/desempenho.md` | Otimizações para PCs fracos (telas sob demanda, consultas mais calmas) e o que foi deixado de fora para não perder fluidez |
 | `docs/movimento.md` | Transições e animações: réguas de tempo, utilities `animate-*`, onde aplicar |
+| `docs/apoio.md` | Convite para estrelar o projeto no GitHub: onde aparece, quando some e como fica salvo |
 | `docs/atualizacoes.md` | Atualização do app: consulta aos Releases do GitHub, cartão na barra lateral, seção em Configurações, download com checksum e instalação |
 | `docs/empacotamento.md` | Instalador Windows e AppImage Linux (`electron-builder`), release na CI, como rodar no Linux, binários, caminhos empacotados, ícone |
 | `docs/transcricao.md` | Transcrição com tempo: formato `[HH:MM:SS]`, linha do tempo lateral, progresso de cada trecho, horário como link para o vídeo e ajustes em Configurações > Aparência |

@@ -81,6 +81,9 @@ export class SettingsStore {
         summary: { ...base.appearance.summary, ...patch.appearance?.summary },
       },
       updates: { autoCheck: patch.updates?.autoCheck ?? base.updates.autoCheck },
+      support: {
+        starPromptHidden: patch.support?.starPromptHidden ?? base.support.starPromptHidden,
+      },
       local: {
         ollama: { url: patch.local?.ollama?.url ?? base.local.ollama.url },
       },

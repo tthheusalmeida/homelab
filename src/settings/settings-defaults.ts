@@ -15,6 +15,7 @@ export function createDefaultSettings({ libraryDir }: DefaultSettingsOptions): S
     paths: { libraryDir },
     appearance: structuredClone(DEFAULT_APPEARANCE),
     updates: { autoCheck: true },
+    support: { starPromptHidden: false },
     local: {
       ollama: { url: DEFAULT_OLLAMA_URL },
     },

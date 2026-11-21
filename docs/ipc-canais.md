@@ -34,6 +34,8 @@ Evento `updates:changed` (main → renderer): o `UpdateStatus` a cada mudança (
 | `settings:move-library` | `{ to, mode: move|use, deleteOrigin? }` | `{ libraryDir, filesCopied, bytesCopied, originRemoved, originRemoveError?, restartRequired }`; progresso em `library-move:progress`; falha de cópia → `PERSIST_FAILED` (nada troca) |
 | `appearance:get` | — | `{ theme: system|light|dark, accent: cyan|blue|indigo|violet|emerald|rose|orange, reading: { font, fontSize, zoom, background, backgroundShade, text, textShade, separator, separatorShade, pinSidebar, swapSides }, transcript: { preview, progress }, summary: { outline } }` (`reading`, `transcript` e `summary`: ver `identidade.md`; `appearance:update` aceita cada um parcial) |
 | `appearance:update` | parte da aparência (`Partial`; `reading` também pode vir parcial, só o que mudou) | a aparência completa; tema, cor, fonte, tamanho (8 a 32, de 2 em 2), zoom (70 a 200, de 10 em 10), cor (fundo, texto ou separadores), intensidade (50 a 950) ou painel lateral e inverter lados (booleanos) de leitura inválidos → `VALIDATION`; não pede reinício |
+| `support:get` | — | `{ starPromptHidden: boolean }`: `true` quando a pessoa já estrelou ou dispensou o convite (`apoio.md`) |
+| `support:update` | `{ starPromptHidden?: boolean }` | o valor salvo; fora do tipo → `VALIDATION` |
 | `settings:pick-folder` | `{ defaultPath? }` | pasta escolhida no seletor do sistema, ou `null` se cancelar |
 
 ## providers externos (fase 03a, novos)

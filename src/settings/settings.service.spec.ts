@@ -46,6 +46,17 @@ describe('SettingsService', () => {
     });
   });
 
+  it('when nothing was chosen, should answer that the star prompt is still shown', () => {
+    expect(create().getSupport()).toEqual({ starPromptHidden: false });
+  });
+
+  it('when the star prompt is hidden, should answer and keep the choice', () => {
+    const service = create();
+
+    expect(service.updateSupport({ starPromptHidden: true })).toEqual({ starPromptHidden: true });
+    expect(service.getSupport().starPromptHidden).toBe(true);
+  });
+
   it('when the appearance changes, should answer the new value and keep the rest', () => {
     const service = create();
 

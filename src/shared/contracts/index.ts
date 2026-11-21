@@ -107,6 +107,7 @@ import type {
   MoveLibraryResult,
   SaveResult,
   SettingsPaths,
+  SupportSettings,
 } from './settings';
 
 /**
@@ -136,6 +137,9 @@ export interface IpcContracts {
 
   [IpcChannels.appearance.get]: { request: void; response: Appearance };
   [IpcChannels.appearance.update]: { request: AppearancePatch; response: Appearance };
+
+  [IpcChannels.support.get]: { request: void; response: SupportSettings };
+  [IpcChannels.support.update]: { request: Partial<SupportSettings>; response: SupportSettings };
 
   /** Abre o seletor de pasta do sistema; `null` se o usuário cancelar. */
   [IpcChannels.settings.pickFolder]: {

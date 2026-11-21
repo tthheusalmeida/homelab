@@ -1,5 +1,5 @@
 import type { Appearance, AppearancePatch } from '../shared/contracts/appearance';
-import type { SaveResult, SettingsPaths } from '../shared/contracts/settings';
+import type { SaveResult, SettingsPaths, SupportSettings } from '../shared/contracts/settings';
 
 import type { SettingsStore } from './settings-store';
 
@@ -24,5 +24,13 @@ export class SettingsService {
   /** Tema, cor e leitura valem na hora, sem reiniciar. */
   updateAppearance(patch: AppearancePatch): Appearance {
     return this.store.update({ appearance: patch }).settings.appearance;
+  }
+
+  getSupport(): SupportSettings {
+    return this.store.get().support;
+  }
+
+  updateSupport(patch: Partial<SupportSettings>): SupportSettings {
+    return this.store.update({ support: patch }).settings.support;
   }
 }

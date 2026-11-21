@@ -197,6 +197,32 @@ describe('LocalProvidersHandler', () => {
     expect(service.test).toHaveBeenCalledWith('ollama', undefined);
   });
 
+  describe('SettingsHandler support', () => {
+    it('when support:get is called, should answer the saved choice', async () => {
+      const getSupport = jest.fn().mockReturnValue({ starPromptHidden: false });
+      const ipc = register(
+        new SettingsHandler({ getSupport } as unknown as SettingsService, picker(), mover()),
+      );
+
+      await expect(ipc.invoke(IpcChannels.support.get)).resolves.toEqual({
+        ok: true,
+        data: { starPromptHidden: false },
+      });
+    });
+
+    it('when support:update is called, should pass the patch and answer the new choice', async () => {
+      const updateSupport = jest.fn().mockReturnValue({ starPromptHidden: true });
+      const ipc = register(
+        new SettingsHandler({ updateSupport } as unknown as SettingsService, picker(), mover()),
+      );
+
+      await expect(
+        ipc.invoke(IpcChannels.support.update, { starPromptHidden: true }),
+      ).resolves.toEqual({ ok: true, data: { starPromptHidden: true } });
+      expect(updateSupport).toHaveBeenCalledWith({ starPromptHidden: true });
+    });
+  });
+
   describe('SettingsHandler appearance', () => {
     it('when appearance:get is called, should answer the current appearance', async () => {
       const appearance = { theme: 'dark', accent: 'blue' };

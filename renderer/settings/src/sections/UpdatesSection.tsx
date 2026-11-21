@@ -12,6 +12,7 @@ import { ErrorState } from '#components/ErrorState';
 import { LoadingState } from '#components/LoadingState';
 import { MarkdownMessage } from '#components/MarkdownMessage';
 import { ProgressBar } from '#components/ProgressBar';
+import { StarSupportCard } from '#components/StarSupportCard';
 import { useErrorAlert } from '#hooks/use-error-alert';
 import { SettingsGroup, SettingsPanel, SettingsRow, SettingsStack } from '#components/SettingsGroup';
 import {
@@ -213,6 +214,8 @@ export function UpdatesSection() {
           </SettingsPanel>
         </SettingsGroup>
       )}
+
+      <StarSupportCard />
 
       <ConfirmDialog
         open={confirming}
