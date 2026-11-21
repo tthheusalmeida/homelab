@@ -162,7 +162,12 @@ describe('AiUsageService', () => {
 
     it('when a request failed, should keep it in recentRequests with the reason', () => {
       service.record(base);
-      service.recordFailure({ provider: 'gemini', model: 'm', latencyMs: 40, error: 'Limite de uso atingido.' });
+      service.recordFailure({
+        provider: 'gemini',
+        model: 'm',
+        latencyMs: 40,
+        error: 'Limite de uso atingido.',
+      });
 
       const [latest] = service.getUsage().recentRequests;
 
