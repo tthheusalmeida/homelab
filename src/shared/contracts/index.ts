@@ -119,6 +119,8 @@ export interface IpcContracts {
   [IpcChannels.app.relaunch]: { request: void; response: void };
   /** Abre (ou foca) as Configurações; com `section`, já na seção pedida (ex.: `components`). */
   [IpcChannels.app.openSettings]: { request: { section?: string } | void; response: void };
+  /** Mostra um arquivo salvo na pasta dele, no gerenciador de arquivos do sistema (o botão "Ver" dos avisos). `false` se o arquivo não existe mais. */
+  [IpcChannels.app.revealFile]: { request: { path: string }; response: boolean };
   /** Seção pedida ao abrir as Configurações (entregue uma vez só; `null` se não houve pedido). */
   [IpcChannels.app.settingsSection]: { request: void; response: string | null };
   /** Se alguma alteração salva só vale depois de reiniciar (vale para todas as janelas). */

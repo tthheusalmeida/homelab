@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-import { SettingsGroup, SettingsPanel } from './SettingsGroup';
+import { SettingsGroup, SettingsPanel, SettingsStack } from './SettingsGroup';
 
 describe('SettingsGroup', () => {
   it('when rendered, should expose a region named by the title with the hint and content', () => {
@@ -39,5 +39,28 @@ describe('SettingsPanel', () => {
     render(<SettingsPanel data-testid="painel" />);
 
     expect(screen.getByTestId('painel').className).not.toContain('border-primary/40');
+  });
+});
+
+describe('SettingsStack', () => {
+  it('when stacking groups, should space them by 32px (gap-8) in a column', () => {
+    render(
+      <SettingsStack data-testid="stack">
+        <SettingsGroup title="Tema">
+          <span />
+        </SettingsGroup>
+        <SettingsGroup title="Leitura">
+          <span />
+        </SettingsGroup>
+      </SettingsStack>,
+    );
+
+    expect(screen.getByTestId('stack')).toHaveClass('flex', 'flex-col', 'gap-8');
+  });
+
+  it('when a class is given, should keep the standard spacing and add it', () => {
+    render(<SettingsStack data-testid="stack" className="max-w-sm" />);
+
+    expect(screen.getByTestId('stack')).toHaveClass('gap-8', 'max-w-sm');
   });
 });

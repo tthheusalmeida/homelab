@@ -93,10 +93,23 @@ export class GeminiProvider implements AIProvider {
   }
 
   async chat(request: AIChatRequest): Promise<string> {
-    const ai = this.client();
-
     const model = this.normalizeModel(request.model);
     const startedAt = Date.now();
+    let ai: GoogleGenAI;
+
+    try {
+      ai = this.client();
+    } catch (error) {
+      // sem chave (ou cliente indisponível): a falha também aparece em Consumo
+      this.usageService.recordFailure({
+        provider: 'gemini',
+        model,
+        latencyMs: Date.now() - startedAt,
+        error: error instanceof Error ? error.message : 'Falha ao preparar o provedor.',
+      });
+
+      throw error;
+    }
 
     try {
       // Erro passageiro (limite de uso, servidor ocupado, rede, resposta vazia) repete sozinho,
@@ -156,21 +169,18 @@ export class GeminiProvider implements AIProvider {
 
       return response.text as string;
     } catch (error) {
-      this.usageService.record({
+      // O motivo real (limite de uso, servidor ocupado, chave recusada...) vai na mensagem, também
+      // guardada em Consumo; o erro original fica em `cause`.
+      const { message } = classifyGeminiError(error);
+
+      this.usageService.recordFailure({
         provider: 'gemini',
         model,
-        operation: 'chat',
-        inputTokens: 0,
-        outputTokens: 0,
-        totalTokens: 0,
-        estimatedCost: 0,
         latencyMs: Date.now() - startedAt,
-        success: false,
+        error: message,
       });
 
-      // O motivo real (limite de uso, servidor ocupado, chave recusada...) vai na mensagem; o erro
-      // original fica em `cause`.
-      throw new Error(classifyGeminiError(error).message, { cause: error });
+      throw new Error(message, { cause: error });
     }
   }
 

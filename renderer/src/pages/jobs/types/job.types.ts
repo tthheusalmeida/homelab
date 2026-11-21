@@ -20,10 +20,6 @@ export const JobNameOptions = {
 export type JobStatus =
   (typeof JobStatusOptions)[keyof typeof JobStatusOptions];
 
-export type JobStepState =
-  (typeof JobStepStateOptions)[keyof typeof JobStepStateOptions];
-
-export type JobName = (typeof JobNameOptions)[keyof typeof JobNameOptions];
 
 export interface JobStepType {
   name: string;

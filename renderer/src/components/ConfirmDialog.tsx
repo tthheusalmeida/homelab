@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Loader2 } from "lucide-react";
-
+import { useErrorAlert } from "#hooks/use-error-alert";
 import { Button } from "#ui/button";
 import {
   Dialog,
@@ -39,6 +38,8 @@ export function ConfirmDialog({
   errorMessage,
   onConfirm,
 }: ConfirmDialogProps) {
+  useErrorAlert(errorMessage);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -49,12 +50,6 @@ export function ConfirmDialog({
         </DialogHeader>
 
         {details && <div className="space-y-3 text-sm">{details}</div>}
-
-        {errorMessage && (
-          <p role="alert" className="animate-enter-fade text-sm text-destructive">
-            {errorMessage}
-          </p>
-        )}
 
         <DialogFooter>
           <Button
@@ -69,8 +64,7 @@ export function ConfirmDialog({
             variant={destructive ? "destructive" : "default"}
             disabled={isPending}
             onClick={onConfirm}
-          >
-            {isPending && <Loader2 className="animate-spin" />}
+           loading={isPending}>
             {confirmLabel}
           </Button>
         </DialogFooter>

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { DocumentSummary } from "../types/library.types";
 
 import { DocumentCard, previewWithoutTitle } from "./DocumentCard";
+import { tooltipTextOf } from "#test/tooltip";
 
 const document: DocumentSummary = {
   id: "d1",
@@ -133,16 +134,16 @@ describe("DocumentCard grid fixed size", () => {
     }
   });
 
-  it("when the title does not fit in three lines, should keep the whole name in the tooltip", () => {
+  it("when the title does not fit in three lines, should keep the whole name in the tooltip", async () => {
     renderGrid(long);
 
-    expect(screen.getByRole("link", { name: long.title })).toHaveAttribute("title", long.title);
+    expect(await tooltipTextOf(screen.getByRole("link", { name: long.title }))).toBe(long.title);
   });
 
-  it("when the title is short, should also have the tooltip with the name", () => {
+  it("when the title is short, should also have the tooltip with the name", async () => {
     renderGrid();
 
-    expect(screen.getByRole("link", { name: document.title })).toHaveAttribute("title", document.title);
+    expect(await tooltipTextOf(screen.getByRole("link", { name: document.title }))).toBe(document.title);
   });
 
   it("when the preview is long, should cut it in four lines with an ellipsis", () => {

@@ -9,6 +9,7 @@ Origem: os 37 endpoints HTTP atuais (`/api/v1`) + os canais novos de app, settin
 | `app:version` | — | versão do app |
 | `app:relaunch` | — | nada (reinicia o app para aplicar configuração) |
 | `app:open-settings` | — | nada (a janela principal vai para a rota Configurações, numa seção se informada) |
+| `app:reveal-file` | `{ path }` (caminho completo) | `true` se mostrou o arquivo na pasta dele (botão "Ver" dos avisos de arquivo salvo); `false` se ele não existe mais |
 | `app:restart-pending` | — | `boolean`: há alteração salva que só vale depois de reiniciar (estado do main, vale para todas as janelas) |
 | `app:mark-restart-pending` | — | nada (marca o reinício como pendente e publica o evento `app:restart-needed` para todas as janelas) |
 

@@ -34,6 +34,9 @@ function isUsageRecord(value: unknown): value is AIUsageRecord {
 /** Registros guardados (os mais recentes); o resto é descartado. */
 export const MAX_USAGE_RECORDS = 5000;
 
+/** Quantas requisições recentes a tela de Consumo mostra (as mais novas, com ou sem erro). */
+export const RECENT_REQUESTS_LIMIT = 10;
+
 /**
  * Consumo de IA do app. Fica em memória e, quando o `BackConfig` informa `usageFile`, também em
  * disco: sobrevive a reinícios. É o consumo **registrado pelo HomeLab neste computador** (tokens
@@ -71,6 +74,31 @@ export class AiUsageService {
     this.save();
 
     return record;
+  }
+
+  /**
+   * Registra uma requisição que **falhou** (sem tokens nem custo), com o motivo. Toda falha de
+   * provedor passa por aqui, para aparecer em Consumo junto com as que deram certo.
+   */
+  recordFailure(data: {
+    provider: AIProviderName;
+    model: string;
+    operation?: string;
+    latencyMs: number;
+    error: string;
+  }): AIUsageRecord {
+    return this.record({
+      provider: data.provider,
+      model: data.model,
+      operation: data.operation ?? 'chat',
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      estimatedCost: 0,
+      latencyMs: data.latencyMs,
+      success: false,
+      error: data.error,
+    });
   }
 
   private load(): AIUsageRecord[] {
@@ -148,7 +176,7 @@ export class AiUsageService {
       timeline: this.buildTimeline(records),
       byProvider: this.buildProviderUsage(records),
       byModel: this.buildModelUsage(records),
-      recentRequests: records.slice(0, 100),
+      recentRequests: records.slice(0, RECENT_REQUESTS_LIMIT),
     };
   }
 

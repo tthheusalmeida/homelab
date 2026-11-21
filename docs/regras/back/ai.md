@@ -36,7 +36,8 @@
 - Guarda no máximo 5000 registros (`MAX_USAGE_RECORDS`); o mais recente fica primeiro e o mais antigo é descartado. **Desde a identidade/consumo:** os registros também vão para `ai-usage.json` na pasta de dados do app (`BackConfig.usageFile`) e são relidos ao abrir, então o consumo sobrevive a reinícios. É o consumo **registrado pelo HomeLab neste computador**; o provedor (Gemini) não tem endpoint de gasto ou cota restante por chave de API, então o gasto real da conta só existe no painel dele (AI Studio / Google Cloud Billing).
 - Cada registro recebe `id` (UUID) e `createdAt` (ISO).
 - `getUsage(provider?)` filtra **todas** as seções pelo provider quando informado.
-- Seções: `summary` (somas e latência média arredondada), `timeline` (por dia UTC, crescente), `byProvider`, `byModel` (chave provider+modelo) e `recentRequests` (até 100).
+- Seções: `summary` (somas e latência média arredondada), `timeline` (por dia UTC, crescente), `byProvider`, `byModel` (chave provider+modelo) e `recentRequests` (as **10** mais recentes, `RECENT_REQUESTS_LIMIT`, com as que falharam).
+- **Falhas entram no consumo:** toda falha de provedor (inclusive "sem chave configurada") é gravada por `recordFailure` com `success: false`, zero tokens e custo, e o motivo em `error`. Assim a tela de Consumo mostra o que deu errado sem ninguém precisar procurar.
 - Sem registros: tudo zerado e listas vazias.
 - `AIService.usage(query)` devolve dados **fictícios** (mock) e não é usado pelo controller; o endpoint real é `GET ai/usage`.
 

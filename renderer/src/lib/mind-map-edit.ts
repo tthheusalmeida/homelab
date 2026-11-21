@@ -151,13 +151,6 @@ export function removeNode(draft: MindMapDraft, path: NodePath): MindMapDraft {
   return { ...draft, nodes: replaceAt(draft.nodes, path, () => null) };
 }
 
-/** Quantos nós sairiam junto ao apagar este (ele e seus descendentes). */
-export function subtreeSize(draft: MindMapDraft, path: NodePath): number {
-  const node = getNode(draft.nodes, path);
-
-  return node ? 1 + countNodes(node.children) : 0;
-}
-
 /** O que impede de salvar, ou `null` se está tudo certo. */
 export function validateDraft(draft: MindMapDraft): DraftProblem | null {
   if (draft.nodes.length === 0) {

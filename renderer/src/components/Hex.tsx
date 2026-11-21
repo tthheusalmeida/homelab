@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { cn } from '#lib/utils';
+import { HEX_CLIP } from '#lib/hex';
 
 /** Caminho SVG de um hexágono de pontas para cima, centrado em (cx, cy) com raio r. */
 export function hexPath(cx: number, cy: number, r: number): string {
@@ -51,19 +52,25 @@ export function Logo({ className }: { className?: string }) {
   );
 }
 
-/** Carregando: os três hexágonos acendem em sequência, na cor de destaque. */
+/**
+ * **O** indicador de carregamento do app: os três hexágonos acendem em sequência, na cor de destaque.
+ * Nada de spinner girando (ícone de `lucide` com rotação): um só jeito de dizer "trabalhando" em toda a plataforma.
+ * `decorative` esconde dos leitores de tela (dentro de um botão, o texto dele já diz o que acontece);
+ * a cor vem de `text-*` (`text-current` acompanha o texto do botão).
+ */
 export function HexLoader({
   className,
   label = 'Carregando',
+  decorative = false,
 }: {
   className?: string;
   label?: string;
+  decorative?: boolean;
 }) {
   return (
     <span
-      role="img"
-      aria-label={label}
-      className={cn('inline-flex size-8 shrink-0 text-brand', className)}
+      {...(decorative ? { 'aria-hidden': true } : { role: 'img', 'aria-label': label })}
+      className={cn('hex-loader inline-flex size-8 shrink-0 text-brand', className)}
     >
       <HexCluster className="size-full" fills={['fill-current', 'fill-current', 'fill-current']} />
     </span>
@@ -76,7 +83,8 @@ export function HexDot({ className, pulse = false }: { className?: string; pulse
     <span
       aria-hidden="true"
       className={cn(
-        'inline-block h-[0.7rem] w-[0.62rem] shrink-0 [clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]',
+        'inline-block h-[0.7rem] w-[0.62rem] shrink-0',
+        HEX_CLIP,
         pulse && 'animate-pulse',
         className,
       )}

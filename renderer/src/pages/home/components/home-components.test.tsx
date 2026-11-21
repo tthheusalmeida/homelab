@@ -9,7 +9,6 @@ import { OverviewCard } from "./OverviewCard";
 import { OverviewSection } from "./OverviewSection";
 import { ServiceCard } from "./ServiceCard";
 import { ServiceGrid } from "./ServiceGrid";
-import { ServiceStatus } from "./ServiceStatus";
 import { SystemStatus } from "./SystemStatus";
 
 const health: HealthService = {
@@ -122,21 +121,6 @@ describe("HomeBaseSection", () => {
       </HomeBaseSection>,
     );
     expect(screen.queryByText("/x")).not.toBeInTheDocument();
-  });
-});
-
-describe("ServiceStatus", () => {
-  it("when loading, should pulse; when error, red; otherwise green", () => {
-    const { container, rerender } = render(
-      <ServiceStatus isLoading isError={false} />,
-    );
-    expect(container.firstChild).toHaveClass("animate-pulse");
-
-    rerender(<ServiceStatus isLoading={false} isError />);
-    expect(container.firstChild).toHaveClass("bg-red-500");
-
-    rerender(<ServiceStatus isLoading={false} isError={false} />);
-    expect(container.firstChild).toHaveClass("bg-emerald-500");
   });
 });
 

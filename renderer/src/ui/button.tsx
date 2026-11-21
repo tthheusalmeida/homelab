@@ -1,6 +1,7 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 
+import { HexLoader } from "#components/Hex";
 import { cn } from "#lib/utils";
 
 const buttonVariants = cva(
@@ -44,14 +45,26 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  loading = false,
+  disabled,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props &
+  VariantProps<typeof buttonVariants> & {
+    /** Trabalhando: mostra o hexágono de carregamento antes do texto e desabilita o botão (a ação não é repetida). */
+    loading?: boolean;
+  }) {
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       {...props}
-    />
+    >
+      {loading && <HexLoader decorative className="size-4 text-current" />}
+      {children}
+    </ButtonPrimitive>
   );
 }
 

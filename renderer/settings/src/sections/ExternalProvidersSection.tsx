@@ -1,10 +1,7 @@
 import { useState } from 'react';
 
 import { Badge } from '#ui/badge';
-import { Button } from '#ui/button';
-import { ErrorState } from '#components/ErrorState';
 import { ExternalLink } from '#components/ExternalLink';
-import { LoadingState } from '#components/LoadingState';
 import { SettingsGroup } from '#components/SettingsGroup';
 import { PROVIDER_CONSOLES } from '#lib/provider-consoles';
 import { SetupGuide } from '#components/SetupGuide';
@@ -13,7 +10,13 @@ import type { ExternalProviderInfo } from '#shared/contracts/providers';
 import { Field } from '../components/Field';
 import { ProviderCard } from '#components/ProviderCard';
 import { useSnackbar } from '#components/Snackbar';
-import { TestResultSlot } from '../components/TestResultMessage';
+import {
+  ProviderActions,
+  ProviderCardList,
+  ProviderFeedback,
+  ProvidersGate,
+  testResultOf,
+} from '../components/ProviderParts';
 import { useExternalProviders, useSaveExternalProvider, useTestExternalProvider } from '../hooks';
 import { EXTERNAL_PROVIDER_GUIDES, EXTERNAL_PROVIDER_HINTS, Strings } from '../strings';
 
@@ -24,28 +27,23 @@ interface SectionProps {
 export function ExternalProvidersSection({ onSaved }: SectionProps) {
   const providers = useExternalProviders();
 
-  if (providers.isPending) {
-    return <LoadingState message={Strings.loading} />;
-  }
-
-  if (providers.isError) {
-    return (
-      <ErrorState
-        primaryMessage={Strings.loadError}
-        secondaryMessage={providers.error.message}
-        action={() => void providers.refetch()}
-      />
-    );
-  }
-
   return (
-    <SettingsGroup title={Strings.groups.external} hint={Strings.groups.externalHint}>
-      <div className="flex flex-col gap-2">
-        {providers.data.map((provider, index) => (
-          <ExternalProviderCard key={provider.id} provider={provider} index={index} onSaved={onSaved} />
-        ))}
-      </div>
-    </SettingsGroup>
+    <ProvidersGate query={providers}>
+      {(data) => (
+        <SettingsGroup title={Strings.groups.external} hint={Strings.groups.externalHint}>
+          <ProviderCardList>
+            {data.map((provider, index) => (
+              <ExternalProviderCard
+                key={provider.id}
+                provider={provider}
+                index={index}
+                onSaved={onSaved}
+              />
+            ))}
+          </ProviderCardList>
+        </SettingsGroup>
+      )}
+    </ProvidersGate>
   );
 }
 
@@ -81,35 +79,26 @@ function ExternalProviderCard({
         </Badge>
       }
       footer={
-        <>
-          <Button
-            variant="outline"
-            className="min-w-24"
-            disabled={!canTest || test.isPending}
-            onClick={() => test.mutate({ id: provider.id, apiKey: typedKey || undefined })}
-          >
-            {test.isPending ? Strings.testing : Strings.test}
-          </Button>
-
-          <Button
-            disabled={typedKey.length === 0 || save.isPending}
-            onClick={() =>
-              save.mutate(
-                { id: provider.id, apiKey: typedKey },
-                {
-                  onSuccess: (result) => {
-                    test.reset();
-                    setApiKey('');
-                    snackbar.show(Strings.saved);
-                    onSaved(result.restartRequired);
-                  },
+        <ProviderActions
+          testing={test.isPending}
+          testDisabled={!canTest}
+          onTest={() => test.mutate({ id: provider.id, apiKey: typedKey || undefined })}
+          saving={save.isPending}
+          saveDisabled={typedKey.length === 0}
+          onSave={() =>
+            save.mutate(
+              { id: provider.id, apiKey: typedKey },
+              {
+                onSuccess: (result) => {
+                  test.reset();
+                  setApiKey('');
+                  snackbar.show(Strings.saved);
+                  onSaved(result.restartRequired);
                 },
-              )
-            }
-          >
-            {save.isPending ? Strings.saving : Strings.save}
-          </Button>
-        </>
+              },
+            )
+          }
+        />
       }
     >
       {guide && (
@@ -147,14 +136,10 @@ function ExternalProviderCard({
         </p>
       )}
 
-      <TestResultSlot
-        result={test.data ?? (test.isError ? { ok: false, message: test.error.message } : null)}
+      <ProviderFeedback
+        testResult={testResultOf(test)}
+        saveError={save.isError ? save.error.message : undefined}
       />
-      {save.isError && (
-        <p role="alert" className="text-sm text-destructive">
-          {save.error.message}
-        </p>
-      )}
     </ProviderCard>
   );
 }

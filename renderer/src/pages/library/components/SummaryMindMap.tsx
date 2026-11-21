@@ -18,14 +18,17 @@ import {
 } from '#lib/mind-map-edit';
 import { cn } from '#lib/utils';
 import { Callout } from '#components/Callout';
-import { ConfirmDialog } from '#components/ConfirmDialog';
 import { DeleteGeneratedDialog } from './DeleteGeneratedDialog';
+import { DiscardEditsDialog, RegenerateEditedDialog } from './GeneratedEditDialogs';
 import { GenerateButton } from '#components/GenerateButton';
 import { HexLoader } from '#components/Hex';
 import { IconButton } from '#components/IconButton';
 import { LoadingState } from '#components/LoadingState';
 import { MindMapView } from '#components/MindMapView';
 import { useSnackbar } from '#components/Snackbar';
+import { ActionMenu } from '#components/ActionMenu';
+import { useErrorAlert } from '#hooks/use-error-alert';
+import { useSavedNotice } from '#hooks/use-saved-notice';
 
 import {
   useGenerateMindMap,
@@ -71,6 +74,7 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   const deleteMap = useDeleteMindMap();
   const saveImage = useSaveMindMapImage();
   const snackbar = useSnackbar();
+  const savedNotice = useSavedNotice();
 
   // O rascunho da edição (`null` = não está editando) e qual confirmação está aberta.
   const [draft, setDraft] = useState<MindMapDraft | null>(
@@ -107,6 +111,13 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   const regenerate = () => (saved.data?.edited ? setConfirm('regenerate') : generateNow());
 
   const editing = draft !== null;
+  useErrorAlert(
+    generate.isError &&
+      !pending &&
+      !editing &&
+      `Não foi possível gerar com a IA: ${generate.error?.message ?? ''}${saved.data ? ' O mapa anterior continua aqui.' : ' Este é um mapa simples feito do texto.'}`,
+    { label: 'Tentar de novo', onClick: regenerate },
+  );
   const base = useMemo(() => draftFromMap(map), [map]);
   const dirty = draft ? isDraftDirty(draft, base) : false;
   const problem = draft ? validateDraft(draft) : null;
@@ -179,21 +190,6 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
         {draftProblemMessages[problem]}
       </Callout>
     ) : null;
-  } else if (failed) {
-    notice = (
-      <Callout
-        tone="danger"
-        role="alert"
-        action={
-          <GenerateButton pending={pending} onClick={regenerate} primary>
-            Tentar de novo
-          </GenerateButton>
-        }
-      >
-        {`Não foi possível gerar com a IA: ${generate.error?.message ?? ''}`}
-        {hasMap ? ' O mapa anterior continua aqui.' : ' Este é um mapa simples feito do texto.'}
-      </Callout>
-    );
   } else if (!hasMap) {
     notice = pending ? (
       <Callout role="status">
@@ -251,19 +247,6 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
         <Pencil />
       </IconButton>
 
-      {hasMap && (
-        <IconButton
-          label="Excluir só o mapa mental"
-          disabled={pending}
-          onClick={() => {
-            deleteMap.reset();
-            setConfirm('delete');
-          }}
-        >
-          <Trash2 />
-        </IconButton>
-      )}
-
       {hasMap && !notice && (
         <IconButton
           label={pending ? 'Gerando…' : 'Gerar de novo com IA'}
@@ -273,6 +256,29 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
         >
           {pending ? <HexLoader className="size-4" label="Gerando" /> : <Sparkles />}
         </IconButton>
+      )}
+
+      {hasMap && (
+        <ActionMenu
+          label="Mais ações"
+          iconOnly
+          variant="outline"
+          disabled={pending}
+          groups={[
+            [
+              {
+                id: 'delete',
+                label: 'Excluir mapa mental',
+                icon: Trash2,
+                destructive: true,
+                onSelect: () => {
+                  deleteMap.reset();
+                  setConfirm('delete');
+                },
+              },
+            ],
+          ]}
+        />
       )}
     </>
   );
@@ -295,19 +301,16 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
           const result = await saveImage.mutateAsync(image);
 
           if (result.saved) {
-            snackbar.success('Imagem do mapa salva.');
+            savedNotice('Imagem do mapa salva.', result.path);
           }
         }}
         onDownloadError={(message) => snackbar.error(message)}
       />
 
-      <ConfirmDialog
+      <DiscardEditsDialog
         open={confirm === 'discard'}
         onOpenChange={(open) => !open && setConfirm(null)}
-        title="Descartar as alterações?"
         description="As mudanças que você fez no mapa e ainda não salvou serão perdidas."
-        confirmLabel="Descartar alterações"
-        destructive
         onConfirm={() => {
           setConfirm(null);
           closeEditing();
@@ -324,13 +327,10 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
         onConfirm={deleteNow}
       />
 
-      <ConfirmDialog
+      <RegenerateEditedDialog
         open={confirm === 'regenerate'}
         onOpenChange={(open) => !open && setConfirm(null)}
-        title="Gerar de novo e perder as suas edições?"
-        description="Você editou este mapa à mão. Gerar de novo com a IA cria um mapa novo a partir do resumo e apaga as suas edições. Não há como desfazer."
-        confirmLabel="Gerar de novo"
-        destructive
+        noun="mapa"
         onConfirm={() => {
           setConfirm(null);
           generateNow();

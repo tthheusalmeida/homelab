@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { Loader2, TriangleAlert } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 
 import { Button } from '#ui/button';
-import { SettingsGroup, SettingsPanel } from '#components/SettingsGroup';
+import { SettingsGroup, SettingsPanel, SettingsStack } from '#components/SettingsGroup';
 import { Label } from '#ui/label';
 import { ConfirmDialog } from '#components/ConfirmDialog';
 import { ErrorState } from '#components/ErrorState';
 import { LoadingState } from '#components/LoadingState';
 import { ProgressBar } from '#components/ProgressBar';
 import { useSnackbar } from '#components/Snackbar';
+import { useSavedNotice } from '#hooks/use-saved-notice';
 import { useIpcEvent } from '#hooks/use-ipc-event';
 import { formatBytes, formatDateTime } from '#lib/format';
 import { BACKUP_ITEM_IDS } from '#shared/contracts/backup';
@@ -37,6 +38,7 @@ import {
   useRestoreBackup,
 } from '../hooks';
 import { Strings } from '../strings';
+import { useErrorAlert } from '#hooks/use-error-alert';
 
 interface SectionProps {
   onSaved: (restartRequired: boolean) => void;
@@ -44,10 +46,10 @@ interface SectionProps {
 
 export function BackupSection({ onSaved }: SectionProps) {
   return (
-    <div className="flex flex-col gap-6">
+    <SettingsStack>
       <CreateBackupCard />
       <RestoreBackupCard onSaved={onSaved} />
-    </div>
+    </SettingsStack>
   );
 }
 
@@ -168,7 +170,8 @@ function toggled(current: ReadonlySet<BackupItemId>, id: BackupItemId, checked: 
 function CreateBackupCard() {
   const preview = useBackupPreview();
   const create = useCreateBackup();
-  const snackbar = useSnackbar();
+  useErrorAlert(create.isError && create.error.message);
+  const savedNotice = useSavedNotice();
   const [selected, setSelected] = useState<ReadonlySet<BackupItemId> | null>(null);
   const [outcome, setOutcome] = useState<string | null>(null);
 
@@ -204,7 +207,7 @@ function CreateBackupCard() {
             return;
           }
 
-          snackbar.show(BackupStrings.created(formatBytes(result.bytes ?? 0)));
+          savedNotice(BackupStrings.created(formatBytes(result.bytes ?? 0)), result.path);
           setOutcome(BackupStrings.createdAt(result.path ?? ''));
         },
       },
@@ -246,16 +249,9 @@ function CreateBackupCard() {
 
         {create.isPending && <BackupProgress title={BackupStrings.creating} />}
 
-        {create.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            {create.error.message}
-          </p>
-        )}
-
         {outcome && !create.isPending && <p className="text-sm text-muted-foreground">{outcome}</p>}
         <div className="flex justify-end gap-2">
-          <Button disabled={picked.length === 0 || create.isPending} onClick={start}>
-            {create.isPending && <Loader2 className="animate-spin" />}
+          <Button disabled={picked.length === 0 || create.isPending} onClick={start} loading={create.isPending}>
             {BackupStrings.create}
           </Button>
         </div>
@@ -273,6 +269,7 @@ function RestoreBackupCard({ onSaved }: SectionProps) {
   const [mode, setMode] = useState<RestoreMode>('merge');
   const [confirming, setConfirming] = useState(false);
   const [result, setResult] = useState<BackupRestoreResult | null>(null);
+  useErrorAlert((inspect.isError || restore.isError) && (inspect.error ?? restore.error)?.message);
 
   const choose = () => {
     setResult(null);
@@ -357,12 +354,6 @@ function RestoreBackupCard({ onSaved }: SectionProps) {
 
         {restore.isPending && <BackupProgress title={BackupStrings.restoring} />}
 
-        {(inspect.isError || restore.isError) && (
-          <p role="alert" className="text-sm text-destructive">
-            {(inspect.error ?? restore.error)?.message}
-          </p>
-        )}
-
         {result && (
           <div role="status" className="flex flex-col gap-1 text-sm">
             <p className="font-medium">{BackupStrings.done}</p>
@@ -389,14 +380,12 @@ function RestoreBackupCard({ onSaved }: SectionProps) {
             <Button
               disabled={selected.size === 0 || busy}
               onClick={() => (mode === 'replace' ? setConfirming(true) : run())}
-            >
-              {restore.isPending && <Loader2 className="animate-spin" />}
+             loading={restore.isPending}>
               {BackupStrings.restore}
             </Button>
           )}
 
-          <Button variant={backup ? 'outline' : 'default'} disabled={busy} onClick={choose}>
-            {inspect.isPending && <Loader2 className="animate-spin" />}
+          <Button variant={backup ? 'outline' : 'default'} disabled={busy} onClick={choose} loading={inspect.isPending}>
             {inspect.isPending
               ? BackupStrings.choosing
               : backup || result

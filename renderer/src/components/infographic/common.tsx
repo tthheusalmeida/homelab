@@ -4,10 +4,12 @@ import { Check, Pencil, X } from 'lucide-react';
 
 import type { TextKind, TextTarget } from '#lib/infographic-text-edit';
 import { cn } from '#lib/utils';
+import { HEX_CLIP } from '#lib/hex';
 
 import { InfographicPiece, pieceName } from '#components/InfographicPiece';
+import { Tip } from '#components/Tip';
 
-const HEX = '[clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]';
+const HEX = HEX_CLIP;
 
 /** Fundo pontilhado discreto atrás das peças. */
 export const DOT_GRID =
@@ -199,21 +201,23 @@ export function Txt({
   }
 
   return (
-    <span
-      role="button"
-      tabIndex={0}
-      title="Editar este texto"
-      onClick={() => onPick(target)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onPick(target);
-        }
-      }}
-      className="cursor-text rounded-sm outline-1 outline-offset-2 outline-brand/50 outline-dashed hover:bg-brand/10 focus-visible:outline-2 focus-visible:outline-brand"
-    >
-      {children}
-    </span>
+    <Tip content="Editar este texto">
+      <span
+        role="button"
+        tabIndex={0}
+        data-slot="editable-text"
+        onClick={() => onPick(target)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onPick(target);
+          }
+        }}
+        className="cursor-text rounded-sm outline-1 outline-offset-2 outline-brand/50 outline-dashed hover:bg-brand/10 focus-visible:outline-2 focus-visible:outline-brand"
+      >
+        {children}
+      </span>
+    </Tip>
   );
 }
 

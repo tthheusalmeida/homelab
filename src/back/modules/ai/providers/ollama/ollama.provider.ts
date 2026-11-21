@@ -176,21 +176,16 @@ export class OllamaProvider implements AIProvider {
 
       return text;
     } catch (error) {
-      this.usageService.record({
+      const message = describeOllamaError(error);
+
+      this.usageService.recordFailure({
         provider: 'ollama',
         model: request.model,
-        operation: 'chat',
-        inputTokens: 0,
-        outputTokens: 0,
-        totalTokens: 0,
-        estimatedCost: 0,
         latencyMs: Date.now() - startedAt,
-        success: false,
+        error: message,
       });
 
-      throw new Error(describeOllamaError(error), {
-        cause: error,
-      });
+      throw new Error(message, { cause: error });
     }
   }
 

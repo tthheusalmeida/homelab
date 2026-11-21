@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { LinkList } from "./LinkList";
+import { tooltipTextOf } from "#test/tooltip";
 
 const links = (count: number) =>
   Array.from({ length: count }, (_, i) => `https://site${i + 1}.com/video`);
@@ -95,7 +96,7 @@ describe("LinkList", () => {
     expect(screen.queryByRole("button", { name: "Limpar lista" })).not.toBeInTheDocument();
   });
 
-  it("when a link has a path, should show the site in evidence and the full link as title", () => {
+  it("when a link has a path, should show the site in evidence and the full link in the tooltip", async () => {
     render(
       <LinkList
         links={["https://www.youtube.com/watch?v=abc"]}
@@ -106,7 +107,10 @@ describe("LinkList", () => {
     );
 
     expect(screen.getByText("youtube.com")).toBeInTheDocument();
-    expect(screen.getByTitle("https://www.youtube.com/watch?v=abc")).toHaveTextContent("/watch?v=abc");
+    const text = screen.getByText("youtube.com").parentElement as HTMLElement;
+
+    expect(text).toHaveTextContent("/watch?v=abc");
+    expect(await tooltipTextOf(text)).toBe("https://www.youtube.com/watch?v=abc");
   });
 
   it("when disabled, should lock edit, remove and clear", () => {
@@ -121,11 +125,12 @@ describe("LinkList", () => {
 describe("LinkList (very long link)", () => {
   const long = `https://www.youtube.com/watch?v=${"abcdefghij".repeat(40)}`;
 
-  it("when a link is very long, should cut it with an ellipsis instead of widening the row, keeping the full link as title", () => {
+  it("when a link is very long, should cut it with an ellipsis instead of widening the row, keeping the full link in the tooltip", async () => {
     render(<LinkList links={[long]} onEdit={vi.fn()} onRemove={vi.fn()} onClear={vi.fn()} />);
 
-    const text = screen.getByTitle(long);
+    const text = screen.getByText("youtube.com").parentElement as HTMLElement;
 
+    expect(await tooltipTextOf(text)).toBe(long);
     expect(text).toHaveClass("truncate");
     expect(text).toHaveClass("min-w-0");
     expect(text.closest("li")).toHaveClass("min-w-0");

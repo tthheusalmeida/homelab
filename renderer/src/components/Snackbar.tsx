@@ -19,7 +19,8 @@ export const SNACKBAR_ERROR_DURATION_MS = 6000;
 export const SNACKBAR_EXIT_MS = 240;
 
 /**
- * - `success` e `error`: resultado de uma ação, no canto inferior direito.
+ * - `success`: resultado de uma ação, no canto inferior direito.
+ * - `error`: **todo erro do app**, embaixo no centro (nunca um parágrafo no meio do conteúdo).
  * - `created`: algo novo nasceu (tarefa, página...), embaixo no centro, com atalho opcional.
  */
 export type SnackbarKind = 'success' | 'error' | 'created';
@@ -34,18 +35,19 @@ interface SnackbarApi {
   show(message: string, action?: SnackbarAction): void;
   /** Sucesso; o botão opcional serve, por exemplo, para "Desfazer". */
   success(message: string, action?: SnackbarAction): void;
-  error(message: string): void;
+  /** Erro: alerta centralizado no rodapé; o botão opcional serve para "Tentar de novo". */
+  error(message: string, action?: SnackbarAction): void;
   /** Criação de algo: embaixo no centro, com um botão opcional (ex.: "Acompanhar"). */
   created(message: string, action?: SnackbarAction): void;
 }
 
 const SnackbarContext = createContext<SnackbarApi | null>(null);
 
-type Region = 'corner' | 'center';
+type Region = 'corner' | 'center' | 'alert';
 
 const REGION_OF: Record<SnackbarKind, Region> = {
   success: 'corner',
-  error: 'corner',
+  error: 'alert',
   created: 'center',
 };
 
@@ -75,10 +77,11 @@ export function SnackbarProvider({
   /** Sobe a mensagem para não cobrir uma barra fixa no rodapé (ex.: o aviso de reinício). */
   raised?: boolean;
 }) {
-  const [slots, setSlots] = useState<Slots>({ corner: null, center: null });
+  const [slots, setSlots] = useState<Slots>({ corner: null, center: null, alert: null });
   const timers = useRef<Record<Region, ReturnType<typeof setTimeout> | undefined>>({
     corner: undefined,
     center: undefined,
+    alert: undefined,
   });
   const counter = useRef(0);
 
@@ -120,6 +123,7 @@ export function SnackbarProvider({
     return () => {
       clearTimeout(pending.corner);
       clearTimeout(pending.center);
+      clearTimeout(pending.alert);
     };
   }, []);
 
@@ -127,7 +131,7 @@ export function SnackbarProvider({
     () => ({
       show: (message, action) => push('success', message, action),
       success: (message, action) => push('success', message, action),
-      error: (message) => push('error', message),
+      error: (message, action) => push('error', message, action),
       created: (message, action) => push('created', message, action),
     }),
     [push],
@@ -195,8 +199,9 @@ export function SnackbarProvider({
 
       <div
         data-region="corner"
+        aria-live="polite"
         className={cn(
-          'pointer-events-none fixed right-4 z-50 flex flex-col items-end',
+          'pointer-events-none fixed right-4 z-[70] flex flex-col items-end',
           raised ? 'bottom-20' : 'bottom-4',
         )}
       >
@@ -205,12 +210,14 @@ export function SnackbarProvider({
 
       <div
         data-region="center"
+        aria-live="polite"
         className={cn(
-          'pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4',
+          'pointer-events-none fixed inset-x-0 z-[70] flex flex-col items-center gap-2 px-4',
           raised ? 'bottom-20' : 'bottom-4',
         )}
       >
         {renderMessage('center')}
+        {renderMessage('alert')}
       </div>
     </SnackbarContext.Provider>
   );

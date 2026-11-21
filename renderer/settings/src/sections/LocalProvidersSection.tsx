@@ -1,16 +1,19 @@
 import { useState } from 'react';
 
 import { Badge } from '#ui/badge';
-import { Button } from '#ui/button';
-import { ErrorState } from '#components/ErrorState';
-import { LoadingState } from '#components/LoadingState';
-import { SettingsGroup } from '#components/SettingsGroup';
+import { SettingsGroup, SettingsStack } from '#components/SettingsGroup';
 
 import type { LocalProviderInfo } from '#shared/contracts/providers';
 import { Field } from '../components/Field';
 import { ProviderCard } from '#components/ProviderCard';
 import { useSnackbar } from '#components/Snackbar';
-import { TestResultSlot } from '../components/TestResultMessage';
+import {
+  ProviderActions,
+  ProviderCardList,
+  ProviderFeedback,
+  ProvidersGate,
+  testResultOf,
+} from '../components/ProviderParts';
 import { useLocalProviders, useSaveLocalProvider, useTestLocalProvider } from '../hooks';
 import {
   LOCAL_FIELD_LABELS,
@@ -25,35 +28,25 @@ interface SectionProps {
 export function LocalProvidersSection({ onSaved }: SectionProps) {
   const providers = useLocalProviders();
 
-  if (providers.isPending) {
-    return <LoadingState message={Strings.loading} />;
-  }
-
-  if (providers.isError) {
-    return (
-      <ErrorState
-        primaryMessage={Strings.loadError}
-        secondaryMessage={providers.error.message}
-        action={() => void providers.refetch()}
-      />
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-6">
-      <LocalGroup
-        title={Strings.groups.localTools}
-        hint={Strings.groups.localToolsHint}
-        providers={providers.data.filter((provider) => !provider.editable)}
-        onSaved={onSaved}
-      />
-      <LocalGroup
-        title={Strings.groups.localOllama}
-        hint={Strings.groups.localOllamaHint}
-        providers={providers.data.filter((provider) => provider.editable)}
-        onSaved={onSaved}
-      />
-    </div>
+    <ProvidersGate query={providers}>
+      {(data) => (
+        <SettingsStack>
+          <LocalGroup
+            title={Strings.groups.localTools}
+            hint={Strings.groups.localToolsHint}
+            providers={data.filter((provider) => !provider.editable)}
+            onSaved={onSaved}
+          />
+          <LocalGroup
+            title={Strings.groups.localOllama}
+            hint={Strings.groups.localOllamaHint}
+            providers={data.filter((provider) => provider.editable)}
+            onSaved={onSaved}
+          />
+        </SettingsStack>
+      )}
+    </ProvidersGate>
   );
 }
 
@@ -69,11 +62,11 @@ function LocalGroup({
 
   return (
     <SettingsGroup title={title} hint={hint}>
-      <div className="flex flex-col gap-2">
+      <ProviderCardList>
         {providers.map((provider, index) => (
           <LocalProviderCard key={provider.id} provider={provider} index={index} onSaved={onSaved} />
         ))}
-      </div>
+      </ProviderCardList>
     </SettingsGroup>
   );
 }
@@ -104,35 +97,23 @@ function LocalProviderCard({
       description={LOCAL_PROVIDER_HINTS[provider.id] ?? ''}
       badge={!provider.editable && <Badge variant="outline">Somente teste</Badge>}
       footer={
-        <>
-          <Button
-            variant="outline"
-            className="min-w-24"
-            disabled={test.isPending}
-            onClick={() => test.mutate({ id: provider.id, config: dirty ? config : undefined })}
-          >
-            {test.isPending ? Strings.testing : Strings.test}
-          </Button>
-
-          {provider.editable && (
-            <Button
-              disabled={!dirty || save.isPending}
-              onClick={() =>
-                save.mutate(
-                  { id: provider.id, config },
-                  {
-                    onSuccess: (result) => {
-                      snackbar.show(Strings.saved);
-                      onSaved(result.restartRequired);
-                    },
-                  },
-                )
-              }
-            >
-              {save.isPending ? Strings.saving : Strings.save}
-            </Button>
-          )}
-        </>
+        <ProviderActions
+          testing={test.isPending}
+          onTest={() => test.mutate({ id: provider.id, config: dirty ? config : undefined })}
+          saving={save.isPending}
+          saveDisabled={provider.editable ? !dirty : undefined}
+          onSave={() =>
+            save.mutate(
+              { id: provider.id, config },
+              {
+                onSuccess: (result) => {
+                  snackbar.show(Strings.saved);
+                  onSaved(result.restartRequired);
+                },
+              },
+            )
+          }
+        />
       }
     >
       {keys.map((key) => (
@@ -145,14 +126,10 @@ function LocalProviderCard({
         />
       ))}
 
-      <TestResultSlot
-        result={test.data ?? (test.isError ? { ok: false, message: test.error.message } : null)}
+      <ProviderFeedback
+        testResult={testResultOf(test)}
+        saveError={save.isError ? save.error.message : undefined}
       />
-      {save.isError && (
-        <p role="alert" className="text-sm text-destructive">
-          {save.error.message}
-        </p>
-      )}
     </ProviderCard>
   );
 }

@@ -1,9 +1,6 @@
 import { useState } from "react";
 
 import { useNavigate } from "react-router";
-import { Loader2 } from "lucide-react";
-
-import { Button } from "#ui/button";
 import {
   Card,
   CardContent,
@@ -20,6 +17,8 @@ import { DocumentPreview } from "./components/DocumentPreview";
 import { useCategories, useCreateArticle } from "./hooks/useLibrary";
 import { useSnackbar } from "#components/Snackbar";
 import { PageHeader } from "#components/PageHeader";
+import { FormButtons } from "#components/FormButtons";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 export function NewArticlePage() {
   const navigate = useNavigate();
@@ -32,6 +31,7 @@ export function NewArticlePage() {
   const categories = useCategories();
   const createArticle = useCreateArticle();
   const snackbar = useSnackbar();
+  useErrorAlert(createArticle.isError && "Não foi possível salvar a página. Verifique a categoria e tente novamente.");
 
   const words = countWords(content);
 
@@ -129,13 +129,6 @@ export function NewArticlePage() {
         </Card>
       </section>
 
-      {createArticle.isError && (
-        <p role="alert" className="animate-enter-fade text-sm text-destructive">
-          Não foi possível salvar a página. Verifique a categoria e tente
-          novamente.
-        </p>
-      )}
-
       <div className="sticky bottom-0 z-10 -mx-4 -mb-4 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur">
         <p className="text-sm text-muted-foreground">
           {missing.length > 0
@@ -144,19 +137,13 @@ export function NewArticlePage() {
         </p>
 
         <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={createArticle.isPending}
-            onClick={() => navigate("/library")}
+          <FormButtons
+            onCancel={() => navigate("/library")}
+            pending={createArticle.isPending}
+            canSubmit={canSave}
           >
-            Cancelar
-          </Button>
-
-          <Button type="submit" disabled={!canSave}>
-            {createArticle.isPending && <Loader2 className="animate-spin" />}
             Salvar página
-          </Button>
+          </FormButtons>
         </div>
       </div>
     </form>

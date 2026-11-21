@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
-
 import { Button } from '#ui/button';
 import {
   Dialog,
@@ -10,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#ui/dialog';
+import { CheckboxField } from './CheckboxField';
 import { Label } from '#ui/label';
 import { ProgressBar } from '#components/ProgressBar';
 import { useIpcEvent } from '#hooks/use-ipc-event';
@@ -19,6 +18,7 @@ import { IpcEvents } from '#shared/events';
 
 import { useMoveLibrary } from '../hooks';
 import { Strings } from '../strings';
+import { useErrorAlert } from '#hooks/use-error-alert';
 
 interface LibraryChangeDialogProps {
   /** Pasta escolhida e o que há nela; o diálogo abre enquanto houver uma pasta. */
@@ -48,6 +48,7 @@ export function LibraryChangeDialog({ folder, onClose, onDone }: LibraryChangeDi
   const [deleteOrigin, setDeleteOrigin] = useState(false);
   const [progress, setProgress] = useState<ProgressEventPayload | null>(null);
   const move = useMoveLibrary();
+  useErrorAlert(move.isError && move.error.message);
 
   useIpcEvent(IpcEvents.libraryMoveProgress, setProgress);
 
@@ -109,17 +110,13 @@ export function LibraryChangeDialog({ folder, onClose, onDone }: LibraryChangeDi
             />
 
             {choice === 'move' && (
-              <div className="flex items-center gap-2 pl-6">
-                <input
-                  id="library-delete-origin"
-                  type="checkbox"
-                  className="size-4 accent-primary"
-                  checked={deleteOrigin}
-                  onChange={(event) => setDeleteOrigin(event.target.checked)}
-                />
-
-                <Label htmlFor="library-delete-origin">{Strings.library.deleteOrigin}</Label>
-              </div>
+              <CheckboxField
+                id="library-delete-origin"
+                label={Strings.library.deleteOrigin}
+                checked={deleteOrigin}
+                onChange={setDeleteOrigin}
+                className="pl-6"
+              />
             )}
           </fieldset>
         )}
@@ -136,19 +133,12 @@ export function LibraryChangeDialog({ folder, onClose, onDone }: LibraryChangeDi
           </div>
         )}
 
-        {move.isError && (
-          <p role="alert" className="animate-enter-fade text-sm text-destructive">
-            {move.error.message}
-          </p>
-        )}
-
         <DialogFooter>
           <Button variant="outline" disabled={move.isPending} onClick={close}>
             {Strings.library.cancel}
           </Button>
 
-          <Button disabled={move.isPending} onClick={confirm}>
-            {move.isPending && <Loader2 className="animate-spin" />}
+          <Button disabled={move.isPending} onClick={confirm} loading={move.isPending}>
             {mode === 'move' ? Strings.library.confirmMove : Strings.library.confirmUse}
           </Button>
         </DialogFooter>

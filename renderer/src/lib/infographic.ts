@@ -11,11 +11,6 @@ export const LAYOUT_OPTIONS: Array<{ id: LayoutChoice; label: string }> = [
   ...INFOGRAPHIC_LAYOUTS.map(({ id, label }) => ({ id, label: `Só: ${label}` })),
 ];
 
-/** Nome do modelo para mostrar na tela. */
-export function layoutLabel(id: InfographicLayoutId): string {
-  return INFOGRAPHIC_LAYOUTS.find((layout) => layout.id === id)?.label ?? id;
-}
-
 /** Nome sugerido para o arquivo de imagem (o diálogo do sistema deixa o usuário trocar). */
 export function infographicImageName(title: string, transparent = false): string {
   const clean = title.replace(/\s+/g, ' ').trim().slice(0, 80);

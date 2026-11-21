@@ -1,6 +1,7 @@
-import type { LucideIcon } from "lucide-react";
+import type { LucideIcon } from 'lucide-react';
 
-import { Button } from "#ui/button";
+import { Button } from '#ui/button';
+import { Tip } from '#components/Tip';
 
 export interface ToggleOption<T extends string> {
   id: T;
@@ -32,19 +33,19 @@ export function OptionToggle<T extends string>({
   return (
     <div role="group" aria-label={label} className="inline-flex gap-1">
       {options.map(({ id, label: optionLabel, icon: Icon }) => (
-        <Button
-          key={id}
-          type="button"
-          size={showLabels ? "sm" : "icon-sm"}
-          variant={value === id ? "default" : "outline"}
-          aria-label={optionLabel}
-          aria-pressed={value === id}
-          title={optionLabel}
-          onClick={() => onChange(id)}
-        >
-          <Icon />
-          {showLabels && optionLabel}
-        </Button>
+        <Tip key={id} content={optionLabel}>
+          <Button
+            type="button"
+            size={showLabels ? 'sm' : 'icon-sm'}
+            variant={value === id ? 'default' : 'outline'}
+            aria-label={optionLabel}
+            aria-pressed={value === id}
+            onClick={() => onChange(id)}
+          >
+            <Icon />
+            {showLabels && optionLabel}
+          </Button>
+        </Tip>
       ))}
     </div>
   );

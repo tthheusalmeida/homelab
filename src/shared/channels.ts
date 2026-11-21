@@ -10,6 +10,7 @@ export const IpcChannels = {
     version: 'app:version',
     relaunch: 'app:relaunch',
     openSettings: 'app:open-settings',
+    revealFile: 'app:reveal-file',
     settingsSection: 'app:settings-section',
     restartPending: 'app:restart-pending',
     markRestartPending: 'app:mark-restart-pending',

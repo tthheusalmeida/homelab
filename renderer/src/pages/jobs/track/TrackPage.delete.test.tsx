@@ -9,6 +9,7 @@ import { failure, mockApi, ok, payloadsOf } from "#test/api-mock";
 
 import { SnackbarProvider } from "../../../components/Snackbar";
 import { createTestQueryClient } from "../../../test/utils";
+import { tooltipTextOf } from "#test/tooltip";
 import type { Job } from "../types/job.types";
 
 import { TrackPage } from "./TrackPage";
@@ -111,7 +112,7 @@ describe("TrackPage: excluir jobs", () => {
     await user.click(await screen.findByRole("button", { name: "Selecionar" }));
 
     expect(checkboxFor("run-1")).toBeDisabled();
-    expect(checkboxFor("run-1")).toHaveAttribute("title", expect.stringContaining("Em andamento"));
+    expect(await tooltipTextOf(checkboxFor("run-1").parentElement as HTMLElement)).toContain("Em andamento");
     expect(checkboxFor("pen-1")).toBeDisabled();
     expect(checkboxFor("done-1")).toBeEnabled();
   });
@@ -238,7 +239,7 @@ describe("TrackPage: excluir jobs", () => {
     const button = await screen.findByRole("button", { name: "Excluir todos" });
 
     expect(button).toBeDisabled();
-    expect(button).toHaveAttribute("title", expect.stringContaining("Não há processos"));
+    expect(await tooltipTextOf(button.parentElement as HTMLElement)).toContain("Não há processos");
   });
 
   it("when there are jobs in several states, should summarize them in the header", async () => {

@@ -1,15 +1,8 @@
-import { Minus, Plus, ZoomIn, ZoomOut } from 'lucide-react';
-
 import { Card, CardContent, CardHeader, CardTitle } from '#ui/card';
 
-import { ValueStepper } from './ValueStepper';
+import { ReadingSteppers } from './ReadingSteppers';
 import { useReadingPreferences } from '#hooks/use-appearance';
-import { stepFontSize, stepZoom } from '#lib/reading';
-import {
-  READING_FONT_SIZE,
-  READING_ZOOM,
-  type ReadingPreferences,
-} from '#shared/contracts/reading';
+import type { ReadingPreferences } from '#shared/contracts/reading';
 
 /**
  * Atalhos de leitura (tamanho da letra e zoom) para o painel ao lado do sumário, na página, no livro
@@ -31,31 +24,7 @@ export function ReadingQuickControls() {
       </CardHeader>
 
       <CardContent className="gap-2">
-        <ValueStepper
-          label="Letra"
-          value={`${reading.fontSize}`}
-          decreaseLabel="Diminuir a letra"
-          increaseLabel="Aumentar a letra"
-          canDecrease={reading.fontSize > READING_FONT_SIZE.min}
-          canIncrease={reading.fontSize < READING_FONT_SIZE.max}
-          decreaseIcon={<Minus />}
-          increaseIcon={<Plus />}
-          onDecrease={() => change({ fontSize: stepFontSize(reading.fontSize, -1) })}
-          onIncrease={() => change({ fontSize: stepFontSize(reading.fontSize, 1) })}
-        />
-
-        <ValueStepper
-          label="Zoom"
-          value={`${reading.zoom}%`}
-          decreaseLabel="Diminuir o zoom"
-          increaseLabel="Aumentar o zoom"
-          canDecrease={reading.zoom > READING_ZOOM.min}
-          canIncrease={reading.zoom < READING_ZOOM.max}
-          decreaseIcon={<ZoomOut />}
-          increaseIcon={<ZoomIn />}
-          onDecrease={() => change({ zoom: stepZoom(reading.zoom, -1) })}
-          onIncrease={() => change({ zoom: stepZoom(reading.zoom, 1) })}
-        />
+        <ReadingSteppers reading={reading} change={change} fontLabel="Letra" zoomLabel="Zoom" />
       </CardContent>
     </Card>
   );

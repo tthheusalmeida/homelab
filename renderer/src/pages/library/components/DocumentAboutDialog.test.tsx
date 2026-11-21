@@ -99,9 +99,8 @@ describe("DocumentAboutDialog", () => {
     renderDialog({ onEdit, onRemove });
 
     await user.click(screen.getByRole("button", { name: /Editar/ }));
-    await user.click(
-      screen.getByRole("button", { name: /Remover da biblioteca/ }),
-    );
+    await user.click(screen.getByRole("button", { name: "Mais ações" }));
+    await user.click(await screen.findByRole("menuitem", { name: /Remover da biblioteca/ }));
 
     expect(onEdit).toHaveBeenCalledTimes(1);
     expect(onRemove).toHaveBeenCalledTimes(1);
@@ -139,7 +138,7 @@ describe("DocumentAboutDialog", () => {
   });
 });
 
-describe("DocumentAboutDialog — icon actions with tooltips", () => {
+describe("DocumentAboutDialog — actions by priority", () => {
   const all = () =>
     renderDialog({
       onAddToBook: vi.fn(),
@@ -147,54 +146,70 @@ describe("DocumentAboutDialog — icon actions with tooltips", () => {
       onRemove: vi.fn(),
       onDelete: vi.fn(),
     });
-  const names = ["Adicionar a um livro", "Editar", "Remover da biblioteca", "Excluir"];
 
-  it("when all the actions are given, should show each one as an icon only", () => {
+  it("when all the actions are given, should show Editar as the main button and Adicionar a um livro as secondary", () => {
     all();
 
-    for (const name of names) {
-      const button = screen.getByRole("button", { name });
+    const edit = screen.getByRole("button", { name: "Editar" });
+    const add = screen.getByRole("button", { name: /Adicionar a um livro/ });
 
-      expect(button).toHaveTextContent("");
-      expect(button.querySelector("svg")).not.toBeNull();
-    }
+    expect(edit).toHaveTextContent("Editar");
+    expect(edit.className).toContain("bg-primary");
+    expect(add.className).not.toContain("bg-primary");
+    expect(add.className).toContain("border-border");
   });
 
-  it.each(names)("when the mouse goes over %s, should show a tooltip with the action", async (name) => {
+  it("when all the actions are given, should keep Remover and Excluir out of the buttons, inside Mais ações", async () => {
     all();
 
-    await userEvent.hover(screen.getByRole("button", { name }));
+    expect(screen.queryByRole("button", { name: "Excluir" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Remover da biblioteca/ })).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: "Mais ações" }));
 
     expect(
-      await screen.findByText(name, { selector: '[data-slot="tooltip-content"]' }),
-    ).toBeInTheDocument();
+      (await screen.findAllByRole("menuitem")).map((item) => item.textContent),
+    ).toEqual(["Remover da biblioteca", "Excluir"]);
   });
 
-  it("when onDelete is given, should show Excluir as a destructive icon and call it on click", async () => {
+  it("when Mais ações is opened, should mark Excluir as destructive and apart from Remover", async () => {
+    all();
+
+    await userEvent.click(screen.getByRole("button", { name: "Mais ações" }));
+
+    expect(await screen.findByRole("menuitem", { name: "Excluir" })).toHaveAttribute(
+      "data-variant",
+      "destructive",
+    );
+    expect(screen.getAllByRole("separator")).toHaveLength(1);
+  });
+
+  it("when onDelete is given, should call it when Excluir is chosen", async () => {
     const onDelete = vi.fn();
 
     renderDialog({ onDelete });
-
-    const button = screen.getByRole("button", { name: "Excluir" });
-
-    expect(button.className).toContain("text-destructive");
-
-    await userEvent.click(button);
+    await userEvent.click(screen.getByRole("button", { name: "Mais ações" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Excluir" }));
 
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
 
-  it("when only onDelete is given (a page that is not published), should show only Excluir", () => {
+  it("when only onDelete is given (a page that is not published), should show only Mais ações with Excluir", async () => {
     renderDialog({ onDelete: vi.fn() });
 
-    expect(screen.getByRole("button", { name: "Excluir" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Editar" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Remover da biblioteca" })).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: "Mais ações" }));
+
+    expect((await screen.findAllByRole("menuitem")).map((item) => item.textContent)).toEqual([
+      "Excluir",
+    ]);
   });
 
-  it("when onDelete is not given, should not show Excluir", () => {
+  it("when only onEdit is given, should not show Mais ações", () => {
     renderDialog({ onEdit: vi.fn() });
 
-    expect(screen.queryByRole("button", { name: "Excluir" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Mais ações" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Editar" })).toBeInTheDocument();
   });
 });

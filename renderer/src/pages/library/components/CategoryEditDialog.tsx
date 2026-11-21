@@ -1,11 +1,7 @@
-import { useEffect, useId, useMemo, useState } from 'react';
-
-import { Loader2 } from 'lucide-react';
+import { useId, useMemo, useState } from 'react';
 
 import { Button } from '#ui/button';
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogForm,
@@ -15,7 +11,9 @@ import {
 import { Input } from '#ui/input';
 import { Label } from '#ui/label';
 
+import { BusyDialog, useReportBusy } from '#components/BusyDialog';
 import { Callout } from '#components/Callout';
+import { FormButtons } from '#components/FormButtons';
 import { ConfirmDialog } from '#components/ConfirmDialog';
 import { OptionSelect } from '#components/OptionSelect';
 import { useSnackbar } from '#components/Snackbar';
@@ -23,6 +21,7 @@ import { useSnackbar } from '#components/Snackbar';
 import { findCategory, placesFor, startsWithPath } from '../categories';
 import { useDeleteCategory, useRenameCategory } from '../hooks/useLibrary';
 import type { CategoryNode } from '../types/library.types';
+import { useErrorAlert } from '#hooks/use-error-alert';
 
 /** Tamanho máximo do nome de uma categoria (o mesmo do back). */
 const MAX_NAME_LENGTH = 60;
@@ -85,24 +84,22 @@ export function CategoryEditDialog({
 }: CategoryEditDialogProps) {
   // Enquanto as páginas se mexem, o diálogo não fecha (Esc, clique fora ou X): fechar no meio faria
   // a operação continuar sem nenhum sinal na tela.
-  const [busy, setBusy] = useState(false);
-
   return (
-    <Dialog open={category !== null} onOpenChange={(open) => (open || !busy) && onOpenChange(open)}>
-      <DialogContent bare className="sm:max-w-md">
-        {category && (
+    <BusyDialog open={category !== null} onOpenChange={onOpenChange} className="sm:max-w-md">
+      {(onBusyChange) =>
+        category && (
           <CategoryEditForm
             key={category.path.join('\u0000')}
             category={category}
             tree={tree}
             onDone={() => onOpenChange(false)}
-            onBusyChange={setBusy}
+            onBusyChange={onBusyChange}
             onRenamed={onRenamed}
             onDeleted={onDeleted}
           />
-        )}
-      </DialogContent>
-    </Dialog>
+        )
+      }
+    </BusyDialog>
   );
 }
 
@@ -132,16 +129,13 @@ function CategoryEditForm({
   const rename = useRenameCategory();
   const remove = useDeleteCategory();
   const snackbar = useSnackbar();
+  useErrorAlert(rename.isError && (rename.error.message || CategoryEditStrings.failed));
   const working = rename.isPending || remove.isPending;
   // Só uma categoria sem páginas (e sem páginas nas subcategorias) pode ser excluída.
   const deletable = category.count === 0;
 
-  useEffect(() => {
-    onBusyChange(working);
-
-    // se o formulário sair da tela, o diálogo volta a poder fechar
-    return () => onBusyChange(false);
-  }, [working, onBusyChange]);
+  // se o formulário sair da tela, o diálogo volta a poder fechar
+  useReportBusy(working, onBusyChange);
 
   const places = useMemo(
     () => placesFor(category, tree, CategoryEditStrings.root),
@@ -236,12 +230,6 @@ function CategoryEditForm({
 
         {merging && <Callout tone="info">{CategoryEditStrings.merge}</Callout>}
 
-        {rename.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            {rename.error.message || CategoryEditStrings.failed}
-          </p>
-        )}
-
         <DialogFooter>
           {deletable && (
             <Button
@@ -258,14 +246,15 @@ function CategoryEditForm({
             </Button>
           )}
 
-          <Button type="button" variant="outline" disabled={working} onClick={onDone}>
-            {CategoryEditStrings.cancel}
-          </Button>
-
-          <Button type="submit" disabled={!canSave}>
-            {rename.isPending && <Loader2 className="animate-spin" />}
+          <FormButtons
+            onCancel={onDone}
+            pending={rename.isPending}
+            locked={working}
+            canSubmit={canSave}
+            cancelLabel={CategoryEditStrings.cancel}
+          >
             {rename.isPending ? CategoryEditStrings.saving : CategoryEditStrings.save}
-          </Button>
+          </FormButtons>
         </DialogFooter>
       </DialogForm>
 

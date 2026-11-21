@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { Check, CircleAlert, Loader2 } from 'lucide-react';
+import { Check, CircleAlert } from 'lucide-react';
 
-import { HexDot } from '#components/Hex';
+import { HexDot, HexLoader } from '#components/Hex';
 import { ProgressBar } from '#components/ProgressBar';
 import { SettingsGroup } from '#components/SettingsGroup';
 import { Badge } from '#ui/badge';
@@ -34,7 +34,7 @@ function StateIcon({ component }: { component: ComponentInfo }) {
   }
 
   if (WORKING.has(component.state)) {
-    return <Loader2 aria-hidden className="size-4 animate-spin text-primary" />;
+    return <HexLoader decorative className="size-4" />;
   }
 
   return <HexDot className="bg-muted-foreground/40" />;

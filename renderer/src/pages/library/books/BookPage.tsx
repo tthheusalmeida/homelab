@@ -17,21 +17,12 @@ import {
 
 
 import { Button } from "#ui/button";
-import { Card, CardContent } from "#ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "#ui/dropdown-menu";
 import { extractHeadings } from "#lib/markdown";
 
+import { ActionMenu } from "#components/ActionMenu";
 import { BackToTopButton } from "#components/BackToTopButton";
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { EmptyState } from "#components/EmptyState";
-import { ErrorState } from "#components/ErrorState";
-import { LoadingState } from "#components/LoadingState";
 import { ReadingMode } from "#components/ReadingMode";
 import { ReadingSurface } from "#components/ReadingSurface";
 import { useActiveSection } from "#hooks/use-active-section";
@@ -67,6 +58,7 @@ import {
 import { bookStats } from "./stats";
 import type { BookSearchHit } from "./types";
 import { useSnackbar } from "#components/Snackbar";
+import { PageLoading, PageError } from "#components/PageState";
 
 type Modal = "organize" | "edit" | "delete" | "details" | "reset" | null;
 
@@ -239,24 +231,18 @@ export function BookPage() {
 
   if (reading.isLoading) {
     return (
-      <div className="flex min-h-[80dvh] items-center justify-center">
-        <LoadingState message="Carregando" />
-      </div>
+      <PageLoading />
     );
   }
 
   if (reading.isError || !reading.data) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center">
-          <ErrorState
-            primaryMessage="Oops! não foi possível abrir o livro."
-            secondaryMessage="Ele pode ter sido removido ou o servidor está indisponível."
-            actionLabel="Voltar aos livros"
-            action={() => navigate("/library/books")}
-          />
-        </CardContent>
-      </Card>
+      <PageError
+        primaryMessage="Oops! não foi possível abrir o livro."
+        secondaryMessage="Ele pode ter sido removido ou o servidor está indisponível."
+        actionLabel="Voltar aos livros"
+        action={() => navigate("/library/books")}
+      />
     );
   }
 
@@ -432,51 +418,39 @@ export function BookPage() {
             </Button>
           )}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button variant="outline">
-                  <MoreHorizontal /> Mais ações
-                </Button>
-              }
-            />
-
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setModal("details")}>
-                <Info /> Detalhes
-              </DropdownMenuItem>
-
-              <DropdownMenuItem onClick={() => setModal("organize")}>
-                <ListOrdered /> Organizar
-              </DropdownMenuItem>
-
-              <DropdownMenuItem onClick={() => setModal("edit")}>
-                <Pencil /> Editar dados e capa
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                disabled={!hasProgress}
-                onClick={() => setModal("reset")}
-              >
-                <RotateCcw /> Zerar progresso
-              </DropdownMenuItem>
-
-              {totalChapters > 0 && (
-                <DropdownMenuItem onClick={() => setPrinting(true)}>
-                  <Download /> Exportar PDF
-                </DropdownMenuItem>
-              )}
-
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => setModal("delete")}
-              >
-                <Trash2 /> Excluir livro
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ActionMenu
+            label="Mais ações"
+            icon={MoreHorizontal}
+            size="default"
+            groups={[
+              [
+                { id: "details", label: "Detalhes", icon: Info, onSelect: () => setModal("details") },
+                { id: "organize", label: "Organizar", icon: ListOrdered, onSelect: () => setModal("organize") },
+                { id: "edit", label: "Editar dados e capa", icon: Pencil, onSelect: () => setModal("edit") },
+                ...(totalChapters > 0
+                  ? [{ id: "export", label: "Exportar PDF", icon: Download, onSelect: () => setPrinting(true) }]
+                  : []),
+              ],
+              [
+                {
+                  id: "reset",
+                  label: "Zerar progresso",
+                  icon: RotateCcw,
+                  disabled: !hasProgress,
+                  onSelect: () => setModal("reset"),
+                },
+              ],
+              [
+                {
+                  id: "delete",
+                  label: "Excluir livro",
+                  icon: Trash2,
+                  destructive: true,
+                  onSelect: () => setModal("delete"),
+                },
+              ],
+            ]}
+          />
         </div>
       </header>
 

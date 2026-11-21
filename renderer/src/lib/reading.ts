@@ -86,9 +86,6 @@ export const stepFontSize = (value: number, direction: 1 | -1) =>
 
 export const stepZoom = (value: number, direction: 1 | -1) => step(value, direction, READING_ZOOM);
 
-/** Tamanho do texto em rem (16 = 1 rem). */
-export const fontSizeRem = (size: number) => `${size / 16}rem`;
-
 /**
  * Tamanho final da letra: o tamanho escolhido vezes o zoom, como num PDF (a coluna cresce junto,
  * ver `.reading-column`). Arredondado para não gerar casas decimais longas.

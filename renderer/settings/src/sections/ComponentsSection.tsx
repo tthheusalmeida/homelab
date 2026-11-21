@@ -1,22 +1,19 @@
-import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-
 import { ComponentChecklist } from '#components/ComponentChecklist';
 import { ErrorState } from '#components/ErrorState';
 import { HardwareCard } from '#components/HardwareCard';
 import { LoadingState } from '#components/LoadingState';
-import { ProgressBar } from '#components/ProgressBar';
+import { InstallOverall } from '#components/InstallOverall';
 import { useSnackbar } from '#components/Snackbar';
+import { SettingsStack } from '#components/SettingsGroup';
 import { Button } from '#ui/button';
 import {
   cancelComponentsInstall,
   useComponentsStatus,
-  useInstallComponents,
   useRemoveComponent,
   useSetActiveModel,
 } from '#hooks/use-components';
-import { ComponentStrings, idsToInstall, overallPercent, pendingBytes } from '#lib/components-text';
-import { formatBytes } from '#lib/format';
+import { useInstallSelection } from '#hooks/use-install-selection';
+import { ComponentStrings } from '#lib/components-text';
 import type { ComponentInfo } from '#shared/contracts/components';
 
 /**
@@ -26,21 +23,14 @@ import type { ComponentInfo } from '#shared/contracts/components';
  */
 export function ComponentsSection() {
   const { data: status, isLoading, isError, refetch } = useComponentsStatus();
-  const install = useInstallComponents();
   const remove = useRemoveComponent();
   const setActive = useSetActiveModel();
   const snackbar = useSnackbar();
-  const [selected, setSelected] = useState<ReadonlySet<string> | null>(null);
-
-  useEffect(() => {
-    if (status && selected === null) {
-      const missing = status.components.filter(
-        (component) => component.recommended && component.state !== 'installed',
-      );
-
-      setSelected(new Set(missing.map((component) => component.id)));
-    }
-  }, [status, selected]);
+  const { chosen, bytes, toggle, start, fail, isStarting } = useInstallSelection(status, (current) =>
+    current.components
+      .filter((component) => component.recommended && component.state !== 'installed')
+      .map((component) => component.id),
+  );
 
   if (isLoading) {
     return <LoadingState message="Carregando componentes" />;
@@ -54,28 +44,6 @@ export function ComponentsSection() {
       />
     );
   }
-
-  const chosen = selected ?? new Set<string>();
-  const bytes = pendingBytes(status.components, chosen);
-  const fail = (error: Error) => snackbar.error(error.message || ComponentStrings.installFailed);
-
-  const toggle = (id: string) => {
-    const next = new Set(chosen);
-
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      next.add(id);
-    }
-
-    setSelected(next);
-  };
-
-  const start = () => {
-    const ids = idsToInstall(status.components, chosen).map((component) => component.id);
-
-    install.mutate(ids, { onError: fail });
-  };
 
   const actions = (component: ComponentInfo) => {
     if (status.running || component.bundled || component.state !== 'installed') {
@@ -118,30 +86,14 @@ export function ComponentsSection() {
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <SettingsStack>
       <HardwareCard hardware={status.hardware} />
 
       {status.running && status.overall && (
-        <div
-          role="status"
-          className="flex flex-col gap-1.5 rounded-lg border border-primary/30 p-3"
-        >
-          <div className="flex items-baseline justify-between text-sm">
-            <span className="font-medium">
-              {ComponentStrings.overall(status.overall.done, status.overall.total)}
-            </span>
-            <span className="font-mono text-xs text-muted-foreground">
-              {formatBytes(status.overall.receivedBytes)} de{' '}
-              {formatBytes(status.overall.totalBytes)} · {overallPercent(status.overall)}%
-            </span>
-          </div>
-
-          <ProgressBar
-            value={status.overall.receivedBytes}
-            total={status.overall.totalBytes}
-            label="Progresso da instalação"
-          />
-        </div>
+        <InstallOverall
+          overall={status.overall}
+          className="rounded-lg border border-primary/30 p-3"
+        />
       )}
 
       <ComponentChecklist
@@ -162,12 +114,11 @@ export function ComponentsSection() {
             {ComponentStrings.cancel}
           </Button>
         ) : (
-          <Button disabled={install.isPending || bytes === 0} onClick={start}>
-            {install.isPending && <Loader2 className="animate-spin" />}
+          <Button disabled={isStarting || bytes === 0} onClick={start} loading={isStarting}>
             {ComponentStrings.install}
           </Button>
         )}
       </div>
-    </div>
+    </SettingsStack>
   );
 }

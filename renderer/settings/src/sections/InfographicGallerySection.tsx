@@ -4,6 +4,7 @@ import { LayoutPanelTop, Shapes } from 'lucide-react';
 import { InfographicView } from '#components/InfographicView';
 import { OptionToggle, type ToggleOption } from '#components/OptionToggle';
 import { PieceCatalog } from '#components/PieceCatalog';
+import { SettingsStack } from '#components/SettingsGroup';
 import { INFOGRAPHIC_SAMPLE, INFOGRAPHIC_SAMPLE_LAYOUTS } from '#lib/infographic-sample';
 import { Button } from '#ui/button';
 import { layoutInfo } from '#shared/infographic-layouts';
@@ -68,12 +69,12 @@ export function InfographicGallerySection() {
   const [tab, setTab] = useState<Tab>('layouts');
 
   return (
-    <div className="flex flex-col gap-5">
+    <SettingsStack>
       <OptionToggle value={tab} options={TABS} onChange={setTab} label={text.tabs} showLabels />
 
       <div key={tab} className="animate-enter-fade">
         {tab === 'layouts' ? <LayoutsGallery /> : <PiecesGallery />}
       </div>
-    </div>
+    </SettingsStack>
   );
 }

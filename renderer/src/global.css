@@ -1,13 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/inter";
-/* Fontes de leitura (Configurações > Aparência > Leitura); empacotadas, o app funciona offline. */
-@import "@fontsource-variable/literata";
-@import "@fontsource-variable/merriweather";
-@import "@fontsource-variable/lora";
-@import "@fontsource/atkinson-hyperlegible/400.css";
-@import "@fontsource/atkinson-hyperlegible/700.css";
+/* Inter e as fontes de leitura (Configurações > Aparência > Leitura); empacotadas, o app funciona offline.
+   Só os alfabetos usados (gerado por `npm run fonts`): os pacotes inteiros pesam cerca de 400 kB a mais. */
+@import "./fonts.css";
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
@@ -925,8 +921,8 @@
     transition-timing-function: var(--ease-out-soft);
   }
 
-  /* Botões afundam um pouco ao clicar. */
-  button:not(:disabled):active,
+  /* Botões afundam um pouco ao clicar (menos o botão do select, que não pode mudar de tamanho ao abrir a lista). */
+  button:not(:disabled):not([data-slot="select-trigger"]):active,
   [role="button"]:not([aria-disabled="true"]):active {
     transform: scale(0.97);
   }

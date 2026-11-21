@@ -1,7 +1,7 @@
 import { useId } from "react";
 
-import { Input } from "#ui/input";
 import { Label } from "#ui/label";
+import { SuggestInput } from "#components/SuggestInput";
 import { normalizeKey } from "#lib/text";
 
 export interface CategoryOption {
@@ -100,22 +100,16 @@ export function CategoryPicker({
               {LEVEL_LABELS[level] ?? `Nível ${level + 1}`}
             </Label>
 
-            <Input
+            <SuggestInput
               id={inputId}
-              list={`${inputId}-options`}
               value={text}
-              onChange={(event) => handleChange(level, event.target.value)}
+              onValueChange={(next) => handleChange(level, next)}
+              suggestions={suggestions.map((option) => option.name)}
               placeholder={
                 suggestions.length > 0 ? "Escolha ou crie" : "Digite um nome"
               }
               disabled={disabled}
             />
-
-            <datalist id={`${inputId}-options`}>
-              {suggestions.map((option) => (
-                <option key={option.name} value={option.name} />
-              ))}
-            </datalist>
 
             {isNew && (
               <p className="text-xs text-muted-foreground">Nova categoria</p>

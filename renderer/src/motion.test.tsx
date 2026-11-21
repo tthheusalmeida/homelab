@@ -24,6 +24,10 @@ import { services } from "./pages/home/types/services.types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "#ui/collapsible";
 
 describe("motion css", () => {
+  it("when pressing the select button, should not shrink it like other buttons", () => {
+    expect(css).toContain('button:not(:disabled):not([data-slot="select-trigger"]):active');
+  });
+
   it.each([
     "animate-enter",
     "animate-enter-fade",
@@ -165,10 +169,11 @@ describe("small state changes", () => {
     expect(container.querySelector("[data-status=completed] [class*=transition-colors]")).not.toBeNull();
   });
 
-  it("when a job is running, should keep the status icon spinning", () => {
+  it("when a job is running, should show the hexagon loader instead of a spinner", () => {
     const { container } = render(<JobStatusBadge status="running" />);
 
-    expect(container.querySelector("svg")).toHaveClass("animate-spin");
+    expect(container.querySelector(".hex-loader")).not.toBeNull();
+    expect(container.querySelector(".animate-spin")).toBeNull();
   });
 
   it("when a job is completed, should pop the status icon", () => {

@@ -1,7 +1,8 @@
 import { useState } from "react";
 
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithSnackbar as render } from "#test/utils";
 import userEvent from "@testing-library/user-event";
 
 import { CategoryPicker, type CategoryOption } from "./CategoryPicker";
@@ -139,10 +140,12 @@ function ControlledPicker({
   );
 }
 
-const optionValues = (input: HTMLElement) =>
-  Array.from(
-    document.querySelectorAll(`#${input.getAttribute("list")} option`),
-  ).map((option) => option.getAttribute("value"));
+/** Abre a lista de sugestões do campo (clique) e devolve os textos das opções. */
+const optionValues = async (input: HTMLElement) => {
+  await userEvent.click(input);
+
+  return (await screen.findAllByRole("option")).map((option) => option.textContent);
+};
 
 describe("CategoryPicker", () => {
   it("when empty, should show only the first level", () => {
@@ -152,10 +155,10 @@ describe("CategoryPicker", () => {
     expect(screen.queryByLabelText("Subcategoria")).not.toBeInTheDocument();
   });
 
-  it("when the first level has existing categories, should suggest them", () => {
+  it("when the first level has existing categories, should suggest them", async () => {
     render(<ControlledPicker />);
 
-    expect(optionValues(screen.getByLabelText("Categoria"))).toEqual([
+    expect(await optionValues(screen.getByLabelText("Categoria"))).toEqual([
       "Ciência da Computação",
       "Química",
     ]);
@@ -168,7 +171,7 @@ describe("CategoryPicker", () => {
     await user.type(screen.getByLabelText("Categoria"), "ciencia da computacao");
 
     const next = screen.getByLabelText("Subcategoria");
-    expect(optionValues(next)).toEqual(["DevOps", "Redes"]);
+    expect(await optionValues(next)).toEqual(["DevOps", "Redes"]);
   });
 
   it("when levels are filled, should call onChange with the whole path", async () => {

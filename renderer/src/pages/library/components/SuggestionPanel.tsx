@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Loader2, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import { Button } from "#ui/button";
 
@@ -9,6 +9,7 @@ import { OptionSelect } from "#components/OptionSelect";
 import { useAiModels } from "../../ai/chat/hooks/useAiModels";
 import { useSuggestClassification } from "../hooks/useLibrary";
 import type { ClassificationSuggestion } from "../types/library.types";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 const AUTO_MODEL = "auto";
 
@@ -30,6 +31,7 @@ export function SuggestionPanel({
 
   const models = useAiModels("gemini");
   const suggest = useSuggestClassification();
+  useErrorAlert(suggest.isError && "Não foi possível obter a sugestão. Tente novamente.");
 
   const options = [
     { id: AUTO_MODEL, label: "Mais barato (automático)" },
@@ -61,14 +63,11 @@ export function SuggestionPanel({
           type="button"
           size="sm"
           variant="secondary"
-          disabled={disabled || suggest.isPending}
+          disabled={disabled}
+          loading={suggest.isPending}
           onClick={handleSuggest}
         >
-          {suggest.isPending ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <Sparkles />
-          )}
+          {!suggest.isPending && <Sparkles />}
           Sugerir com IA
         </Button>
 
@@ -95,11 +94,6 @@ export function SuggestionPanel({
         </p>
       )}
 
-      {suggest.isError && (
-        <p role="alert" className="animate-enter-fade text-xs text-destructive">
-          Não foi possível obter a sugestão. Tente novamente.
-        </p>
-      )}
     </section>
   );
 }

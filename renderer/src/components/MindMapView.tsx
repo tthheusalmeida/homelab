@@ -13,15 +13,15 @@ import {
 import {
   ChevronsDownUp,
   ChevronsUpDown,
-  ImageDown,
+  Download,
   Maximize,
   Plus,
-  SquareDashed,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
 
 import { cn } from '#lib/utils';
+import { HEX_CLIP } from '#lib/hex';
 import type { MindMap, MindMapNode } from '#lib/mind-map';
 import {
   addBranch,
@@ -38,6 +38,7 @@ import {
 import { MIND_MAP_EDIT_LIMITS } from '#shared/mind-map-limits';
 import { captureMindMapPng, mindMapImageName } from '#lib/mind-map-image';
 import { HexDot, HexLoader, HoneycombBackdrop, Logo } from './Hex';
+import { ActionMenu } from './ActionMenu';
 import { IconButton } from './IconButton';
 import { EditableTopic, type EditOps } from './MindMapEditable';
 
@@ -59,7 +60,6 @@ const ZOOM_STEP = 1.2;
 /** Quanto o ponteiro precisa andar (px) para o gesto contar como arrastar, e não como clique. */
 const DRAG_THRESHOLD = 4;
 
-const HEX_CLIP = '[clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]';
 
 interface View {
   x: number;
@@ -679,35 +679,22 @@ export function MindMapView({
         <>
           <span aria-hidden="true" className="mx-0.5 h-5 w-px bg-border" />
 
-          <IconButton
-            label={exporting === 'solid' ? 'Gerando imagem…' : 'Baixar o mapa como PNG com fundo'}
-            disabled={exporting !== null}
-            aria-busy={exporting === 'solid'}
-            onClick={() => void downloadImage(false)}
-          >
-            {exporting === 'solid' ? (
-              <HexLoader className="size-4" label="Gerando imagem" />
-            ) : (
-              <ImageDown />
-            )}
-          </IconButton>
-
-          <IconButton
-            label={
-              exporting === 'transparent'
-                ? 'Gerando imagem…'
-                : 'Baixar o mapa como PNG sem fundo (transparente)'
-            }
-            disabled={exporting !== null}
-            aria-busy={exporting === 'transparent'}
-            onClick={() => void downloadImage(true)}
-          >
-            {exporting === 'transparent' ? (
-              <HexLoader className="size-4" label="Gerando imagem" />
-            ) : (
-              <SquareDashed />
-            )}
-          </IconButton>
+          <ActionMenu
+            label="Baixar"
+            icon={Download}
+            iconOnly
+            loading={exporting !== null}
+            groups={[
+              [
+                { id: 'png', label: 'PNG', onSelect: () => void downloadImage(false) },
+                {
+                  id: 'png-transparent',
+                  label: 'PNG transparente',
+                  onSelect: () => void downloadImage(true),
+                },
+              ],
+            ]}
+          />
         </>
       )}
     </>

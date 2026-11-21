@@ -4,7 +4,6 @@ import {
   Download,
   ExternalLink,
   Languages,
-  Loader2,
   RefreshCw,
 } from 'lucide-react';
 
@@ -13,7 +12,8 @@ import { ErrorState } from '#components/ErrorState';
 import { LoadingState } from '#components/LoadingState';
 import { MarkdownMessage } from '#components/MarkdownMessage';
 import { ProgressBar } from '#components/ProgressBar';
-import { SettingsGroup, SettingsPanel, SettingsRow } from '#components/SettingsGroup';
+import { useErrorAlert } from '#hooks/use-error-alert';
+import { SettingsGroup, SettingsPanel, SettingsRow, SettingsStack } from '#components/SettingsGroup';
 import {
   useCheckForUpdates,
   useInstallUpdate,
@@ -25,8 +25,8 @@ import {
 import { formatDateTime } from '#lib/format';
 import { UpdateStrings } from '#lib/update-text';
 import { Button } from '#ui/button';
-import { Label } from '#ui/label';
 
+import { CheckboxField } from '../components/CheckboxField';
 import { Strings } from '../strings';
 
 /**
@@ -44,6 +44,11 @@ export function UpdatesSection() {
   // Só oferece traduzir com a IA local (Ollama) ligada; sem ela as notas ficam em inglês.
   const translationAvailable = useTranslationAvailable(hasNotes);
   const translate = useTranslateNotes();
+  useErrorAlert(
+    status?.error ??
+      (check.isError || install.isError || setAutoCheck.isError ? UpdateStrings.requestFailed : null),
+  );
+  useErrorAlert(translate.isError && UpdateStrings.translateFailed);
 
   if (isPending) {
     return <LoadingState message={Strings.loading} />;
@@ -61,12 +66,9 @@ export function UpdatesSection() {
   const downloading = status.state === 'downloading';
   const ready = status.state === 'ready';
   const busy = checking || downloading || status.state === 'installing' || install.isPending;
-  const error =
-    status.error ??
-    (check.isError || install.isError || setAutoCheck.isError ? UpdateStrings.requestFailed : null);
 
   return (
-    <div className="flex flex-col gap-6">
+    <SettingsStack>
       <SettingsGroup title="Versão">
         <SettingsPanel highlight={Boolean(latest)}>
           <div className="flex flex-col gap-2">
@@ -113,12 +115,6 @@ export function UpdatesSection() {
             </p>
           )}
 
-          {error && (
-            <p role="alert" className="animate-enter-fade text-sm text-destructive">
-              {error}
-            </p>
-          )}
-
           {enabled && (
           <div className="flex flex-wrap items-center gap-2">
             {ready && (
@@ -143,8 +139,8 @@ export function UpdatesSection() {
               </Button>
             )}
 
-            <Button variant="outline" disabled={busy} onClick={() => check.mutate()}>
-              {checking ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+            <Button variant="outline" disabled={busy} loading={checking} onClick={() => check.mutate()}>
+              {!checking && <RefreshCw />}
               {checking ? UpdateStrings.checking : UpdateStrings.check}
             </Button>
           </div>
@@ -164,20 +160,13 @@ export function UpdatesSection() {
       <SettingsGroup title="Verificação">
         <SettingsPanel>
           <SettingsRow label={UpdateStrings.autoCheck} hint={UpdateStrings.autoCheckHint}>
-            <div className="flex items-center gap-2">
-              <input
-                id="updates-auto-check"
-                type="checkbox"
-                className="size-4 shrink-0 cursor-pointer accent-primary"
-                checked={status.autoCheck}
-                disabled={setAutoCheck.isPending}
-                onChange={(event) => setAutoCheck.mutate(event.target.checked)}
-              />
-
-              <Label htmlFor="updates-auto-check" className="cursor-pointer text-sm font-normal">
-                {UpdateStrings.autoCheck}
-              </Label>
-            </div>
+            <CheckboxField
+              id="updates-auto-check"
+              label={UpdateStrings.autoCheck}
+              checked={status.autoCheck}
+              disabled={setAutoCheck.isPending}
+              onChange={(checked) => setAutoCheck.mutate(checked)}
+            />
           </SettingsRow>
         </SettingsPanel>
       </SettingsGroup>
@@ -192,10 +181,10 @@ export function UpdatesSection() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={translate.isPending}
+                    loading={translate.isPending}
                     onClick={() => translate.mutate()}
                   >
-                    {translate.isPending ? <Loader2 className="animate-spin" /> : <Languages />}
+                    {!translate.isPending && <Languages />}
                     {translate.isPending ? UpdateStrings.translating : UpdateStrings.translate}
                   </Button>
                 )}
@@ -213,11 +202,6 @@ export function UpdatesSection() {
                   </>
                 )}
 
-                {translate.isError && (
-                  <p role="alert" className="animate-enter-fade text-sm text-destructive">
-                    {UpdateStrings.translateFailed}
-                  </p>
-                )}
               </div>
             )}
 
@@ -242,6 +226,6 @@ export function UpdatesSection() {
           install.mutate();
         }}
       />
-    </div>
+    </SettingsStack>
   );
 }

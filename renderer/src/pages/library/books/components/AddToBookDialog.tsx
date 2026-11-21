@@ -1,7 +1,5 @@
 import { useState } from "react";
 
-import { Loader2 } from "lucide-react";
-
 import { Badge } from "#ui/badge";
 import { Button } from "#ui/button";
 import {
@@ -15,6 +13,7 @@ import { Input } from "#ui/input";
 
 import { useAddBookChapter, useBooks, useCreateBook } from "../hooks";
 import { bookKindLabels } from "../types";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 interface AddToBookDialogProps {
   open: boolean;
@@ -66,6 +65,7 @@ function Picker({
 
   const busy = add.isPending || create.isPending;
   const failed = add.isError || create.isError;
+  useErrorAlert(failed && "Não foi possível adicionar ao livro. Tente novamente.");
 
   function handleCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -128,17 +128,11 @@ function Picker({
           disabled={busy}
         />
 
-        <Button type="submit" disabled={busy || newTitle.trim() === ""}>
-          {busy && <Loader2 className="animate-spin" />}
+        <Button type="submit" disabled={busy || newTitle.trim() === ""} loading={busy}>
           Criar e adicionar
         </Button>
       </form>
 
-      {failed && (
-        <p role="alert" className="animate-enter-fade text-sm text-destructive">
-          Não foi possível adicionar ao livro. Tente novamente.
-        </p>
-      )}
     </div>
   );
 }

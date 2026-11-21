@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import {
   FolderPlus,
   GripVertical,
-  Loader2,
   Plus,
   Trash2,
   X,
@@ -22,6 +21,7 @@ import {
 } from "#ui/dialog";
 import { Input } from "#ui/input";
 import { cn } from "#lib/utils";
+import { Tip } from "#components/Tip";
 
 import { SearchInput } from "#components/SearchInput";
 import { useDebouncedValue } from "#hooks/use-debounced-value";
@@ -41,6 +41,8 @@ import {
   toDrafts,
 } from "../organizer";
 import type { BookDetail } from "../types";
+import { FormButtons } from "#components/FormButtons";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 interface BookOrganizerDialogProps {
   open: boolean;
@@ -102,6 +104,7 @@ function Organizer({
   const [over, setOver] = useState<Over>(null);
 
   const save = useSetBookStructure();
+  useErrorAlert(save.isError && "Não foi possível salvar o livro. Tente novamente.");
   const q = useDebouncedValue(search);
   const documents = useDocuments({ q, sort: "title" });
 
@@ -238,24 +241,25 @@ function Organizer({
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <span
-                    role="button"
-                    tabIndex={-1}
-                    draggable
-                    aria-label={`Arrastar módulo ${moduleIndex + 1}`}
-                    title="Arraste para reordenar o módulo"
-                    className="cursor-grab text-muted-foreground active:cursor-grabbing"
-                    onDragStart={(event) =>
-                      startDrag(
-                        event,
-                        { kind: "module", id: module.id },
-                        event.currentTarget.closest("[data-module]"),
-                      )
-                    }
-                    onDragEnd={endDrag}
-                  >
-                    <GripVertical className="size-5" />
-                  </span>
+                  <Tip content="Arraste para reordenar o módulo">
+                    <span
+                      role="button"
+                      tabIndex={-1}
+                      draggable
+                      aria-label={`Arrastar módulo ${moduleIndex + 1}`}
+                      className="cursor-grab text-muted-foreground active:cursor-grabbing"
+                      onDragStart={(event) =>
+                        startDrag(
+                          event,
+                          { kind: "module", id: module.id },
+                          event.currentTarget.closest("[data-module]"),
+                        )
+                      }
+                      onDragEnd={endDrag}
+                    >
+                      <GripVertical className="size-5" />
+                    </span>
+                  </Tip>
 
                   <Input
                     aria-label={`Título do módulo ${moduleIndex + 1}`}
@@ -427,26 +431,15 @@ function Organizer({
         </section>
       </div>
 
-      {save.isError && (
-        <p role="alert" className="animate-enter-fade text-sm text-destructive">
-          Não foi possível salvar o livro. Tente novamente.
-        </p>
-      )}
-
       <DialogFooter>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={save.isPending}
-          onClick={onClose}
+        <FormButtons
+          onCancel={onClose}
+          pending={save.isPending}
+          canSubmit={canSave}
+          onSubmit={handleSave}
         >
-          Cancelar
-        </Button>
-
-        <Button type="button" disabled={!canSave} onClick={handleSave}>
-          {save.isPending && <Loader2 className="animate-spin" />}
           Salvar
-        </Button>
+        </FormButtons>
       </DialogFooter>
     </DialogSections>
   );

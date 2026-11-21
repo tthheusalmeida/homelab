@@ -10,6 +10,7 @@ import {
 import { useExcerptProgress } from '#hooks/use-excerpt-progress';
 import { useTranscriptPreferences } from '#hooks/use-appearance';
 import { cn } from '#lib/utils';
+import { Tip } from '#components/Tip';
 import { excerptSpans } from '#lib/transcript-progress';
 import { TranscriptStrings } from '#lib/transcript-text';
 
@@ -63,14 +64,11 @@ function TimeChip({
   }
 
   return (
-    <ExternalLink
-      bare
-      href={href}
-      className={className}
-      title={supportsTimedLink(sourceUrl) ? TranscriptStrings.openAt : TranscriptStrings.openVideo}
-    >
-      {clock}
-    </ExternalLink>
+    <Tip content={supportsTimedLink(sourceUrl) ? TranscriptStrings.openAt : TranscriptStrings.openVideo}>
+      <ExternalLink bare href={href} className={className}>
+        {clock}
+      </ExternalLink>
+    </Tip>
   );
 }
 

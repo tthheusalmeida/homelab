@@ -10,8 +10,10 @@
 - Latência média: ms abaixo de 1 s, depois s, m ou h (1500 → "1.5s").
 
 ## Requests recentes (tabela)
-- Colunas: provider, modelo, operação, tokens (K/M/B), latência, custo (4 casas), status.
-- Status: "Success" (verde) ou "Failed" (vermelho).
+- Mostra as **10 últimas** requisições, com as que falharam.
+- Colunas: provedor, modelo, operação, tokens (K/M/B), latência, custo (4 casas), status.
+- Status: "Sucesso" (verde) ou "Falhou" (vermelho). A linha que falhou fica em destaque e o **motivo** aparece sob o modelo (e no tooltip do status).
+- Sem requisições: a mensagem "Nenhuma requisição registrada ainda.".
 
 ## Outras seções
 - Timeline, uso por provider e uso por modelo recebem os dados prontos do back.

@@ -3,6 +3,7 @@ import type { MutableRefObject } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 
 import { cn } from '#lib/utils';
+import { HEX_CLIP } from '#lib/hex';
 import type { MindMapNode } from '#lib/mind-map';
 import { pathKey, type NodePath } from '#lib/mind-map-edit';
 import { MIND_MAP_EDIT_LIMITS } from '#shared/mind-map-limits';
@@ -20,7 +21,6 @@ export interface EditOps {
   focusRef: MutableRefObject<string | null>;
 }
 
-const HEX_CLIP = '[clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]';
 
 /** Campo de texto "no papel": sem caixa, com um tracejado embaixo que vira linha cheia ao focar. */
 const FIELD =

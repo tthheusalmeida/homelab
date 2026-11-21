@@ -1,11 +1,11 @@
 import { toPng } from 'html-to-image';
 
+import { DATA_URL_PREFIX, IMAGE_PIXEL_RATIO, pinSvgPaint } from './image-capture';
+
+export { IMAGE_PIXEL_RATIO };
+
 /** Folga (px) em volta do mapa na imagem. */
 export const IMAGE_PADDING = 40;
-/** Resolução da imagem: 2x deixa o texto nítido em telas e impressão. */
-export const IMAGE_PIXEL_RATIO = 2;
-
-const DATA_URL_PREFIX = /^data:image\/png;base64,/;
 
 /** Nome sugerido para o arquivo (o diálogo do sistema deixa o usuário trocar). */
 export function mindMapImageName(title: string, transparent = false): string {
@@ -13,29 +13,6 @@ export function mindMapImageName(title: string, transparent = false): string {
   const name = clean ? `Mapa mental - ${clean}` : 'Mapa mental';
 
   return transparent ? `${name} (sem fundo)` : name;
-}
-
-/**
- * A biblioteca de captura perde o preenchimento que vem de classe CSS dentro de SVG (o ícone da
- * colmeia, por exemplo, sairia preto). Antes da foto, fixa na própria tag a cor já calculada; devolve
- * quem desfaz isso depois.
- */
-function pinSvgPaint(stage: HTMLElement): () => void {
-  const undo: Array<() => void> = [];
-
-  for (const element of stage.querySelectorAll<SVGElement>('svg *')) {
-    const { fill } = getComputedStyle(element);
-    const previous = element.style.fill;
-
-    if (fill) {
-      element.style.fill = fill;
-      undo.push(() => {
-        element.style.fill = previous;
-      });
-    }
-  }
-
-  return () => undo.forEach((restore) => restore());
 }
 
 /**

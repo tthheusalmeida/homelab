@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { INFOGRAPHIC_PIECES } from '#shared/infographic-pieces';
 
 import { CatalogStrings, PieceCatalog } from './PieceCatalog';
+import { tooltipTextOf } from '#test/tooltip';
 
 describe('CatalogStrings', () => {
   it('when counting, should pluralize pieces and groups', () => {
@@ -142,18 +143,22 @@ describe('PieceCatalog fixed size', () => {
     }
   });
 
-  it('when a name is long, should keep it whole in the tooltip of the card', () => {
+  it('when a name is long, should keep it whole in the tooltip of the card', async () => {
     render(<PieceCatalog onPick={vi.fn()} details={false} />);
 
-    expect(screen.getByTitle('Câmera de segurança')).toBeInTheDocument();
-    expect(screen.getByTitle('Controle de videogame')).toBeInTheDocument();
-  });
+    const card = (name: string) =>
+      screen.getByText(name, { selector: 'b' }).closest('button') as HTMLElement;
 
-  it('when only viewing, should also give each card the tooltip and the same size', () => {
+    expect(await tooltipTextOf(card('Câmera de segurança'))).toBe('Câmera de segurança');
+    expect(await tooltipTextOf(card('Controle de videogame'))).toBe('Controle de videogame');
+  }, 20_000);
+
+  it('when only viewing, should also give each card the tooltip and the same size', async () => {
     render(<PieceCatalog />);
 
-    const card = screen.getByTitle('Notebook');
+    const card = screen.getByText('Notebook', { selector: 'b' }).closest('div.h-full') as HTMLElement;
 
     expect(card).toHaveClass('h-full');
+    expect(await tooltipTextOf(card)).toBe('Notebook');
   });
 });

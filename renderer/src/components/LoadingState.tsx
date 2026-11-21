@@ -23,7 +23,7 @@ export function LoadingState({
       {loading && (
         <HexLoader
           label={message}
-          className={cn("hex-loader", inline ? "size-5" : "size-12")}
+          className={inline ? "size-5" : "size-12"}
         />
       )}
 

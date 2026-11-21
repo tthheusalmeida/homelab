@@ -13,6 +13,7 @@ import {
 import { Badge } from "#ui/badge";
 import { Button } from "#ui/button";
 import { Card, CardContent, CardHeader } from "#ui/card";
+import { Tip } from "#components/Tip";
 
 import { isActiveJob } from "../active";
 import { TrackStrings } from "../strings";
@@ -73,15 +74,16 @@ export function JobListItem({
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             {selectable && (
-              <input
-                type="checkbox"
-                className="mt-0.5 size-4 shrink-0 cursor-pointer accent-primary disabled:cursor-not-allowed"
-                aria-label={TrackStrings.selectJob(job.label, job.id)}
-                title={active ? TrackStrings.activeCannotBeDeleted : undefined}
-                checked={selected}
-                disabled={active}
-                onChange={(event) => onSelectedChange?.(event.target.checked)}
-              />
+              <Tip content={active && TrackStrings.activeCannotBeDeleted} wrap>
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4 shrink-0 cursor-pointer accent-primary disabled:cursor-not-allowed"
+                  aria-label={TrackStrings.selectJob(job.label, job.id)}
+                  checked={selected}
+                  disabled={active}
+                  onChange={(event) => onSelectedChange?.(event.target.checked)}
+                />
+              </Tip>
             )}
 
             <div className="min-w-0 flex-1">
@@ -118,15 +120,12 @@ export function JobListItem({
               )}
 
               {job.errorCode === "ACCESS_REQUIRED" && (
-                <Button
-                  size="sm"
-                  disabled={busy}
-                  onClick={onGrantAccess}
-                  title={TrackStrings.signInHint}
-                >
-                  <LogIn />
-                  {TrackStrings.signIn}
-                </Button>
+                <Tip content={TrackStrings.signInHint}>
+                  <Button size="sm" disabled={busy} onClick={onGrantAccess}>
+                    <LogIn />
+                    {TrackStrings.signIn}
+                  </Button>
+                </Tip>
               )}
 
               {job.retryable && (

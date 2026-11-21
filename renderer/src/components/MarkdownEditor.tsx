@@ -8,6 +8,7 @@ import { Label } from "#ui/label";
 import { Textarea } from "#ui/textarea";
 
 import { MarkdownMessage } from "#components/MarkdownMessage";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 interface MarkdownEditorProps {
   value: string;
@@ -69,6 +70,7 @@ export function MarkdownEditor({
   const [imageUrl, setImageUrl] = useState("");
   const [imageAlt, setImageAlt] = useState("");
   const [imageError, setImageError] = useState(false);
+  useErrorAlert(imageError && "Informe uma URL http(s) válida.");
 
   // Devolve o foco e posiciona o cursor depois do texto inserido.
   useLayoutEffect(() => {
@@ -199,11 +201,6 @@ export function MarkdownEditor({
             Inserir imagem
           </Button>
 
-          {imageError && (
-            <p role="alert" className="animate-enter-fade text-xs text-destructive sm:col-span-3">
-              Informe uma URL http(s) válida.
-            </p>
-          )}
         </div>
       )}
 

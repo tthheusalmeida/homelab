@@ -69,7 +69,6 @@ function PreviewSide({
     <div
       data-slot="preview-hover-area"
       data-side={side}
-      title="Passe o mouse para ver"
       className="group relative w-12 shrink-0 font-sans"
     >
       <span

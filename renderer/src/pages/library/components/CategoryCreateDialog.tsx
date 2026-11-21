@@ -1,11 +1,6 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 
-import { Loader2 } from 'lucide-react';
-
-import { Button } from '#ui/button';
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogForm,
@@ -15,13 +10,16 @@ import {
 import { Input } from '#ui/input';
 import { Label } from '#ui/label';
 
+import { BusyDialog, useReportBusy } from '#components/BusyDialog';
 import { Callout } from '#components/Callout';
+import { FormButtons } from '#components/FormButtons';
 import { OptionSelect } from '#components/OptionSelect';
 import { useSnackbar } from '#components/Snackbar';
 
 import { findCategory, MAX_CATEGORY_LEVELS, parseCategoryNames, placesForNew } from '../categories';
 import { useCreateCategory } from '../hooks/useLibrary';
 import type { CategoryNode } from '../types/library.types';
+import { useErrorAlert } from '#hooks/use-error-alert';
 
 /** Tamanho máximo do nome de um nível (o mesmo do back). */
 const MAX_NAME_LENGTH = 60;
@@ -68,23 +66,21 @@ export function CategoryCreateDialog({
   onOpenChange,
   onCreated,
 }: CategoryCreateDialogProps) {
-  const [busy, setBusy] = useState(false);
-
   return (
-    <Dialog open={parent !== null} onOpenChange={(open) => (open || !busy) && onOpenChange(open)}>
-      <DialogContent bare className="sm:max-w-md">
-        {parent && (
+    <BusyDialog open={parent !== null} onOpenChange={onOpenChange} className="sm:max-w-md">
+      {(onBusyChange) =>
+        parent && (
           <CategoryCreateForm
             key={parent.join('\u0000')}
             initialParent={parent}
             tree={tree}
             onDone={() => onOpenChange(false)}
-            onBusyChange={setBusy}
+            onBusyChange={onBusyChange}
             onCreated={onCreated}
           />
-        )}
-      </DialogContent>
-    </Dialog>
+        )
+      }
+    </BusyDialog>
   );
 }
 
@@ -108,6 +104,7 @@ function CategoryCreateForm({
   const [parent, setParent] = useState(initialParent);
   const create = useCreateCategory();
   const snackbar = useSnackbar();
+  useErrorAlert(create.isError && (create.error.message || CategoryCreateStrings.failed));
 
   const places = useMemo(() => placesForNew(tree, CategoryCreateStrings.root), [tree]);
   const options = places.map((place) => ({
@@ -123,11 +120,7 @@ function CategoryCreateForm({
   const canCreate = names.length > 0 && !tooDeep && !exists && !create.isPending;
 
   // enquanto cria, o diálogo não fecha (Esc, clique fora ou X)
-  useEffect(() => {
-    onBusyChange(create.isPending);
-
-    return () => onBusyChange(false);
-  }, [create.isPending, onBusyChange]);
+  useReportBusy(create.isPending, onBusyChange);
 
   function chooseParent(id: string | null) {
     const place = places.find((_own, index) => options[index].id === id);
@@ -200,21 +193,15 @@ function CategoryCreateForm({
 
       {tooDeep && <Callout tone="warning">{CategoryCreateStrings.tooDeep}</Callout>}
 
-      {create.isError && (
-        <p role="alert" className="text-sm text-destructive">
-          {create.error.message || CategoryCreateStrings.failed}
-        </p>
-      )}
-
       <DialogFooter>
-        <Button type="button" variant="outline" disabled={create.isPending} onClick={onDone}>
-          {CategoryCreateStrings.cancel}
-        </Button>
-
-        <Button type="submit" disabled={!canCreate}>
-          {create.isPending && <Loader2 className="animate-spin" />}
+        <FormButtons
+          onCancel={onDone}
+          pending={create.isPending}
+          canSubmit={canCreate}
+          cancelLabel={CategoryCreateStrings.cancel}
+        >
           {create.isPending ? CategoryCreateStrings.creating : CategoryCreateStrings.create}
-        </Button>
+        </FormButtons>
       </DialogFooter>
     </DialogForm>
   );

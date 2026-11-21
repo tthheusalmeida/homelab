@@ -5,6 +5,7 @@ import { Link } from "react-router";
 import { Card, CardContent, CardHeader } from "#ui/card";
 import { PaperPage } from "#components/PaperPage";
 import { TiltCard } from "#components/TiltCard";
+import { Tip } from "#components/Tip";
 import { formatDate } from "#lib/format";
 
 import type { DocumentSummary } from "../types/library.types";
@@ -68,15 +69,16 @@ export function DocumentCard({
               {document.category.join(" › ") || "Sem categoria"}
             </p>
 
-            <Link
-              to={`/library/${document.id}`}
-              title={document.title}
-              // Altura fixa de 3 linhas (3 x 15px x 1,375): títulos curtos e longos ocupam o mesmo espaço e o
-              // texto abaixo começa sempre no mesmo ponto; o que passar vira reticências (o nome inteiro fica no tooltip).
-              className="line-clamp-3 h-[3.875rem] overflow-hidden font-serif text-[15px] leading-snug font-semibold text-stone-900 after:absolute after:inset-0 hover:underline"
-            >
-              {document.title}
-            </Link>
+            <Tip content={document.title}>
+              <Link
+                to={`/library/${document.id}`}
+                // Altura fixa de 3 linhas (3 x 15px x 1,375): títulos curtos e longos ocupam o mesmo espaço e o
+                // texto abaixo começa sempre no mesmo ponto; o que passar vira reticências (o nome inteiro fica no tooltip).
+                className="line-clamp-3 h-[3.875rem] overflow-hidden font-serif text-[15px] leading-snug font-semibold text-stone-900 after:absolute after:inset-0 hover:underline"
+              >
+                {document.title}
+              </Link>
+            </Tip>
 
             <span aria-hidden className="block h-px w-8 bg-stone-300" />
 

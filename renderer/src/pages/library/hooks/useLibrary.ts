@@ -43,6 +43,23 @@ import type { InfographicLayoutId } from "#shared/infographic-layouts";
 
 export const LIBRARY_KEY = ["library"] as const;
 
+/** Os conteúdos gerados de um resumo, cada um com a sua consulta. */
+type GeneratedKind = "mind-map" | "infographic";
+
+/**
+ * Guarda direto o que o main devolveu (ou `null`, ao excluir) na consulta do conteúdo gerado e
+ * refaz a lista de Páginas, que mostra as marcas e os filtros "Com mapa mental" e "Com infográfico".
+ * Não invalida a biblioteca toda: o resumo e o outro conteúdo não mudam.
+ */
+function useKeepGenerated(kind: GeneratedKind) {
+  const queryClient = useQueryClient();
+
+  return async (id: string, value: unknown) => {
+    queryClient.setQueryData([...LIBRARY_KEY, kind, id], value);
+    await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
+  };
+}
+
 /** Um nó do mapa como vai para o main (termo, frase curta e filhos). */
 type MindMapNodeInput = {
   label: string;
@@ -77,16 +94,12 @@ export function useMindMap(id: string, options: { enabled?: boolean } = {}) {
  * biblioteca toda); isso vale mesmo se a aba do mapa for fechada antes de a IA responder.
  */
 export function useGenerateMindMap() {
-  const queryClient = useQueryClient();
+  const keep = useKeepGenerated("mind-map");
 
   return useMutation({
     mutationFn: ({ id, modelId }: { id: string; modelId?: string }) =>
       generateMindMap(id, modelId),
-    onSuccess: async (map, { id }) => {
-      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map);
-      // a lista de Páginas mostra a marca de "tem mapa mental"
-      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
-    },
+    onSuccess: (map, { id }) => keep(id, map),
   });
 }
 
@@ -95,7 +108,7 @@ export function useGenerateMindMap() {
  * tela já mostra o que foi salvo.
  */
 export function useSaveMindMap() {
-  const queryClient = useQueryClient();
+  const keep = useKeepGenerated("mind-map");
 
   return useMutation({
     mutationFn: ({
@@ -107,11 +120,8 @@ export function useSaveMindMap() {
       subtitle?: string;
       nodes: MindMapNodeInput[];
     }) => saveMindMap(id, { subtitle, nodes }),
-    onSuccess: async (map, { id }) => {
-      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], map);
-      // um mapa feito do zero também ganha a marca na lista de Páginas
-      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
-    },
+    // um mapa feito do zero também ganha a marca na lista de Páginas
+    onSuccess: (map, { id }) => keep(id, map),
   });
 }
 
@@ -120,14 +130,11 @@ export function useSaveMindMap() {
  * não mudam, então a biblioteca não é invalidada), e a lista de Páginas refaz o filtro "Com mapa mental".
  */
 export function useDeleteMindMap() {
-  const queryClient = useQueryClient();
+  const keep = useKeepGenerated("mind-map");
 
   return useMutation({
     mutationFn: (id: string) => deleteMindMap(id),
-    onSuccess: async (_result, id) => {
-      queryClient.setQueryData([...LIBRARY_KEY, "mind-map", id], null);
-      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
-    },
+    onSuccess: (_result, id) => keep(id, null),
   });
 }
 
@@ -148,14 +155,11 @@ export function useSaveInfographic() {
 
 /** Apaga só o infográfico do resumo. Igual ao do mapa mental, para o infográfico. */
 export function useDeleteInfographic() {
-  const queryClient = useQueryClient();
+  const keep = useKeepGenerated("infographic");
 
   return useMutation({
     mutationFn: (id: string) => deleteInfographic(id),
-    onSuccess: async (_result, id) => {
-      queryClient.setQueryData([...LIBRARY_KEY, "infographic", id], null);
-      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
-    },
+    onSuccess: (_result, id) => keep(id, null),
   });
 }
 
@@ -173,7 +177,7 @@ export function useInfographic(id: string, options: { enabled?: boolean } = {}) 
  * biblioteca toda); isso vale mesmo se a aba for fechada antes de a IA responder.
  */
 export function useGenerateInfographic() {
-  const queryClient = useQueryClient();
+  const keep = useKeepGenerated("infographic");
 
   return useMutation({
     mutationFn: ({
@@ -185,11 +189,7 @@ export function useGenerateInfographic() {
       modelId?: string;
       layout?: InfographicLayoutId;
     }) => generateInfographic(id, { modelId, layout }),
-    onSuccess: async (infographic, { id }) => {
-      queryClient.setQueryData([...LIBRARY_KEY, "infographic", id], infographic);
-      // a lista de Páginas mostra a marca de "tem infográfico"
-      await queryClient.invalidateQueries({ queryKey: [...LIBRARY_KEY, "documents"] });
-    },
+    onSuccess: (infographic, { id }) => keep(id, infographic),
   });
 }
 

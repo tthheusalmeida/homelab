@@ -1,13 +1,5 @@
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ChartContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "../../../../ui/chart";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../ui/card";
+import { BarChart } from "#components/BarChart";
 
 import type { AiUsageTimeline } from "../types/aiUsage.types";
 
@@ -17,20 +9,7 @@ interface UsageTimelineProps {
   data: AiUsageTimeline[];
 }
 
-interface UsageTooltipProps {
-  active?: boolean;
-  payload?: { value: number }[];
-  label?: string;
-}
-
-const chartConfig = {
-  totalTokens: {
-    label: "Tokens",
-    color: "var(--chart-1)",
-  },
-};
-
-function getLastSevenDays(): string[] {
+export function getLastSevenDays(): string[] {
   const today = new Date();
 
   return Array.from({ length: 7 }, (_, index) => {
@@ -60,32 +39,22 @@ function createTimeline(data: AiUsageTimeline[]): AiUsageTimeline[] {
   );
 }
 
-function UsageTooltip({ active, payload, label }: UsageTooltipProps) {
-  if (!active || !payload?.length) {
-    return null;
-  }
-
-  const value = Number(payload[0].value);
-
+/** O que o tooltip de uma barra mostra: a data e os tokens do dia. */
+function DayTooltip({ day }: { day: AiUsageTimeline }) {
   return (
-    <div className="grid min-w-32 items-start gap-1.5 rounded-lg border bg-background px-2.5 py-1.5 text-xs shadow-xl">
-      <div className="font-medium">{label && formatDate(label)}</div>
+    <span className="flex flex-col gap-0.5">
+      <span className="font-medium">{formatDate(day.date)}</span>
 
-      <div className="flex items-center gap-2">
-        <div
-          className="h-2.5 w-2.5 shrink-0 rounded-xs"
-          style={{
-            backgroundColor: "var(--chart-1)",
-          }}
-        />
+      <span className="flex items-center gap-2">
+        <span className="size-2.5 shrink-0 rounded-xs bg-chart-1" />
 
-        <span className="text-muted-foreground">Tokens:</span>
+        <span className="opacity-80">Tokens:</span>
 
-        <span className="font-mono font-medium tabular-nums text-foreground">
-          {formatNumber(value)}
+        <span className="font-mono font-medium tabular-nums">
+          {formatNumber(day.totalTokens)}
         </span>
-      </div>
-    </div>
+      </span>
+    </span>
   );
 }
 
@@ -99,48 +68,16 @@ export function UsageTimeline({ data }: UsageTimelineProps) {
       </CardHeader>
 
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-72 w-full">
-          <BarChart
-            data={timeline}
-            margin={{
-              top: 8,
-              right: 8,
-              left: 8,
-              bottom: 0,
-            }}
-          >
-            <CartesianGrid vertical={false} strokeDasharray="3 3" />
-
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={formatDate}
-            />
-
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              width={45}
-              tickFormatter={formatNumber}
-            />
-
-            <Tooltip
-              cursor={{
-                fill: "var(--muted)",
-                opacity: 0.3,
-              }}
-              content={<UsageTooltip />}
-            />
-
-            <Bar
-              dataKey="totalTokens"
-              radius={[4, 4, 0, 0]}
-              fill="var(--chart-1)"
-            />
-          </BarChart>
-        </ChartContainer>
+        <BarChart
+          ariaLabel="Consumo de tokens nos últimos 7 dias"
+          formatTick={formatNumber}
+          data={timeline.map((day) => ({
+            id: day.date,
+            label: formatDate(day.date),
+            value: day.totalTokens,
+            tooltip: <DayTooltip day={day} />,
+          }))}
+        />
       </CardContent>
     </Card>
   );

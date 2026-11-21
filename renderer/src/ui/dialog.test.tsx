@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 import {
+  asDialogSlot,
   Dialog,
   DialogBody,
   DialogContent,
@@ -249,5 +250,92 @@ describe('DialogHeader close button', () => {
     expect(header).toHaveClass('min-h-[3.5rem]', 'border-b');
     expect(close).toHaveClass('top-4');
     expect(close).toHaveClass('size-8');
+  });
+});
+
+describe('asDialogSlot', () => {
+  const SaveBar = asDialogSlot(function SaveBar() {
+    return (
+      <DialogFooter>
+        <button type="submit">Salvar</button>
+      </DialogFooter>
+    );
+  }, 'footer');
+
+  const Loose = function Loose() {
+    return (
+      <DialogFooter>
+        <button type="submit">Solto</button>
+      </DialogFooter>
+    );
+  };
+
+  it('when a component that renders the footer is marked, should keep it outside the scrolling body', () => {
+    render(
+      <Dialog open>
+        <DialogContent bare>
+          <DialogForm onSubmit={(event) => event.preventDefault()}>
+            <DialogHeader>
+              <DialogTitle>Título</DialogTitle>
+            </DialogHeader>
+
+            <p>campos</p>
+
+            <SaveBar />
+          </DialogForm>
+        </DialogContent>
+      </Dialog>,
+    );
+
+    const footer = screen.getByRole('button', { name: 'Salvar' }).parentElement;
+
+    expect(footer).toHaveAttribute('data-slot', 'dialog-footer');
+    expect(body()).toContainElement(screen.getByText('campos'));
+    expect(body()).not.toContainElement(footer);
+    expect(screen.getByRole('dialog').querySelector('form')?.lastElementChild).toBe(footer);
+  });
+
+  it('when a wrapper is not marked, should leave it in the body (the mark is what moves it)', () => {
+    render(
+      <Dialog open>
+        <DialogContent>
+          <p>campos</p>
+
+          <Loose />
+        </DialogContent>
+      </Dialog>,
+    );
+
+    expect(body()).toContainElement(screen.getByRole('button', { name: 'Solto' }));
+  });
+});
+
+describe('DialogFooter placement guard', () => {
+  it('when a footer ends up inside the scrolling body, should report it in the console', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(
+      <Dialog open>
+        <DialogContent>
+          <DialogBody>
+            <DialogFooter>
+              <button type="button">Perdido</button>
+            </DialogFooter>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>,
+    );
+
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('DialogFooter dentro do miolo'));
+    error.mockRestore();
+  });
+
+  it('when the footer is a direct child, should stay quiet', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    renderFlat();
+
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
   });
 });

@@ -42,7 +42,7 @@ describe("DocumentAboutDialog — footer layout", () => {
     for (const name of [
       /Adicionar a um livro/,
       /Editar/,
-      /Remover da biblioteca/,
+      /Mais ações/,
     ]) {
       expect(footer).toContainElement(screen.getByRole("button", { name }));
     }

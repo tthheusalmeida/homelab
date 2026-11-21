@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from 'react';
 
 import { Button } from '#ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '#ui/tooltip';
+import { Tip } from '#components/Tip';
 
 type TooltipSide = 'top' | 'bottom' | 'left' | 'right';
 
@@ -19,9 +19,6 @@ interface IconButtonProps extends Omit<
   size?: 'icon-sm' | 'icon-xs';
 }
 
-/** Espera antes de o tooltip aparecer (ms): curta, para o botão sem texto se explicar logo. */
-const TOOLTIP_DELAY_MS = 150;
-
 /**
  * Botão só com ícone e **tooltip com a ação** ao passar o mouse ou focar com o teclado. Use para
  * ações que o ícone já diz (zoom, ajustar, baixar...): o nome acessível é o mesmo texto do tooltip.
@@ -37,18 +34,10 @@ export function IconButton({
   ...props
 }: IconButtonProps) {
   return (
-    <TooltipProvider delay={TOOLTIP_DELAY_MS}>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button type={type} size={size} variant={variant} aria-label={label} {...props}>
-              {children}
-            </Button>
-          }
-        />
-
-        <TooltipContent side={tooltipSide}>{label}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tip content={label} side={tooltipSide}>
+      <Button type={type} size={size} variant={variant} aria-label={label} {...props}>
+        {children}
+      </Button>
+    </Tip>
   );
 }

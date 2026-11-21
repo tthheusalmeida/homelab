@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 
+import { Tip } from '#components/Tip';
 import { cn } from '#lib/utils';
 
 interface SettingsGroupProps {
@@ -29,6 +30,15 @@ export function SettingsGroup({ title, hint, children, className }: SettingsGrou
   );
 }
 
+/**
+ * Empilha os blocos de uma seção de Configurações com **32px** (`gap-8`) entre eles: é o espaço
+ * padrão entre grupos (Tema, Leitura, Transcrição, Resumo, Versão...). Todas as seções usam este
+ * componente; não escolha outro espaçamento entre grupos.
+ */
+export function SettingsStack({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn('flex flex-col gap-8', className)} {...props} />;
+}
+
 /** Caixa de um item de configuração: borda fina, fundo de card e destaque opcional (item ativo). */
 export function SettingsPanel({
   highlight = false,
@@ -49,7 +59,7 @@ export function SettingsPanel({
 
 /**
  * Linha de um ajuste, compacta: rótulo curto à esquerda e o controle à direita (empilha em janela
- * estreita). A dica vai no `title` para não ocupar espaço.
+ * estreita). A dica vai num tooltip (`Tip`) para não ocupar espaço.
  */
 export function SettingsRow({
   label,
@@ -61,10 +71,12 @@ export function SettingsRow({
   children: ReactNode;
 }) {
   return (
-    <div title={hint} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-      <p className="text-xs font-medium text-muted-foreground sm:w-24 sm:shrink-0">{label}</p>
+    <Tip content={hint} side="bottom" follow>
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+        <p className="text-xs font-medium text-muted-foreground sm:w-24 sm:shrink-0">{label}</p>
 
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
+    </Tip>
   );
 }

@@ -2,6 +2,7 @@ import { Check } from 'lucide-react';
 import type { CSSProperties } from 'react';
 
 import { HexSwatch } from '#components/HexSwatch';
+import { Tip } from '#components/Tip';
 import { cn } from '#lib/utils';
 import type { AccentId } from '#shared/contracts/appearance';
 
@@ -51,31 +52,31 @@ export function HexColorPicker<T extends string>({
         const selected = option.id === value;
 
         return (
-          <HexSwatch
-            key={option.id}
-            selected={selected}
-            size={size}
-            disabled={disabled}
-            aria-label={option.label}
-            title={option.label}
-            color={option.color}
-            style={option.style}
-            // `data-accent` + `dark` fazem `bg-primary` mostrar a cor de destaque deste hexágono.
-            data-accent={option.accent}
-            className={cn(option.accent && 'dark')}
-            fillClassName={option.accent ? 'bg-primary text-primary-foreground' : undefined}
-            onClick={() => onChange(option.id)}
-          >
-            {selected && (
-              <Check
-                className={cn(
-                  'size-3',
-                  !option.accent && (option.checkClassName ?? 'text-white mix-blend-difference'),
-                )}
-                aria-hidden
-              />
-            )}
-          </HexSwatch>
+          <Tip key={option.id} content={option.label}>
+            <HexSwatch
+              selected={selected}
+              size={size}
+              disabled={disabled}
+              aria-label={option.label}
+              color={option.color}
+              style={option.style}
+              // `data-accent` + `dark` fazem `bg-primary` mostrar a cor de destaque deste hexágono.
+              data-accent={option.accent}
+              className={cn(option.accent && 'dark')}
+              fillClassName={option.accent ? 'bg-primary text-primary-foreground' : undefined}
+              onClick={() => onChange(option.id)}
+            >
+              {selected && (
+                <Check
+                  className={cn(
+                    'size-3',
+                    !option.accent && (option.checkClassName ?? 'text-white mix-blend-difference'),
+                  )}
+                  aria-hidden
+                />
+              )}
+            </HexSwatch>
+          </Tip>
         );
       })}
     </div>

@@ -1,8 +1,5 @@
 import { useState } from "react";
 
-import { Loader2 } from "lucide-react";
-
-import { Button } from "#ui/button";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +29,8 @@ import {
 } from "../types";
 import { BookCover } from "./BookCover";
 import { useSnackbar } from "#components/Snackbar";
+import { FormButtons } from "#components/FormButtons";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 interface BookFormDialogProps {
   open: boolean;
@@ -95,6 +94,7 @@ function BookForm({
   const snackbar = useSnackbar();
 
   const mutation = book ? update : create;
+  useErrorAlert(mutation.isError && "Não foi possível salvar o livro. Tente novamente.");
   const imageValid = isValidCoverImageUrl(imageUrl);
   const canSave = title.trim() !== "" && imageValid && !mutation.isPending;
 
@@ -244,26 +244,14 @@ function BookForm({
         </div>
       </div>
 
-      {mutation.isError && (
-        <p role="alert" className="animate-enter-fade text-sm text-destructive">
-          Não foi possível salvar o livro. Tente novamente.
-        </p>
-      )}
-
       <DialogFooter>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={mutation.isPending}
-          onClick={onClose}
+        <FormButtons
+          onCancel={onClose}
+          pending={mutation.isPending}
+          canSubmit={canSave}
         >
-          Cancelar
-        </Button>
-
-        <Button type="submit" disabled={!canSave}>
-          {mutation.isPending && <Loader2 className="animate-spin" />}
           {book ? "Salvar" : "Criar livro"}
-        </Button>
+        </FormButtons>
       </DialogFooter>
     </DialogForm>
   );

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { OptionSelect } from "./OptionSelect";
 
@@ -35,6 +36,27 @@ describe("OptionSelect", () => {
     );
 
     expect(trigger()).toHaveClass("h-8", "w-40");
+  });
+
+  it("when opened, should drop down below the button instead of covering it with the chosen item", async () => {
+    render(<OptionSelect value="a" options={options} placeholder="Tipo" onValueChange={vi.fn()} />);
+
+    await userEvent.click(trigger());
+
+    const popup = await screen.findByRole("listbox");
+    const content = popup.closest('[data-slot="select-content"]') as HTMLElement;
+
+    expect(trigger()).toHaveAttribute("data-popup-open");
+    expect(trigger()).toHaveClass(
+      "data-popup-open:inset-ring-1",
+      "data-popup-open:inset-ring-ring",
+      "data-popup-open:ring-3",
+      "data-popup-open:ring-ring/50",
+    );
+    expect(content).toHaveAttribute("data-align-trigger", "false");
+    expect(content).toHaveClass("transition-opacity", "data-starting-style:opacity-0");
+    expect(content.className).not.toMatch(/zoom|slide/);
+    expect(content.parentElement).toHaveAttribute("data-side", "bottom");
   });
 
   it("when showing the chosen option, should show its label", () => {

@@ -17,6 +17,7 @@ describe('createHandlers', () => {
           version: () => '0.0.1',
           relaunch: jest.fn(),
           openSettings: jest.fn(),
+          revealFile: jest.fn(),
           takeSettingsSection: jest.fn(),
           restartPending: jest.fn(),
           markRestartPending: jest.fn(),

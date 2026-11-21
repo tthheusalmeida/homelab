@@ -1,8 +1,5 @@
 import { useState } from "react";
 
-import { Loader2 } from "lucide-react";
-
-import { Button } from "#ui/button";
 import { DialogFooter, DialogForm } from "#ui/dialog";
 
 import { DocumentFields } from "#components/DocumentFields";
@@ -13,6 +10,8 @@ import type { DocumentDetail } from "../types/library.types";
 
 import { DocumentPreview } from "./DocumentPreview";
 import { useSnackbar } from "#components/Snackbar";
+import { FormButtons } from "#components/FormButtons";
+import { useErrorAlert } from "#hooks/use-error-alert";
 
 interface EditDocumentFormProps {
   document: DocumentDetail;
@@ -39,6 +38,7 @@ export function EditDocumentForm({ document, onClose, dialog = false }: EditDocu
   const categories = useCategories();
   const update = useUpdateDocument();
   const snackbar = useSnackbar();
+  useErrorAlert(update.isError && "Não foi possível salvar as alterações. Verifique a categoria e tente novamente.");
 
   const hasChanges =
     title.trim() !== meta.title ||
@@ -98,27 +98,14 @@ export function EditDocumentForm({ document, onClose, dialog = false }: EditDocu
         excerpt={content.replace(/[#*>`|-]/g, "")}
       />
 
-      {update.isError && (
-        <p className="text-sm text-destructive">
-          Não foi possível salvar as alterações. Verifique a categoria e tente
-          novamente.
-        </p>
-      )}
-
       <Actions className={dialog ? undefined : "flex justify-end gap-2"}>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={update.isPending}
-          onClick={onClose}
+        <FormButtons
+          onCancel={onClose}
+          pending={update.isPending}
+          canSubmit={canSave}
         >
-          Cancelar
-        </Button>
-
-        <Button type="submit" disabled={!canSave}>
-          {update.isPending && <Loader2 className="animate-spin" />}
           Salvar alterações
-        </Button>
+        </FormButtons>
       </Actions>
     </Wrapper>
   );

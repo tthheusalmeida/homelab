@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
-
 import { Button } from '#ui/button';
 import { SettingsGroup, SettingsPanel } from '#components/SettingsGroup';
 import { ErrorState } from '#components/ErrorState';
@@ -16,6 +14,7 @@ import { LibraryChangeDialog } from '../components/LibraryChangeDialog';
 import { useSnackbar } from '#components/Snackbar';
 import { useInspectLibrary, usePaths } from '../hooks';
 import { PATH_FIELDS, Strings } from '../strings';
+import { useErrorAlert } from '#hooks/use-error-alert';
 
 interface SectionProps {
   onSaved: (restartRequired: boolean) => void;
@@ -50,6 +49,7 @@ function PathsForm({ paths, onSaved }: SectionProps & { paths: SettingsPaths }) 
   const [values, setValues] = useState(paths);
   const [folder, setFolder] = useState<LibraryFolderInfo | null>(null);
   const inspect = useInspectLibrary();
+  useErrorAlert(inspect.isError && inspect.error.message);
   const snackbar = useSnackbar();
 
   const dirty = PATH_FIELDS.some(({ key }) => values[key].trim() !== paths[key]);
@@ -85,11 +85,6 @@ function PathsForm({ paths, onSaved }: SectionProps & { paths: SettingsPaths }) 
         ))}
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0 text-sm">
-            {inspect.isError && (
-              <p role="alert" className="text-destructive">
-                {inspect.error.message}
-              </p>
-            )}
           </div>
 
           <Button
@@ -97,8 +92,7 @@ function PathsForm({ paths, onSaved }: SectionProps & { paths: SettingsPaths }) 
             onClick={() =>
               inspect.mutate({ path: values.libraryDir.trim() }, { onSuccess: setFolder })
             }
-          >
-            {inspect.isPending && <Loader2 className="animate-spin" />}
+           loading={inspect.isPending}>
             {inspect.isPending ? Strings.library.inspecting : Strings.save}
           </Button>
         </div>

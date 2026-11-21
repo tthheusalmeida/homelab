@@ -54,6 +54,8 @@ export interface AiUsageRequest {
   estimatedCost: number;
   latencyMs: number;
   success: boolean;
+  /** O motivo, quando a requisição falhou. */
+  error?: string;
   createdAt: string;
 }
 

@@ -15,10 +15,14 @@ interface ChatSettingsProps {
   onModelChange: (value: string | null) => void;
   onThinkingChange: (value: string | null) => void;
 
+  isLoadingProviders?: boolean;
   isLoadingModels?: boolean;
   isLoadingThinking?: boolean;
+  /** Trava os três (ex.: enquanto o formulário envia). */
+  disabled?: boolean;
 }
 
+/** Os três seletores da IA (provedor, modelo e raciocínio), do chat e dos formulários de resumo. */
 export function ChatSettings({
   providers,
   models,
@@ -29,8 +33,10 @@ export function ChatSettings({
   onProviderChange,
   onModelChange,
   onThinkingChange,
+  isLoadingProviders,
   isLoadingModels,
   isLoadingThinking,
+  disabled,
 }: ChatSettingsProps) {
   return (
     <div className="flex items-center gap-2">
@@ -41,6 +47,7 @@ export function ChatSettings({
         label="Provedor"
         triggerWidth="w-32"
         contentWidth="w-32"
+        disabled={isLoadingProviders || disabled}
         onValueChange={onProviderChange}
       />
 
@@ -51,7 +58,7 @@ export function ChatSettings({
         label="Modelo"
         triggerWidth="w-40"
         contentWidth="w-md"
-        disabled={!providerId || isLoadingModels}
+        disabled={!providerId || isLoadingModels || disabled}
         onValueChange={onModelChange}
       />
 
@@ -59,9 +66,10 @@ export function ChatSettings({
         value={thinkingId}
         options={thinkingOptions}
         placeholder="Thinking"
+        label="Thinking"
         triggerWidth="w-32"
         contentWidth="w-40"
-        disabled={!modelId || isLoadingThinking}
+        disabled={!modelId || isLoadingThinking || disabled}
         onValueChange={onThinkingChange}
       />
     </div>

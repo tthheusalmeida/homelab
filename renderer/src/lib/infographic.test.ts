@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { INFOGRAPHIC_LAYOUT_IDS } from '#shared/infographic-layouts';
 
-import { AUTO_LAYOUT, infographicImageName, LAYOUT_OPTIONS, layoutLabel } from './infographic';
+import { AUTO_LAYOUT, infographicImageName, LAYOUT_OPTIONS } from './infographic';
 
 describe('LAYOUT_OPTIONS', () => {
   it('when listing the options, should start with the automatic one and then every layout', () => {
@@ -14,17 +14,6 @@ describe('LAYOUT_OPTIONS', () => {
     for (const option of LAYOUT_OPTIONS) {
       expect(option.label.trim()).not.toBe('');
     }
-  });
-});
-
-describe('layoutLabel', () => {
-  it('when asking for a known layout, should answer its name', () => {
-    expect(layoutLabel('steps')).toBe('Guia em passos');
-    expect(layoutLabel('myths')).toBe('Mitos e verdades');
-  });
-
-  it('when the layout is unknown, should fall back to the id', () => {
-    expect(layoutLabel('nada' as never)).toBe('nada');
   });
 });
 

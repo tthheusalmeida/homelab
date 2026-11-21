@@ -16,9 +16,7 @@ import type { AiMessage, ChatStatus } from "./types/chat";
 import { contextPercent, formatTokens, modelContextLimit } from "./context";
 import { ChatStrings } from "./strings";
 
-import { useAiModels } from "./hooks/useAiModels";
-import { useAiProviders } from "./hooks/useAiProviders";
-import { useAiThinking } from "./hooks/useAiThinking";
+import { useAiSelection } from "./hooks/useAiSelection";
 import { useAiChat } from "./hooks/useAiChat";
 import { useChat, useChats, useDeleteChat } from "./hooks/useChats";
 
@@ -52,10 +50,6 @@ export function ChatPage() {
    */
   const [pending, setPending] = useState<{ content: string; baseCount: number } | null>(null);
 
-  const [providerId, setProviderId] = useState<string | undefined>(undefined);
-  const [modelId, setModelId] = useState<string | undefined>(undefined);
-  const [thinkingId, setThinkingId] = useState<string | undefined>(undefined);
-
   const [message, setMessage] = useState("");
   const [warning, setWarning] = useState<{ check: ContextCheck; content: string } | null>(null);
   const [chatToDelete, setChatToDelete] = useState<ChatSummary | null>(null);
@@ -68,25 +62,11 @@ export function ChatPage() {
   const snackbar = useSnackbar();
   const chat = chatQuery.data;
 
-  const providersQuery = useAiProviders();
-
   // O que o usuário escolheu manda; senão vale o que o chat usou por último; senão o primeiro.
-  const activeProviderId = providerId ?? chat?.providerId ?? providersQuery.data?.[0]?.id;
-  const modelsQuery = useAiModels(activeProviderId);
-
-  const activeModelId =
-    modelId ??
-    (chat && chat.providerId === activeProviderId ? chat.modelId : undefined) ??
-    modelsQuery.data?.[0]?.id;
-  const thinkingQuery = useAiThinking({
-    providerId: activeProviderId,
-    modelId: activeModelId,
-  });
-
-  const activeThinkingId =
-    thinkingId ??
-    (chat && chat.modelId === activeModelId ? chat.thinking : undefined) ??
-    thinkingQuery.data?.[0]?.id;
+  const ai = useAiSelection({ last: chat, pickFirst: true });
+  const activeProviderId = ai.providerId;
+  const activeModelId = ai.modelId;
+  const activeThinkingId = ai.thinkingId;
 
   const history = chat?.messages ?? [];
   const showPending = pending !== null && history.length === pending.baseCount;
@@ -94,8 +74,7 @@ export function ChatPage() {
     ? [...history, { id: "pending", role: "user", content: pending.content }]
     : history;
 
-  const activeModel = modelsQuery.data?.find((model) => model.id === activeModelId);
-  const modelLimit = modelContextLimit(activeModel);
+  const modelLimit = modelContextLimit(ai.activeModel);
   const contextHint =
     history.length > 0
       ? ChatStrings.contextHint(
@@ -105,9 +84,7 @@ export function ChatPage() {
 
   /** Volta ao estado inicial de uma conversa: nada escolhido à mão, nada em andamento. */
   function resetConversation() {
-    setProviderId(undefined);
-    setModelId(undefined);
-    setThinkingId(undefined);
+    ai.reset();
     setPending(null);
     setSendError(null);
     setChatStatus("idle");
@@ -130,21 +107,6 @@ export function ChatPage() {
 
     setDraftId(newChatId());
     setSearchParams({});
-  }
-
-  function handleProviderChange(value: string | null) {
-    setProviderId(value ?? undefined);
-    setModelId(undefined);
-    setThinkingId(undefined);
-  }
-
-  function handleModelChange(value: string | null) {
-    setModelId(value ?? undefined);
-    setThinkingId(undefined);
-  }
-
-  function handleThinkingChange(value: string | null) {
-    setThinkingId(value ?? undefined);
   }
 
   async function submit(content: string) {
@@ -238,9 +200,7 @@ export function ChatPage() {
   }
 
   const isLoading =
-    providersQuery.isLoading ||
-    modelsQuery.isLoading ||
-    thinkingQuery.isLoading;
+    ai.isLoadingProviders || ai.isLoadingModels || ai.isLoadingThinking;
 
   const canSend =
     Boolean(message.trim()) &&
@@ -299,19 +259,7 @@ export function ChatPage() {
           isSending={isSending}
           contextHint={contextHint}
           settings={
-            <ChatSettings
-              providers={providersQuery.data ?? []}
-              models={modelsQuery.data ?? []}
-              thinkingOptions={thinkingQuery.data ?? []}
-              providerId={activeProviderId}
-              modelId={activeModelId}
-              thinkingId={activeThinkingId}
-              onProviderChange={handleProviderChange}
-              onModelChange={handleModelChange}
-              onThinkingChange={handleThinkingChange}
-              isLoadingModels={modelsQuery.isLoading}
-              isLoadingThinking={thinkingQuery.isLoading}
-            />
+            <ChatSettings {...ai} />
           }
         />
       </div>

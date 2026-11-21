@@ -4,11 +4,8 @@ import { Link, useNavigate } from "react-router";
 import { BookOpen, Play, Plus } from "lucide-react";
 
 import { Button } from "#ui/button";
-import { Card, CardContent } from "#ui/card";
 
 import { EmptyState } from "#components/EmptyState";
-import { ErrorState } from "#components/ErrorState";
-import { LoadingState } from "#components/LoadingState";
 
 import { TiltCard } from "#components/TiltCard";
 import { BookCover } from "./components/BookCover";
@@ -16,6 +13,8 @@ import { BookFormDialog } from "./components/BookFormDialog";
 import { BookProgress } from "./components/BookProgress";
 import { useBooks } from "./hooks";
 import { PageHeader } from "#components/PageHeader";
+import { PageError } from "#components/PageState";
+import { LoadingState } from "#components/LoadingState";
 
 /** Estante: os livros (coleções ordenadas de documentos). */
 export function BooksPage() {
@@ -33,16 +32,12 @@ export function BooksPage() {
 
   if (books.isError || !books.data) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center">
-          <ErrorState
-            primaryMessage="Oops! não foi possível carregar os livros."
-            secondaryMessage="Verifique se o servidor está disponível."
-            actionLabel="Tentar novamente"
-            action={() => void books.refetch()}
-          />
-        </CardContent>
-      </Card>
+      <PageError
+        primaryMessage="Oops! não foi possível carregar os livros."
+        secondaryMessage="Verifique se o servidor está disponível."
+        actionLabel="Tentar novamente"
+        action={() => void books.refetch()}
+      />
     );
   }
 
