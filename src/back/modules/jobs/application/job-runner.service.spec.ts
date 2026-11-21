@@ -4,6 +4,7 @@ import { JobStatus } from '../domain/job-status.enum';
 import { InMemoryJobRepository } from '../infrastructure/repositories/in-memory-job.repository';
 import { JobProcessor } from '../domain/job-processor.interface';
 import { AccessRequiredError } from '../../video/access-required.error';
+import type { LibraryService } from '../../library/application/library.service';
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
@@ -280,6 +281,83 @@ describe('JobRunner', () => {
 
       expect(runner.cancel(job.id)).toEqual({ id: job.id, outcome: 'not-active' });
       expect(runner.cancel('nope')).toEqual({ id: 'nope', outcome: 'not-active' });
+    });
+  });
+
+  describe('library refresh', () => {
+    const succeed = (): JobProcessor<string> => ({
+      process: jest.fn().mockResolvedValue(undefined),
+    });
+
+    it('when a job succeeds, should reindex the library before marking it COMPLETED', async () => {
+      let statusAtReindex: JobStatus | undefined;
+      const job = new Job('video-to-transcript');
+      const library = {
+        reindex: jest.fn().mockImplementation(() => {
+          statusAtReindex = job.status;
+          return Promise.resolve({ indexed: 1, errors: [] });
+        }),
+      };
+      const withLibrary = new JobRunner(
+        repository,
+        undefined,
+        library as unknown as LibraryService,
+      );
+
+      withLibrary.run(job, succeed(), 'x');
+      await flush();
+
+      expect(library.reindex).toHaveBeenCalledTimes(1);
+      expect(statusAtReindex).toBe(JobStatus.RUNNING);
+      expect(job.status).toBe(JobStatus.COMPLETED);
+    });
+
+    it('when a job of any kind succeeds, should reindex once per job', async () => {
+      const library = { reindex: jest.fn().mockResolvedValue({ indexed: 1, errors: [] }) };
+      const withLibrary = new JobRunner(
+        repository,
+        undefined,
+        library as unknown as LibraryService,
+      );
+
+      withLibrary.run(new Job('pdf-to-summary'), succeed(), 'a');
+      withLibrary.run(new Job('video-to-summary'), succeed(), 'b');
+      await flush();
+      await flush();
+
+      expect(library.reindex).toHaveBeenCalledTimes(2);
+    });
+
+    it('when a job fails, should not reindex', async () => {
+      const library = { reindex: jest.fn() };
+      const withLibrary = new JobRunner(
+        repository,
+        undefined,
+        library as unknown as LibraryService,
+      );
+      const processor: JobProcessor<string> = {
+        process: jest.fn().mockRejectedValue(new Error('deu ruim')),
+      };
+
+      withLibrary.run(new Job('video-to-transcript'), processor, 'x');
+      await flush();
+
+      expect(library.reindex).not.toHaveBeenCalled();
+    });
+
+    it('when reindexing fails, should still complete the job', async () => {
+      const library = { reindex: jest.fn().mockRejectedValue(new Error('index off')) };
+      const withLibrary = new JobRunner(
+        repository,
+        undefined,
+        library as unknown as LibraryService,
+      );
+      const job = new Job('video-to-transcript');
+
+      withLibrary.run(job, succeed(), 'x');
+      await flush();
+
+      expect(job.status).toBe(JobStatus.COMPLETED);
     });
   });
 });

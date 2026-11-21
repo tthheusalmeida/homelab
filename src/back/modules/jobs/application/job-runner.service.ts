@@ -9,6 +9,7 @@ import { CANCELLED_JOB_ERROR, Job } from '../domain/job.entity';
 import { JobStatus } from '../domain/job-status.enum';
 import { ACCESS_REQUIRED_CODE, AccessRequiredError } from '../../video/access-required.error';
 import { JobProcessor } from '../domain/job-processor.interface';
+import { LibraryService } from '../../library/application/library.service';
 
 import { JOB_REPOSITORY } from '../infrastructure/repositories/job.repository';
 import type { JobRepository } from '../infrastructure/repositories/job.repository';
@@ -28,6 +29,8 @@ export class JobRunner {
     @Inject(JOB_REPOSITORY)
     private readonly repository: JobRepository,
     @Optional() private readonly alerts?: BackAlerts,
+    /** Reindexa a biblioteca quando um job termina: o que ele gerou já aparece na Classificação. */
+    @Optional() private readonly library?: LibraryService,
   ) {}
 
   run<TInput, TResult>(job: Job, processor: JobProcessor<TInput, TResult>, input: TInput): void {
@@ -95,6 +98,7 @@ export class JobRunner {
       this.repository.save(job);
 
       await processor.process(job, input);
+      await this.refreshLibrary();
 
       job.complete();
       this.repository.save(job);
@@ -114,6 +118,19 @@ export class JobRunner {
       }
     } finally {
       this.current = null;
+    }
+  }
+
+  /**
+   * Todo job pode ter gravado um documento novo na entrada. Reindexar antes de marcar o job como
+   * concluído garante que, quando a tela vê "concluído", o contador da Classificação já está certo.
+   * Falhar aqui não derruba o job: o arquivo está salvo e a próxima sincronização o enxerga.
+   */
+  private async refreshLibrary(): Promise<void> {
+    try {
+      await this.library?.reindex();
+    } catch {
+      // o documento já está salvo; a biblioteca o vê na próxima sincronização
     }
   }
 
