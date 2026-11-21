@@ -21,7 +21,13 @@ import {
 
 import { JobService } from '../back/modules/jobs/application/job.service';
 import { ChatService } from '../back/modules/chat/chat.service';
+import { PdfCheckpointStore } from '../back/modules/pdf/pdf-checkpoint.store';
+import { PdfExtractor } from '../back/modules/pdf/pdf-extractor';
+import { countResumablePdfJobs } from '../jobs/pdf-resume';
+import { PdfJsOpener } from '../back/modules/pdf/pdfjs-opener';
 import { BackupService } from '../backup/backup.service';
+import { PdfInspector } from '../pdf/pdf-inspector';
+import { PdfSessionStore } from '../pdf/pdf-session.store';
 import { WindowEventPublisher } from '../ipc/event-publisher';
 import { DialogFilePicker } from '../ipc/file-picker';
 import { MindMapImageSaver } from '../library/mind-map-image-saver';
@@ -409,13 +415,31 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
 
   const notices = new NoticeStore();
 
+  const jobService = container.get<JobService>(JobService);
+  const pdfCheckpoints = container.get<PdfCheckpointStore>(PdfCheckpointStore);
+  const jobsReport = jobService.startupReport();
+
+  // pastas de progresso de PDF sem uso há muito tempo (jobs abandonados) não ficam para sempre
+  void pdfCheckpoints.removeStale().catch(() => undefined);
+
   buildStartupNotices({
-    jobs: container.get<JobService>(JobService).startupReport(),
+    jobs: {
+      ...jobsReport,
+      resumable: countResumablePdfJobs(
+        jobsReport.interrupted,
+        (id) => jobService.findById(id).request,
+        (key) => pdfCheckpoints.progressSync(key) !== null,
+      ),
+    },
     chats: container.get<ChatService>(ChatService).startupReport(),
     settingsRecoveredFromBackup: services.settings.recoveredFromBackup,
   }).forEach((notice) => notices.add(notice));
 
-  const backServices = new BackServices(<T>(token: unknown) => container.get<T>(token));
+  const pdfSessions = new PdfSessionStore();
+  const backServices = new BackServices(
+    <T>(token: unknown) => container.get<T>(token),
+    pdfSessions,
+  );
   const filePicker = new DialogFilePicker({
     showSave: (options) => {
       const parent = BrowserWindow.getFocusedWindow();
@@ -440,6 +464,13 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     reindexLibrary: () => backServices.reindexLibrary(),
     events,
     filePicker,
+  });
+
+  const pdf = new PdfInspector({
+    filePicker,
+    extractor: new PdfExtractor(new PdfJsOpener()),
+    sessions: pdfSessions,
+    events,
   });
 
   new IpcRegistrar(ipcMain).register(
@@ -497,6 +528,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       },
       libraryMover: services.libraryMover,
       backup,
+      pdf,
       notices,
       components: services.components,
       updates: appUpdater,

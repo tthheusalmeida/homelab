@@ -25,6 +25,7 @@ import type {
   BookUpdateRequest,
 } from './books';
 import type { ComponentRequest, ComponentsInstallRequest, ComponentsStatus } from './components';
+import type { PdfInspection } from './pdf';
 import type {
   SetAutoCheckRequest,
   TranslatedNotes,
@@ -50,6 +51,10 @@ import type {
 import type { AppNotice } from './events';
 import type { HealthReport } from './health';
 import type {
+  CreatePdfToSummaryRequest,
+  JobRetryRequest,
+  JobLeftovers,
+  JobCleanResult,
   CreateVideoToSummaryRequest,
   CreateVideoToTranscriptRequest,
   JobCreated,
@@ -212,6 +217,15 @@ export interface IpcContracts {
   /** Restaura os itens escolhidos do zip aberto por `backup:inspect`. */
   [IpcChannels.backup.restore]: { request: BackupRestoreRequest; response: BackupRestoreResult };
 
+  /**
+   * Pergunta qual PDF abrir, lê o texto (progresso em `pdf:progress`) e devolve o que há nele e o
+   * que vai custar; `null` se o usuário cancelar. Arquivo inválido, grande demais, protegido por
+   * senha ou sem texto: `VALIDATION` com a mensagem para o usuário.
+   */
+  [IpcChannels.pdf.inspect]: { request: void; response: PdfInspection | null };
+  /** Cancela a leitura em andamento (`pdf:inspect` responde `null`). */
+  [IpcChannels.pdf.cancel]: { request: void; response: void };
+
   /** Envia a mensagem com o histórico inteiro do chat; o chat nasce na primeira mensagem. */
   [IpcChannels.chat.send]: { request: ChatSendRequest; response: ChatSendResponse };
   /** Descarta a resposta que ainda está sendo gerada para o chat (a chamada ao provedor não é interrompida). */
@@ -315,15 +329,27 @@ export interface IpcContracts {
     request: CreateVideoToSummaryRequest;
     response: JobCreated;
   };
+  /**
+   * Cria o resumo de um PDF já lido por `pdf:inspect` (identificado pelo `token`). O texto é gravado
+   * em disco na hora; se o app fechar no meio, `jobs:retry` continua da parte seguinte.
+   */
+  [IpcChannels.jobs.createPdfToSummary]: {
+    request: CreatePdfToSummaryRequest;
+    response: JobCreated;
+  };
   /** Exclui jobs do histórico (só os que não estão na fila nem rodando). */
   [IpcChannels.jobs.delete]: { request: JobDeleteRequest; response: JobDeleteResult };
   [IpcChannels.jobs.deleteAll]: { request: void; response: JobDeleteResult };
   /** Desfaz a última exclusão (guardada só enquanto o app está aberto). */
   [IpcChannels.jobs.undoDelete]: { request: void; response: JobUndoDeleteResult };
+  /** Mede os arquivos que processos não terminados deixaram (progresso de PDF, vídeos e áudios temporários). */
+  [IpcChannels.jobs.leftovers]: { request: void; response: JobLeftovers };
+  /** Apaga esses arquivos; o que um processo na fila ou rodando usa nunca é apagado. */
+  [IpcChannels.jobs.cleanLeftovers]: { request: void; response: JobCleanResult };
   /** Cancela um job na fila (sai da fila) ou rodando (para ao fim da etapa em andamento). */
   [IpcChannels.jobs.cancel]: { request: JobRequest; response: JobCancelResult };
   /** Cria um job novo com os mesmos dados de um que falhou. */
-  [IpcChannels.jobs.retry]: { request: JobRequest; response: JobCreated };
+  [IpcChannels.jobs.retry]: { request: JobRetryRequest; response: JobCreated };
   /** Abre a janela de login do site do vídeo; ao fechá-la, guarda o acesso para o próximo download. */
   [IpcChannels.jobs.grantAccess]: { request: JobRequest; response: JobAccessResult };
 

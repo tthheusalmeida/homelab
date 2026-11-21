@@ -147,6 +147,7 @@ Escrita: `modules` que não é lista → `VALIDATION` com "O campo "modules" dev
 | `jobs:types` | `GET jobs/types` | — | `[{ type, label, description, steps: [{ name, label }] }]` |
 | `jobs:get` | `GET jobs/:id` | `{ id }` | um job; inexistente → `NOT_FOUND` |
 | `jobs:create-video-to-transcript` | `POST jobs/video-to-transcript` | `{ url, title?, category?, tags? }` | `{ id, status }` (status `pending`) |
+| `jobs:create-pdf-to-summary` | — | `{ token, providerId, modelId, thinking?, detail?, title?, category?, tags? }` | `{ id, status }` (status `pending`). O `token` vem de `pdf:inspect`; o texto vai para o disco antes de o job existir (ver `leitura-de-pdf.md`). Token expirado ou dica inválida → `VALIDATION` e nenhum job é criado |
 | `jobs:create-video-to-summary` | `POST jobs/video-to-summary` | `{ url, providerId, modelId, thinking?, detail?, title?, category?, tags? }` | `{ id, status }` (status `pending`) |
 
 Criar um job valida **antes** de enfileirar (título de texto com até 120 caracteres; `category` e `tags` listas de textos; categoria de 1 a 4 níveis; ver `regras/back/jobs.md`): se algo for inválido responde `VALIDATION` com a mensagem de hoje e **nenhum job é criado**. `detail` desconhecido não é erro: vale `detailed` (regra do back). O job entra na fila e responde na hora; os jobs rodam **um por vez**, na ordem de chegada. Falha do pipeline (download, ffmpeg, Whisper, IA) **não** é erro do canal: o job termina `failed` com a mensagem em `error` (ex.: "Modelo Whisper não encontrado: ..."), e a fila segue. O acompanhamento é por consulta (`jobs:list`, a cada 1 s no front).
@@ -163,7 +164,9 @@ Excluir um job não apaga os documentos que ele gerou.
 | Canal | Payload | Retorno |
 |---|---|---|
 | `jobs:cancel` | `{ id }` | `{ id, outcome: 'cancelled' \| 'cancelling' \| 'not-active' }`. Na fila: sai dela e termina como falha "Cancelado pelo usuário.". Rodando: o cancelamento é pedido e o job para **ao fim da etapa em andamento** (download, ffmpeg, Whisper e IA não são interrompidos no meio). Cancelar não gera aviso de falha. |
-| `jobs:retry` | `{ id }` | `{ id, status }` do **novo** job, criado com os mesmos dados do que falhou (o original continua no histórico). Só job `failed` que guardou os dados de criação (`request`); job antigo sem `request` responde `VALIDATION` com mensagem clara. |
+| `jobs:retry` | `{ id, providerId?, modelId?, thinking? }` | `{ id, status }` do **novo** job, criado com os mesmos dados do que falhou (o original continua no histórico). Só job `failed` que guardou os dados de criação (`request`); job antigo sem `request` responde `VALIDATION` com mensagem clara. Num **resumo de PDF** os campos de modelo trocam o modelo do job novo (o trabalho continua de onde parou, só as partes que faltam usam o modelo novo); nos outros tipos eles são ignorados. |
+| `jobs:leftovers` | — | `{ files, bytes }`: o que processos não terminados (falhos, cancelados ou interrompidos) deixaram no disco: progresso de resumos de PDF e vídeos e áudios temporários. Não apaga nada. |
+| `jobs:clean-leftovers` | — | `{ files, bytes, failed }`: apaga esses arquivos; `failed` conta o que estava em uso e não pôde ser apagado. **Nunca apaga o que um job na fila ou rodando usa**, nem os documentos gerados (inbox e biblioteca). |
 | `jobs:undo-delete` | — | `{ restored: string[] }`. Traz de volta o que a **última** exclusão tirou (guardado só em memória, enquanto o app está aberto). |
 
 `JobView` ganhou `cancelRequested` e `retryable`. O `Job` grava `request` (corpo original da criação) no `jobs.json`.
@@ -187,6 +190,14 @@ Excluir um job não apaga os documentos que ele gerou.
 
 Itens: `library` (páginas e livros), `inbox`, `jobs`, `chats`, `usage`, `settings`. O renderer **nunca envia caminhos**: o zip escolhido é identificado por um token. Zip inválido, de versão futura, com arquivo desconhecido ou item ausente → `VALIDATION`; falha de disco → `PERSIST_FAILED`.
 
+## pdf (criar página a partir de um PDF; ver `leitura-de-pdf.md`)
+| Canal | Payload | Retorno |
+|---|---|---|
+| `pdf:inspect` | — | `{ token, fileName, sizeBytes, pageCount, emptyPages, characters, estimatedTokens, parts, estimatedCalls, warnings }` ou `null` se o usuário cancelar; o main abre o diálogo (só `.pdf`) e lê o texto, com progresso em `pdf:progress` |
+| `pdf:cancel` | — | nada; interrompe a leitura entre duas páginas (`pdf:inspect` responde `null`) |
+
+O renderer **nunca envia caminho**: o PDF lido é identificado por um token e o texto fica na memória do main. Problemas do arquivo (não é PDF, passa de 50 MB ou 1500 páginas, protegido por senha, corrompido, sem texto, já há uma leitura em andamento) → `VALIDATION` com a mensagem pronta para o usuário.
+
 ## avisos
 | Canal | Payload | Retorno |
 |---|---|---|
@@ -204,6 +215,7 @@ Enviados com `webContents.send` a todas as janelas; a ponte (`window.api.on(even
 | Evento | Payload | Quando |
 |---|---|---|
 | `backup:progress` | `{ phase: preparing|running|verifying|done, processed, total, currentFile? }` | criar e restaurar backup |
+| `pdf:progress` | o mesmo (`processed` e `total` em páginas) | ler o texto de um PDF |
 | `library-move:progress` | o mesmo | mover a biblioteca |
 | `app:notice` | `{ id, level: info|warning|error, title, message?, detail?, link? }` | job terminou ou falhou, falha ao gravar em disco |
 

@@ -38,7 +38,7 @@ Documentos/HomeLab/                  raiz FIXA (não é configurável)
 │  └─ infographics.json              infográficos gerados
 ├─ config/
 │  └─ settings.json                  configurações (move de userData)
-└─ temp/{video,audio}/               temporários (nunca entram no backup)
+└─ temp/{video,audio,pdf}/           temporários (nunca entram no backup); `pdf/` guarda o progresso dos resumos de PDF
 ```
 
 - **Um JSON por assunto** (`jobs.json`, `chats.json`), não um arquivo por item. Por quê é seguro: o app lê tudo na abertura e regrava o arquivo a cada mudança; texto puro, mesmo com centenas de jobs e chats, são poucos MB. Proteções: escrita **atômica** (grava `.tmp` e renomeia, como o `JsonFile` atual), `version` no arquivo e uma cópia `.bak` da última versão boa; arquivo ilegível vai para `.corrupt` e o app abre com o `.bak`. Se um dia ficar pesado, essa decisão é revista (a `JobRepository` já esconde o armazenamento).

@@ -1,3 +1,6 @@
+import * as os from 'node:os';
+import * as path from 'node:path';
+
 import { Module } from '@nestjs/common';
 
 import { JobService } from './application/job.service';
@@ -15,17 +18,29 @@ import { BackConfig } from '../../config/back-config';
 import { JsonFile } from '../../../storage/json-file';
 import { AIModule } from '../ai/ai.module';
 import { VideoModule } from '../video/video.module';
+import { LibraryModule } from '../library/library.module';
 import { VideoToTranscriptJobProcessor } from './processors/video-to-transcript/processor';
 import { VideoToSummaryJobProcessor } from './processors/video-to-resume/processor';
+import { PdfToSummaryJobProcessor } from './processors/pdf-to-summary/processor';
+import { PdfCheckpointStore } from '../pdf/pdf-checkpoint.store';
 
 @Module({
-  imports: [VideoModule, AIModule],
+  imports: [VideoModule, AIModule, LibraryModule],
   providers: [
     JobService,
     JobRunner,
 
     VideoToTranscriptJobProcessor,
     VideoToSummaryJobProcessor,
+    PdfToSummaryJobProcessor,
+
+    {
+      provide: PdfCheckpointStore,
+      inject: [BackConfig],
+      // Sem pasta configurada (testes), usa uma pasta temporária do sistema.
+      useFactory: (config: BackConfig) =>
+        new PdfCheckpointStore(config.pdfWorkDir ?? path.join(os.tmpdir(), 'homelab-pdf')),
+    },
 
     {
       provide: JOB_REPOSITORY,
@@ -39,6 +54,13 @@ import { VideoToSummaryJobProcessor } from './processors/video-to-resume/process
           : new InMemoryJobRepository(),
     },
   ],
-  exports: [JobService, JobRunner, VideoToTranscriptJobProcessor, VideoToSummaryJobProcessor],
+  exports: [
+    JobService,
+    JobRunner,
+    VideoToTranscriptJobProcessor,
+    VideoToSummaryJobProcessor,
+    PdfToSummaryJobProcessor,
+    PdfCheckpointStore,
+  ],
 })
 export class JobsModule {}

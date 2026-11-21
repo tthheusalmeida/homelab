@@ -76,7 +76,7 @@ describe('BackServices', () => {
     expect(services.readers().jobs.catalog.list()).toEqual([{ id: 'j1', status: 'pending' }]);
   });
 
-  it('when listing the job types, should answer the two types of the back configuration', () => {
+  it('when listing the job types, should answer the three types of the back configuration', () => {
     const { services } = setup();
 
     expect(
@@ -84,7 +84,7 @@ describe('BackServices', () => {
         .readers()
         .jobs.catalog.listTypes()
         .map((type) => type.type),
-    ).toEqual(['video-to-transcript', 'video-to-summary']);
+    ).toEqual(['video-to-transcript', 'video-to-summary', 'pdf-to-summary']);
   });
 
   it('when starting a transcript job, should validate the hints with the back parser, create it and queue it with the transcript processor', () => {

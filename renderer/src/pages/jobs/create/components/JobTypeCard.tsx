@@ -1,4 +1,4 @@
-import { ArrowRight, Captions, FileText, Terminal, type LucideIcon } from "lucide-react";
+import { ArrowRight, Captions, FileText, FileType, Terminal, type LucideIcon } from "lucide-react";
 
 import { HexFrame } from "#components/Hex";
 import { Card, CardContent } from "#ui/card";
@@ -14,6 +14,7 @@ interface JobTypeCardProps {
 const ICONS: Record<string, LucideIcon> = {
   [JobNameOptions.VIDEO_TO_TRANSCRIPT]: Captions,
   [JobNameOptions.VIDEO_TO_SUMMARY]: FileText,
+  [JobNameOptions.PDF_TO_SUMMARY]: FileType,
 };
 
 export function JobTypeCard({ jobType, onSelect }: JobTypeCardProps) {

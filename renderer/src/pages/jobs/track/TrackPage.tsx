@@ -9,8 +9,11 @@ import { PageHeader } from "../../../components/PageHeader";
 import { useSnackbar } from "../../../components/Snackbar";
 
 import { JobStatusOptions, type Job } from "../types/job.types";
+import type { ResumeModel } from "./components/ResumeWithModelDialog";
 import { isActiveJob } from "./active";
 import { JobList } from "./components/JobList";
+import { LeftoversControl } from "./components/LeftoversControl";
+import { ResumeWithModelDialog } from "./components/ResumeWithModelDialog";
 import { describeDeleteResult } from "./delete-message";
 import { useDeleteAllJobs, useDeleteJobs } from "./hooks/useDeleteJobs";
 import { useJobs } from "./hooks/useJobs";
@@ -39,6 +42,7 @@ export function TrackPage() {
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [confirming, setConfirming] = useState<Confirming>(null);
+  const [changingModel, setChangingModel] = useState<Job | null>(null);
 
   if (isLoading) {
     return (
@@ -116,10 +120,26 @@ export function TrackPage() {
     });
 
   const retryJob = (job: Job) =>
-    retry.mutate(job.id, {
-      onSuccess: () => snackbar.created(TrackStrings.retried(job.label)),
-      onError: (error) => snackbar.error(error.message),
-    });
+    retry.mutate(
+      { id: job.id },
+      {
+        onSuccess: () => snackbar.created(TrackStrings.retried(job.label)),
+        onError: (error) => snackbar.error(error.message),
+      },
+    );
+
+  // Continua o resumo de PDF que parou com outro modelo: as partes prontas não são refeitas.
+  const resumeWithModel = (job: Job, model: ResumeModel) =>
+    retry.mutate(
+      { id: job.id, model },
+      {
+        onSuccess: () => {
+          setChangingModel(null);
+          snackbar.created(TrackStrings.retried(job.label));
+        },
+        onError: (error) => snackbar.error(error.message),
+      },
+    );
 
   // Abre o login do site; ao fechar a janela com acesso guardado, cria o job de novo.
   const grantAccess = (job: Job) =>
@@ -131,10 +151,13 @@ export function TrackPage() {
           return;
         }
 
-        retry.mutate(job.id, {
-          onSuccess: () => snackbar.created(TrackStrings.accessGranted(job.label)),
-          onError: (error) => snackbar.error(error.message),
-        });
+        retry.mutate(
+          { id: job.id },
+          {
+            onSuccess: () => snackbar.created(TrackStrings.accessGranted(job.label)),
+            onError: (error) => snackbar.error(error.message),
+          },
+        );
       },
       onError: (error) => snackbar.error(error.message),
     });
@@ -167,9 +190,11 @@ export function TrackPage() {
           </span>
         }
         actions={
-          data.length > 0 && (
+          (
             <div className="flex flex-wrap items-center gap-2">
-              {selecting ? (
+              <LeftoversControl />
+
+              {data.length === 0 ? null : selecting ? (
                 <>
                   <Button
                     variant="outline"
@@ -226,16 +251,28 @@ export function TrackPage() {
         onSelectedChange={toggle}
         onCancel={cancelJob}
         onRetry={retryJob}
+        onChangeModel={setChangingModel}
         onGrantAccess={grantAccess}
         busyId={
           cancel.isPending
             ? cancel.variables
             : retry.isPending
-              ? retry.variables
+              ? retry.variables.id
               : grant.isPending
                 ? grant.variables
                 : undefined
         }
+      />
+
+      <ResumeWithModelDialog
+        job={changingModel}
+        isPending={retry.isPending}
+        onOpenChange={(open) => {
+          if (!open && !retry.isPending) {
+            setChangingModel(null);
+          }
+        }}
+        onConfirm={resumeWithModel}
       />
 
       <ConfirmDialog

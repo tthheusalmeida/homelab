@@ -8,6 +8,8 @@ import { AiHandler, type AiCatalog, type AiUsageSource } from './ai.handler';
 import { AppHandler, type AppInfo } from './app.handler';
 import { BackupHandler, type BackupPort } from './backup.handler';
 import { ComponentsHandler, type ComponentsPort } from './components.handler';
+import { PdfHandler, type PdfPort } from './pdf.handler';
+import { JobLeftoversHandler, type JobLeftoversPort } from './leftovers.handler';
 import { PlatformHandler, type PlatformLoginsPort } from './platform.handler';
 import { NoticeHandler, type PendingNotices } from './notice.handler';
 import { BookHandler, type BookReader, type BookWriter } from './book.handler';
@@ -50,6 +52,7 @@ export interface BackReaders {
     launcher: JobLauncherPort;
     deleter: JobDeleterPort;
     canceller: JobCancellerPort;
+    leftovers: JobLeftoversPort;
   };
 }
 
@@ -58,6 +61,8 @@ export interface HandlerDeps {
   folderPicker: FolderPicker;
   libraryMover: LibraryFolderPort;
   backup: BackupPort;
+  /** Leitura do texto de PDFs (criar página a partir de um arquivo). */
+  pdf: PdfPort;
   notices: PendingNotices;
   components: ComponentsPort;
   updates: UpdatesPort;
@@ -89,6 +94,8 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
     new InfographicHandler(deps.back.infographics),
     new BookHandler(deps.back.books),
     new BackupHandler(deps.backup),
+    new PdfHandler(deps.pdf),
+    new JobLeftoversHandler(deps.back.jobs.leftovers),
     new NoticeHandler(deps.notices),
     new ComponentsHandler(deps.components),
     new UpdatesHandler(deps.updates, deps.notesTranslator),

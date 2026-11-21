@@ -1,5 +1,6 @@
 import { BadGatewayException, Injectable } from '@nestjs/common';
 
+import type { AIProviderName, AIRetryInfo } from '../../ai/ai.model';
 import { AIService } from '../../ai/ai.service';
 import { buildClassificationPrompt } from '../../ai/prompts/library-classification.prompt';
 import { cheapestModel } from '../../ai/providers/gemini/gemini.pricing';
@@ -23,6 +24,19 @@ export interface ClassificationSuggestion {
   model: string;
 }
 
+/** Pedido de classificação de um texto que ainda não está na biblioteca (ex.: o resumo de um PDF). */
+export interface ClassifyTextInput {
+  /** Título atual (o prompt o mantém se já for bom). */
+  title: string;
+  content: string;
+  providerId: AIProviderName;
+  modelId: string;
+  thinking?: string;
+  /** Quantos caracteres do conteúdo vão ao modelo (padrão: o mesmo das páginas da biblioteca). */
+  maxContentChars?: number;
+  onRetry?: (info: AIRetryInfo) => void;
+}
+
 @Injectable()
 export class LibraryClassifier {
   constructor(
@@ -34,6 +48,19 @@ export class LibraryClassifier {
   async suggest(id: string, modelId?: string): Promise<ClassificationSuggestion> {
     const { meta, content } = await this.library.get(id);
 
+    return this.classify({
+      title: meta.title,
+      content,
+      providerId: 'gemini',
+      modelId: modelId?.trim() || cheapestModel(),
+    });
+  }
+
+  /**
+   * Sugere título, categoria e tags para um texto, **preferindo as categorias e tags que a biblioteca
+   * já tem**, com o provedor e o modelo informados (Gemini ou Ollama).
+   */
+  async classify(input: ClassifyTextInput): Promise<ClassificationSuggestion> {
     const tree = await this.library.categories();
     const knownTags = this.library
       .tags()
@@ -41,11 +68,11 @@ export class LibraryClassifier {
       .slice(0, MAX_KNOWN_TAGS)
       .map((entry) => entry.tag);
 
-    const model = modelId?.trim() || cheapestModel();
+    const model = input.modelId;
 
     const prompt = buildClassificationPrompt({
-      title: meta.title,
-      content: content.slice(0, MAX_CONTENT_CHARS),
+      title: input.title,
+      content: input.content.slice(0, input.maxContentChars ?? MAX_CONTENT_CHARS),
       categories: flattenCategories(tree),
       tags: knownTags,
     });
@@ -56,7 +83,9 @@ export class LibraryClassifier {
       answer = await this.ai.chat({
         message: prompt,
         modelId: model,
-        providerId: 'gemini',
+        providerId: input.providerId,
+        ...(input.thinking ? { thinking: input.thinking } : {}),
+        ...(input.onRetry ? { onRetry: input.onRetry } : {}),
       });
     } catch (error) {
       throw new BadGatewayException('Não foi possível obter a sugestão da IA. Tente novamente.', {
@@ -67,7 +96,7 @@ export class LibraryClassifier {
     const raw = parseJsonObject(answer);
 
     return {
-      title: cleanTitle(raw.title) || meta.title,
+      title: cleanTitle(raw.title) || input.title,
       category: cleanCategory(raw.category, tree),
       tags: cleanTags(raw.tags, knownTags),
       model,

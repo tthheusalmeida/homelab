@@ -4,7 +4,13 @@ import { JOBS_ROUTE } from './event-back-alerts';
 
 /** O que o main sabe, na abertura, sobre os arquivos de estado (jobs, conversas, configurações). */
 export interface StartupReports {
-  jobs: { interrupted: string[]; recoveredFromBackup: boolean; unreadable: boolean };
+  jobs: {
+    interrupted: string[];
+    recoveredFromBackup: boolean;
+    unreadable: boolean;
+    /** Quantos dos interrompidos são resumos de PDF com progresso salvo em disco. */
+    resumable?: number;
+  };
   chats: { recoveredFromBackup: boolean; unreadable: boolean };
   settingsRecoveredFromBackup: boolean;
 }
@@ -16,6 +22,10 @@ export const StartupMessages = {
       : `${count} processos foram interrompidos ao fechar o app`,
   interruptedHelp:
     'Eles aparecem como falhos na lista de tarefas. Crie o processo de novo se precisar.',
+  resumable: (count: number) =>
+    count === 1
+      ? ' O resumo de PDF guardou o que já estava pronto: use "Tentar de novo" para continuar de onde parou.'
+      : ` ${count} resumos de PDF guardaram o que já estava pronto: use "Tentar de novo" para continuar de onde pararam.`,
   jobsLink: 'Ver tarefas',
   recovered: (what: string) =>
     `${what.charAt(0).toUpperCase()}${what.slice(1)} estava corrompido: usei a última cópia boa`,
@@ -41,7 +51,9 @@ export function buildStartupNotices(reports: StartupReports): AppNotice[] {
       id: 'startup:jobs-interrupted',
       level: 'warning',
       title: StartupMessages.interrupted(reports.jobs.interrupted.length),
-      message: StartupMessages.interruptedHelp,
+      message:
+        StartupMessages.interruptedHelp +
+        (reports.jobs.resumable ? StartupMessages.resumable(reports.jobs.resumable) : ''),
       link: { label: StartupMessages.jobsLink, path: JOBS_ROUTE },
     });
   }

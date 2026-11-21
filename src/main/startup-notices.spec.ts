@@ -120,3 +120,35 @@ describe('buildStartupNotices', () => {
     ]);
   });
 });
+
+describe('buildStartupNotices: resumos de PDF', () => {
+  it('when one interrupted job can be resumed, should say it kept what was ready', () => {
+    const reports = clean();
+
+    reports.jobs.interrupted = ['j1'];
+    reports.jobs.resumable = 1;
+
+    const [notice] = buildStartupNotices(reports);
+
+    expect(notice.message).toContain('Tentar de novo');
+    expect(notice.message).toContain('O resumo de PDF guardou');
+  });
+
+  it('when several can be resumed, should say how many', () => {
+    const reports = clean();
+
+    reports.jobs.interrupted = ['j1', 'j2', 'j3'];
+    reports.jobs.resumable = 2;
+
+    expect(buildStartupNotices(reports)[0].message).toContain('2 resumos de PDF guardaram');
+  });
+
+  it('when none can be resumed, should keep the usual message only', () => {
+    const reports = clean();
+
+    reports.jobs.interrupted = ['j1'];
+    reports.jobs.resumable = 0;
+
+    expect(buildStartupNotices(reports)[0].message).not.toContain('Tentar de novo');
+  });
+});

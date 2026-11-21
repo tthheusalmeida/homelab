@@ -1,4 +1,9 @@
-import type { JobTypeView, JobView } from '../shared/contracts/jobs';
+import {
+  JobTypeIds,
+  type JobResume,
+  type JobTypeView,
+  type JobView,
+} from '../shared/contracts/jobs';
 
 /** Parte do `JobService` do back usada para consultar jobs. */
 export interface JobStore {
@@ -20,14 +25,32 @@ export class JobCatalog {
     private readonly store: JobStore,
     /** Configuração dos tipos (`JobTypeConfig` do back), lida só quando pedida. */
     private readonly typeConfig: () => Record<string, unknown>,
+    /** Progresso em disco de um resumo de PDF (pela chave); `null` se não há. */
+    private readonly resumeOf?: (checkpointKey: string) => JobResume | null,
   ) {}
 
   list(): JobView[] {
-    return toWire<JobView[]>(this.store.findAll());
+    return this.store.findAll().map((job) => this.view(job));
   }
 
   get(id: string): JobView {
-    return toWire<JobView>(this.store.findById(id));
+    return this.view(this.store.findById(id));
+  }
+
+  /** O job no formato de transporte; resumo de PDF que falhou leva quantas partes já estão salvas. */
+  private view(job: unknown): JobView {
+    const view = toWire<JobView>(job);
+
+    if (view.name === JobTypeIds.PDF_TO_SUMMARY && view.status === 'failed' && this.resumeOf) {
+      const key = (job as { request?: { checkpointKey?: unknown } }).request?.checkpointKey;
+      const resume = typeof key === 'string' ? this.resumeOf(key) : null;
+
+      if (resume) {
+        view.resume = resume;
+      }
+    }
+
+    return view;
   }
 
   listTypes(): JobTypeView[] {

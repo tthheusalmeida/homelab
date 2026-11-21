@@ -191,3 +191,125 @@ describe('LibraryClassifier', () => {
     expect(ai.chat).not.toHaveBeenCalled();
   });
 });
+
+describe('LibraryClassifier.classify (texto que ainda não está na biblioteca)', () => {
+  let library: Record<'get' | 'categories' | 'tags', jest.Mock>;
+  let ai: { chat: jest.Mock };
+  let classifier: LibraryClassifier;
+
+  const sent = () => (ai.chat.mock.calls as Array<[Record<string, unknown>]>)[0][0];
+
+  beforeEach(() => {
+    library = {
+      get: jest.fn(),
+      categories: jest.fn().mockReturnValue(tree),
+      tags: jest.fn().mockReturnValue([{ tag: 'docker', count: 1 }]),
+    };
+    ai = {
+      chat: jest
+        .fn()
+        .mockResolvedValue(
+          JSON.stringify({ title: 'Redes', category: ['química', 'ligações'], tags: ['Docker'] }),
+        ),
+    };
+    classifier = new LibraryClassifier(
+      library as unknown as LibraryService,
+      ai as unknown as AIService,
+    );
+  });
+
+  it('when classifying a text, should not read any document from the library', async () => {
+    await classifier.classify({
+      title: 'Livro',
+      content: 'conteúdo',
+      providerId: 'ollama',
+      modelId: 'qwen',
+    });
+
+    expect(library.get).not.toHaveBeenCalled();
+  });
+
+  it('when classifying, should use the given provider, model and thinking', async () => {
+    await classifier.classify({
+      title: 'Livro',
+      content: 'conteúdo',
+      providerId: 'ollama',
+      modelId: 'qwen',
+      thinking: 'on',
+    });
+
+    expect(sent()).toMatchObject({ providerId: 'ollama', modelId: 'qwen', thinking: 'on' });
+  });
+
+  it('when a retry callback is given, should pass it to the AI', async () => {
+    const onRetry = jest.fn();
+
+    await classifier.classify({
+      title: 'Livro',
+      content: 'c',
+      providerId: 'gemini',
+      modelId: 'm',
+      onRetry,
+    });
+
+    expect(sent().onRetry).toBe(onRetry);
+  });
+
+  it('when classifying, should still prefer the existing categories and tags of the library', async () => {
+    const result = await classifier.classify({
+      title: 'Livro',
+      content: 'c',
+      providerId: 'gemini',
+      modelId: 'm',
+    });
+
+    expect(sent().message).toContain('Química > Ligações');
+    expect(result.category).toEqual(['Química', 'Ligações']);
+    expect(result.tags).toEqual(['docker']);
+    expect(result.model).toBe('m');
+  });
+
+  it('when a content limit is given, should cut the text at it', async () => {
+    await classifier.classify({
+      title: 'Livro',
+      content: `${'a'.repeat(50)}FIM`,
+      providerId: 'gemini',
+      modelId: 'm',
+      maxContentChars: 50,
+    });
+
+    expect(sent().message).not.toContain('FIM');
+  });
+
+  it('when no content limit is given, should keep the default of the library pages', async () => {
+    await classifier.classify({
+      title: 'Livro',
+      content: `${'a'.repeat(7000)}FIM`,
+      providerId: 'gemini',
+      modelId: 'm',
+    });
+
+    expect(sent().message).not.toContain('FIM');
+  });
+
+  it('when the answer has no title, should keep the title it was given', async () => {
+    ai.chat.mockResolvedValue(JSON.stringify({ category: ['Química'], tags: [] }));
+
+    const result = await classifier.classify({
+      title: 'Meu título',
+      content: 'c',
+      providerId: 'gemini',
+      modelId: 'm',
+    });
+
+    expect(result.title).toBe('Meu título');
+  });
+
+  it('when the AI call fails, should answer a bad gateway error', async () => {
+    ai.chat.mockRejectedValue(new Error('rede'));
+
+    await expect(
+      classifier.classify({ title: 'T', content: 'c', providerId: 'gemini', modelId: 'm' }),
+    ).rejects.toBeInstanceOf(BadGatewayException);
+  });
+});

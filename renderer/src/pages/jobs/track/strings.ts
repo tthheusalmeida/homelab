@@ -40,6 +40,26 @@ export const TrackStrings = {
   cancelRequested: "Cancelamento pedido: a tarefa para ao fim da etapa em andamento",
   notActive: "A tarefa já tinha terminado",
   retry: "Tentar de novo",
+  resume: (done: number, total: number) =>
+    `${done} de ${total} ${total === 1 ? "parte" : "partes"} já ${done === 1 ? "está salva" : "estão salvas"} em disco: “Tentar de novo” continua daqui.`,
+  changeModel: {
+    button: "Trocar modelo",
+    hint: "Continua de onde parou com outro modelo, sem refazer as partes prontas.",
+    title: "Continuar com outro modelo",
+    description: (done: number, total: number) =>
+      `${done} de ${total} partes já estão prontas e não serão refeitas. Escolha o modelo que vai resumir as que faltam.`,
+    confirm: "Continuar",
+  },
+  leftovers: {
+    button: "Limpar arquivos temporários",
+    title: "Limpar arquivos de processos não terminados",
+    description: (files: number, size: string) =>
+      `${files === 1 ? "1 arquivo" : `${files} arquivos`} (${size}) deixados por processos que falharam, foram cancelados ou foram interrompidos serão apagados. Processos em andamento e os documentos gerados não são afetados. Resumos de PDF que pararam no meio não poderão mais ser continuados: será preciso escolher o arquivo de novo.`,
+    confirm: "Apagar",
+    nothing: "Não há arquivos de processos não terminados para limpar.",
+    cleaned: (files: number, size: string, failed: number) =>
+      `${files === 1 ? "1 arquivo apagado" : `${files} arquivos apagados`} (${size} liberados)${failed > 0 ? `; ${failed === 1 ? "1 item" : `${failed} itens`} em uso não pôde ser apagado` : ""}`,
+  },
   retried: (label: string) => `Nova tentativa criada: ${label}`,
   signIn: "Entrar no site",
   signInHint:

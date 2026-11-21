@@ -43,6 +43,10 @@ export class SettingsBackConfig extends BackConfig {
     return this.appPaths.audioTempDir;
   }
 
+  get pdfWorkDir(): string {
+    return this.appPaths.pdfWorkDir;
+  }
+
   get usageFile(): string {
     return this.appPaths.usageFile;
   }
