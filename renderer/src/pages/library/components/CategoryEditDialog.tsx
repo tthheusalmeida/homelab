@@ -14,6 +14,7 @@ import { Input } from '#ui/input';
 import { Label } from '#ui/label';
 
 import { Callout } from '#components/Callout';
+import { FormButtons } from '#components/FormButtons';
 import { ConfirmDialog } from '#components/ConfirmDialog';
 import { OptionSelect } from '#components/OptionSelect';
 import { useSnackbar } from '#components/Snackbar';
@@ -256,13 +257,15 @@ function CategoryEditForm({
             </Button>
           )}
 
-          <Button type="button" variant="outline" disabled={working} onClick={onDone}>
-            {CategoryEditStrings.cancel}
-          </Button>
-
-          <Button type="submit" disabled={!canSave} loading={rename.isPending}>
+          <FormButtons
+            onCancel={onDone}
+            pending={rename.isPending}
+            locked={working}
+            canSubmit={canSave}
+            cancelLabel={CategoryEditStrings.cancel}
+          >
             {rename.isPending ? CategoryEditStrings.saving : CategoryEditStrings.save}
-          </Button>
+          </FormButtons>
         </DialogFooter>
       </DialogForm>
 

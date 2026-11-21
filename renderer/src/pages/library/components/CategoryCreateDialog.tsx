@@ -1,6 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 
-import { Button } from '#ui/button';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +13,7 @@ import { Input } from '#ui/input';
 import { Label } from '#ui/label';
 
 import { Callout } from '#components/Callout';
+import { FormButtons } from '#components/FormButtons';
 import { OptionSelect } from '#components/OptionSelect';
 import { useSnackbar } from '#components/Snackbar';
 
@@ -205,13 +205,14 @@ function CategoryCreateForm({
       )}
 
       <DialogFooter>
-        <Button type="button" variant="outline" disabled={create.isPending} onClick={onDone}>
-          {CategoryCreateStrings.cancel}
-        </Button>
-
-        <Button type="submit" disabled={!canCreate} loading={create.isPending}>
+        <FormButtons
+          onCancel={onDone}
+          pending={create.isPending}
+          canSubmit={canCreate}
+          cancelLabel={CategoryCreateStrings.cancel}
+        >
           {create.isPending ? CategoryCreateStrings.creating : CategoryCreateStrings.create}
-        </Button>
+        </FormButtons>
       </DialogFooter>
     </DialogForm>
   );

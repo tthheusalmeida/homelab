@@ -41,6 +41,7 @@ import {
   toDrafts,
 } from "../organizer";
 import type { BookDetail } from "../types";
+import { FormButtons } from "#components/FormButtons";
 
 interface BookOrganizerDialogProps {
   open: boolean;
@@ -435,18 +436,14 @@ function Organizer({
       )}
 
       <DialogFooter>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={save.isPending}
-          onClick={onClose}
+        <FormButtons
+          onCancel={onClose}
+          pending={save.isPending}
+          canSubmit={canSave}
+          onSubmit={handleSave}
         >
-          Cancelar
-        </Button>
-
-        <Button type="button" disabled={!canSave} onClick={handleSave} loading={save.isPending}>
           Salvar
-        </Button>
+        </FormButtons>
       </DialogFooter>
     </DialogSections>
   );

@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-import { Button } from "#ui/button";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +17,7 @@ import { DocumentPreview } from "./DocumentPreview";
 import { SuggestionPanel } from "./SuggestionPanel";
 import type { DocumentSummary } from "../types/library.types";
 import { useSnackbar } from "#components/Snackbar";
+import { FormButtons } from "#components/FormButtons";
 
 interface PublishDialogProps {
   /** Documento a adicionar; `null` mantém o diálogo fechado. */
@@ -122,18 +122,13 @@ function PublishForm({ document, onDone }: PublishFormProps) {
         )}
 
       <DialogFooter>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={publish.isPending}
-          onClick={onDone}
+        <FormButtons
+          onCancel={onDone}
+          pending={publish.isPending}
+          canSubmit={canSubmit}
         >
-          Cancelar
-        </Button>
-
-        <Button type="submit" disabled={!canSubmit} loading={publish.isPending}>
           {isReadd ? "Readicionar" : "Adicionar"}
-        </Button>
+        </FormButtons>
       </DialogFooter>
     </DialogForm>
   );

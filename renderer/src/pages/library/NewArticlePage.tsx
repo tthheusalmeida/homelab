@@ -1,7 +1,6 @@
 import { useState } from "react";
 
 import { useNavigate } from "react-router";
-import { Button } from "#ui/button";
 import {
   Card,
   CardContent,
@@ -18,6 +17,7 @@ import { DocumentPreview } from "./components/DocumentPreview";
 import { useCategories, useCreateArticle } from "./hooks/useLibrary";
 import { useSnackbar } from "#components/Snackbar";
 import { PageHeader } from "#components/PageHeader";
+import { FormButtons } from "#components/FormButtons";
 
 export function NewArticlePage() {
   const navigate = useNavigate();
@@ -142,18 +142,13 @@ export function NewArticlePage() {
         </p>
 
         <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={createArticle.isPending}
-            onClick={() => navigate("/library")}
+          <FormButtons
+            onCancel={() => navigate("/library")}
+            pending={createArticle.isPending}
+            canSubmit={canSave}
           >
-            Cancelar
-          </Button>
-
-          <Button type="submit" disabled={!canSave} loading={createArticle.isPending}>
             Salvar página
-          </Button>
+          </FormButtons>
         </div>
       </div>
     </form>

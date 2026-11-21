@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-import { Button } from "#ui/button";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +29,7 @@ import {
 } from "../types";
 import { BookCover } from "./BookCover";
 import { useSnackbar } from "#components/Snackbar";
+import { FormButtons } from "#components/FormButtons";
 
 interface BookFormDialogProps {
   open: boolean;
@@ -249,18 +249,13 @@ function BookForm({
       )}
 
       <DialogFooter>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={mutation.isPending}
-          onClick={onClose}
+        <FormButtons
+          onCancel={onClose}
+          pending={mutation.isPending}
+          canSubmit={canSave}
         >
-          Cancelar
-        </Button>
-
-        <Button type="submit" disabled={!canSave} loading={mutation.isPending}>
           {book ? "Salvar" : "Criar livro"}
-        </Button>
+        </FormButtons>
       </DialogFooter>
     </DialogForm>
   );
