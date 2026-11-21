@@ -2,9 +2,8 @@ import { useState } from "react";
 
 import { DialogForm } from "#ui/dialog";
 
-import { useAiModels } from "../../../ai/chat/hooks/useAiModels";
-import { useAiProviders } from "../../../ai/chat/hooks/useAiProviders";
-import { useAiThinking } from "../../../ai/chat/hooks/useAiThinking";
+import { ChatSettings } from "../../../ai/chat/components/ChatSettings";
+import { useAiSelection } from "../../../ai/chat/hooks/useAiSelection";
 import {
   DEFAULT_SUMMARY_DETAIL,
   isSummaryDetail,
@@ -24,22 +23,8 @@ interface VideoToSummaryFormProps {
 }
 
 export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
-  const [providerId, setProviderId] = useState<string>();
-  const [modelId, setModelId] = useState<string>();
-  const [thinkingId, setThinkingId] = useState<string>();
+  const ai = useAiSelection();
   const [detail, setDetail] = useState<SummaryDetail>(DEFAULT_SUMMARY_DETAIL);
-
-  const { data: providers = [], isLoading: isLoadingProviders } =
-    useAiProviders();
-
-  const { data: models = [], isLoading: isLoadingModels } =
-    useAiModels(providerId);
-
-  const { data: thinkingOptions = [], isLoading: isLoadingThinking } =
-    useAiThinking({
-      providerId,
-      modelId,
-    });
 
   const createJob = useCreateVideoToSummary();
   const form = useVideoJobForm(createJob, onCreated);
@@ -48,66 +33,23 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!providerId || !modelId || !thinkingId) {
+    if (!ai.providerId || !ai.modelId || !ai.thinkingId) {
       return;
     }
 
-    form.submit({ providerId, modelId, thinking: thinkingId, detail });
-  };
-
-  const handleProviderChange = (value: string | null) => {
-    setProviderId(value ?? undefined);
-    setModelId(undefined);
-    setThinkingId(undefined);
-  };
-
-  const handleModelChange = (value: string | null) => {
-    setModelId(value ?? undefined);
-    setThinkingId(undefined);
-  };
-
-  const handleThinkingChange = (value: string | null) => {
-    setThinkingId(value ?? undefined);
+    form.submit({
+      providerId: ai.providerId,
+      modelId: ai.modelId,
+      thinking: ai.thinkingId,
+      detail,
+    });
   };
 
   return (
     <DialogForm onSubmit={handleSubmit}>
       <VideoUrlField field={links} disabled={locked} />
 
-      <div className="flex items-center gap-2">
-        <OptionSelect
-          value={providerId}
-          options={providers}
-          placeholder="Provedor"
-          label="Provedor"
-          triggerWidth="w-32"
-          contentWidth="w-32"
-          disabled={isLoadingProviders || locked}
-          onValueChange={handleProviderChange}
-        />
-
-        <OptionSelect
-          value={modelId}
-          options={models}
-          placeholder="Modelo"
-          label="Modelo"
-          triggerWidth="w-40"
-          contentWidth="w-md"
-          disabled={!providerId || isLoadingModels || locked}
-          onValueChange={handleModelChange}
-        />
-
-        <OptionSelect
-          value={thinkingId}
-          options={thinkingOptions}
-          placeholder="Thinking"
-          label="Thinking"
-          triggerWidth="w-32"
-          contentWidth="w-40"
-          disabled={!modelId || isLoadingThinking || locked}
-          onValueChange={handleThinkingChange}
-        />
-      </div>
+      <ChatSettings {...ai} disabled={locked} />
 
       <div className="space-y-2">
         <OptionSelect
@@ -139,7 +81,7 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
 
       <VideoJobFooter
         linkCount={links.urls.length}
-        canSubmit={links.canSubmit && !!providerId && !!modelId && !!thinkingId && !locked}
+        canSubmit={links.canSubmit && !!ai.providerId && !!ai.modelId && !!ai.thinkingId && !locked}
         isPending={createJob.isPending}
         isError={createJob.isError}
       />
