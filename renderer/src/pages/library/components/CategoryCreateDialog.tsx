@@ -1,7 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 
-import { Loader2 } from 'lucide-react';
-
 import { Button } from '#ui/button';
 import {
   Dialog,
@@ -211,8 +209,7 @@ function CategoryCreateForm({
           {CategoryCreateStrings.cancel}
         </Button>
 
-        <Button type="submit" disabled={!canCreate}>
-          {create.isPending && <Loader2 className="animate-spin" />}
+        <Button type="submit" disabled={!canCreate} loading={create.isPending}>
           {create.isPending ? CategoryCreateStrings.creating : CategoryCreateStrings.create}
         </Button>
       </DialogFooter>

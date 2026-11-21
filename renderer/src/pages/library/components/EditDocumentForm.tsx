@@ -1,7 +1,5 @@
 import { useState } from "react";
 
-import { Loader2 } from "lucide-react";
-
 import { Button } from "#ui/button";
 import { DialogFooter, DialogForm } from "#ui/dialog";
 
@@ -115,8 +113,7 @@ export function EditDocumentForm({ document, onClose, dialog = false }: EditDocu
           Cancelar
         </Button>
 
-        <Button type="submit" disabled={!canSave}>
-          {update.isPending && <Loader2 className="animate-spin" />}
+        <Button type="submit" disabled={!canSave} loading={update.isPending}>
           Salvar alterações
         </Button>
       </Actions>

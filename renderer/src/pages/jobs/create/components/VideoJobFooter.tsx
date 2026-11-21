@@ -1,5 +1,3 @@
-import { Loader2 } from "lucide-react";
-
 import { Button } from "#ui/button";
 import { DialogFooter } from "#ui/dialog";
 
@@ -25,8 +23,7 @@ export function VideoJobFooter({
       )}
 
       <DialogFooter>
-        <Button type="submit" disabled={!canSubmit}>
-          {isPending && <Loader2 className="animate-spin" />}
+        <Button type="submit" disabled={!canSubmit} loading={isPending}>
           {VideoUrlStrings.submit(linkCount)}
         </Button>
       </DialogFooter>

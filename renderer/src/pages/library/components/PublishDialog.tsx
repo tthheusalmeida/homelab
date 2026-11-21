@@ -1,7 +1,5 @@
 import { useState } from "react";
 
-import { Loader2 } from "lucide-react";
-
 import { Button } from "#ui/button";
 import {
   Dialog,
@@ -133,8 +131,7 @@ function PublishForm({ document, onDone }: PublishFormProps) {
           Cancelar
         </Button>
 
-        <Button type="submit" disabled={!canSubmit}>
-          {publish.isPending && <Loader2 className="animate-spin" />}
+        <Button type="submit" disabled={!canSubmit} loading={publish.isPending}>
           {isReadd ? "Readicionar" : "Adicionar"}
         </Button>
       </DialogFooter>

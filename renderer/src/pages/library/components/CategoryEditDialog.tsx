@@ -1,7 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 
-import { Loader2 } from 'lucide-react';
-
 import { Button } from '#ui/button';
 import {
   Dialog,
@@ -262,8 +260,7 @@ function CategoryEditForm({
             {CategoryEditStrings.cancel}
           </Button>
 
-          <Button type="submit" disabled={!canSave}>
-            {rename.isPending && <Loader2 className="animate-spin" />}
+          <Button type="submit" disabled={!canSave} loading={rename.isPending}>
             {rename.isPending ? CategoryEditStrings.saving : CategoryEditStrings.save}
           </Button>
         </DialogFooter>

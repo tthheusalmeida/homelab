@@ -1,8 +1,6 @@
 import { useState } from "react";
 
 import { useNavigate } from "react-router";
-import { Loader2 } from "lucide-react";
-
 import { Button } from "#ui/button";
 import {
   Card,
@@ -153,8 +151,7 @@ export function NewArticlePage() {
             Cancelar
           </Button>
 
-          <Button type="submit" disabled={!canSave}>
-            {createArticle.isPending && <Loader2 className="animate-spin" />}
+          <Button type="submit" disabled={!canSave} loading={createArticle.isPending}>
             Salvar página
           </Button>
         </div>

@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
-
 import { Button } from '#ui/button';
 import { SettingsGroup, SettingsPanel } from '#components/SettingsGroup';
 import { ErrorState } from '#components/ErrorState';
@@ -97,8 +95,7 @@ function PathsForm({ paths, onSaved }: SectionProps & { paths: SettingsPaths }) 
             onClick={() =>
               inspect.mutate({ path: values.libraryDir.trim() }, { onSuccess: setFolder })
             }
-          >
-            {inspect.isPending && <Loader2 className="animate-spin" />}
+           loading={inspect.isPending}>
             {inspect.isPending ? Strings.library.inspecting : Strings.save}
           </Button>
         </div>

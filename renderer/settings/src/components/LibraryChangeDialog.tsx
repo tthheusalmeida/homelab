@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
-
 import { Button } from '#ui/button';
 import {
   Dialog,
@@ -147,8 +145,7 @@ export function LibraryChangeDialog({ folder, onClose, onDone }: LibraryChangeDi
             {Strings.library.cancel}
           </Button>
 
-          <Button disabled={move.isPending} onClick={confirm}>
-            {move.isPending && <Loader2 className="animate-spin" />}
+          <Button disabled={move.isPending} onClick={confirm} loading={move.isPending}>
             {mode === 'move' ? Strings.library.confirmMove : Strings.library.confirmUse}
           </Button>
         </DialogFooter>

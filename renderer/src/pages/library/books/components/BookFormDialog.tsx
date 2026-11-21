@@ -1,7 +1,5 @@
 import { useState } from "react";
 
-import { Loader2 } from "lucide-react";
-
 import { Button } from "#ui/button";
 import {
   Dialog,
@@ -260,8 +258,7 @@ function BookForm({
           Cancelar
         </Button>
 
-        <Button type="submit" disabled={!canSave}>
-          {mutation.isPending && <Loader2 className="animate-spin" />}
+        <Button type="submit" disabled={!canSave} loading={mutation.isPending}>
           {book ? "Salvar" : "Criar livro"}
         </Button>
       </DialogFooter>

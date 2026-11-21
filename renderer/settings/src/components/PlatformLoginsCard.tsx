@@ -1,6 +1,4 @@
 import { useMutation } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
-
 import { useSnackbar } from '#components/Snackbar';
 import { ipc } from '#lib/ipc';
 import { IpcChannels } from '#shared/channels';
@@ -38,8 +36,7 @@ export function PlatformLoginsCard() {
         <p className="text-xs text-muted-foreground">{PlatformLoginsStrings.hint}</p>
       </div>
 
-      <Button variant="outline" disabled={forget.isPending} onClick={() => forget.mutate()}>
-        {forget.isPending && <Loader2 className="animate-spin" />}
+      <Button variant="outline" disabled={forget.isPending} onClick={() => forget.mutate()} loading={forget.isPending}>
         {PlatformLoginsStrings.forget}
       </Button>
     </section>

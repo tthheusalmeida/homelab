@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import {
   FolderPlus,
   GripVertical,
-  Loader2,
   Plus,
   Trash2,
   X,
@@ -445,8 +444,7 @@ function Organizer({
           Cancelar
         </Button>
 
-        <Button type="button" disabled={!canSave} onClick={handleSave}>
-          {save.isPending && <Loader2 className="animate-spin" />}
+        <Button type="button" disabled={!canSave} onClick={handleSave} loading={save.isPending}>
           Salvar
         </Button>
       </DialogFooter>

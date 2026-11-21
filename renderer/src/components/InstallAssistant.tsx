@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-
 import { ComponentChecklist } from '#components/ComponentChecklist';
 import { HardwareCard } from '#components/HardwareCard';
 import { HexLoader, Logo } from '#components/Hex';
@@ -107,8 +105,7 @@ export function InstallAssistant() {
                 <Button variant="outline" onClick={() => setDismissed(true)}>
                   {text.later}
                 </Button>
-                <Button disabled={isStarting || bytes === 0} onClick={start}>
-                  {isStarting && <Loader2 className="animate-spin" />}
+                <Button disabled={isStarting || bytes === 0} onClick={start} loading={isStarting}>
                   {text.start}
                 </Button>
               </>

@@ -1,7 +1,5 @@
 import { useState } from "react";
 
-import { Loader2 } from "lucide-react";
-
 import { Badge } from "#ui/badge";
 import { Button } from "#ui/button";
 import {
@@ -128,8 +126,7 @@ function Picker({
           disabled={busy}
         />
 
-        <Button type="submit" disabled={busy || newTitle.trim() === ""}>
-          {busy && <Loader2 className="animate-spin" />}
+        <Button type="submit" disabled={busy || newTitle.trim() === ""} loading={busy}>
           Criar e adicionar
         </Button>
       </form>

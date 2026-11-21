@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, TriangleAlert } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 
 import { Button } from '#ui/button';
 import { SettingsGroup, SettingsPanel } from '#components/SettingsGroup';
@@ -254,8 +254,7 @@ function CreateBackupCard() {
 
         {outcome && !create.isPending && <p className="text-sm text-muted-foreground">{outcome}</p>}
         <div className="flex justify-end gap-2">
-          <Button disabled={picked.length === 0 || create.isPending} onClick={start}>
-            {create.isPending && <Loader2 className="animate-spin" />}
+          <Button disabled={picked.length === 0 || create.isPending} onClick={start} loading={create.isPending}>
             {BackupStrings.create}
           </Button>
         </div>
@@ -389,14 +388,12 @@ function RestoreBackupCard({ onSaved }: SectionProps) {
             <Button
               disabled={selected.size === 0 || busy}
               onClick={() => (mode === 'replace' ? setConfirming(true) : run())}
-            >
-              {restore.isPending && <Loader2 className="animate-spin" />}
+             loading={restore.isPending}>
               {BackupStrings.restore}
             </Button>
           )}
 
-          <Button variant={backup ? 'outline' : 'default'} disabled={busy} onClick={choose}>
-            {inspect.isPending && <Loader2 className="animate-spin" />}
+          <Button variant={backup ? 'outline' : 'default'} disabled={busy} onClick={choose} loading={inspect.isPending}>
             {inspect.isPending
               ? BackupStrings.choosing
               : backup || result

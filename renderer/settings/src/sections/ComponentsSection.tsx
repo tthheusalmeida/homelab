@@ -1,5 +1,3 @@
-import { Loader2 } from 'lucide-react';
-
 import { ComponentChecklist } from '#components/ComponentChecklist';
 import { ErrorState } from '#components/ErrorState';
 import { HardwareCard } from '#components/HardwareCard';
@@ -115,8 +113,7 @@ export function ComponentsSection() {
             {ComponentStrings.cancel}
           </Button>
         ) : (
-          <Button disabled={isStarting || bytes === 0} onClick={start}>
-            {isStarting && <Loader2 className="animate-spin" />}
+          <Button disabled={isStarting || bytes === 0} onClick={start} loading={isStarting}>
             {ComponentStrings.install}
           </Button>
         )}
