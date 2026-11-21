@@ -25,8 +25,8 @@ import {
 import { formatDateTime } from '#lib/format';
 import { UpdateStrings } from '#lib/update-text';
 import { Button } from '#ui/button';
-import { Label } from '#ui/label';
 
+import { CheckboxField } from '../components/CheckboxField';
 import { Strings } from '../strings';
 
 /**
@@ -164,20 +164,13 @@ export function UpdatesSection() {
       <SettingsGroup title="Verificação">
         <SettingsPanel>
           <SettingsRow label={UpdateStrings.autoCheck} hint={UpdateStrings.autoCheckHint}>
-            <div className="flex items-center gap-2">
-              <input
-                id="updates-auto-check"
-                type="checkbox"
-                className="size-4 shrink-0 cursor-pointer accent-primary"
-                checked={status.autoCheck}
-                disabled={setAutoCheck.isPending}
-                onChange={(event) => setAutoCheck.mutate(event.target.checked)}
-              />
-
-              <Label htmlFor="updates-auto-check" className="cursor-pointer text-sm font-normal">
-                {UpdateStrings.autoCheck}
-              </Label>
-            </div>
+            <CheckboxField
+              id="updates-auto-check"
+              label={UpdateStrings.autoCheck}
+              checked={status.autoCheck}
+              disabled={setAutoCheck.isPending}
+              onChange={(checked) => setAutoCheck.mutate(checked)}
+            />
           </SettingsRow>
         </SettingsPanel>
       </SettingsGroup>

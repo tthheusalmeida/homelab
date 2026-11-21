@@ -1,13 +1,11 @@
-import { useState } from 'react';
-import { RotateCcw } from 'lucide-react';
 
-import { Button } from '#ui/button';
-import { Label } from '#ui/label';
 import { SummaryPreview } from '#components/SummaryPreview';
 import { SettingsGroup, SettingsPanel, SettingsRow } from '#components/SettingsGroup';
 import { useAppearance } from '#hooks/use-appearance';
 import { DEFAULT_SUMMARY, type SummaryPreferences } from '#shared/contracts/document-views';
 
+import { CheckboxField } from '../components/CheckboxField';
+import { PreferenceError, RestoreButton, usePreferenceAction } from '../components/PreferenceForm';
 import { Strings } from '../strings';
 
 const text = Strings.appearance.summary;
@@ -18,13 +16,9 @@ const text = Strings.appearance.summary;
  */
 export function SummarySettings() {
   const { appearance, updateSummary, resetSummary } = useAppearance();
-  const [error, setError] = useState<string | null>(null);
   const preferences = appearance.summary;
 
-  const run = (action: Promise<void>) => {
-    setError(null);
-    action.catch((failure: Error) => setError(failure.message));
-  };
+  const { error, run } = usePreferenceAction();
 
   const change = (patch: Partial<SummaryPreferences>) => run(updateSummary(patch));
 
@@ -38,38 +32,21 @@ export function SummarySettings() {
         <SummaryPreview />
 
         <SettingsRow label={text.outline} hint={text.outlineHint}>
-          <div className="flex items-center gap-2">
-            <input
-              id="summary-outline"
-              type="checkbox"
-              className="size-4 shrink-0 cursor-pointer accent-primary"
-              checked={preferences.outline}
-              onChange={(event) => change({ outline: event.target.checked })}
-            />
-
-            <Label htmlFor="summary-outline" className="cursor-pointer text-sm font-normal">
-              {text.outlineOption}
-            </Label>
-          </div>
+          <CheckboxField
+            id="summary-outline"
+            label={text.outlineOption}
+            checked={preferences.outline}
+            onChange={(checked) => change({ outline: checked })}
+          />
         </SettingsRow>
 
         <div className="flex justify-end">
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            disabled={isDefault}
-            onClick={() => run(resetSummary())}
-          >
-            <RotateCcw /> {text.restore}
-          </Button>
+          <RestoreButton disabled={isDefault} onClick={() => run(resetSummary())}>
+            {text.restore}
+          </RestoreButton>
         </div>
 
-        {error && (
-          <p role="alert" className="animate-enter-fade text-sm text-destructive">
-            {error}
-          </p>
-        )}
+        <PreferenceError message={error} />
       </SettingsPanel>
     </SettingsGroup>
   );

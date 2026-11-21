@@ -1,8 +1,4 @@
-import { useState } from 'react';
-import { RotateCcw } from 'lucide-react';
-
 import { Button } from '#ui/button';
-import { Label } from '#ui/label';
 import { ReadingColorPicker } from '#components/ReadingColorPicker';
 import { ReadingPreview } from '#components/ReadingPreview';
 import { ReadingSteppers } from '#components/ReadingSteppers';
@@ -20,6 +16,8 @@ import {
   type ReadingPreferences,
 } from '#shared/contracts/reading';
 
+import { CheckboxField } from '../components/CheckboxField';
+import { PreferenceError, RestoreButton, usePreferenceAction } from '../components/PreferenceForm';
 import { Strings } from '../strings';
 
 const text = Strings.appearance.reading;
@@ -31,13 +29,9 @@ const text = Strings.appearance.reading;
  */
 export function ReadingSettings() {
   const { appearance, updateReading, resetReading } = useAppearance();
-  const [error, setError] = useState<string | null>(null);
   const { reading } = appearance;
 
-  const run = (action: Promise<void>) => {
-    setError(null);
-    action.catch((failure: Error) => setError(failure.message));
-  };
+  const { error, run } = usePreferenceAction();
 
   const change = (patch: Partial<ReadingPreferences>) => run(updateReading(patch));
 
@@ -126,53 +120,29 @@ export function ReadingSettings() {
 
         <SettingsRow label={text.sidePanel} hint={text.sidePanelHint}>
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <input
-                id="reading-pin-sidebar"
-                type="checkbox"
-                className="size-4 shrink-0 cursor-pointer accent-primary"
-                checked={reading.pinSidebar}
-                onChange={(event) => change({ pinSidebar: event.target.checked })}
-              />
+            <CheckboxField
+              id="reading-pin-sidebar"
+              label={text.sidePanelOption}
+              checked={reading.pinSidebar}
+              onChange={(checked) => change({ pinSidebar: checked })}
+            />
 
-              <Label htmlFor="reading-pin-sidebar" className="cursor-pointer text-sm font-normal">
-                {text.sidePanelOption}
-              </Label>
-            </div>
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              disabled={isDefault}
-              onClick={() => run(resetReading())}
-            >
-              <RotateCcw /> {text.restore}
-            </Button>
+            <RestoreButton disabled={isDefault} onClick={() => run(resetReading())}>
+              {text.restore}
+            </RestoreButton>
           </div>
         </SettingsRow>
 
         <SettingsRow label={text.sides} hint={text.sidesHint}>
-          <div className="flex items-center gap-2">
-            <input
-              id="reading-swap-sides"
-              type="checkbox"
-              className="size-4 shrink-0 cursor-pointer accent-primary"
-              checked={reading.swapSides}
-              onChange={(event) => change({ swapSides: event.target.checked })}
-            />
-
-            <Label htmlFor="reading-swap-sides" className="cursor-pointer text-sm font-normal">
-              {text.swapOption}
-            </Label>
-          </div>
+          <CheckboxField
+            id="reading-swap-sides"
+            label={text.swapOption}
+            checked={reading.swapSides}
+            onChange={(checked) => change({ swapSides: checked })}
+          />
         </SettingsRow>
 
-        {error && (
-          <p role="alert" className="animate-enter-fade text-sm text-destructive">
-            {error}
-          </p>
-        )}
+        <PreferenceError message={error} />
       </SettingsPanel>
     </SettingsGroup>
   );

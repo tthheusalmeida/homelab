@@ -1,13 +1,11 @@
-import { useState } from 'react';
-import { RotateCcw } from 'lucide-react';
 
-import { Button } from '#ui/button';
-import { Label } from '#ui/label';
 import { TranscriptPreview } from '#components/TranscriptPreview';
 import { SettingsGroup, SettingsPanel, SettingsRow } from '#components/SettingsGroup';
 import { useAppearance } from '#hooks/use-appearance';
 import { DEFAULT_TRANSCRIPT, type TranscriptPreferences } from '#shared/contracts/document-views';
 
+import { CheckboxField } from '../components/CheckboxField';
+import { PreferenceError, RestoreButton, usePreferenceAction } from '../components/PreferenceForm';
 import { Strings } from '../strings';
 
 const text = Strings.appearance.transcript;
@@ -18,13 +16,9 @@ const text = Strings.appearance.transcript;
  */
 export function TranscriptSettings() {
   const { appearance, updateTranscript, resetTranscript } = useAppearance();
-  const [error, setError] = useState<string | null>(null);
   const preferences = appearance.transcript;
 
-  const run = (action: Promise<void>) => {
-    setError(null);
-    action.catch((failure: Error) => setError(failure.message));
-  };
+  const { error, run } = usePreferenceAction();
 
   const change = (patch: Partial<TranscriptPreferences>) => run(updateTranscript(patch));
 
@@ -38,54 +32,30 @@ export function TranscriptSettings() {
         <TranscriptPreview />
 
         <SettingsRow label={text.preview} hint={text.previewHint}>
-          <div className="flex items-center gap-2">
-            <input
-              id="transcript-preview"
-              type="checkbox"
-              className="size-4 shrink-0 cursor-pointer accent-primary"
-              checked={preferences.preview}
-              onChange={(event) => change({ preview: event.target.checked })}
-            />
-
-            <Label htmlFor="transcript-preview" className="cursor-pointer text-sm font-normal">
-              {text.previewOption}
-            </Label>
-          </div>
+          <CheckboxField
+            id="transcript-preview"
+            label={text.previewOption}
+            checked={preferences.preview}
+            onChange={(checked) => change({ preview: checked })}
+          />
         </SettingsRow>
 
         <SettingsRow label={text.progress} hint={text.progressHint}>
-          <div className="flex items-center gap-2">
-            <input
-              id="transcript-progress"
-              type="checkbox"
-              className="size-4 shrink-0 cursor-pointer accent-primary"
-              checked={preferences.progress}
-              onChange={(event) => change({ progress: event.target.checked })}
-            />
-
-            <Label htmlFor="transcript-progress" className="cursor-pointer text-sm font-normal">
-              {text.progressOption}
-            </Label>
-          </div>
+          <CheckboxField
+            id="transcript-progress"
+            label={text.progressOption}
+            checked={preferences.progress}
+            onChange={(checked) => change({ progress: checked })}
+          />
         </SettingsRow>
 
         <div className="flex justify-end">
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            disabled={isDefault}
-            onClick={() => run(resetTranscript())}
-          >
-            <RotateCcw /> {text.restore}
-          </Button>
+          <RestoreButton disabled={isDefault} onClick={() => run(resetTranscript())}>
+            {text.restore}
+          </RestoreButton>
         </div>
 
-        {error && (
-          <p role="alert" className="animate-enter-fade text-sm text-destructive">
-            {error}
-          </p>
-        )}
+        <PreferenceError message={error} />
       </SettingsPanel>
     </SettingsGroup>
   );

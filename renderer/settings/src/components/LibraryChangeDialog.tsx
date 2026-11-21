@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#ui/dialog';
+import { CheckboxField } from './CheckboxField';
 import { Label } from '#ui/label';
 import { ProgressBar } from '#components/ProgressBar';
 import { useIpcEvent } from '#hooks/use-ipc-event';
@@ -107,17 +108,13 @@ export function LibraryChangeDialog({ folder, onClose, onDone }: LibraryChangeDi
             />
 
             {choice === 'move' && (
-              <div className="flex items-center gap-2 pl-6">
-                <input
-                  id="library-delete-origin"
-                  type="checkbox"
-                  className="size-4 accent-primary"
-                  checked={deleteOrigin}
-                  onChange={(event) => setDeleteOrigin(event.target.checked)}
-                />
-
-                <Label htmlFor="library-delete-origin">{Strings.library.deleteOrigin}</Label>
-              </div>
+              <CheckboxField
+                id="library-delete-origin"
+                label={Strings.library.deleteOrigin}
+                checked={deleteOrigin}
+                onChange={setDeleteOrigin}
+                className="pl-6"
+              />
             )}
           </fieldset>
         )}
