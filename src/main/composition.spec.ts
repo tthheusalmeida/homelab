@@ -63,10 +63,10 @@ describe('createServices', () => {
     expect(appPaths.usageFile).toBe(path.join(root, 'data', 'ai-usage.json'));
   });
 
-  it('when transcribing through the services, should use the default whisper (resources/bin/win32-x64, whisper-cli.exe and the default model)', async () => {
+  it('when transcribing through the services, should use the default whisper (<userData>/bin/win32-x64, whisper-cli.exe and the default model)', async () => {
     const io = whisperIo();
     const services = create(io);
-    const directory = path.join(path.resolve('/projeto/desktop/resources'), 'bin', 'win32-x64');
+    const directory = path.join(userData, 'bin', 'win32-x64');
 
     await expect(services.whisper.transcribe(path.resolve('/a.wav'))).resolves.toBe('texto');
 

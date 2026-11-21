@@ -15,8 +15,8 @@ describe('resolveFrontDist', () => {
 });
 
 describe('resolveBinDir', () => {
-  it('when called, should point to resources/bin/<platform>-<arch>', () => {
-    expect(resolveBinDir(path.join(root, 'resources'), 'win32', 'x64', '/user')).toBe(
+  it('when on Windows in development, should point to resources/bin/<platform>-<arch>', () => {
+    expect(resolveBinDir(path.join(root, 'resources'), 'win32', 'x64', '/user', false)).toBe(
       path.join(root, 'resources', 'bin', 'win32-x64'),
     );
   });
@@ -41,11 +41,11 @@ describe('resolveResourcesDir', () => {
 });
 
 describe('resolveBinDir packaged', () => {
-  it('when given the packaged resources path, should point to <resources>/bin/<platform>-<arch>', () => {
+  it('when installed on Windows, should point to the user data folder so updates keep the components', () => {
     const resources = path.resolve('/app/resources');
 
     expect(resolveBinDir(resources, 'win32', 'x64', '/user')).toBe(
-      path.join(resources, 'bin', 'win32-x64'),
+      path.join('/user', 'bin', 'win32-x64'),
     );
   });
 });
