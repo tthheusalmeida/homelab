@@ -42,7 +42,7 @@ Fundação, armazenamento, índice, busca, operações e API.
 
 ## Índice em memória (`LibraryIndex`)
 - Guarda só **metadados** por id: meta, caminho, nome do arquivo, prévia (até 200 caracteres de texto puro) e uma chave de busca normalizada (título, nome do arquivo, tags e categorias). O corpo do texto **não** fica em memória.
-- É reconstruído dos arquivos (entrada e biblioteca) ao iniciar a API e em `POST /library/reindex`. Cada operação (publicar, arquivar, descartar, criar artigo) atualiza o índice.
+- É reconstruído dos arquivos (entrada e biblioteca) ao iniciar a API e em `POST /library/reindex`. Cada operação (publicar, arquivar, descartar, criar artigo) atualiza o índice. Quando um job termina e grava o documento na entrada, o `JobRunner` reindexa antes de marcar o job como concluído, valendo para todo tipo de job, inclusive os novos (falha aí não derruba o job), para o contador da Classificação subir mesmo fora da Biblioteca.
 - Arquivo inválido (sem frontmatter, id diferente do nome etc.) é ignorado e listado em `errors` (nome do arquivo + motivo); não derruba o índice.
 - Mesmo id em dois arquivos (ex.: falha no meio de uma movimentação): vale o de `updatedAt` mais recente e o outro vira erro.
 
