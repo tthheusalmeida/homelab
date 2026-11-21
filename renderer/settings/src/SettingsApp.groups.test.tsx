@@ -58,7 +58,7 @@ describe('SettingsApp menu groups', () => {
       'Componentes',
       'Acessos',
       'Backup',
-      'Sobre e atualizações',
+      'Sobre',
     ].map((name) => screen.getByRole('button', { name }));
 
     // a ordem do menu é a do app: Aparência vem antes de Biblioteca

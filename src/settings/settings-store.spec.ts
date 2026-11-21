@@ -207,6 +207,25 @@ describe('SettingsStore', () => {
     expect(store.get().updates.autoCheck).toBe(false);
   });
 
+  it('when there is no saved support choice, should show the star prompt', () => {
+    expect(create().get().support).toEqual({ starPromptHidden: false });
+  });
+
+  it('when an old file has no support section, should fill it with the defaults', () => {
+    fs.writeFileSync(target, JSON.stringify({ paths: { libraryDir: path.resolve('/x') } }));
+
+    expect(create().get().support.starPromptHidden).toBe(false);
+  });
+
+  it('when the star prompt is hidden, should save it, survive a reload and keep it after other changes', () => {
+    const store = create();
+
+    store.update({ support: { starPromptHidden: true } });
+    store.update({ appearance: { theme: 'dark' } });
+
+    expect(create().get().support.starPromptHidden).toBe(true);
+  });
+
   it('when the main file is corrupt but the backup is good, should load the backup and flag it as recovered', () => {
     const first = create();
 

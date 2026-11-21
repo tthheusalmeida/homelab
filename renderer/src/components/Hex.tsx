@@ -20,7 +20,7 @@ export function hexPath(cx: number, cy: number, r: number): string {
 }
 
 /** Os três hexágonos do ícone (um em cima, dois embaixo), no quadro 48 x 48. */
-const CLUSTER = [
+export const CLUSTER = [
   { cx: 24, cy: 15.5 },
   { cx: 31.4, cy: 28.4 },
   { cx: 16.6, cy: 28.4 },

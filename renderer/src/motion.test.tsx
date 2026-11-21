@@ -34,6 +34,10 @@ describe("motion css", () => {
     "animate-enter-scale",
     "animate-enter-left",
     "animate-exit-down",
+    "animate-confetti",
+    "animate-implosion",
+    "animate-hex-spin",
+    "animate-critical",
     "animate-collapse-down",
     "animate-collapse-up",
   ])("when the stylesheet is read, should define the %s utility", (name) => {

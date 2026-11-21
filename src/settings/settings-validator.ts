@@ -26,6 +26,7 @@ export const SettingsMessages = {
   transcriptOptionInvalid: 'As opções da transcrição devem ser ligadas ou desligadas.',
   summaryOptionInvalid: 'As opções do resumo devem ser ligadas ou desligadas.',
   readingShadeInvalid: 'Escolha uma das intensidades de cor disponíveis.',
+  supportStarPromptInvalid: 'O convite para apoiar o projeto deve estar marcado como visto ou não.',
   updatesAutoCheckInvalid: 'A verificação automática de atualizações deve ser ligada ou desligada.',
 } as const;
 
@@ -63,6 +64,10 @@ export function validateSettings(settings: SettingsData): void {
 
   if (typeof settings.updates.autoCheck !== 'boolean') {
     fail(SettingsMessages.updatesAutoCheckInvalid);
+  }
+
+  if (typeof settings.support.starPromptHidden !== 'boolean') {
+    fail(SettingsMessages.supportStarPromptInvalid);
   }
 
   const { reading } = settings.appearance;

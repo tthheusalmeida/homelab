@@ -34,6 +34,8 @@ export class SettingsHandler extends IpcHandler {
       this.route(IpcChannels.settings.update, (patch) => this.settings.updatePaths(patch)),
       this.route(IpcChannels.appearance.get, () => this.settings.getAppearance()),
       this.route(IpcChannels.appearance.update, (patch) => this.settings.updateAppearance(patch)),
+      this.route(IpcChannels.support.get, () => this.settings.getSupport()),
+      this.route(IpcChannels.support.update, (patch) => this.settings.updateSupport(patch)),
       this.route(IpcChannels.settings.inspectLibrary, ({ path }) => this.library.inspect(path)),
       this.route(IpcChannels.settings.moveLibrary, (request) => this.library.apply(request)),
       this.route(IpcChannels.settings.pickFolder, ({ defaultPath } = {}) =>

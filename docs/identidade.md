@@ -28,6 +28,7 @@ Enquanto o app abre, aparece a **mesma colmeia carregando** (`hex-loader`, na co
 | Componente | Uso |
 |---|---|
 | `Logo` | três hexágonos (dois neutros, um em `brand`); topo da sidebar e das Configurações |
+| `LogoImplosion` | a logo desenhada como três hexágonos separados que giram e encolhem como uma galáxia implodindo, viram um ponto (com clarão) e voltam crescendo até a posição certa; o ponto crítico é o centro da caixa, de onde sai o `Confetti` (agradecimento do convite da estrela, `apoio.md`) |
 | `HexLoader` | carregando: os hexágonos acendem em sequência (`LoadingState`) |
 | `HexDot` | ponto de status hexagonal (serviços, status do sistema) |
 | `HexFrame` | moldura hexagonal do ícone de estados vazios e de erro |

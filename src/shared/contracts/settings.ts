@@ -26,10 +26,17 @@ export interface UpdatesSettings {
   autoCheck: boolean;
 }
 
+/** Convite para apoiar o projeto com uma estrela no GitHub (`docs/apoio.md`). */
+export interface SupportSettings {
+  /** Já estrelou ou dispensou o convite: o cartão não aparece mais. */
+  starPromptHidden: boolean;
+}
+
 export interface SettingsData {
   paths: SettingsPaths;
   appearance: Appearance;
   updates: UpdatesSettings;
+  support: SupportSettings;
   local: {
     ollama: OllamaConfig;
   };
@@ -39,6 +46,7 @@ export type SettingsPatch = {
   paths?: Partial<SettingsPaths>;
   appearance?: AppearancePatch;
   updates?: Partial<UpdatesSettings>;
+  support?: Partial<SupportSettings>;
   local?: {
     ollama?: Partial<OllamaConfig>;
   };

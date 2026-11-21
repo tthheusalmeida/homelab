@@ -184,6 +184,20 @@ describe('validateSettings', () => {
     );
   });
 
+  it('when the star prompt flag is not a boolean, should reject', () => {
+    expectValidation(
+      (s) => ((s.support as { starPromptHidden: unknown }).starPromptHidden = 'sim'),
+      /convite para apoiar/,
+    );
+  });
+
+  it.each([true, false])('when the star prompt flag is %s, should accept', (hidden) => {
+    const settings = testDefaults();
+    settings.support.starPromptHidden = hidden;
+
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
   it.each([true, false])('when the automatic update check is %s, should accept', (autoCheck) => {
     const settings = testDefaults();
     settings.updates.autoCheck = autoCheck;

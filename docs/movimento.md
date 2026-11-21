@@ -16,6 +16,9 @@ Tudo que entra ou sai da tela se move de forma suave; nada aparece "de repente".
 | `animate-enter-right` | entra pela direita (painel lateral do modo leitura) |
 | `animate-exit-right` | sai pela direita (o painel lateral do modo leitura fica na tela durante a saída e só então é removido) |
 | `animate-exit-down` | desce 14 px e some (saídas) |
+| `animate-confetti` | peça de confete: sai da origem até `--dx`/`--dy` (desacelera), cai `--fall` girando `--rot` e some em ~1,8 s; `--i` escalona 8 ms por peça (agradecimento do convite de apoio) |
+| `animate-implosion` / `animate-hex-spin` | implosão da logo numa linha do tempo de ~3,4 s: os três hexágonos giram e encolhem (cada vez mais rápido), viram um ponto e voltam crescendo e girando até a posição certa; `-spin` gira cada hexágono em torno de si |
+| `animate-critical` | clarão do ponto crítico da implosão (cresce e se dissolve, na mesma linha do tempo) |
 | `animate-collapse-down` / `-up` | abre e fecha a altura do painel (usam `--collapsible-panel-height` do base-ui) |
 
 **Cascata em listas:** defina `style={{ "--i": index } as CSSProperties}` no item. O atraso é `--i × 70 ms`, com teto de 700 ms.
