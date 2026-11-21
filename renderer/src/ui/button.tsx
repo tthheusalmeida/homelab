@@ -1,7 +1,7 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Loader2 } from "lucide-react";
 
+import { HexLoader } from "#components/Hex";
 import { cn } from "#lib/utils";
 
 const buttonVariants = cva(
@@ -51,7 +51,7 @@ function Button({
   ...props
 }: ButtonPrimitive.Props &
   VariantProps<typeof buttonVariants> & {
-    /** Trabalhando: mostra o spinner antes do texto e desabilita o botão (a ação não é repetida). */
+    /** Trabalhando: mostra o hexágono de carregamento antes do texto e desabilita o botão (a ação não é repetida). */
     loading?: boolean;
   }) {
   return (
@@ -62,7 +62,7 @@ function Button({
       aria-busy={loading || undefined}
       {...props}
     >
-      {loading && <Loader2 aria-hidden className="animate-spin" />}
+      {loading && <HexLoader decorative className="size-4 text-current" />}
       {children}
     </ButtonPrimitive>
   );

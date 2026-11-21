@@ -1,8 +1,9 @@
-import { Check, Circle, Loader, X } from "lucide-react";
+import { Check, Circle, X } from "lucide-react";
 
 import { Badge } from "../../../../ui/badge";
 
 import { type JobStatus, JobStatusOptions } from "../../types/job.types";
+import { HexLoader } from "#components/Hex";
 import { cn } from "#lib/utils";
 
 interface JobStatusBadgeProps {
@@ -16,7 +17,7 @@ const statusConfig = {
   },
   [JobStatusOptions.RUNNING]: {
     label: "Em execução",
-    icon: Loader,
+    icon: Circle,
   },
   [JobStatusOptions.COMPLETED]: {
     label: "Concluído",
@@ -45,15 +46,11 @@ export function JobStatusBadge({ status }: JobStatusBadgeProps) {
       variant={status === JobStatusOptions.FAILED ? "destructive" : "secondary"}
       className={cn(config.className, "min-w-24 transition-colors duration-300")}
     >
-      <Icon
-        key={status}
-        className={cn(
-          status === JobStatusOptions.RUNNING
-            ? "animate-spin animation-duration-[2s]"
-            : "animate-enter-scale",
-          "size-3 stroke-3",
-        )}
-      />
+      {status === JobStatusOptions.RUNNING ? (
+        <HexLoader key={status} decorative className="size-3.5 text-current" />
+      ) : (
+        <Icon key={status} className="animate-enter-scale size-3 stroke-3" />
+      )}
       {config.label}
     </Badge>
   );

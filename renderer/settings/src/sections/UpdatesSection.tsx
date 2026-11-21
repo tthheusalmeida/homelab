@@ -4,7 +4,6 @@ import {
   Download,
   ExternalLink,
   Languages,
-  Loader2,
   RefreshCw,
 } from 'lucide-react';
 
@@ -143,8 +142,8 @@ export function UpdatesSection() {
               </Button>
             )}
 
-            <Button variant="outline" disabled={busy} onClick={() => check.mutate()}>
-              {checking ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+            <Button variant="outline" disabled={busy} loading={checking} onClick={() => check.mutate()}>
+              {!checking && <RefreshCw />}
               {checking ? UpdateStrings.checking : UpdateStrings.check}
             </Button>
           </div>
@@ -185,10 +184,10 @@ export function UpdatesSection() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={translate.isPending}
+                    loading={translate.isPending}
                     onClick={() => translate.mutate()}
                   >
-                    {translate.isPending ? <Loader2 className="animate-spin" /> : <Languages />}
+                    {!translate.isPending && <Languages />}
                     {translate.isPending ? UpdateStrings.translating : UpdateStrings.translate}
                   </Button>
                 )}

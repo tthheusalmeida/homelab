@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Loader2, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import { Button } from "#ui/button";
 
@@ -61,14 +61,11 @@ export function SuggestionPanel({
           type="button"
           size="sm"
           variant="secondary"
-          disabled={disabled || suggest.isPending}
+          disabled={disabled}
+          loading={suggest.isPending}
           onClick={handleSuggest}
         >
-          {suggest.isPending ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <Sparkles />
-          )}
+          {!suggest.isPending && <Sparkles />}
           Sugerir com IA
         </Button>
 

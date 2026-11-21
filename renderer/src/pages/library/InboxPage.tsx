@@ -71,7 +71,7 @@ export function InboxPage() {
           <Button
             variant="outline"
             size="sm"
-            disabled={reindex.isPending}
+            loading={reindex.isPending}
             onClick={() =>
               reindex.mutate(undefined, {
                 onSuccess: () => snackbar.success("Índice da biblioteca atualizado"),
@@ -79,9 +79,7 @@ export function InboxPage() {
               })
             }
           >
-            <RefreshCw
-              className={reindex.isPending ? "animate-spin" : undefined}
-            />
+            {!reindex.isPending && <RefreshCw />}
             Reindexar
           </Button>
         }

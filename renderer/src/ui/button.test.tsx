@@ -14,15 +14,16 @@ describe("Button", () => {
     expect(button).not.toHaveAttribute("aria-busy");
   });
 
-  it("when loading, should show the spinner before the label, disable it and mark it busy", () => {
+  it("when loading, should show the hexagon loader before the label, disable it and mark it busy", () => {
     render(<Button loading>Salvar</Button>);
 
     const button = screen.getByRole("button", { name: "Salvar" });
 
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute("aria-busy", "true");
-    expect(button.firstElementChild?.tagName.toLowerCase()).toBe("svg");
-    expect(button.firstElementChild).toHaveClass("animate-spin");
+    expect(button.firstElementChild).toHaveClass("hex-loader");
+    expect(button.firstElementChild).toHaveAttribute("aria-hidden", "true");
+    expect(button.querySelector(".animate-spin")).toBeNull();
   });
 
   it("when disabled and not loading, should stay disabled without spinner", () => {

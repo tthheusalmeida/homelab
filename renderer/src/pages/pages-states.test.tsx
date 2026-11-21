@@ -206,7 +206,7 @@ describe("UsagePage", () => {
     expect(screen.getByText("gemini-3.5-flash")).toBeInTheDocument();
     expect(screen.getByText("$0.0012")).toBeInTheDocument();
     expect(screen.getByText("1.2K")).toBeInTheDocument();
-    expect(screen.getByText("Failed")).toBeInTheDocument();
+    expect(screen.getByText("Falhou")).toBeInTheDocument();
   });
 
   it("when a provider button is clicked, should request usage filtered by it", async () => {

@@ -107,3 +107,4 @@ Testes: `lib/appearance.test.ts` (modos, `data-accent`, cache, blocos de tokens 
 - **Provedores (Configurações):** `ProvidersGate`, `ProviderCardList`, `ProviderActions` e `ProviderFeedback`.
 - **Hexágono:** o recorte é `HEX_CLIP` em `lib/hex.ts`; não copie o `clip-path`.
 - **Arquivo salvo (imagem, PDF, SVG, backup):** use `useSavedNotice` (`hooks/use-saved-notice.ts`): o aviso ganha o botão **Ver**, que abre a pasta com o arquivo selecionado (canal `app:reveal-file`).
+- **Carregando = `HexLoader`** (os três hexágonos que acendem em sequência), e só ele: `LoadingState` (bloco), `Button loading` (dentro de botão), status "Em execução" de um job, itens de instalação, "Sugerir com IA", Reindexar e Atualizações. Nada de spinner girando: o teste `single-loader.test.ts` falha se `animate-spin` ou os ícones `Loader` voltarem. `HexDot` com `pulse` continua sendo **status vivo** (serviço online, tarefas ativas), não carregamento.
