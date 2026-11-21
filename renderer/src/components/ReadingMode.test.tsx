@@ -318,6 +318,14 @@ describe('ReadingMode canvas', () => {
     ).toBeInTheDocument();
   });
 
+  it('when canvas is on, should set the floating toolbar height so it matches the normal page', () => {
+    renderCanvas();
+
+    const area = screen.getByText('área toda').parentElement;
+
+    expect(area?.className).toContain('[--floating-toolbar-bottom:1.25rem]');
+  });
+
   it('when canvas is on, should not show the side panels even if options are given', () => {
     renderCanvas({ options: <p>ajustes de leitura</p>, follow: <p>sumário</p> });
 

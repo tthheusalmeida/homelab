@@ -14,7 +14,9 @@ import { ReadingMode } from "#components/ReadingMode";
 import { ReadingSection } from "#components/ReadingSection";
 import { ReadingSurface } from "#components/ReadingSurface";
 import { cn } from "#lib/utils";
-import { useSummaryPreferences } from "#hooks/use-appearance";
+import { useReadingPreferences, useSummaryPreferences } from "#hooks/use-appearance";
+import { useCtrlWheelZoom } from "#hooks/use-ctrl-wheel-zoom";
+import { stepZoom } from "#lib/reading";
 import { useActiveSection } from "#hooks/use-active-section";
 import { useReadingSides } from "#hooks/use-reading-sides";
 import { extractHeadings } from "#lib/markdown";
@@ -96,6 +98,15 @@ export function DocumentPage() {
     !alternateView &&
     (Boolean(excerpts) || sidebarHeadings.length >= OUTLINE_MIN_HEADINGS);
   const sides = useReadingSides(hasLeftColumn);
+
+  // Ctrl + roda do mouse muda o zoom da leitura (o mesmo do painel "Leitura"). Mapa mental e infográfico
+  // têm o seu próprio zoom, então aqui só vale no texto.
+  const { reading: readingPrefs, updateReading } = useReadingPreferences();
+  useCtrlWheelZoom(
+    (direction) =>
+      void updateReading?.({ zoom: stepZoom(readingPrefs.zoom, direction) }).catch(() => undefined),
+    !alternateView,
+  );
 
   // Título em leitura agora (destacado no sumário).
   const activeId = useActiveSection(headings.map((heading) => heading.id));
@@ -277,8 +288,9 @@ export function DocumentPage() {
           {mindMapOpen ? (
             mindMap
           ) : infographicOpen ? (
-            <div className="h-full overflow-y-auto p-4">
-              <div className="mx-auto w-full max-w-[50rem]">{infographic}</div>
+            <div className="h-full overflow-y-auto">
+              {/* O respiro fica aqui dentro: padding na área que rola desloca a barra flutuante (sticky). */}
+              <div className="p-4">{infographic}</div>
             </div>
           ) : (
             <div ref={setContainer} className="reading-column">
@@ -326,11 +338,11 @@ export function DocumentPage() {
       {mindMapOpen ? (
         // Mapa mental: ocupa toda a área da página, sem o sumário nem as opções de leitura (são
         // ajustes de leitura de texto).
-        <div className="h-[calc(100svh-13rem)] min-h-96 animate-enter-fade overflow-hidden rounded-lg border">
+        <div className="h-[calc(100svh-13rem+9px)] min-h-96 animate-enter-fade overflow-hidden rounded-lg border">
           {mindMap}
         </div>
       ) : infographicOpen ? (
-        <div className="mx-auto w-full max-w-[50rem] animate-enter-fade">{infographic}</div>
+        <div className="w-full animate-enter-fade">{infographic}</div>
       ) : (
         <div className={cn("grid gap-8", sides.columns)}>
           {excerpts ? (

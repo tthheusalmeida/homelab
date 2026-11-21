@@ -355,7 +355,7 @@ describe('MindMapView controls bar', () => {
     const frame = screen.getByRole('group', { name: 'Mapa mental de Genética' }).parentElement;
 
     expect(frame).toContainElement(bar);
-    expect(bar).toHaveClass('bottom-5');
+    expect(bar.className).toContain('bottom-[var(--floating-toolbar-bottom,0.25rem)]');
     for (const name of [
       'Diminuir o mapa',
       'Aumentar o mapa',

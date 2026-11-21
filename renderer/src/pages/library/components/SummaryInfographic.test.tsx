@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, cleanup, screen, waitFor, within } from '@testing-library/react';
+import { render, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { dismissGeneration, isGenerationDismissed } from '#lib/dismissed-generation';
@@ -99,6 +99,7 @@ function burnAutoRequest() {
 
 beforeEach(() => {
   cleanup();
+  window.localStorage.removeItem('infographic-zoom');
   currentId = `doc${(pages += 1)}`;
   saved.state = { isPending: false, data: null };
   generate.mutate.mockReset();
@@ -839,5 +840,103 @@ describe('SummaryInfographic text edit', { timeout: 20_000 }, () => {
     renderTab();
 
     expect(document.querySelectorAll('[data-slot="editable-text"]')).toHaveLength(0);
+  });
+});
+
+describe('SummaryInfographic zoom', () => {
+  it('when zoom is 100%, should keep the column at 50rem and not zoom the drawing', () => {
+    saved.state = { isPending: false, data: infographic };
+
+    const { container } = renderTab();
+
+    expect(container.querySelector<HTMLElement>('[style*="max-width"]')?.style.maxWidth).toBe('50rem');
+    expect(container.querySelector('[style*="zoom"]')).not.toBeInTheDocument();
+  });
+
+  it('when the saved zoom is 150%, should widen the column and zoom the whole content', () => {
+    window.localStorage.setItem('infographic-zoom', '150');
+    saved.state = { isPending: false, data: infographic };
+
+    const { container } = renderTab();
+
+    expect(container.querySelector<HTMLElement>('[style*="max-width"]')?.style.maxWidth).toBe('75rem');
+    expect(container.querySelector<HTMLElement>('[style*="zoom"]')?.style.zoom).toBe('1.5');
+  });
+
+  it('when clicking to enlarge, should show the new size and keep it for next time (its own zoom)', async () => {
+    saved.state = { isPending: false, data: infographic };
+
+    renderTab();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Aumentar o zoom' }));
+
+    expect(screen.getByLabelText('Tamanho do infográfico')).toHaveTextContent('110%');
+    expect(window.localStorage.getItem('infographic-zoom')).toBe('110');
+  });
+
+  it('when Ctrl + wheel goes up and down, should zoom the infographic in and out and keep the value', () => {
+    saved.state = { isPending: false, data: infographic };
+
+    renderTab();
+
+    fireEvent.wheel(document.body, { ctrlKey: true, deltaY: -100 });
+    fireEvent.wheel(document.body, { ctrlKey: true, deltaY: -100 });
+
+    expect(screen.getByLabelText('Tamanho do infográfico')).toHaveTextContent('120%');
+
+    fireEvent.wheel(document.body, { ctrlKey: true, deltaY: 100 });
+
+    expect(screen.getByLabelText('Tamanho do infográfico')).toHaveTextContent('110%');
+    expect(window.localStorage.getItem('infographic-zoom')).toBe('110');
+  });
+
+  it('when at the limits, should disable the matching zoom button', () => {
+    window.localStorage.setItem('infographic-zoom', '70');
+    saved.state = { isPending: false, data: infographic };
+
+    renderTab();
+
+    expect(screen.getByRole('button', { name: 'Diminuir o zoom' })).toBeDisabled();
+  });
+
+  it('when the stored zoom is invalid, should fall back to 100%', () => {
+    window.localStorage.setItem('infographic-zoom', 'abc');
+    saved.state = { isPending: false, data: infographic };
+
+    renderTab();
+
+    expect(screen.getByLabelText('Tamanho do infográfico')).toHaveTextContent('100%');
+  });
+
+  it('when the zoom is small, should keep the toolbar outside the narrow column', () => {
+    window.localStorage.setItem('infographic-zoom', '70');
+    saved.state = { isPending: false, data: infographic };
+
+    const { container } = renderTab();
+    const column = container.querySelector<HTMLElement>('[style*="max-width"]')!;
+
+    expect(column).not.toContainElement(screen.getByRole('toolbar', { name: 'Controles do infográfico' }));
+  });
+});
+
+describe("SummaryInfographic floating toolbar", () => {
+  it("when there is an infographic, should keep the model select and Gerar de novo inside the floating toolbar", () => {
+    saved.state = { isPending: false, data: infographic };
+
+    renderTab();
+
+    const bar = screen.getByRole("toolbar", { name: "Controles do infográfico" });
+
+    expect(within(bar).getByRole("combobox")).toBeInTheDocument();
+    expect(within(bar).getByRole("button", { name: /Gerar de novo/ })).toBeInTheDocument();
+  });
+
+  it("when there is no infographic yet, should show only the model select in the toolbar", () => {
+    renderTab();
+
+    const bar = screen.getByRole("toolbar", { name: "Controles do infográfico" });
+
+    expect(within(bar).getByRole("combobox")).toBeInTheDocument();
+    expect(within(bar).queryByRole("button", { name: "Aumentar o zoom" })).not.toBeInTheDocument();
   });
 });

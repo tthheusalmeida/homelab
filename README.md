@@ -53,7 +53,7 @@ O **HomeLab** é um app desktop (Windows e Linux) para quem aprende e pesquisa c
 ### Estudo: mapa mental e infográfico
 
 - 🧠 **Mapa mental:** gerado pela IA quando você abre a aba, em colmeia. Você edita, guarda e baixa em PNG, com ou sem fundo.
-- 🗺️ **Infográfico:** a IA conta a história do resumo em seções, cada uma no modelo que melhor a mostra (passos, comparativo, números, ranking, ciclo e outros), com um banco de peças ilustradas. Baixe em PNG, SVG ou PDF.
+- 🗺️ **Infográfico:** a IA conta a história do resumo em seções, cada uma no modelo que melhor a mostra (passos, comparativo, números, ranking, ciclo e outros), com um banco de peças ilustradas. Baixe em PNG, SVG ou PDF. Dá para ampliar (botões ou Ctrl + roda do mouse) e, com a barra lateral recolhida, ela reaparece ao encostar o mouse na borda e some sozinha depois.
 
 <table>
   <tr>

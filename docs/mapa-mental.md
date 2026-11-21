@@ -65,3 +65,6 @@ Excluir um resumo (janela "Sobre a página" > **Excluir**) **apaga também o map
 - Filtro "Com infográfico" em Páginas (o infográfico em si já existe: ver `infografico.md`).
 - Exportar o mapa também como PDF ou SVG.
 - Escolher o modelo do mapa (hoje usa o mais barato) e usar o Ollama quando não houver chave do Gemini.
+
+## Barra de botões
+Os controles (zoom, ajustar, recolher, baixar) ficam na `FloatingToolbar` (`components/FloatingToolbar.tsx`), a mesma barra flutuante do infográfico; os botões de zoom vêm de `ZoomButtons`. Para um controle novo nas duas telas, use esses componentes. A barra fica na mesma altura do infográfico (20 px acima da borda da janela) na página e no modo leitura.

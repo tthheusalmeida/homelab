@@ -128,10 +128,14 @@ function SidebarProvider({
   )
 }
 
+/** Tempo (ms) que a barra espera, depois que o mouse sai, para se retrair sozinha. */
+const SIDEBAR_PEEK_CLOSE_MS = 300
+
 function Sidebar({
   side = "left",
   variant = "sidebar",
   collapsible = "offcanvas",
+  peek = false,
   className,
   children,
   ...props
@@ -139,8 +143,37 @@ function Sidebar({
   side?: "left" | "right"
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
+  /**
+   * Recolhida (`offcanvas`), a barra reaparece por cima do conteúdo quando o mouse encosta na borda
+   * da tela e se retrai sozinha quando o mouse sai (sem empurrar a página).
+   */
+  peek?: boolean
 }) {
   const { state } = useSidebar()
+  const canPeek = peek && collapsible === "offcanvas" && state === "collapsed"
+  const [peeking, setPeeking] = React.useState(false)
+  const timer = React.useRef<number | undefined>(undefined)
+  const showing = canPeek && peeking
+
+  React.useEffect(() => () => window.clearTimeout(timer.current), [])
+
+  // Expandiu a barra de vez (ou desligou o peek): o modo "espiar" termina.
+  React.useEffect(() => {
+    if (!canPeek) {
+      window.clearTimeout(timer.current)
+      setPeeking(false)
+    }
+  }, [canPeek])
+
+  const openPeek = () => {
+    window.clearTimeout(timer.current)
+    setPeeking(true)
+  }
+
+  const closePeekSoon = () => {
+    window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => setPeeking(false), SIDEBAR_PEEK_CLOSE_MS)
+  }
 
   if (collapsible === "none") {
     return (
@@ -166,6 +199,20 @@ function Sidebar({
       data-side={side}
       data-slot="sidebar"
     >
+      {canPeek && !peeking && (
+        // Faixa invisível na borda da tela: o mouse encostando nela abre a barra. Fica abaixo do
+        // cabeçalho e do modo leitura (z-50), então não abre por cima deles.
+        <div
+          aria-hidden="true"
+          data-slot="sidebar-peek-zone"
+          className={cn(
+            "fixed inset-y-0 z-40 w-2",
+            side === "left" ? "left-0" : "right-0"
+          )}
+          onMouseEnter={openPeek}
+        />
+      )}
+
       {/* This is what handles the sidebar gap on desktop */}
       <div
         data-slot="sidebar-gap"
@@ -181,12 +228,18 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         data-side={side}
+        data-peek={showing ? "true" : undefined}
+        onMouseEnter={canPeek ? openPeek : undefined}
+        onMouseLeave={showing ? closePeekSoon : undefined}
         className={cn(
           "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex",
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
+          // Espiando: entra por cima do conteúdo (acima do cabeçalho, z-50), com sombra.
+          showing &&
+            "z-[55] shadow-xl data-[side=left]:left-0! data-[side=right]:right-0!",
           className
         )}
         {...props}
