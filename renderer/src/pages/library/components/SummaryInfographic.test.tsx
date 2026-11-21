@@ -79,6 +79,18 @@ function renderTab() {
   return render(<SummaryInfographic documentId={currentId} title="Redes de computadores" />);
 }
 
+/** Abre o menu "Baixar" e escolhe um formato. */
+async function chooseDownload(label: string) {
+  await userEvent.click(screen.getByRole('button', { name: 'Baixar' }));
+  await userEvent.click(await screen.findByRole('menuitem', { name: label }));
+}
+
+/** Abre o menu "Mais ações" e escolhe "Excluir infográfico". */
+async function chooseDelete() {
+  await userEvent.click(screen.getByRole('button', { name: 'Mais ações' }));
+  await userEvent.click(await screen.findByRole('menuitem', { name: 'Excluir infográfico' }));
+}
+
 /** Abre e fecha a aba uma vez: gasta a geração automática da primeira abertura. */
 function burnAutoRequest() {
   renderTab().unmount();
@@ -274,9 +286,7 @@ describe('SummaryInfographic', () => {
     it('when downloading with background, should photograph the frame and send the PNG with a suggested name', async () => {
       renderTab();
 
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Baixar o infográfico como PNG com fundo' }),
-      );
+      await chooseDownload('PNG');
 
       await waitFor(() =>
         expect(snackbar.success).toHaveBeenCalledWith('Imagem do infográfico salva.', expect.objectContaining({ label: 'Ver' })),
@@ -292,7 +302,7 @@ describe('SummaryInfographic', () => {
     it('when downloading the PDF, should build it from the frame and save it as a PDF', async () => {
       renderTab();
 
-      await userEvent.click(screen.getByRole('button', { name: 'Baixar o infográfico como PDF' }));
+      await chooseDownload('PDF');
 
       await waitFor(() =>
         expect(snackbar.success).toHaveBeenCalledWith('PDF do infográfico salvo.', expect.objectContaining({ label: 'Ver' })),
@@ -308,9 +318,7 @@ describe('SummaryInfographic', () => {
     it('when downloading the SVG, should capture it with the frame background and save it as an SVG', async () => {
       renderTab();
 
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Baixar o infográfico como SVG (vetor)' }),
-      );
+      await chooseDownload('SVG');
 
       await waitFor(() =>
         expect(snackbar.success).toHaveBeenCalledWith('Imagem do infográfico salva.', expect.objectContaining({ label: 'Ver' })),
@@ -327,7 +335,7 @@ describe('SummaryInfographic', () => {
       capturePdf.mockRejectedValue(new Error('falhou o pdf'));
 
       renderTab();
-      await userEvent.click(screen.getByRole('button', { name: 'Baixar o infográfico como PDF' }));
+      await chooseDownload('PDF');
 
       await waitFor(() => expect(snackbar.error).toHaveBeenCalledWith('falhou o pdf'));
       expect(saveImage.mutateAsync).not.toHaveBeenCalled();
@@ -336,11 +344,7 @@ describe('SummaryInfographic', () => {
     it('when downloading without background, should ask for a transparent image and say so in the name', async () => {
       renderTab();
 
-      await userEvent.click(
-        screen.getByRole('button', {
-          name: 'Baixar o infográfico como PNG sem fundo (transparente)',
-        }),
-      );
+      await chooseDownload('PNG transparente');
 
       await waitFor(() => expect(saveImage.mutateAsync).toHaveBeenCalled());
       expect(capture).toHaveBeenCalledWith(expect.any(HTMLElement), true);
@@ -353,9 +357,7 @@ describe('SummaryInfographic', () => {
       saveImage.mutateAsync.mockResolvedValue({ saved: false });
 
       renderTab();
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Baixar o infográfico como PNG com fundo' }),
-      );
+      await chooseDownload('PNG');
 
       await waitFor(() => expect(saveImage.mutateAsync).toHaveBeenCalled());
       expect(snackbar.success).not.toHaveBeenCalled();
@@ -366,9 +368,7 @@ describe('SummaryInfographic', () => {
       capture.mockRejectedValue(new Error('falhou a foto'));
 
       renderTab();
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Baixar o infográfico como PNG com fundo' }),
-      );
+      await chooseDownload('PNG');
 
       await waitFor(() => expect(snackbar.error).toHaveBeenCalledWith('falhou a foto'));
       expect(saveImage.mutateAsync).not.toHaveBeenCalled();
@@ -378,9 +378,7 @@ describe('SummaryInfographic', () => {
       capture.mockRejectedValue('x');
 
       renderTab();
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Baixar o infográfico como PNG com fundo' }),
-      );
+      await chooseDownload('PNG');
 
       await waitFor(() =>
         expect(snackbar.error).toHaveBeenCalledWith(
@@ -389,27 +387,30 @@ describe('SummaryInfographic', () => {
       );
     });
 
-    it('when there is no infographic yet, should not offer the download buttons', () => {
+    it('when there is no infographic yet, should not offer the download menu', () => {
       saved.state = { isPending: false, data: null };
 
       renderTab();
 
-      expect(
-        screen.queryByRole('button', { name: /Baixar o infográfico/ }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Baixar' })).not.toBeInTheDocument();
     });
   });
 });
 
 describe('SummaryInfographic delete', () => {
-  const deleteButton = () => screen.getByRole('button', { name: 'Excluir só o infográfico' });
-
-  it('when there is an infographic, should offer a delete button that says it is only the infographic', () => {
+  it('when there is an infographic, should offer to delete only inside the "Mais ações" menu, apart from Editar', async () => {
     saved.state = { isPending: false, data: infographic };
 
     renderTab();
 
-    expect(deleteButton()).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Excluir infográfico' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mais ações' }));
+
+    expect(await screen.findByRole('menuitem', { name: 'Excluir infográfico' })).toHaveAttribute(
+      'data-variant',
+      'destructive',
+    );
   });
 
   it('when there is no infographic, should not offer to delete', () => {
@@ -417,16 +418,14 @@ describe('SummaryInfographic delete', () => {
 
     renderTab();
 
-    expect(
-      screen.queryByRole('button', { name: 'Excluir só o infográfico' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Mais ações' })).not.toBeInTheDocument();
   });
 
   it('when clicking delete, should ask first and say what stays', async () => {
     saved.state = { isPending: false, data: infographic };
     renderTab();
 
-    await userEvent.click(deleteButton());
+    await chooseDelete();
 
     expect(screen.getByText('Excluir só o infográfico?')).toBeInTheDocument();
     expect(screen.getByText(/O texto do resumo e o mapa mental/)).toBeInTheDocument();
@@ -436,7 +435,7 @@ describe('SummaryInfographic delete', () => {
   it('when the user cancels, should delete nothing', async () => {
     saved.state = { isPending: false, data: infographic };
     renderTab();
-    await userEvent.click(deleteButton());
+    await chooseDelete();
 
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
 
@@ -449,7 +448,7 @@ describe('SummaryInfographic delete', () => {
   it('when the user confirms, should delete only the infographic and not ask the AI for another one', async () => {
     saved.state = { isPending: false, data: infographic };
     renderTab();
-    await userEvent.click(deleteButton());
+    await chooseDelete();
 
     await userEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Excluir só o infográfico' }),
@@ -483,7 +482,7 @@ describe('SummaryInfographic delete', () => {
   it('when the user confirms the delete, should remember it for the next sessions', async () => {
     saved.state = { isPending: false, data: infographic };
     renderTab();
-    await userEvent.click(deleteButton());
+    await chooseDelete();
     await userEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Excluir só o infográfico' }),
     );
@@ -497,7 +496,7 @@ describe('SummaryInfographic delete', () => {
     del.state = { isPending: false, error: new Error('Falha ao apagar') };
     renderTab();
 
-    await userEvent.click(deleteButton());
+    await chooseDelete();
 
     expect(snackbar.error).toHaveBeenCalledWith('Falha ao apagar');
     expect(screen.getByText('Excluir só o infográfico?')).toBeInTheDocument();
@@ -509,12 +508,12 @@ describe('SummaryInfographic delete', () => {
 
     renderTab();
 
-    expect(deleteButton()).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Mais ações' })).toBeDisabled();
   });
 });
 
 describe('SummaryInfographic edit', { timeout: 20_000 }, () => {
-  const editButton = () => screen.getByRole('button', { name: 'Editar as peças' });
+  const editButton = () => screen.getByRole('button', { name: 'Editar' });
   const pieceButtons = () => screen.getAllByRole('button', { name: /^Trocar a peça:/ });
   const startEditing = async () => userEvent.click(editButton());
   const swapFirstPiece = async (name: RegExp = /Cruz médica/) => {
@@ -536,7 +535,7 @@ describe('SummaryInfographic edit', { timeout: 20_000 }, () => {
 
     renderTab();
 
-    expect(screen.queryByRole('button', { name: 'Editar as peças' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
   });
 
   it('when not editing, should not make the pieces clickable', () => {
@@ -557,7 +556,7 @@ describe('SummaryInfographic edit', { timeout: 20_000 }, () => {
     expect(screen.getByText(/Clique em uma peça para trocá-la/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Gerar de novo' })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Estrutura do infográfico')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Baixar o infográfico/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Baixar' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeDisabled();
   });
 
@@ -591,7 +590,7 @@ describe('SummaryInfographic edit', { timeout: 20_000 }, () => {
     expect(payload.infographic).not.toHaveProperty('model');
     expect(payload.infographic).not.toHaveProperty('stale');
     await waitFor(() => expect(snackbar.success).toHaveBeenCalledWith('Infográfico salvo.'));
-    expect(screen.getByRole('button', { name: 'Editar as peças' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Editar' })).toBeInTheDocument();
   });
 
   it('when saving fails, should show the reason and stay in edition with the change', async () => {
@@ -615,7 +614,7 @@ describe('SummaryInfographic edit', { timeout: 20_000 }, () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar edição' }));
 
-    expect(screen.getByRole('button', { name: 'Editar as peças' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Editar' })).toBeInTheDocument();
     expect(screen.queryByText('Descartar as alterações?')).not.toBeInTheDocument();
   });
 
@@ -640,7 +639,7 @@ describe('SummaryInfographic edit', { timeout: 20_000 }, () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Descartar alterações' }));
 
-    expect(screen.getByRole('button', { name: 'Editar as peças' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Editar' })).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: 'Cruz médica' })).not.toBeInTheDocument();
     expect(saveInfo.mutateAsync).not.toHaveBeenCalled();
   });
@@ -721,7 +720,7 @@ describe('SummaryInfographic edit', { timeout: 20_000 }, () => {
 
 describe('SummaryInfographic text edit', { timeout: 20_000 }, () => {
   const startEditing = async () =>
-    userEvent.click(screen.getByRole('button', { name: 'Editar as peças' }));
+    userEvent.click(screen.getByRole('button', { name: 'Editar' }));
   const textButton = (text: string) =>
     Array.from(document.querySelectorAll<HTMLElement>('[data-slot="editable-text"]'))
       .find((element) => element.textContent === text) as HTMLElement;

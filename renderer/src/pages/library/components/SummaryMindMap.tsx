@@ -26,6 +26,7 @@ import { IconButton } from '#components/IconButton';
 import { LoadingState } from '#components/LoadingState';
 import { MindMapView } from '#components/MindMapView';
 import { useSnackbar } from '#components/Snackbar';
+import { ActionMenu } from '#components/ActionMenu';
 import { useErrorAlert } from '#hooks/use-error-alert';
 import { useSavedNotice } from '#hooks/use-saved-notice';
 
@@ -246,19 +247,6 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
         <Pencil />
       </IconButton>
 
-      {hasMap && (
-        <IconButton
-          label="Excluir só o mapa mental"
-          disabled={pending}
-          onClick={() => {
-            deleteMap.reset();
-            setConfirm('delete');
-          }}
-        >
-          <Trash2 />
-        </IconButton>
-      )}
-
       {hasMap && !notice && (
         <IconButton
           label={pending ? 'Gerando…' : 'Gerar de novo com IA'}
@@ -268,6 +256,29 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
         >
           {pending ? <HexLoader className="size-4" label="Gerando" /> : <Sparkles />}
         </IconButton>
+      )}
+
+      {hasMap && (
+        <ActionMenu
+          label="Mais ações"
+          iconOnly
+          variant="outline"
+          disabled={pending}
+          groups={[
+            [
+              {
+                id: 'delete',
+                label: 'Excluir mapa mental',
+                icon: Trash2,
+                destructive: true,
+                onSelect: () => {
+                  deleteMap.reset();
+                  setConfirm('delete');
+                },
+              },
+            ],
+          ]}
+        />
       )}
     </>
   );

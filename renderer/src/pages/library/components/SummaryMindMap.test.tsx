@@ -675,30 +675,41 @@ describe('SummaryMindMap editing', () => {
 
 describe('SummaryMindMap delete', () => {
   const toolbar = () => screen.getByTestId('map-toolbar');
-  const deleteButton = () =>
-    within(toolbar()).getByRole('button', { name: 'Excluir só o mapa mental' });
+  const moreButton = () => within(toolbar()).getByRole('button', { name: 'Mais ações' });
+  /** Abre o menu "Mais ações" e escolhe "Excluir mapa mental". */
+  const chooseDelete = async () => {
+    await userEvent.click(moreButton());
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Excluir mapa mental' }));
+  };
 
-  it('when there is a map, should offer a delete button that says it is only the mind map', () => {
+  it('when there is a map, should offer to delete only inside the "Mais ações" menu', async () => {
     saved.state = { ...saved.state, data: aiMap };
 
     renderMap();
 
-    expect(deleteButton()).toBeInTheDocument();
+    expect(
+      within(toolbar()).queryByRole('button', { name: 'Excluir mapa mental' }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(moreButton());
+
+    expect(await screen.findByRole('menuitem', { name: 'Excluir mapa mental' })).toHaveAttribute(
+      'data-variant',
+      'destructive',
+    );
   });
 
   it('when there is no saved map, should not offer to delete', () => {
     renderMap();
 
-    expect(
-      within(toolbar()).queryByRole('button', { name: 'Excluir só o mapa mental' }),
-    ).not.toBeInTheDocument();
+    expect(within(toolbar()).queryByRole('button', { name: 'Mais ações' })).not.toBeInTheDocument();
   });
 
   it('when clicking delete, should ask first and say what stays', async () => {
     saved.state = { ...saved.state, data: aiMap };
     renderMap();
 
-    await userEvent.click(deleteButton());
+    await chooseDelete();
 
     expect(screen.getByText('Excluir só o mapa mental?')).toBeInTheDocument();
     expect(screen.getByText(/O texto do resumo e o infográfico/)).toBeInTheDocument();
@@ -709,7 +720,7 @@ describe('SummaryMindMap delete', () => {
     saved.state = { ...saved.state, data: { ...aiMap, edited: true } };
     renderMap();
 
-    await userEvent.click(deleteButton());
+    await chooseDelete();
 
     expect(screen.getByText(/inclusive todas as edições que você fez nele/)).toBeInTheDocument();
   });
@@ -718,7 +729,7 @@ describe('SummaryMindMap delete', () => {
     saved.state = { ...saved.state, data: aiMap };
     renderMap();
 
-    await userEvent.click(deleteButton());
+    await chooseDelete();
 
     expect(screen.queryByText(/inclusive todas as edições/)).not.toBeInTheDocument();
   });
@@ -726,7 +737,7 @@ describe('SummaryMindMap delete', () => {
   it('when the user cancels, should delete nothing', async () => {
     saved.state = { ...saved.state, data: aiMap };
     renderMap();
-    await userEvent.click(deleteButton());
+    await chooseDelete();
 
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
 
@@ -739,7 +750,7 @@ describe('SummaryMindMap delete', () => {
   it('when the user confirms, should delete only the map, say so and not ask the AI for another one', async () => {
     saved.state = { ...saved.state, data: aiMap };
     const id = renderMap();
-    await userEvent.click(deleteButton());
+    await chooseDelete();
 
     await userEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Excluir só o mapa mental' }),
@@ -759,7 +770,7 @@ describe('SummaryMindMap delete', () => {
   it('when the user confirms the delete, should remember it for the next sessions', async () => {
     saved.state = { ...saved.state, data: aiMap };
     const id = renderMap();
-    await userEvent.click(deleteButton());
+    await chooseDelete();
     await userEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Excluir só o mapa mental' }),
     );
@@ -789,7 +800,7 @@ describe('SummaryMindMap delete', () => {
     del.state = { isPending: false, error: new Error('Falha ao apagar') };
     renderMap();
 
-    await userEvent.click(deleteButton());
+    await chooseDelete();
 
     expect(snackbar.error).toHaveBeenCalledWith('Falha ao apagar');
     expect(screen.getByText('Excluir só o mapa mental?')).toBeInTheDocument();
@@ -801,6 +812,6 @@ describe('SummaryMindMap delete', () => {
 
     renderMap();
 
-    expect(deleteButton()).toBeDisabled();
+    expect(moreButton()).toBeDisabled();
   });
 });

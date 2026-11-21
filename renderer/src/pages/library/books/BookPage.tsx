@@ -17,15 +17,9 @@ import {
 
 
 import { Button } from "#ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "#ui/dropdown-menu";
 import { extractHeadings } from "#lib/markdown";
 
+import { ActionMenu } from "#components/ActionMenu";
 import { BackToTopButton } from "#components/BackToTopButton";
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { EmptyState } from "#components/EmptyState";
@@ -424,51 +418,39 @@ export function BookPage() {
             </Button>
           )}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button variant="outline">
-                  <MoreHorizontal /> Mais ações
-                </Button>
-              }
-            />
-
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setModal("details")}>
-                <Info /> Detalhes
-              </DropdownMenuItem>
-
-              <DropdownMenuItem onClick={() => setModal("organize")}>
-                <ListOrdered /> Organizar
-              </DropdownMenuItem>
-
-              <DropdownMenuItem onClick={() => setModal("edit")}>
-                <Pencil /> Editar dados e capa
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                disabled={!hasProgress}
-                onClick={() => setModal("reset")}
-              >
-                <RotateCcw /> Zerar progresso
-              </DropdownMenuItem>
-
-              {totalChapters > 0 && (
-                <DropdownMenuItem onClick={() => setPrinting(true)}>
-                  <Download /> Exportar PDF
-                </DropdownMenuItem>
-              )}
-
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => setModal("delete")}
-              >
-                <Trash2 /> Excluir livro
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ActionMenu
+            label="Mais ações"
+            icon={MoreHorizontal}
+            size="default"
+            groups={[
+              [
+                { id: "details", label: "Detalhes", icon: Info, onSelect: () => setModal("details") },
+                { id: "organize", label: "Organizar", icon: ListOrdered, onSelect: () => setModal("organize") },
+                { id: "edit", label: "Editar dados e capa", icon: Pencil, onSelect: () => setModal("edit") },
+                ...(totalChapters > 0
+                  ? [{ id: "export", label: "Exportar PDF", icon: Download, onSelect: () => setPrinting(true) }]
+                  : []),
+              ],
+              [
+                {
+                  id: "reset",
+                  label: "Zerar progresso",
+                  icon: RotateCcw,
+                  disabled: !hasProgress,
+                  onSelect: () => setModal("reset"),
+                },
+              ],
+              [
+                {
+                  id: "delete",
+                  label: "Excluir livro",
+                  icon: Trash2,
+                  destructive: true,
+                  onSelect: () => setModal("delete"),
+                },
+              ],
+            ]}
+          />
         </div>
       </header>
 

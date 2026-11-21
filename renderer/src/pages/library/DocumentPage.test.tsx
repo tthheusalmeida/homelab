@@ -72,6 +72,12 @@ const renderPage = (entries = ["/library/id1"], index?: number) =>
 const aboutButton = () =>
   screen.getByRole("button", { name: /Sobre a página/ });
 
+/** Abre o menu "Mais ações" da janela "Sobre a página" e escolhe um item. */
+async function chooseMore(user: ReturnType<typeof userEvent.setup>, name: RegExp | string) {
+  await user.click(screen.getByRole("button", { name: "Mais ações" }));
+  await user.click(await screen.findByRole("menuitem", { name }));
+}
+
 async function openAbout() {
   const user = userEvent.setup();
   renderPage();
@@ -192,9 +198,12 @@ describe("DocumentPage", () => {
   it("when the document is published, should offer edit and remove in the about window", async () => {
     await openAbout();
 
+    const user = userEvent.setup();
+
     expect(screen.getByRole("button", { name: "Editar" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Mais ações" }));
     expect(
-      screen.getByRole("button", { name: /Remover da biblioteca/ }),
+      await screen.findByRole("menuitem", { name: /Remover da biblioteca/ }),
     ).toBeInTheDocument();
   });
 
@@ -215,6 +224,7 @@ describe("DocumentPage", () => {
       expect(
         screen.queryByRole("button", { name: /Remover da biblioteca/ }),
       ).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Mais ações" })).toBeInTheDocument();
     },
   );
 
@@ -301,9 +311,7 @@ describe("DocumentPage", () => {
   it("when removal is requested, should close the about window and ask for confirmation", async () => {
     const user = await openAbout();
 
-    await user.click(
-      screen.getByRole("button", { name: /Remover da biblioteca/ }),
-    );
+    await chooseMore(user, /Remover da biblioteca/);
 
     expect(screen.getByText("Remover da biblioteca?")).toBeInTheDocument();
     await waitFor(() =>
@@ -314,9 +322,7 @@ describe("DocumentPage", () => {
 
   it("when the confirmation is cancelled, should return to the about window without archiving", async () => {
     const user = await openAbout();
-    await user.click(
-      screen.getByRole("button", { name: /Remover da biblioteca/ }),
-    );
+    await chooseMore(user, /Remover da biblioteca/);
 
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
 
@@ -332,9 +338,7 @@ describe("DocumentPage", () => {
       (_id: string, options: { onSuccess: () => void }) => options.onSuccess(),
     );
     const user = await openAbout();
-    await user.click(
-      screen.getByRole("button", { name: /Remover da biblioteca/ }),
-    );
+    await chooseMore(user, /Remover da biblioteca/);
 
     await user.click(screen.getByRole("button", { name: "Remover" }));
 
@@ -348,9 +352,7 @@ describe("DocumentPage", () => {
     archive.isError = true;
     const user = await openAbout();
 
-    await user.click(
-      screen.getByRole("button", { name: /Remover da biblioteca/ }),
-    );
+    await chooseMore(user, /Remover da biblioteca/);
 
     expect(screen.getByText(/Não foi possível remover/)).toBeInTheDocument();
     expect(screen.getByText("Remover da biblioteca?")).toBeInTheDocument();
@@ -360,16 +362,21 @@ describe("DocumentPage", () => {
     const openDelete = async () => {
       const user = await openAbout();
 
-      await user.click(screen.getByRole("button", { name: /Excluir/ }));
+      await chooseMore(user, "Excluir");
 
       return user;
     };
 
-    it("when the page is published, should offer Excluir next to Remover da biblioteca", async () => {
-      await openAbout();
+    it("when the page is published, should offer Excluir and Remover da biblioteca only inside Mais ações", async () => {
+      const user = await openAbout();
 
-      expect(screen.getByRole("button", { name: /Excluir/ })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Remover da biblioteca/ })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Excluir/ })).toBeNull();
+      expect(screen.queryByRole("button", { name: /Remover da biblioteca/ })).toBeNull();
+
+      await user.click(screen.getByRole("button", { name: "Mais ações" }));
+
+      expect(await screen.findByRole("menuitem", { name: "Excluir" })).toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: /Remover da biblioteca/ })).toBeInTheDocument();
     });
 
     it.each(["pending", "archived"])(
@@ -377,10 +384,12 @@ describe("DocumentPage", () => {
       async (status) => {
         documentQuery.data = detail(status);
 
-        await openAbout();
+        const user = await openAbout();
 
-        expect(screen.getByRole("button", { name: /Excluir/ })).toBeInTheDocument();
-        expect(screen.queryByRole("button", { name: /Remover da biblioteca/ })).toBeNull();
+        await user.click(screen.getByRole("button", { name: "Mais ações" }));
+
+        expect(await screen.findByRole("menuitem", { name: "Excluir" })).toBeInTheDocument();
+        expect(screen.queryByRole("menuitem", { name: /Remover da biblioteca/ })).toBeNull();
         expect(screen.queryByRole("button", { name: /Editar/ })).toBeNull();
       },
     );

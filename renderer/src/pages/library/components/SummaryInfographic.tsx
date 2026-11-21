@@ -3,9 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Check,
   Download,
-  FileCode,
-  FileText,
-  ImageOff,
   LayoutPanelTop,
   Pencil,
   Trash2,
@@ -37,11 +34,13 @@ import { EmptyState } from '#components/EmptyState';
 import { GenerateButton } from '#components/GenerateButton';
 import { HexLoader } from '#components/Hex';
 import { IconButton } from '#components/IconButton';
+import { Button } from '#ui/button';
 import { InfographicView } from '#components/InfographicView';
 import { LoadingState } from '#components/LoadingState';
 import { OptionSelect } from '#components/OptionSelect';
 import type { PieceTarget } from '#components/infographic/common';
 import { useSnackbar } from '#components/Snackbar';
+import { ActionMenu } from '#components/ActionMenu';
 import { useErrorAlert } from '#hooks/use-error-alert';
 import { useSavedNotice } from '#hooks/use-saved-notice';
 import type { LibraryInfographic } from '#shared/contracts/library';
@@ -69,6 +68,16 @@ const DOWNLOAD_FAILED = 'Não foi possível gerar a imagem do infográfico.';
 
 /** Formas de baixar: PNG com fundo, PNG sem fundo, SVG (vetor) ou PDF de uma página. */
 type DownloadKind = 'png' | 'png-transparent' | 'svg' | 'pdf';
+
+/** As opções do menu "Baixar": rótulos curtos, a mais usada primeiro. */
+const DOWNLOAD_GROUPS: { id: DownloadKind; kind: DownloadKind; label: string }[][] = [
+  [
+    { id: 'png', kind: 'png', label: 'PNG' },
+    { id: 'png-transparent', kind: 'png-transparent', label: 'PNG transparente' },
+    { id: 'svg', kind: 'svg', label: 'SVG' },
+    { id: 'pdf', kind: 'pdf', label: 'PDF' },
+  ],
+];
 
 /**
  * Páginas para as quais a IA já foi chamada nesta sessão. Abrir a aba chama a IA **uma vez** por
@@ -329,57 +338,39 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
               {data.sections.length === 1 ? '1 seção' : `${data.sections.length} seções`}
             </span>
 
-            <IconButton label="Editar as peças" disabled={pending} onClick={startEditing}>
-              <Pencil />
-            </IconButton>
+            <Button type="button" variant="outline" size="sm" disabled={pending} onClick={startEditing}>
+              <Pencil /> Editar
+            </Button>
 
-            <IconButton
-              label={exporting ? 'Gerando imagem…' : 'Baixar o infográfico como PNG com fundo'}
-              disabled={exporting || pending}
-              aria-busy={exporting}
-              onClick={() => void download('png')}
-            >
-              {exporting ? <HexLoader className="size-4" label="Gerando imagem" /> : <Download />}
-            </IconButton>
+            <ActionMenu
+              label="Baixar"
+              icon={Download}
+              loading={exporting}
+              disabled={pending}
+              groups={DOWNLOAD_GROUPS.map((group) =>
+                group.map((entry) => ({ ...entry, onSelect: () => void download(entry.kind) })),
+              )}
+            />
 
-            <IconButton
-              label={
-                exporting
-                  ? 'Gerando imagem…'
-                  : 'Baixar o infográfico como PNG sem fundo (transparente)'
-              }
+            <ActionMenu
+              label="Mais ações"
+              iconOnly
               disabled={exporting || pending}
-              onClick={() => void download('png-transparent')}
-            >
-              <ImageOff />
-            </IconButton>
-
-            <IconButton
-              label={exporting ? 'Gerando arquivo…' : 'Baixar o infográfico como PDF'}
-              disabled={exporting || pending}
-              onClick={() => void download('pdf')}
-            >
-              <FileText />
-            </IconButton>
-
-            <IconButton
-              label={exporting ? 'Gerando arquivo…' : 'Baixar o infográfico como SVG (vetor)'}
-              disabled={exporting || pending}
-              onClick={() => void download('svg')}
-            >
-              <FileCode />
-            </IconButton>
-
-            <IconButton
-              label="Excluir só o infográfico"
-              disabled={exporting || pending}
-              onClick={() => {
-                deleteInfographic.reset();
-                setConfirmDelete(true);
-              }}
-            >
-              <Trash2 />
-            </IconButton>
+              groups={[
+                [
+                  {
+                    id: 'delete',
+                    label: 'Excluir infográfico',
+                    icon: Trash2,
+                    destructive: true,
+                    onSelect: () => {
+                      deleteInfographic.reset();
+                      setConfirmDelete(true);
+                    },
+                  },
+                ],
+              ]}
+            />
           </div>
         )}
       </div>

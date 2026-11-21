@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ArchiveX, BookPlus, ExternalLink, Pencil, Trash2 } from "lucide-react";
 
 import { Badge } from "#ui/badge";
+import { Button } from "#ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import {
 } from "#ui/dialog";
 import { formatDateTime } from "#lib/format";
 
-import { IconButton } from "#components/IconButton";
+import { ActionMenu } from "#components/ActionMenu";
 
 import {
   documentSourceLabels,
@@ -106,29 +107,53 @@ export function DocumentAboutDialog({
         </dl>
 
         {(onEdit || onRemove || onAddToBook || onDelete) && (
-          <DialogFooter className="sm:flex-wrap">
+          <DialogFooter className="sm:flex-wrap sm:items-center">
+            {/* Terciárias (raras ou perigosas): dentro do menu, longe das principais. */}
+            {(onRemove || onDelete) && (
+              <div className="sm:mr-auto">
+                <ActionMenu
+                  label="Mais ações"
+                  iconOnly
+                  align="start"
+                  groups={[
+                    onRemove
+                      ? [
+                          {
+                            id: "remove",
+                            label: "Remover da biblioteca",
+                            icon: ArchiveX,
+                            onSelect: onRemove,
+                          },
+                        ]
+                      : [],
+                    onDelete
+                      ? [
+                          {
+                            id: "delete",
+                            label: "Excluir",
+                            icon: Trash2,
+                            destructive: true,
+                            onSelect: onDelete,
+                          },
+                        ]
+                      : [],
+                  ]}
+                />
+              </div>
+            )}
+
+            {/* Secundária: contorno. */}
             {onAddToBook && (
-              <IconButton label="Adicionar a um livro" onClick={onAddToBook}>
-                <BookPlus />
-              </IconButton>
+              <Button variant="outline" onClick={onAddToBook}>
+                <BookPlus /> Adicionar a um livro
+              </Button>
             )}
 
+            {/* Primária: em destaque. */}
             {onEdit && (
-              <IconButton label="Editar" onClick={onEdit}>
-                <Pencil />
-              </IconButton>
-            )}
-
-            {onRemove && (
-              <IconButton label="Remover da biblioteca" onClick={onRemove}>
-                <ArchiveX />
-              </IconButton>
-            )}
-
-            {onDelete && (
-              <IconButton label="Excluir" variant="destructive" onClick={onDelete}>
-                <Trash2 />
-              </IconButton>
+              <Button onClick={onEdit}>
+                <Pencil /> Editar
+              </Button>
             )}
           </DialogFooter>
         )}

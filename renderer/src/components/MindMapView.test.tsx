@@ -59,6 +59,13 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+
+/** Abre o menu "Baixar" da barra do mapa e escolhe uma opção. */
+async function chooseDownload(label: 'PNG' | 'PNG transparente') {
+  await userEvent.click(screen.getByRole('button', { name: 'Baixar' }));
+  await userEvent.click(await screen.findByRole('menuitem', { name: label }));
+}
+
 describe('MindMapView', () => {
   it('when rendered, should show the title and subtitle in the middle', () => {
     render(<MindMapView map={map} />);
@@ -435,29 +442,36 @@ describe('MindMapView PNG download', () => {
     capture.mockResolvedValue('UE5H');
   });
 
-  it('when no saver is given, should not offer the download button', () => {
+  it('when no saver is given, should not offer the download menu', () => {
     render(<MindMapView map={map} />);
 
-    expect(
-      screen.queryByRole('button', { name: 'Baixar o mapa como PNG com fundo' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Baixar' })).not.toBeInTheDocument();
   });
 
-  it('when a saver is given, should offer Baixar PNG in the bottom bar', () => {
+  it('when a saver is given, should offer a single Baixar menu in the bottom bar', () => {
     render(<MindMapView map={map} onDownloadImage={vi.fn()} />);
 
     expect(
-      within(screen.getByRole('toolbar')).getByRole('button', {
-        name: 'Baixar o mapa como PNG com fundo',
-      }),
-    ).toBeInTheDocument();
+      within(screen.getByRole('toolbar')).getAllByRole('button', { name: 'Baixar' }),
+    ).toHaveLength(1);
+  });
+
+  it('when the Baixar menu is opened, should list the PNG options with short labels', async () => {
+    render(<MindMapView map={map} onDownloadImage={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Baixar' }));
+
+    expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual([
+      'PNG',
+      'PNG transparente',
+    ]);
   });
 
   it('when the user clicks Baixar PNG, should photograph the whole map and hand the PNG over with a suggested name', async () => {
     const onDownloadImage = vi.fn().mockResolvedValue(undefined);
 
     render(<MindMapView map={map} onDownloadImage={onDownloadImage} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Baixar o mapa como PNG com fundo' }));
+    await chooseDownload('PNG');
 
     await waitFor(() => expect(onDownloadImage).toHaveBeenCalledTimes(1));
 
@@ -472,16 +486,16 @@ describe('MindMapView PNG download', () => {
     });
   });
 
-  it('when the image is being made, should disable the button with a loading label and not start twice', async () => {
+  it('when the image is being made, should disable the menu button and not start twice', async () => {
     let finish: () => void = () => undefined;
     const onDownloadImage = vi.fn(() => new Promise<void>((resolve) => (finish = resolve)));
 
     render(<MindMapView map={map} onDownloadImage={onDownloadImage} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Baixar o mapa como PNG com fundo' }));
+    await chooseDownload('PNG');
 
-    const busy = await screen.findByRole('button', { name: 'Gerando imagem…' });
+    const busy = await screen.findByRole('button', { name: 'Baixar' });
 
-    expect(busy).toBeDisabled();
+    await waitFor(() => expect(busy).toBeDisabled());
 
     await userEvent.click(busy);
     expect(capture).toHaveBeenCalledTimes(1);
@@ -489,7 +503,7 @@ describe('MindMapView PNG download', () => {
     finish();
 
     expect(
-      await screen.findByRole('button', { name: 'Baixar o mapa como PNG com fundo' }),
+      await screen.findByRole('button', { name: 'Baixar' }),
     ).toBeEnabled();
   });
 
@@ -502,13 +516,13 @@ describe('MindMapView PNG download', () => {
     render(
       <MindMapView map={map} onDownloadImage={onDownloadImage} onDownloadError={onDownloadError} />,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Baixar o mapa como PNG com fundo' }));
+    await chooseDownload('PNG');
 
     await waitFor(() => expect(onDownloadError).toHaveBeenCalledWith('Falha ao desenhar.'));
 
     expect(onDownloadImage).not.toHaveBeenCalled();
     expect(
-      await screen.findByRole('button', { name: 'Baixar o mapa como PNG com fundo' }),
+      await screen.findByRole('button', { name: 'Baixar' }),
     ).toBeEnabled();
   });
 
@@ -522,7 +536,7 @@ describe('MindMapView PNG download', () => {
         onDownloadError={onDownloadError}
       />,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Baixar o mapa como PNG com fundo' }));
+    await chooseDownload('PNG');
 
     await waitFor(() => expect(onDownloadError).toHaveBeenCalledWith('Disco cheio.'));
   });
@@ -532,7 +546,7 @@ describe('MindMapView PNG download', () => {
 
     capture.mockRejectedValue('x');
     render(<MindMapView map={map} onDownloadImage={vi.fn()} onDownloadError={onDownloadError} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Baixar o mapa como PNG com fundo' }));
+    await chooseDownload('PNG');
 
     await waitFor(() =>
       expect(onDownloadError).toHaveBeenCalledWith(
@@ -581,16 +595,16 @@ describe('MindMapView icon-only controls', () => {
     ).toBeInTheDocument();
   });
 
-  it('when the image is being made, should show the loading icon and the working label', async () => {
+  it('when the image is being made, should show the menu button as busy', async () => {
     capture.mockImplementation(() => new Promise(() => undefined));
 
     render(<MindMapView map={map} onDownloadImage={vi.fn()} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Baixar o mapa como PNG com fundo' }));
+    await chooseDownload('PNG');
 
-    const busy = await screen.findByRole('button', { name: 'Gerando imagem…' });
+    const busy = await screen.findByRole('button', { name: 'Baixar' });
 
-    expect(busy).toBeDisabled();
-    expect(busy).toHaveTextContent('');
+    await waitFor(() => expect(busy).toBeDisabled());
+    expect(busy).toHaveAttribute('aria-busy', 'true');
   });
 });
 
@@ -715,31 +729,25 @@ describe('MindMapView PNG without background', () => {
     capture.mockResolvedValue('UE5H');
   });
 
-  const transparentButton = () =>
-    screen.getByRole('button', { name: 'Baixar o mapa como PNG sem fundo (transparente)' });
-
-  it('when a saver is given, should offer a second icon to download without background', () => {
+  it('when a saver is given, should offer the transparent PNG inside the same menu', async () => {
     render(<MindMapView map={map} onDownloadImage={vi.fn()} />);
 
-    const bar = screen.getByRole('toolbar');
+    await userEvent.click(screen.getByRole('button', { name: 'Baixar' }));
 
-    expect(
-      within(bar).getByRole('button', { name: 'Baixar o mapa como PNG com fundo' }),
-    ).toBeInTheDocument();
-    expect(transparentButton()).toHaveTextContent('');
+    expect(await screen.findByRole('menuitem', { name: 'PNG transparente' })).toBeInTheDocument();
   });
 
   it('when no saver is given, should not offer either download', () => {
     render(<MindMapView map={map} />);
 
-    expect(screen.queryByRole('button', { name: /Baixar o mapa/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Baixar' })).not.toBeInTheDocument();
   });
 
   it('when the user downloads without background, should photograph with no background and suggest a name saying so', async () => {
     const onDownloadImage = vi.fn().mockResolvedValue(undefined);
 
     render(<MindMapView map={map} onDownloadImage={onDownloadImage} />);
-    await userEvent.click(transparentButton());
+    await chooseDownload('PNG transparente');
 
     await waitFor(() => expect(onDownloadImage).toHaveBeenCalledTimes(1));
 
@@ -757,7 +765,7 @@ describe('MindMapView PNG without background', () => {
     const onDownloadImage = vi.fn().mockResolvedValue(undefined);
 
     render(<MindMapView map={map} onDownloadImage={onDownloadImage} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Baixar o mapa como PNG com fundo' }));
+    await chooseDownload('PNG');
 
     await waitFor(() => expect(onDownloadImage).toHaveBeenCalledTimes(1));
 
@@ -768,43 +776,39 @@ describe('MindMapView PNG without background', () => {
     });
   });
 
-  it('when one image is being made, should show the loading on that icon and hold the other', async () => {
+  it('when an image is being made, should lock the menu button and show it as busy', async () => {
     capture.mockImplementation(() => new Promise(() => undefined));
 
     render(<MindMapView map={map} onDownloadImage={vi.fn()} />);
-    await userEvent.click(transparentButton());
+    await chooseDownload('PNG transparente');
 
-    expect(await screen.findByRole('button', { name: 'Gerando imagem…' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Baixar o mapa como PNG com fundo' })).toBeDisabled();
-    expect(
-      screen.queryByRole('button', { name: 'Baixar o mapa como PNG sem fundo (transparente)' }),
-    ).not.toBeInTheDocument();
+    const button = await screen.findByRole('button', { name: 'Baixar' });
+
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('when the mouse goes over the icon, should explain it with a tooltip', async () => {
+  it('when the mouse goes over the menu button, should explain it with a tooltip', async () => {
     render(<MindMapView map={map} onDownloadImage={vi.fn()} />);
 
-    await userEvent.hover(transparentButton());
+    await userEvent.hover(screen.getByRole('button', { name: 'Baixar' }));
 
     expect(
-      await screen.findByText('Baixar o mapa como PNG sem fundo (transparente)', {
-        selector: '[data-slot="tooltip-content"]',
-      }),
+      await screen.findByText('Baixar', { selector: '[data-slot="tooltip-content"]' }),
     ).toBeInTheDocument();
   });
 
-  it('when the transparent capture fails, should report the error and free both icons', async () => {
+  it('when the transparent capture fails, should report the error and free the menu button', async () => {
     capture.mockRejectedValue(new Error('Falha ao desenhar.'));
 
     const onDownloadError = vi.fn();
 
     render(<MindMapView map={map} onDownloadImage={vi.fn()} onDownloadError={onDownloadError} />);
-    await userEvent.click(transparentButton());
+    await chooseDownload('PNG transparente');
 
     await waitFor(() => expect(onDownloadError).toHaveBeenCalledWith('Falha ao desenhar.'));
 
-    expect(await screen.findByRole('button', { name: /sem fundo/ })).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Baixar o mapa como PNG com fundo' })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: 'Baixar' })).toBeEnabled();
   });
 });
 
