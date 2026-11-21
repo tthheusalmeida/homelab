@@ -96,3 +96,13 @@ Testes: `lib/appearance.test.ts` (modos, `data-accent`, cache, blocos de tokens 
 - **`PageHeader`** (`components/PageHeader.tsx`): prompt de terminal (`root@homelab:~$ comando`), título, descrição, linha de status mono, ações e `toolbar` (filtros, busca ou abas). **Fica fixo no topo** (`sticky`, colado na borda da área de rolagem do `AppLayout`): só o conteúdo da tela rola, e tudo o que for filtro da tela entra em `toolbar` para não descer junto. O **título é sempre o texto do item da sidebar** (Início, Páginas, Livros, Classificação, Nova página, Nova tarefa, Em andamento, Consumo). Usado em todas as telas do menu e em Configurações (o comando acompanha a seção: `settings --appearance`, `settings --paths`...) e Conversa (`ai --chat`); só o Início tem layout próprio.
 - **Contadores na sidebar** (`SidebarMenuBadge` em `AppSidebar.tsx`): "Em andamento" mostra os jobs na fila ou rodando e "Classificação" mostra as páginas pendentes de decisão; somem quando o valor é 0 e compartilham a consulta da tela correspondente. O contador da Classificação sobe **na hora em que um job termina**: a barra lateral (sempre montada) usa `useRefreshLibraryOnJobDone`, que acompanha a lista de jobs e, ao ver um job novo concluído, atualiza a biblioteca; antes só atualizava ao abrir a tela.
 - A Início usa um painel de terminal (barra com hexágonos, `./home --status`); o nome do usuário não aparece: o texto é genérico.
+
+## Peças compartilhadas (antes de criar, procure aqui)
+- **Botão trabalhando:** `<Button loading={isPending}>` mostra o spinner antes do texto, desabilita e marca `aria-busy`. Não monte `Loader2` à mão.
+- **Página carregando ou com erro:** `PageLoading` e `PageError` (`components/PageState.tsx`) para a página inteira; `LoadingState`/`ErrorState` ficam para trechos menores.
+- **Confirmações de edição das abas geradas:** `DiscardEditsDialog` e `RegenerateEditedDialog` (mapa mental e infográfico).
+- **Ajustes de leitura (letra e zoom):** `ReadingSteppers`, usado em Configurações e no painel de leitura.
+- **Instalação de componentes:** `InstallOverall` (progresso) e `useInstallSelection` (escolha e início), usados no assistente e em Configurações > Componentes.
+- **Formulários de vídeo:** `useVideoJobForm` e `VideoJobFooter` (resumo e transcrição só trazem os campos próprios).
+- **Provedores (Configurações):** `ProvidersGate`, `ProviderCardList`, `ProviderActions` e `ProviderFeedback`.
+- **Hexágono:** o recorte é `HEX_CLIP` em `lib/hex.ts`; não copie o `clip-path`.
