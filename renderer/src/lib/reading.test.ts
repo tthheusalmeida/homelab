@@ -10,7 +10,6 @@ import {
 } from '#shared/contracts/reading';
 
 import {
-  fontSizeRem,
   inkOn,
   isLightColor,
   readingColor,
@@ -54,12 +53,6 @@ describe('reading font size', () => {
 
     expect(levels).toBe(13);
     expect(size).toBe(32);
-  });
-
-  it('when converting to rem, should treat 16 as 1rem', () => {
-    expect(fontSizeRem(16)).toBe('1rem');
-    expect(fontSizeRem(8)).toBe('0.5rem');
-    expect(fontSizeRem(32)).toBe('2rem');
   });
 });
 

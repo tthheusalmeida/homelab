@@ -16,7 +16,6 @@ import {
   pathKey,
   removeNode,
   setSubtitle,
-  subtreeSize,
   toSavePayload,
   updateNode,
   validateDraft,
@@ -182,7 +181,7 @@ describe('addChild and addBranch', () => {
   });
 });
 
-describe('removeNode and subtreeSize', () => {
+describe('removeNode', () => {
   it('when removing a branch, should remove it and everything inside it', () => {
     const next = removeNode(draft(), [0]);
 
@@ -199,12 +198,6 @@ describe('removeNode and subtreeSize', () => {
 
   it('when the path does not exist, should change nothing', () => {
     expect(removeNode(draft(), [9]).nodes).toEqual(draft().nodes);
-  });
-
-  it('when counting what leaves with a node, should include the node and its descendants', () => {
-    expect(subtreeSize(draft(), [0])).toBe(2);
-    expect(subtreeSize(draft(), [1])).toBe(1);
-    expect(subtreeSize(draft(), [9])).toBe(0);
   });
 });
 
