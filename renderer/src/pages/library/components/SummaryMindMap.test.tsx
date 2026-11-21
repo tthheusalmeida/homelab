@@ -339,7 +339,7 @@ describe('SummaryMindMap placement', () => {
     renderMap();
     await userEvent.click(screen.getByRole('button', { name: 'baixar-simulado' }));
 
-    await waitFor(() => expect(snackbar.success).toHaveBeenCalledWith('Imagem do mapa salva.'));
+    await waitFor(() => expect(snackbar.success).toHaveBeenCalledWith('Imagem do mapa salva.', expect.objectContaining({ label: 'Ver' })));
 
     expect(save.mutateAsync).toHaveBeenCalledWith({
       fileName: 'Mapa mental - Redes',

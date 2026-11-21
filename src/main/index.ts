@@ -460,6 +460,15 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
           app.exit(0);
         },
         openSettings: (section) => showSettings(section),
+        revealFile: (filePath) => {
+          if (!fs.existsSync(filePath)) {
+            return false;
+          }
+
+          shell.showItemInFolder(filePath);
+
+          return true;
+        },
         restartPending: () => restartState.isPending(),
         markRestartPending: () => restartState.mark(),
         takeSettingsSection: () => {

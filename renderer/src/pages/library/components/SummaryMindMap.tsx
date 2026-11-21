@@ -26,6 +26,7 @@ import { IconButton } from '#components/IconButton';
 import { LoadingState } from '#components/LoadingState';
 import { MindMapView } from '#components/MindMapView';
 import { useSnackbar } from '#components/Snackbar';
+import { useSavedNotice } from '#hooks/use-saved-notice';
 
 import {
   useGenerateMindMap,
@@ -71,6 +72,7 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
   const deleteMap = useDeleteMindMap();
   const saveImage = useSaveMindMapImage();
   const snackbar = useSnackbar();
+  const savedNotice = useSavedNotice();
 
   // O rascunho da edição (`null` = não está editando) e qual confirmação está aberta.
   const [draft, setDraft] = useState<MindMapDraft | null>(
@@ -295,7 +297,7 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
           const result = await saveImage.mutateAsync(image);
 
           if (result.saved) {
-            snackbar.success('Imagem do mapa salva.');
+            savedNotice('Imagem do mapa salva.', result.path);
           }
         }}
         onDownloadError={(message) => snackbar.error(message)}

@@ -42,6 +42,7 @@ import { LoadingState } from '#components/LoadingState';
 import { OptionSelect } from '#components/OptionSelect';
 import type { PieceTarget } from '#components/infographic/common';
 import { useSnackbar } from '#components/Snackbar';
+import { useSavedNotice } from '#hooks/use-saved-notice';
 import type { LibraryInfographic } from '#shared/contracts/library';
 
 import {
@@ -95,6 +96,7 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
   const saveInfographic = useSaveInfographic();
   const saveImage = useSaveMindMapImage();
   const snackbar = useSnackbar();
+  const savedNotice = useSavedNotice();
 
   const [choice, setChoice] = useState<LayoutChoice>(AUTO_LAYOUT);
   const [exporting, setExporting] = useState(false);
@@ -213,8 +215,9 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
       });
 
       if (result.saved) {
-        snackbar.success(
+        savedNotice(
           kind === 'pdf' ? 'PDF do infográfico salvo.' : 'Imagem do infográfico salva.',
+          result.path,
         );
       }
     } catch (error) {

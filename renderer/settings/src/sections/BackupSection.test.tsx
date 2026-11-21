@@ -138,6 +138,23 @@ describe('BackupSection: criar backup', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Backup criado (2,0 MB)');
   });
 
+  it('when the backup is created, should offer a "Ver" button that reveals the zip in its folder', async () => {
+    const user = userEvent.setup();
+    const invoke = render({
+      [IpcChannels.backup.create]: () =>
+        ok({ cancelled: false, path: 'D:/backups/b.zip', bytes: 1024, files: 3 }),
+      [IpcChannels.app.revealFile]: () => ok(true),
+    });
+
+    await screen.findByTestId('backup-total');
+    await user.click(screen.getByRole('button', { name: /Criar backup…/ }));
+    await user.click(await screen.findByRole('button', { name: 'Ver' }));
+
+    await waitFor(() =>
+      expect(payloadsOf(invoke, IpcChannels.app.revealFile)).toEqual([{ path: 'D:/backups/b.zip' }]),
+    );
+  });
+
   it('when the backup is running, should show the progress from the events, block changes and offer to cancel', async () => {
     const user = userEvent.setup();
     let finish: (value: unknown) => void = () => undefined;

@@ -9,6 +9,7 @@ import { ErrorState } from '#components/ErrorState';
 import { LoadingState } from '#components/LoadingState';
 import { ProgressBar } from '#components/ProgressBar';
 import { useSnackbar } from '#components/Snackbar';
+import { useSavedNotice } from '#hooks/use-saved-notice';
 import { useIpcEvent } from '#hooks/use-ipc-event';
 import { formatBytes, formatDateTime } from '#lib/format';
 import { BACKUP_ITEM_IDS } from '#shared/contracts/backup';
@@ -168,7 +169,7 @@ function toggled(current: ReadonlySet<BackupItemId>, id: BackupItemId, checked: 
 function CreateBackupCard() {
   const preview = useBackupPreview();
   const create = useCreateBackup();
-  const snackbar = useSnackbar();
+  const savedNotice = useSavedNotice();
   const [selected, setSelected] = useState<ReadonlySet<BackupItemId> | null>(null);
   const [outcome, setOutcome] = useState<string | null>(null);
 
@@ -204,7 +205,7 @@ function CreateBackupCard() {
             return;
           }
 
-          snackbar.show(BackupStrings.created(formatBytes(result.bytes ?? 0)));
+          savedNotice(BackupStrings.created(formatBytes(result.bytes ?? 0)), result.path);
           setOutcome(BackupStrings.createdAt(result.path ?? ''));
         },
       },

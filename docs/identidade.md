@@ -106,3 +106,4 @@ Testes: `lib/appearance.test.ts` (modos, `data-accent`, cache, blocos de tokens 
 - **Formulários de vídeo:** `useVideoJobForm` e `VideoJobFooter` (resumo e transcrição só trazem os campos próprios).
 - **Provedores (Configurações):** `ProvidersGate`, `ProviderCardList`, `ProviderActions` e `ProviderFeedback`.
 - **Hexágono:** o recorte é `HEX_CLIP` em `lib/hex.ts`; não copie o `clip-path`.
+- **Arquivo salvo (imagem, PDF, SVG, backup):** use `useSavedNotice` (`hooks/use-saved-notice.ts`): o aviso ganha o botão **Ver**, que abre a pasta com o arquivo selecionado (canal `app:reveal-file`).

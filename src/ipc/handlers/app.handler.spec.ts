@@ -10,6 +10,7 @@ function setup() {
     version: jest.fn().mockReturnValue('0.0.1'),
     relaunch: jest.fn(),
     openSettings: jest.fn(),
+    revealFile: jest.fn().mockReturnValue(true),
     takeSettingsSection: jest.fn().mockReturnValue('components'),
     restartPending: jest.fn().mockReturnValue(false),
     markRestartPending: jest.fn(),
@@ -75,6 +76,7 @@ describe('AppHandler', () => {
       },
       relaunch: jest.fn(),
       openSettings: jest.fn(),
+      revealFile: jest.fn(),
       takeSettingsSection: jest.fn(),
       restartPending: jest.fn(),
       markRestartPending: jest.fn(),
@@ -106,6 +108,42 @@ describe('AppHandler', () => {
     });
     expect(appInfo.markRestartPending).toHaveBeenCalledTimes(1);
   });
+
+  it('when app:reveal-file is called with a full path, should ask AppInfo to reveal it', async () => {
+    const { ipc, appInfo } = setup();
+    const file = process.platform === 'win32' ? 'C:\\docs\\mapa.png' : '/docs/mapa.png';
+
+    await expect(ipc.invoke(IpcChannels.app.revealFile, { path: file })).resolves.toEqual({
+      ok: true,
+      data: true,
+    });
+    expect(appInfo.revealFile).toHaveBeenCalledWith(file);
+  });
+
+  it('when the file no longer exists, should answer false', async () => {
+    const { ipc, appInfo } = setup();
+    const file = process.platform === 'win32' ? 'C:\\docs\\sumiu.png' : '/docs/sumiu.png';
+
+    appInfo.revealFile.mockReturnValue(false);
+
+    await expect(ipc.invoke(IpcChannels.app.revealFile, { path: file })).resolves.toEqual({
+      ok: true,
+      data: false,
+    });
+  });
+
+  it.each([undefined, {}, { path: '' }, { path: 'relativo/arquivo.png' }, { path: 42 }])(
+    'when app:reveal-file gets %j, should refuse it as invalid and not touch the system',
+    async (request) => {
+      const { ipc, appInfo } = setup();
+
+      await expect(ipc.invoke(IpcChannels.app.revealFile, request)).resolves.toMatchObject({
+        ok: false,
+        error: { code: 'VALIDATION' },
+      });
+      expect(appInfo.revealFile).not.toHaveBeenCalled();
+    },
+  );
 
   it('when no restart is pending, should answer false', async () => {
     const { ipc } = setup();

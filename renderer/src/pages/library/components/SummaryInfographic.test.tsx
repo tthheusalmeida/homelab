@@ -277,7 +277,7 @@ describe('SummaryInfographic', () => {
       );
 
       await waitFor(() =>
-        expect(snackbar.success).toHaveBeenCalledWith('Imagem do infográfico salva.'),
+        expect(snackbar.success).toHaveBeenCalledWith('Imagem do infográfico salva.', expect.objectContaining({ label: 'Ver' })),
       );
       expect(capture).toHaveBeenCalledWith(expect.any(HTMLElement), false);
       expect(saveImage.mutateAsync).toHaveBeenCalledWith({
@@ -293,7 +293,7 @@ describe('SummaryInfographic', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Baixar o infográfico como PDF' }));
 
       await waitFor(() =>
-        expect(snackbar.success).toHaveBeenCalledWith('PDF do infográfico salvo.'),
+        expect(snackbar.success).toHaveBeenCalledWith('PDF do infográfico salvo.', expect.objectContaining({ label: 'Ver' })),
       );
       expect(capturePdf).toHaveBeenCalledWith(expect.any(HTMLElement));
       expect(saveImage.mutateAsync).toHaveBeenCalledWith({
@@ -311,7 +311,7 @@ describe('SummaryInfographic', () => {
       );
 
       await waitFor(() =>
-        expect(snackbar.success).toHaveBeenCalledWith('Imagem do infográfico salva.'),
+        expect(snackbar.success).toHaveBeenCalledWith('Imagem do infográfico salva.', expect.objectContaining({ label: 'Ver' })),
       );
       expect(captureSvg).toHaveBeenCalledWith(expect.any(HTMLElement), false);
       expect(saveImage.mutateAsync).toHaveBeenCalledWith({
