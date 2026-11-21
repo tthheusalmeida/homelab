@@ -1,4 +1,5 @@
 // Build do app principal (renderer/src). Dev: `vite --config vite.renderer.main.config.mts`
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,6 +12,13 @@ const desktopRoot = fileURLToPath(new URL('.', import.meta.url));
 
 export const MAIN_DEV_PORT = 5173;
 
+/**
+ * Pastas que o servidor de dev pode servir: o projeto e o `node_modules` **de verdade**. Numa worktree
+ * (ou com `node_modules` ligado por junction) ele fica fora do projeto, e sem isso o Vite responde 403
+ * às fontes (e a qualquer arquivo de lá): a leitura cairia na fonte do sistema.
+ */
+const devAllow = [desktopRoot, fs.realpathSync(path.join(desktopRoot, 'node_modules'))];
+
 export default {
   root: path.join(desktopRoot, 'renderer'),
   // Cache de dependências próprio: os dois servidores de dev (app e Configurações) não podem
@@ -18,7 +26,7 @@ export default {
   cacheDir: path.join(desktopRoot, 'node_modules', '.vite-main'),
   resolve: { alias: rendererAliases(desktopRoot) },
   plugins: [react(), tailwindcss()],
-  server: { port: MAIN_DEV_PORT, strictPort: true, fs: { allow: [desktopRoot] } },
+  server: { port: MAIN_DEV_PORT, strictPort: true, fs: { allow: devAllow } },
   build: {
     outDir: path.join(desktopRoot, 'dist-renderer'),
     emptyOutDir: true,
