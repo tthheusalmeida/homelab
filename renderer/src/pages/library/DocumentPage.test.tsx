@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithSnackbar as render } from "#test/utils";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
@@ -789,5 +789,27 @@ describe("DocumentPage — back to top", () => {
     expect(
       screen.getByRole("complementary", { name: "Informações da página" }),
     ).not.toContainElement(button);
+  });
+});
+
+describe("DocumentPage — Ctrl + wheel zoom", () => {
+  beforeEach(() => {
+    documentQuery.data = detail();
+    documentQuery.isLoading = false;
+    documentQuery.isError = false;
+  });
+
+  it("when Ctrl + wheel is used on the text, should take over the zoom (no browser zoom)", () => {
+    renderPage();
+
+    const notPrevented = fireEvent.wheel(document.body, { ctrlKey: true, deltaY: -100 });
+
+    expect(notPrevented).toBe(false);
+  });
+
+  it("when the wheel is used without Ctrl, should leave the scroll alone", () => {
+    renderPage();
+
+    expect(fireEvent.wheel(document.body, { deltaY: -100 })).toBe(true);
   });
 });

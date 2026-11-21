@@ -29,12 +29,14 @@ import {
 } from '#lib/infographic';
 import { cn } from '#lib/utils';
 
+import { FloatingToolbar, ToolbarSeparator, ZoomButtons } from '#components/FloatingToolbar';
+import { useCtrlWheelZoom } from '#hooks/use-ctrl-wheel-zoom';
+import { useStoredState } from '#hooks/use-stored-state';
 import { Callout } from '#components/Callout';
 import { EmptyState } from '#components/EmptyState';
 import { GenerateButton } from '#components/GenerateButton';
 import { HexLoader } from '#components/Hex';
 import { IconButton } from '#components/IconButton';
-import { Button } from '#ui/button';
 import { InfographicView } from '#components/InfographicView';
 import { LoadingState } from '#components/LoadingState';
 import { OptionSelect } from '#components/OptionSelect';
@@ -63,6 +65,16 @@ interface SummaryInfographicProps {
   title: string;
   className?: string;
 }
+
+/** Zoom da tela do infográfico (%): limites, passo e onde fica guardado. */
+const ZOOM_MIN = 70;
+const ZOOM_MAX = 200;
+const ZOOM_STEP = 10;
+const ZOOM_KEY = 'infographic-zoom';
+const ZOOM_VALUES = Array.from({ length: (ZOOM_MAX - ZOOM_MIN) / ZOOM_STEP + 1 }, (_, index) =>
+  String(ZOOM_MIN + index * ZOOM_STEP),
+);
+type ZoomValue = (typeof ZOOM_VALUES)[number];
 
 const DOWNLOAD_FAILED = 'Não foi possível gerar a imagem do infográfico.';
 
@@ -110,6 +122,17 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
 
   const [choice, setChoice] = useState<LayoutChoice>(AUTO_LAYOUT);
   const [exporting, setExporting] = useState(false);
+  // Zoom próprio do infográfico (o do resumo e o do mapa mental são outros): amplia o conteúdo e alarga
+  // a coluna. Fica guardado neste computador e vale só para a tela; o que é baixado sai no tamanho normal.
+  const [zoomValue, setZoomValue] = useStoredState(ZOOM_KEY, '100', ZOOM_VALUES);
+  const zoomPercent = Number(zoomValue);
+  const zoom = zoomPercent / 100;
+  const changeZoom = (direction: 1 | -1) =>
+    setZoomValue(
+      String(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomPercent + direction * ZOOM_STEP))) as ZoomValue,
+    );
+  // Ctrl + roda do mouse também muda este zoom (a página do resumo cede a roda enquanto a aba está aberta).
+  useCtrlWheelZoom(changeZoom);
   const [confirmDelete, setConfirmDelete] = useState(false);
   // O rascunho da edição (`null` = não está editando), o lugar da peça que está sendo trocada e a pergunta aberta.
   const [draft, setDraft] = useState<LibraryInfographic | null>(
@@ -277,9 +300,60 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
   }
 
   return (
-    <div className={cn('space-y-4', className)} aria-live="polite">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+    <div className={cn('w-full', className)} aria-live="polite">
+      <div className="mx-auto w-full space-y-4" style={{ maxWidth: `${50 * zoom}rem` }}>
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {data && !editing && (
+          <div className="flex items-center gap-2">
+            {data.edited && (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[11px] text-brand-text">
+                Editado
+              </span>
+            )}
+
+            <span className="font-mono text-xs text-muted-foreground">
+              {data.sections.length === 1 ? '1 seção' : `${data.sections.length} seções`}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {notice}
+
+      {data ? (
+        <div className={cn('transition-opacity', pending && 'opacity-50')}>
+          <div style={zoom === 1 ? undefined : { zoom }}>
+            <InfographicView
+              ref={stage}
+              data={draft ?? data}
+              onPickPiece={draft ? setPicking : undefined}
+              onPickText={draft ? setTyping : undefined}
+            />
+          </div>
+        </div>
+      ) : pending ? (
+        <div className="flex min-h-60 items-center justify-center rounded-xl border border-dashed">
+          <LoadingState message="Montando o infográfico com a IA" />
+        </div>
+      ) : (
+        <EmptyState
+          icon={LayoutPanelTop}
+          title="Este resumo ainda não tem infográfico"
+          description="A IA conta a história do resumo em seções, cada uma no modelo que melhor a mostra, com os textos tirados do resumo e as peças ilustradas do HomeLab."
+          action={
+            <GenerateButton pending={pending} onClick={generateNow} primary>
+              Gerar infográfico
+            </GenerateButton>
+          }
+        />
+      )}
+
+      </div>
+
+      {(
+        // Os botões ficam numa barra flutuante parada no rodapé (a mesma do mapa mental). Ela fica fora
+        // da coluna: o zoom muda a largura do conteúdo, mas a barra só é limitada pela área da página.
+        <FloatingToolbar label="Controles do infográfico" placement="sticky" className="mt-4">
           {!editing && (
             <OptionSelect
               label="Estrutura do infográfico"
@@ -298,109 +372,89 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
               Gerar de novo
             </GenerateButton>
           )}
-        </div>
 
-        {data && editing && (
-          <div className="flex items-center gap-2">
-            <IconButton
-              label={saveInfographic.isPending ? 'Salvando…' : 'Salvar alterações'}
-              variant="default"
-              disabled={!dirty || saveInfographic.isPending}
-              aria-busy={saveInfographic.isPending}
-              onClick={() => void saveEditing()}
-            >
-              {saveInfographic.isPending ? (
-                <HexLoader className="size-4" label="Salvando" />
-              ) : (
-                <Check />
-              )}
-            </IconButton>
+          {data && (
+            <>
+              {!editing && <ToolbarSeparator />}
 
-            <IconButton
-              label="Cancelar edição"
-              disabled={saveInfographic.isPending}
-              onClick={cancelEditing}
-            >
-              <X />
-            </IconButton>
-          </div>
-        )}
+              <ZoomButtons
+                percent={zoomPercent}
+                decreaseLabel="Diminuir o zoom"
+                increaseLabel="Aumentar o zoom"
+                sizeLabel="Tamanho do infográfico"
+                canDecrease={zoomPercent > ZOOM_MIN}
+                canIncrease={zoomPercent < ZOOM_MAX}
+                onDecrease={() => changeZoom(-1)}
+                onIncrease={() => changeZoom(1)}
+              />
 
-        {data && !editing && (
-          <div className="flex items-center gap-2">
-            {data.edited && (
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[11px] text-brand-text">
-                Editado
-              </span>
-            )}
+              <ToolbarSeparator />
+            </>
+          )}
 
-            <span className="font-mono text-xs text-muted-foreground">
-              {data.sections.length === 1 ? '1 seção' : `${data.sections.length} seções`}
-            </span>
+          {!data ? null : editing ? (
+            <>
+              <IconButton
+                label={saveInfographic.isPending ? 'Salvando…' : 'Salvar alterações'}
+                variant="default"
+                disabled={!dirty || saveInfographic.isPending}
+                aria-busy={saveInfographic.isPending}
+                onClick={() => void saveEditing()}
+              >
+                {saveInfographic.isPending ? (
+                  <HexLoader className="size-4" label="Salvando" />
+                ) : (
+                  <Check />
+                )}
+              </IconButton>
 
-            <Button type="button" variant="outline" size="sm" disabled={pending} onClick={startEditing}>
-              <Pencil /> Editar
-            </Button>
+              <IconButton
+                label="Cancelar edição"
+                disabled={saveInfographic.isPending}
+                onClick={cancelEditing}
+              >
+                <X />
+              </IconButton>
+            </>
+          ) : (
+            <>
+              <IconButton label="Editar" disabled={pending} onClick={startEditing}>
+                <Pencil />
+              </IconButton>
 
-            <ActionMenu
-              label="Baixar"
-              icon={Download}
-              loading={exporting}
-              disabled={pending}
-              groups={DOWNLOAD_GROUPS.map((group) =>
-                group.map((entry) => ({ ...entry, onSelect: () => void download(entry.kind) })),
-              )}
-            />
+              <ActionMenu
+                label="Baixar"
+                icon={Download}
+                iconOnly
+                loading={exporting}
+                disabled={pending}
+                groups={DOWNLOAD_GROUPS.map((group) =>
+                  group.map((entry) => ({ ...entry, onSelect: () => void download(entry.kind) })),
+                )}
+              />
 
-            <ActionMenu
-              label="Mais ações"
-              iconOnly
-              disabled={exporting || pending}
-              groups={[
-                [
-                  {
-                    id: 'delete',
-                    label: 'Excluir infográfico',
-                    icon: Trash2,
-                    destructive: true,
-                    onSelect: () => {
-                      deleteInfographic.reset();
-                      setConfirmDelete(true);
+              <ActionMenu
+                label="Mais ações"
+                iconOnly
+                disabled={exporting || pending}
+                groups={[
+                  [
+                    {
+                      id: 'delete',
+                      label: 'Excluir infográfico',
+                      icon: Trash2,
+                      destructive: true,
+                      onSelect: () => {
+                        deleteInfographic.reset();
+                        setConfirmDelete(true);
+                      },
                     },
-                  },
-                ],
-              ]}
-            />
-          </div>
-        )}
-      </div>
-
-      {notice}
-
-      {data ? (
-        <div className={cn('transition-opacity', pending && 'opacity-50')}>
-          <InfographicView
-            ref={stage}
-            data={draft ?? data}
-            onPickPiece={draft ? setPicking : undefined}
-            onPickText={draft ? setTyping : undefined}
-          />
-        </div>
-      ) : pending ? (
-        <div className="flex min-h-60 items-center justify-center rounded-xl border border-dashed">
-          <LoadingState message="Montando o infográfico com a IA" />
-        </div>
-      ) : (
-        <EmptyState
-          icon={LayoutPanelTop}
-          title="Este resumo ainda não tem infográfico"
-          description="A IA conta a história do resumo em seções, cada uma no modelo que melhor a mostra, com os textos tirados do resumo e as peças ilustradas do HomeLab."
-          action={
-            <GenerateButton pending={pending} onClick={generateNow} primary>
-              Gerar infográfico
-            </GenerateButton>
-          }
-        />
+                  ],
+                ]}
+              />
+            </>
+          )}
+        </FloatingToolbar>
       )}
 
       <PiecePickerDialog

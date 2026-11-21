@@ -89,7 +89,8 @@ export function ReadingMode({
       </div>
 
       {canvas ? (
-        <div className="min-h-0 flex-1">{children}</div>
+        // A barra flutuante (mapa mental, infográfico) fica na mesma altura do modo normal; ver `FloatingToolbar`.
+        <div className="min-h-0 flex-1 [--floating-toolbar-bottom:1.25rem]">{children}</div>
       ) : pinned ? (
         <div
           className={cn(

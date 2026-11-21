@@ -16,8 +16,6 @@ import {
   Download,
   Maximize,
   Plus,
-  ZoomIn,
-  ZoomOut,
 } from 'lucide-react';
 
 import { cn } from '#lib/utils';
@@ -39,6 +37,7 @@ import { MIND_MAP_EDIT_LIMITS } from '#shared/mind-map-limits';
 import { captureMindMapPng, mindMapImageName } from '#lib/mind-map-image';
 import { HexDot, HexLoader, HoneycombBackdrop, Logo } from './Hex';
 import { ActionMenu } from './ActionMenu';
+import { FloatingToolbar, ToolbarSeparator, ZoomButtons } from './FloatingToolbar';
 import { IconButton } from './IconButton';
 import { EditableTopic, type EditOps } from './MindMapEditable';
 
@@ -622,7 +621,7 @@ export function MindMapView({
     <>
       {toolbar}
 
-      {toolbar && <span aria-hidden="true" className="mx-0.5 h-5 w-px bg-border" />}
+      {toolbar && <ToolbarSeparator />}
 
       {edit && (
         <>
@@ -634,34 +633,22 @@ export function MindMapView({
             <Plus />
           </IconButton>
 
-          <span aria-hidden="true" className="mx-0.5 h-5 w-px bg-border" />
+          <ToolbarSeparator />
         </>
       )}
 
-      <IconButton
-        label="Diminuir o mapa"
-        disabled={view.k <= MIN_ZOOM}
-        onClick={() => zoomFromCenter(1 / ZOOM_STEP)}
-      >
-        <ZoomOut />
-      </IconButton>
+      <ZoomButtons
+        percent={zoomPercent}
+        decreaseLabel="Diminuir o mapa"
+        increaseLabel="Aumentar o mapa"
+        sizeLabel="Tamanho do mapa"
+        canDecrease={view.k > MIN_ZOOM}
+        canIncrease={view.k < MAX_ZOOM}
+        onDecrease={() => zoomFromCenter(1 / ZOOM_STEP)}
+        onIncrease={() => zoomFromCenter(ZOOM_STEP)}
+      />
 
-      <span
-        aria-label="Tamanho do mapa"
-        className="w-11 text-center text-xs font-medium text-muted-foreground tabular-nums"
-      >
-        {zoomPercent}%
-      </span>
-
-      <IconButton
-        label="Aumentar o mapa"
-        disabled={view.k >= MAX_ZOOM}
-        onClick={() => zoomFromCenter(ZOOM_STEP)}
-      >
-        <ZoomIn />
-      </IconButton>
-
-      <span aria-hidden="true" className="mx-0.5 h-5 w-px bg-border" />
+      <ToolbarSeparator />
 
       <IconButton label="Ajustar o mapa à tela" onClick={fit}>
         <Maximize />
@@ -677,7 +664,7 @@ export function MindMapView({
 
       {onDownloadImage && (
         <>
-          <span aria-hidden="true" className="mx-0.5 h-5 w-px bg-border" />
+          <ToolbarSeparator />
 
           <ActionMenu
             label="Baixar"
@@ -797,14 +784,7 @@ export function MindMapView({
           </div>
         )}
 
-        <div
-          role="toolbar"
-          aria-label="Controles do mapa"
-          className="absolute bottom-5 left-1/2 z-20 flex max-w-[calc(100%-2rem)] -translate-x-1/2 cursor-default flex-wrap items-center justify-center gap-1 rounded-xl border bg-card/95 p-1.5 shadow-lg backdrop-blur"
-          onPointerDown={(event) => event.stopPropagation()}
-        >
-          {controls}
-        </div>
+        <FloatingToolbar label="Controles do mapa">{controls}</FloatingToolbar>
 
         {overlay && (
           <div className="absolute inset-0 z-30 flex animate-enter-fade cursor-default items-center justify-center bg-background/85 backdrop-blur-[2px]">
