@@ -23,6 +23,14 @@ Cada prompt do app tem duas partes:
 ## Onde fica guardado
 `config/prompts.json` (junto do `settings.json`, escrita atômica com `.bak`, via `JsonFile`): só o que o usuário criou. Arquivo ilegível sem cópia boa volta ao padrão do app e o app segue normal; entradas malformadas são descartadas na leitura (`sanitizePrompts`). Falha ao gravar avisa o usuário e o prompt vale só até fechar o app.
 
+## Tela (Configurações > Prompts)
+Seção do grupo **IA** (`PromptsSection`, em `renderer/settings/src/sections`). Para cada prompt (um seletor aparece quando houver mais de um):
+- **Aviso fixo** de que só as instruções mudam e que limites, formato e segurança são do app.
+- **Em uso:** um seletor com "Padrão do app" e as versões do usuário. Trocar vale na hora (`prompts:activate`) e mostra "Em uso: nome" como snackbar. Um botão "Padrão do app: Ver" abre o texto original, só para ler, com "Criar versão a partir do padrão".
+- **Suas versões:** lista com a versão em uso marcada. Ações por prioridade: **Usar** (destaque, só nas que não estão em uso), **Editar** (contorno) e, em "Mais ações", **Duplicar** e **Excluir** (confirma antes). **Nova versão** abre o editor já com o texto do padrão.
+- **Editor** (`PromptEditorDialog`): nome e instruções, contador de caracteres (limites de `PROMPT_LIMITS`), "Usar esta versão depois de salvar" (marcado ao criar) e confirmação ao fechar com mudança não salva. Erros do back (nome repetido, texto curto ou longo) aparecem como **alerta no rodapé**, com a janela aberta.
+- Os componentes são os do app (`SettingsGroup`, `SettingsPanel`, `OptionSelect`, `ActionMenu`, `ConfirmDialog`, `Callout`, `ui/dialog`); os hooks ficam em `settings/src/hooks.ts` (`usePrompts`, `useSavePrompt`, `useDeletePrompt`, `useActivatePrompt`; cada gravação já traz a visão atualizada).
+
 ## Código
 - `shared/contracts/prompts.ts`: tipos, `PROMPT_KINDS`, `PROMPT_LIMITS`.
 - `back/modules/ai/prompts/`: `prompt-catalog.ts` (rótulo, descrição e padrão de cada prompt), `prompt.store.ts` (disco), `prompt.service.ts` (regras e versões), e um `*.prompt.ts` por prompt (`buildXPrompt(input, instructions?)`: com o segundo argumento usa o texto do usuário).
@@ -39,7 +47,7 @@ Cada prompt do app tem duas partes:
 Erros: texto curto ou longo demais, nome vazio, longo ou repetido, versões demais e tipo desconhecido → `VALIDATION`; versão inexistente → `NOT_FOUND`. **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`** (a lista de canais permitidos fica no preload).
 
 ## Testes
-`prompt.store.spec.ts`, `prompt.service.spec.ts`, `prompts.handler.spec.ts`, o spec de cada `*.prompt.spec.ts` (instruções do usuário + contrato fixo) e o uso no `mind-map.service.spec.ts`.
+`prompt.store.spec.ts`, `prompt.service.spec.ts`, `prompts.handler.spec.ts`, `PromptsSection.test.tsx` (versões, editor, erros), o spec de cada `*.prompt.spec.ts` (instruções do usuário + contrato fixo) e o uso no `mind-map.service.spec.ts`.
 
 ## Próximas fases
-Tela em Configurações > Prompts; prompts do infográfico e da classificação; prompt do resumo; backup dos prompts.
+Prompts do infográfico e da classificação; prompt do resumo; backup dos prompts.

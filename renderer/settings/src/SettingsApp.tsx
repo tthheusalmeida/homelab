@@ -7,6 +7,7 @@ import {
   Folder,
   KeyRound,
   LayoutPanelTop,
+  MessageSquareText,
   Palette,
   RefreshCw,
   type LucideIcon,
@@ -38,6 +39,7 @@ import { ExternalProvidersSection } from './sections/ExternalProvidersSection';
 import { InfographicGallerySection } from './sections/InfographicGallerySection';
 import { LocalProvidersSection } from './sections/LocalProvidersSection';
 import { PathsSection } from './sections/PathsSection';
+import { PromptsSection } from './sections/PromptsSection';
 import {
   SECTION_GROUPS,
   SECTIONS,
@@ -52,6 +54,7 @@ const SECTION_ICONS: Record<SectionId, LucideIcon> = {
   infographic: LayoutPanelTop,
   external: Cloud,
   local: Cpu,
+  prompts: MessageSquareText,
   components: Download,
   access: KeyRound,
   backup: Archive,
@@ -159,6 +162,7 @@ export function SettingsApp({ initialSection }: { initialSection?: string | null
               {sectionId === 'infographic' && <InfographicGallerySection />}
               {sectionId === 'external' && <ExternalProvidersSection onSaved={handleSaved} />}
               {sectionId === 'local' && <LocalProvidersSection onSaved={handleSaved} />}
+              {sectionId === 'prompts' && <PromptsSection />}
               {sectionId === 'components' && <ComponentsSection />}
               {sectionId === 'access' && <AccessSection />}
               {sectionId === 'backup' && <BackupSection onSaved={handleSaved} />}

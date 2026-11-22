@@ -11,6 +11,12 @@ import type {
   BackupCreateRequest,
   BackupRestoreRequest,
 } from '#shared/contracts/backup';
+import type {
+  PromptActivateRequest,
+  PromptDeleteRequest,
+  PromptSaveRequest,
+  PromptsOverview,
+} from '#shared/contracts/prompts';
 import type { MoveLibraryRequest } from '#shared/contracts/settings';
 import { ipc } from '#lib/ipc';
 
@@ -19,6 +25,7 @@ export const QueryKeys = {
   external: ['providers', 'external'],
   local: ['providers', 'local'],
   backupPreview: ['backup', 'preview'],
+  prompts: ['prompts'],
 } as const;
 
 export function usePaths() {
@@ -128,3 +135,38 @@ export function useRestoreBackup() {
 export function cancelBackup() {
   return ipc.invoke(IpcChannels.backup.cancel);
 }
+
+/** Os prompts de IA: o padrão do app, as versões do usuário e qual está em uso. */
+export function usePrompts() {
+  return useQuery({
+    queryKey: QueryKeys.prompts,
+    queryFn: () => ipc.invoke(IpcChannels.prompts.list),
+  });
+}
+
+/** Cada gravação devolve a visão completa já atualizada; ela substitui a que está na tela. */
+function usePromptsMutation<Request>(
+  send: (request: Request) => Promise<PromptsOverview>,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: send,
+    onSuccess: (overview) => queryClient.setQueryData(QueryKeys.prompts, overview),
+  });
+}
+
+export const useSavePrompt = () =>
+  usePromptsMutation((request: PromptSaveRequest) =>
+    ipc.invoke(IpcChannels.prompts.save, request),
+  );
+
+export const useDeletePrompt = () =>
+  usePromptsMutation((request: PromptDeleteRequest) =>
+    ipc.invoke(IpcChannels.prompts.delete, request),
+  );
+
+export const useActivatePrompt = () =>
+  usePromptsMutation((request: PromptActivateRequest) =>
+    ipc.invoke(IpcChannels.prompts.activate, request),
+  );

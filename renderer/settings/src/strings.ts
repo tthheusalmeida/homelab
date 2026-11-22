@@ -96,6 +96,56 @@ export const Strings = {
     cancel: 'Cancelar',
   },
   restart: RestartStrings,
+  prompts: {
+    tabs: 'Qual prompt',
+    note: 'Você muda só as instruções da IA. Os limites, o formato da resposta e as regras de segurança são do app e continuam valendo, então um texto seu não quebra a geração.',
+    inUse: 'Em uso',
+    inUseHint: 'A versão que a IA usa nas próximas gerações. Vale na hora, sem reiniciar.',
+    placeholder: 'Escolha',
+    defaultName: 'Padrão do app',
+    defaultHint: 'O texto original do app. Não dá para editar, mas serve de base para uma versão sua.',
+    versions: 'Suas versões',
+    versionsHint: 'Guarde jeitos diferentes de pedir (por exemplo, um para revisão e outro para prova) e troque quando quiser.',
+    empty: 'Você ainda não criou nenhuma versão. A IA usa o padrão do app.',
+    badge: 'Em uso',
+    newVersion: 'Nova versão',
+    view: 'Ver',
+    use: 'Usar',
+    edit: 'Editar',
+    more: 'Mais ações',
+    duplicate: 'Duplicar',
+    remove: 'Excluir',
+    createTitle: 'Nova versão',
+    editTitle: 'Editar versão',
+    viewTitle: 'Padrão do app',
+    createHint: 'Começa com o texto do padrão. Mude o que quiser; o limite de tamanho aparece embaixo.',
+    viewHint: 'Só para ler. Crie uma versão a partir dele para poder mudar.',
+    name: 'Nome',
+    namePlaceholder: 'Ex.: Revisão para prova',
+    text: 'Instruções',
+    activateOnSave: 'Usar esta versão depois de salvar',
+    save: 'Salvar',
+    cancel: 'Cancelar',
+    close: 'Fechar',
+    createFromDefault: 'Criar versão a partir do padrão',
+    counter: 'Caracteres usados',
+    tooShort: (min: number) => `Escreva pelo menos ${min} caracteres.`,
+    tooLong: (max: number) => `O texto passou de ${max} caracteres.`,
+    discardTitle: 'Descartar as mudanças?',
+    discardText: 'O que você escreveu e ainda não salvou será perdido.',
+    discard: 'Descartar',
+    keepEditing: 'Continuar editando',
+    deleteTitle: (name: string) => `Excluir "${name}"?`,
+    deleteText: 'A versão deixa de existir. Se ela estava em uso, a IA volta a usar o padrão do app.',
+    deleteConfirm: 'Excluir',
+    saved: 'Versão salva.',
+    activated: (name: string) => `Em uso: ${name}.`,
+    deleted: 'Versão excluída.',
+    saveFailed: 'Não foi possível salvar o prompt.',
+    loadFailed: 'Não foi possível carregar os prompts.',
+    retry: 'Tentar de novo',
+    copySuffix: ' (cópia)',
+  },
   infographic: {
     tabs: 'Galeria do infográfico',
     tabLayouts: 'Modelos',
@@ -114,6 +164,7 @@ export type SectionId =
   | 'infographic'
   | 'external'
   | 'local'
+  | 'prompts'
   | 'components'
   | 'access'
   | 'backup'
@@ -131,7 +182,7 @@ export interface SectionInfo {
 /** Grupos do menu das Configurações, na mesma ordem e com o mesmo comportamento da barra do app. */
 export const SECTION_GROUPS: ReadonlyArray<{ label: string; ids: readonly SectionId[] }> = [
   { label: 'Geral', ids: ['appearance', 'paths', 'infographic'] },
-  { label: 'IA', ids: ['external', 'local'] },
+  { label: 'IA', ids: ['external', 'local', 'prompts'] },
   { label: 'Sistema', ids: ['components', 'access', 'backup', 'updates'] },
 ];
 
@@ -164,6 +215,12 @@ export const SECTIONS: ReadonlyArray<SectionInfo> = [
     label: 'Serviços locais',
     description:
       'Programas que rodam no seu computador: transcrição, processamento de áudio e Ollama.',
+  },
+  {
+    id: 'prompts',
+    label: 'Prompts',
+    description:
+      'Mude o jeito de a IA montar o mapa mental e outras gerações. Guarde versões com nome e escolha qual usar; o padrão do app fica sempre à mão.',
   },
   {
     id: 'components',
