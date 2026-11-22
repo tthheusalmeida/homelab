@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { Network, Plus, type LucideIcon } from 'lucide-react';
+import { Inbox, LayoutPanelTop, Network, Plus, type LucideIcon } from 'lucide-react';
 
 import { ActionMenu } from '#components/ActionMenu';
 import { Callout } from '#components/Callout';
@@ -36,6 +36,8 @@ const DEFAULT_OPTION = 'default';
 /** Ícone de cada prompt no seletor de qual prompt editar. */
 const KIND_ICONS: Record<PromptKind, LucideIcon> = {
   mindMap: Network,
+  infographic: LayoutPanelTop,
+  classification: Inbox,
 };
 
 function VersionRow({

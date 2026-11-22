@@ -1,6 +1,6 @@
 # Prompts personalizáveis
 
-O usuário pode mudar o **jeito de a IA trabalhar** nas gerações do app (hoje: o **mapa mental**) e guardar o que escreveu em **versões nomeadas**, escolhendo qual está em uso. O padrão do app continua sempre disponível e nunca é alterado.
+O usuário pode mudar o **jeito de a IA trabalhar** nas gerações do app (hoje: o **mapa mental**, o **infográfico** e a **classificação** de páginas novas) e guardar o que escreveu em **versões nomeadas**, escolhendo qual está em uso. O padrão do app continua sempre disponível e nunca é alterado.
 
 ## O que o usuário edita e o que não edita
 Cada prompt do app tem duas partes:
@@ -19,6 +19,15 @@ Cada prompt do app tem duas partes:
 - **Versões nomeadas:** o que o usuário cria. Cada prompt tem uma lista de versões (id, nome, texto) e `activeId`: o id da versão em uso, ou `null` para o padrão.
 - **Valem na hora:** o `PromptService.instructionsFor(kind)` é lido **a cada geração**; não precisa reiniciar o app.
 - Apagar a versão em uso volta ao padrão. Gerar de novo usa a versão em uso naquele momento.
+
+## O que cada prompt deixa editável e o que fixa
+| Prompt | Instruções (editáveis) | Contrato (fixo no código) |
+|---|---|---|
+| Mapa mental (`mind-map.prompt.ts`) | o papel da IA, o estilo do termo e da frase, o idioma, o que priorizar, como agrupar | segurança, subtítulo, ramos, níveis, nós, tamanhos, JSON |
+| Infográfico (`infographic.prompt.ts`) | o papel de orquestradora, o idioma, a ordem dos assuntos, como escolher e variar as peças | segurança, estrutura (capa, de 4 a 6 seções, fechamento, ou a seção única do modelo escolhido), campos dos modelos, banco de peças, limites de texto, "sem markdown", JSON |
+| Classificação (`library-classification.prompt.ts`) | o papel da IA, como escolher título, categoria (preferir as existentes) e tags | segurança, níveis (1 a 4), quantidade de tags, categorias e tags existentes, JSON |
+
+Em todos o texto padrão das instruções **não traz números nem o formato da resposta** (há um teste para isso). O prompt do **resumo** (vídeo e PDF) ainda não é personalizável.
 
 ## Onde fica guardado
 `config/prompts.json` (junto do `settings.json`, escrita atômica com `.bak`, via `JsonFile`): só o que o usuário criou. Arquivo ilegível sem cópia boa volta ao padrão do app e o app segue normal; entradas malformadas são descartadas na leitura (`sanitizePrompts`). Falha ao gravar avisa o usuário e o prompt vale só até fechar o app.
@@ -47,7 +56,7 @@ Seção do grupo **IA** (`PromptsSection`, em `renderer/settings/src/sections`).
 Erros: texto curto ou longo demais, nome vazio, longo ou repetido, versões demais e tipo desconhecido → `VALIDATION`; versão inexistente → `NOT_FOUND`. **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`** (a lista de canais permitidos fica no preload).
 
 ## Testes
-`prompt.store.spec.ts`, `prompt.service.spec.ts`, `prompts.handler.spec.ts`, `PromptsSection.test.tsx` (versões, editor, erros), o spec de cada `*.prompt.spec.ts` (instruções do usuário + contrato fixo) e o uso no `mind-map.service.spec.ts`.
+`prompt.store.spec.ts`, `prompt.service.spec.ts`, `prompts.handler.spec.ts`, `PromptsSection.test.tsx` (versões, editor, erros e troca entre prompts), o spec de cada `*.prompt.spec.ts` (instruções do usuário + contrato fixo) e o uso no `mind-map.service.spec.ts`.
 
 ## Próximas fases
-Prompts do infográfico e da classificação; prompt do resumo; backup dos prompts.
+Prompt do resumo; backup dos prompts.

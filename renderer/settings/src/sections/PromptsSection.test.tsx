@@ -414,3 +414,63 @@ describe('PromptsSection', () => {
     });
   });
 });
+
+describe('PromptsSection with several prompts', () => {
+  const kind = (id: 'mindMap' | 'infographic', label: string, description: string) => ({
+    kind: id,
+    label,
+    description,
+    defaultText: DEFAULT_TEXT,
+    versions: id === 'infographic' ? [version('i1', 'Bem-humorado')] : [],
+    activeId: null,
+  });
+
+  const overview = (): PromptsOverview => ({
+    kinds: [
+      kind('mindMap', 'Mapa mental', 'Descrição do mapa.'),
+      kind('infographic', 'Infográfico', 'Descrição do infográfico.'),
+    ],
+    limits: PROMPT_LIMITS,
+  });
+
+  it('when there is more than one prompt, should offer a switch between them, starting at the first', async () => {
+    mockApi({ [IpcChannels.prompts.list]: () => ok(overview()) });
+
+    renderWithProviders(<PromptsSection />);
+
+    expect(await screen.findByText('Descrição do mapa.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Infográfico' })).toBeInTheDocument();
+  });
+
+  it('when switching to another prompt, should show its own description and versions', async () => {
+    mockApi({ [IpcChannels.prompts.list]: () => ok(overview()) });
+    const user = userEvent.setup();
+
+    renderWithProviders(<PromptsSection />);
+    await user.click(await screen.findByRole('button', { name: 'Infográfico' }));
+
+    expect(await screen.findByText('Descrição do infográfico.')).toBeInTheDocument();
+    expect(screen.queryByText('Descrição do mapa.')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('list', { name: 'Suas versões' })).getByText('Bem-humorado'),
+    ).toBeInTheDocument();
+  });
+
+  it('when using a version of the second prompt, should send that prompt kind', async () => {
+    const invoke = mockApi({
+      [IpcChannels.prompts.list]: () => ok(overview()),
+      [IpcChannels.prompts.activate]: () => ok(overview()),
+    });
+    const user = userEvent.setup();
+
+    renderWithProviders(<PromptsSection />);
+    await user.click(await screen.findByRole('button', { name: 'Infográfico' }));
+    await user.click(await screen.findByRole('button', { name: 'Usar' }));
+
+    await waitFor(() =>
+      expect(payloadsOf(invoke, IpcChannels.prompts.activate)).toEqual([
+        { kind: 'infographic', id: 'i1' },
+      ]),
+    );
+  });
+});

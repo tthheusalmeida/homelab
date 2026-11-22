@@ -1,7 +1,11 @@
 import { INFOGRAPHIC_LAYOUTS } from '../../../../shared/infographic-layouts';
 import { INFOGRAPHIC_PIECES } from '../../../../shared/infographic-pieces';
 
-import { buildInfographicPrompt, buildPieceCatalog } from './infographic.prompt';
+import {
+  buildInfographicPrompt,
+  buildPieceCatalog,
+  DEFAULT_INFOGRAPHIC_INSTRUCTIONS,
+} from './infographic.prompt';
 
 describe('buildInfographicPrompt', () => {
   const base = { title: 'Redes', content: '## Camadas\n- **TCP**: transporte' };
@@ -67,6 +71,47 @@ describe('buildInfographicPrompt', () => {
 
   it('when building the prompt, should ask for JSON only', () => {
     expect(buildInfographicPrompt(base)).toContain('Responda APENAS com um JSON válido');
+  });
+});
+
+describe('infographic instructions', () => {
+  const base = { title: 'Redes', content: 'conteúdo' };
+
+  it('when no instructions are given, should start with the default ones, before the fixed rules', () => {
+    const prompt = buildInfographicPrompt(base);
+
+    expect(prompt.startsWith(DEFAULT_INFOGRAPHIC_INSTRUCTIONS)).toBe(true);
+    expect(prompt.indexOf(DEFAULT_INFOGRAPHIC_INSTRUCTIONS)).toBeLessThan(
+      prompt.indexOf('# REGRAS FIXAS DO APLICATIVO'),
+    );
+  });
+
+  it('when reading the default instructions, should carry neither numbers, the structure nor the output format', () => {
+    expect(DEFAULT_INFOGRAPHIC_INSTRUCTIONS).not.toMatch(/\d/);
+    expect(DEFAULT_INFOGRAPHIC_INSTRUCTIONS).not.toContain('JSON');
+    expect(DEFAULT_INFOGRAPHIC_INSTRUCTIONS).not.toContain('REGRAS FIXAS');
+  });
+
+  it('when the user changes the instructions, should use them and still add every fixed part', () => {
+    const prompt = buildInfographicPrompt(
+      base,
+      'Faça um infográfico bem-humorado, com frases curtas.',
+    );
+
+    expect(prompt.startsWith('Faça um infográfico bem-humorado')).toBe(true);
+    expect(prompt).not.toContain('Você é a orquestradora');
+    expect(prompt).toContain('Use SOMENTE o conteúdo do resumo');
+    expect(prompt).toContain('conta uma HISTÓRIA');
+    expect(prompt).toContain('- steps (');
+    expect(prompt).toContain('## Jogos');
+    expect(prompt).toContain('Responda APENAS com um JSON válido');
+    expect(prompt).toContain('Título: Redes');
+  });
+
+  it('when the user changes the instructions and a layout is chosen, should keep the single-section rule', () => {
+    const prompt = buildInfographicPrompt({ ...base, layout: 'funnel' }, 'Seja direto.');
+
+    expect(prompt).toContain('UMA seção só');
   });
 });
 

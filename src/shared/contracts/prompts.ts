@@ -3,7 +3,7 @@
  * **instruções** (o jeito de a IA trabalhar); o **contrato** com o app (formato da resposta, limites,
  * o conteúdo e as regras de segurança) é montado e conferido pelo back e nunca sai dele.
  */
-export const PROMPT_KINDS = ['mindMap'] as const;
+export const PROMPT_KINDS = ['mindMap', 'infographic', 'classification'] as const;
 
 export type PromptKind = (typeof PROMPT_KINDS)[number];
 

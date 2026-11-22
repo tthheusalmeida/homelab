@@ -39,6 +39,34 @@ describe('PromptService', () => {
     });
   });
 
+  describe('kinds', () => {
+    it('when listing, should offer the mind map, the infographic and the classification', () => {
+      expect(service.overview().kinds.map((kind) => kind.kind)).toEqual([
+        'mindMap',
+        'infographic',
+        'classification',
+      ]);
+    });
+
+    it('when customizing one prompt, should not touch the others', () => {
+      service.save({ kind: 'infographic', name: 'Meu', text: text(), activate: true });
+
+      expect(service.instructionsFor('infographic')).toBe(text());
+      expect(service.instructionsFor('mindMap')).toBe(PROMPT_CATALOG.mindMap.defaultText);
+      expect(service.instructionsFor('classification')).toBe(
+        PROMPT_CATALOG.classification.defaultText,
+      );
+    });
+
+    it('when two prompts use the same version name, should accept it (names are per prompt)', () => {
+      service.save({ kind: 'mindMap', name: 'Revisão', text: text() });
+
+      expect(() =>
+        service.save({ kind: 'infographic', name: 'Revisão', text: text() }),
+      ).not.toThrow();
+    });
+  });
+
   describe('save', () => {
     it('when creating a version, should add it without activating it by default', () => {
       const overview = service.save({ kind: 'mindMap', name: 'Curto', text: text() });

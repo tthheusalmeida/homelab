@@ -1,4 +1,4 @@
-import { BadGatewayException, BadRequestException, Injectable } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Injectable, Optional } from '@nestjs/common';
 
 import type {
   LibraryInfographic,
@@ -10,6 +10,7 @@ import {
 } from '../../../../shared/infographic-layouts';
 import { AIService } from '../../ai/ai.service';
 import { buildInfographicPrompt } from '../../ai/prompts/infographic.prompt';
+import { PromptService } from '../../ai/prompts/prompt.service';
 import { cheapestModel } from '../../ai/providers/gemini/gemini.pricing';
 
 import { DocumentTypeOptions } from '../domain/library.types';
@@ -40,6 +41,8 @@ export class InfographicService {
     private readonly library: LibraryService,
     private readonly ai: AIService,
     private readonly store: InfographicStore,
+    // Sem ele (testes), vale sempre o prompt padrão.
+    @Optional() private readonly prompts?: PromptService,
   ) {}
 
   /** O infográfico guardado da página, ou `null` se ainda não foi gerado. */
@@ -146,11 +149,14 @@ export class InfographicService {
 
     try {
       answer = await this.ai.chat({
-        message: buildInfographicPrompt({
-          title: meta.title,
-          content: content.slice(0, MAX_CONTENT_CHARS),
-          layout: options.layout,
-        }),
+        message: buildInfographicPrompt(
+          {
+            title: meta.title,
+            content: content.slice(0, MAX_CONTENT_CHARS),
+            layout: options.layout,
+          },
+          this.prompts?.instructionsFor('infographic'),
+        ),
         modelId: model,
         providerId: 'gemini',
       });

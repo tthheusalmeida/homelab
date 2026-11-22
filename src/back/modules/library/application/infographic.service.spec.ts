@@ -83,6 +83,25 @@ describe('InfographicService', () => {
     );
   });
 
+  describe('prompt', () => {
+    it('when the user has custom instructions, should send them with the fixed rules instead of the default', async () => {
+      const withPrompts = new InfographicService(
+        library as unknown as LibraryService,
+        ai as unknown as AIService,
+        store,
+        { instructionsFor: jest.fn().mockReturnValue('Infográfico bem-humorado.') } as never,
+      );
+
+      await withPrompts.generate('1');
+
+      const message = (ai.chat.mock.calls as Array<[{ message: string }]>)[0][0].message;
+
+      expect(message.startsWith('Infográfico bem-humorado.')).toBe(true);
+      expect(message).toContain('# REGRAS FIXAS DO APLICATIVO');
+      expect(message).toContain('Responda APENAS com um JSON válido');
+    });
+  });
+
   describe('delete', () => {
     it('when deleting, should remove only the infographic of the page', async () => {
       await service.generate('1');
