@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { findMatches, searchTerms } from "./find";
+import { findMatches, searchPhrase, searchTerms } from "./find";
 
 describe("searchTerms", () => {
   it("when the query has several words, should split them", () => {
@@ -21,6 +21,20 @@ describe("searchTerms", () => {
 
   it("when the query is blank, should return nothing", () => {
     expect(searchTerms("   ")).toEqual([]);
+  });
+
+  it("when the query has short connectors, should drop them", () => {
+    expect(searchTerms("casa da vida")).toEqual(["casa", "vida"]);
+  });
+});
+
+describe("searchPhrase", () => {
+  it("when the query has accents, capitals and extra spaces, should fold and collapse it", () => {
+    expect(searchPhrase("  Casa   DA  Vida ")).toBe("casa da vida");
+  });
+
+  it("when the query has less than 2 letters, should return empty", () => {
+    expect(searchPhrase(" a ")).toBe("");
   });
 });
 
@@ -61,6 +75,20 @@ describe("findMatches", () => {
 
   it("when overlapping occurrences of one term exist, should still return them merged", () => {
     expect(findMatches("aaaa", ["aa"])).toEqual([{ start: 0, end: 4 }]);
+  });
+
+  it("when the phrase spans a line break or extra spaces, should match it as one", () => {
+    expect(findMatches("A Casa  da\nVida", ["casa da vida"])).toEqual([
+      { start: 2, end: 15 },
+    ]);
+  });
+
+  it("when the term is inside other words, should match it too", () => {
+    expect(findMatches("a casa, casamento e encasar", ["casa"])).toEqual([
+      { start: 2, end: 6 },
+      { start: 8, end: 12 },
+      { start: 22, end: 26 },
+    ]);
   });
 
   it("when nothing matches or the input is empty, should return nothing", () => {

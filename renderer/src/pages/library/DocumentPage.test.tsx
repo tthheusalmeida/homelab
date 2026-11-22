@@ -792,6 +792,50 @@ describe("DocumentPage — back to top", () => {
   });
 });
 
+describe("DocumentPage — Ctrl+F find", () => {
+  beforeEach(() => {
+    documentQuery.data = detail();
+    documentQuery.isLoading = false;
+    documentQuery.isError = false;
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => {
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it("when Ctrl+F is pressed, should open the search bar with the field focused", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.queryByLabelText("Pesquisar na página")).not.toBeInTheDocument();
+
+    await user.keyboard("{Control>}f{/Control}");
+
+    expect(screen.getByLabelText("Pesquisar na página")).toHaveFocus();
+  });
+
+  it("when a term from the text is typed, should count the occurrences", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.keyboard("{Control>}f{/Control}");
+    await user.type(screen.getByLabelText("Pesquisar na página"), "introdução");
+
+    expect(await screen.findByText("1 de 1")).toBeInTheDocument();
+  });
+
+  it("when Escape is pressed on the empty field, should close the bar", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.keyboard("{Control>}f{/Control}");
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByLabelText("Pesquisar na página")).not.toBeInTheDocument();
+  });
+});
+
 describe("DocumentPage — Ctrl + wheel zoom", () => {
   beforeEach(() => {
     documentQuery.data = detail();

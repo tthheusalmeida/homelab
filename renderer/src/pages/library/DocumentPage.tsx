@@ -7,6 +7,8 @@ import { InboxStrings } from "#lib/inbox-text";
 import { Button } from "#ui/button";
 
 import { BackToTopButton } from "#components/BackToTopButton";
+import { FindBar } from "#components/FindBar";
+import { useFind } from "#hooks/use-find";
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { OptionToggle, type ToggleOption } from "#components/OptionToggle";
 import { DocumentBody } from "#components/DocumentBody";
@@ -111,6 +113,13 @@ export function DocumentPage() {
   // Título em leitura agora (destacado no sumário).
   const activeId = useActiveSection(headings.map((heading) => heading.id));
 
+  // Ctrl+F: busca no texto da página (só onde há texto: não vale no mapa mental nem no infográfico).
+  const find = useFind(container, data?.content);
+  const findBar =
+    find.open && !alternateView ? (
+      <FindBar floating {...find.barProps} onClose={find.close} />
+    ) : undefined;
+
   if (isLoading) {
     return (
       <PageLoading />
@@ -151,9 +160,12 @@ export function DocumentPage() {
     });
   }
 
-  // As janelas da página (Sobre, Editar, Remover, Excluir, Adicionar ao livro) valem também no modo leitura.
+  // As janelas da página (Sobre, Editar, Remover, Excluir, Adicionar ao livro) e a busca flutuante
+  // (Ctrl+F) valem também no modo leitura.
   const dialogs = (
     <>
+      {findBar}
+
       <DocumentAboutDialog
         open={modal === "about"}
         onOpenChange={(open) => setModal(open ? "about" : null)}

@@ -1,3 +1,5 @@
+import { significantWords } from "#shared/search-words";
+
 export interface TextRange {
   start: number;
   end: number;
@@ -8,19 +10,28 @@ function fold(char: string): string {
   return char.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 
-/** Palavras da consulta, sem acento nem caixa, sem repetir e com 2+ letras. */
+/** A consulta inteira, sem acento nem caixa e com os espaços colapsados ("" se tiver menos de 2 letras). */
+export function searchPhrase(query: string): string {
+  const phrase = [...query.trim()].map(fold).join("").replace(/\s+/g, " ");
+
+  return phrase.length >= 2 ? phrase : "";
+}
+
+/** Palavras da consulta, sem acento nem caixa, sem repetir, com 2+ letras e sem "da", "de"... quando há maiores. */
 export function searchTerms(query: string): string[] {
   const words = query
     .split(/\s+/)
     .map((word) => [...word].map(fold).join(""))
     .filter((word) => word.length >= 2);
 
-  return [...new Set(words)];
+  return significantWords([...new Set(words)]);
 }
 
 /**
  * Posições (no texto original) de cada ocorrência de qualquer termo, ignorando
- * acento e caixa. Ocorrências que se sobrepõem viram uma só.
+ * acento, caixa e quebras de linha (qualquer espaço vale como um), em qualquer
+ * pedaço de palavra ("casa" acha "casamento" e "encasar"). Ocorrências que se
+ * sobrepõem viram uma só.
  */
 export function findMatches(text: string, terms: string[]): TextRange[] {
   if (terms.length === 0 || text === "") {
@@ -31,7 +42,11 @@ export function findMatches(text: string, terms: string[]): TextRange[] {
   const origin: number[] = [];
 
   for (let index = 0; index < text.length; index += 1) {
-    const piece = fold(text[index]);
+    const piece = /\s/.test(text[index]) ? " " : fold(text[index]);
+
+    if (piece === " " && folded.endsWith(" ")) {
+      continue;
+    }
 
     for (let offset = 0; offset < piece.length; offset += 1) {
       folded += piece[offset];

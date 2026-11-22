@@ -28,14 +28,13 @@ import { ReadingSurface } from "#components/ReadingSurface";
 import { useActiveSection } from "#hooks/use-active-section";
 import { useReadingSides } from "#hooks/use-reading-sides";
 import { cn } from "#lib/utils";
-import { useDebouncedValue } from "#hooks/use-debounced-value";
-import { useTextHighlight } from "#hooks/use-text-highlight";
+import { useFind } from "#hooks/use-find";
+import { FindBar } from "#components/FindBar";
 
 import { BookCompletedDialog } from "./components/BookCompletedDialog";
 import { BookContent } from "./components/BookContent";
 import { BookCover } from "./components/BookCover";
 import { BookDetailsDialog } from "./components/BookDetailsDialog";
-import { BookFindBar } from "./components/BookFindBar";
 import { BookFormDialog } from "./components/BookFormDialog";
 import { BookOrganizerDialog } from "./components/BookOrganizerDialog";
 import { BookPrintView } from "./components/BookPrintView";
@@ -80,21 +79,18 @@ export function BookPage() {
   const { mutate: persistPosition } = useSaveBookPosition();
 
   const [modal, setModal] = useState<Modal>(null);
-  const [search, setSearch] = useState("");
   const [reader, setReader] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   const [container, setContainer] = useState<HTMLElement | null>(null);
 
-  const findInput = useRef<HTMLInputElement>(null);
   const userScrolled = useRef(false);
   const lastSaved = useRef<string | undefined>(undefined);
   const seededPosition = useRef(false);
   const continued = useRef(false);
 
-  const query = useDebouncedValue(search);
-  const results = useBookSearch(bookId, query);
-  const find = useTextHighlight(container, query, reading.data);
+  const find = useFind(container, reading.data);
+  const results = useBookSearch(bookId, find.query);
 
   const contents = useMemo(() => {
     const map = new Map<string, string>();
@@ -151,21 +147,6 @@ export function BookPage() {
         : chapterElementId(position.documentId),
     );
   }, [reading.data]);
-
-  // Ctrl+K leva para a busca do livro (Enter vai para a próxima ocorrência).
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        findInput.current?.focus();
-        findInput.current?.select();
-      }
-    };
-
-    document.addEventListener("keydown", onKey);
-
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
 
   // Só guarda a posição depois que o leitor rolou a página de verdade (para a
   // abertura não sobrescrever o "onde parei" com o começo do livro).
@@ -294,27 +275,32 @@ export function BookPage() {
   const goToChapter = (documentId: string) =>
     goToElement(chapterElementId(documentId));
 
-  const findBar = (
-    <BookFindBar
-      value={search}
-      onChange={setSearch}
-      count={find.count}
-      index={find.index}
-      onNext={find.next}
-      onPrev={find.prev}
-      inputRef={findInput}
+  // Campo do painel (modo normal) e da barra de cima (modo leitura); a lista de ocorrências fica no painel.
+  const findBar = <FindBar label="Pesquisar no livro" {...find.barProps} />;
+
+  // Ctrl+F: a mesma busca, flutuante sobre o texto (a lista fica no painel).
+  const floatingFind = find.open && (
+    <FindBar
+      floating
+      label="Pesquisar no texto"
+      {...find.barProps}
+      onClose={find.close}
     />
   );
 
   const celebration = (
-    <BookCompletedDialog
-      open={celebrate}
-      onOpenChange={setCelebrate}
-      title={book.title}
-      chapters={stats.chapters}
-      words={stats.words}
-      minutes={stats.minutes}
-    />
+    <>
+      {floatingFind}
+
+      <BookCompletedDialog
+        open={celebrate}
+        onOpenChange={setCelebrate}
+        title={book.title}
+        chapters={stats.chapters}
+        words={stats.words}
+        minutes={stats.minutes}
+      />
+    </>
   );
 
   if (reader && totalChapters > 0) {
@@ -342,7 +328,7 @@ export function BookPage() {
               readIds={readIds}
               readCount={readCount}
               completedAt={book.completedAt}
-              query={search}
+              query={find.search}
               hits={results.data}
               isSearching={results.isFetching}
               onSelectChapter={goToChapter}
@@ -509,7 +495,7 @@ export function BookPage() {
               readIds={readIds}
               readCount={readCount}
               completedAt={book.completedAt}
-              query={search}
+              query={find.search}
               findBar={findBar}
               hits={results.data}
               isSearching={results.isFetching}

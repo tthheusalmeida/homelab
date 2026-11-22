@@ -58,6 +58,26 @@ describe("useTextHighlight", () => {
     expect(hook.result.current.index).toBe(0);
   });
 
+  it("when the whole phrase exists, should highlight only the phrase", () => {
+    const { hook } = setup("casa da vida", "A casa da vida é boa. Cada casa tem vida.");
+
+    expect(hook.result.current.count).toBe(1);
+  });
+
+  it("when the phrase does not exist, should fall back to each word inside any word and skip connectors", () => {
+    const { hook } = setup("casa da vida", "A casa é boa. Cada dado tem vida. Encasar.");
+
+    // "casa", "vida" e o "casa" de "Encasar" (nem "da" em "Cada"/"dado")
+    expect(hook.result.current.count).toBe(3);
+  });
+
+  it("when the words are all long and not together, should still fall back to each word", () => {
+    const { hook } = setup("docker rede", "Docker aqui. A rede lá.");
+
+    // "Docker", "rede" e o "rede" do outro parágrafo
+    expect(hook.result.current.count).toBe(3);
+  });
+
   it("when the query has an accent, should match the text without it", () => {
     const { hook } = setup("conteiner");
 

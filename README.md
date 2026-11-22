@@ -82,6 +82,7 @@ O **HomeLab** é um app desktop (Windows e Linux) para quem aprende e pesquisa c
 ### Rápido e agradável de usar
 
 - ⌨️ **Paleta de comandos:** `Ctrl K` abre a busca em qualquer tela; `G` e uma letra navegam entre as telas.
+- 🔎 **Buscar no texto:** `Ctrl F` procura em livros, transcrições e resumos, achando primeiro a frase inteira ("casa da vida") e destacando cada ocorrência.
 - 🎨 **Identidade Colmeia:** tema claro, escuro ou do sistema, cor de destaque à escolha e animações suaves (respeita "reduzir movimento").
 - 🪶 **Leve em PCs fracos:** telas carregadas sob demanda e consultas mais calmas.
 

@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { BookFindBar } from "./BookFindBar";
+import { FindBar } from "./FindBar";
 
 const setup = (
-  props: Partial<React.ComponentProps<typeof BookFindBar>> = {},
+  props: Partial<React.ComponentProps<typeof FindBar>> = {},
 ) => {
   const handlers = {
     onChange: vi.fn(),
@@ -14,21 +14,21 @@ const setup = (
   };
 
   render(
-    <BookFindBar value="" count={0} index={-1} {...handlers} {...props} />,
+    <FindBar value="" count={0} index={-1} {...handlers} {...props} />,
   );
 
   return { ...handlers, user: userEvent.setup() };
 };
 
-const input = () => screen.getByLabelText("Pesquisar no livro");
+const input = () => screen.getByLabelText("Pesquisar na página");
 
-describe("BookFindBar", () => {
-  it("when rendered, should show the field with the Ctrl+K hint", () => {
+describe("FindBar", () => {
+  it("when rendered, should show the field with the Ctrl+F hint", () => {
     setup();
 
     expect(input()).toHaveAttribute(
       "placeholder",
-      "Pesquisar no livro... (Ctrl+K)",
+      "Pesquisar na página... (Ctrl+F)",
     );
   });
 
@@ -123,10 +123,70 @@ describe("BookFindBar", () => {
     expect(onChange).toHaveBeenCalledWith("");
   });
 
+  it("when a label is given, should use it in the field and the hint", () => {
+    setup({ label: "Pesquisar no livro" });
+
+    expect(screen.getByLabelText("Pesquisar no livro")).toHaveAttribute(
+      "placeholder",
+      "Pesquisar no livro... (Ctrl+F)",
+    );
+  });
+
+  it("when closable and Escape is pressed with an empty field, should close", async () => {
+    const onClose = vi.fn();
+    const { user } = setup({ onClose });
+
+    await user.type(input(), "{Escape}");
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("when closable and Escape is pressed with text, should only clear it", async () => {
+    const onClose = vi.fn();
+    const { onChange, user } = setup({ value: "docker", onClose });
+
+    await user.type(input(), "{Escape}");
+
+    expect(onChange).toHaveBeenCalledWith("");
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("when closable, should show the close button even before searching", async () => {
+    const onClose = vi.fn();
+    const { user } = setup({ onClose, compact: true });
+
+    await user.click(screen.getByRole("button", { name: "Fechar pesquisa" }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("when floating, should render outside its parent, fixed on the window and with counter inline", () => {
+    const { container } = render(
+      <div>
+        <FindBar
+          floating
+          value="docker"
+          count={3}
+          index={0}
+          onChange={() => {}}
+          onNext={() => {}}
+          onPrev={() => {}}
+          onClose={() => {}}
+        />
+      </div>,
+    );
+
+    const bar = screen.getByRole("search");
+
+    expect(container).not.toContainElement(bar);
+    expect(bar).toHaveClass("fixed");
+    expect(bar).toHaveTextContent("1 de 3");
+  });
+
   it("when an input ref is given, should point to the field", () => {
     const ref = { current: null as HTMLInputElement | null };
     render(
-      <BookFindBar
+      <FindBar
         value=""
         count={0}
         index={-1}

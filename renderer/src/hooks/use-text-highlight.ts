@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { findMatches, searchTerms } from "#lib/find";
+import { findMatches, searchPhrase, searchTerms } from "#lib/find";
 
 const MATCH = "find-match";
 const CURRENT = "find-current";
@@ -60,9 +60,10 @@ export interface TextHighlight {
 }
 
 /**
- * Destaca no texto todas as ocorrências dos termos da consulta (sem alterar o
- * HTML) e deixa ir para a próxima/anterior, rolando até ela. `version` muda
- * quando o texto é redesenhado, para refazer a busca.
+ * Destaca no texto as ocorrências da consulta (sem alterar o HTML) e deixa ir
+ * para a próxima/anterior, rolando até ela. Procura primeiro a frase inteira
+ * ("casa da vida"); se ela não existe, cai para cada palavra (em qualquer
+ * pedaço de palavra, sem "da", "de" soltos). `version` muda quando o texto é redesenhado, para refazer a busca.
  */
 export function useTextHighlight(
   container: HTMLElement | null,
@@ -74,12 +75,19 @@ export function useTextHighlight(
   const [count, setCount] = useState(0);
   const [index, setIndex] = useState(-1);
 
-  const termsKey = searchTerms(query).join("\u0000");
+  const termsKey = searchPhrase(query);
 
   useEffect(() => {
-    const terms = termsKey === "" ? [] : termsKey.split("\u0000");
-    const ranges =
-      container && terms.length > 0 ? collectRanges(container, terms) : [];
+    let ranges =
+      container && termsKey ? collectRanges(container, [termsKey]) : [];
+
+    if (container && termsKey && ranges.length === 0) {
+      const words = searchTerms(termsKey);
+
+      if (words.length > 1 || words[0] !== termsKey) {
+        ranges = collectRanges(container, words);
+      }
+    }
 
     rangesRef.current = ranges;
     paint(MATCH, ranges);

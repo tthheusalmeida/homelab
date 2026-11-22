@@ -726,22 +726,22 @@ describe("BookPage — progress, continue, find, export", () => {
   });
 
   describe("find in the book", () => {
-    it("when Ctrl+K is pressed, should focus the search field", async () => {
+    it("when Ctrl+F is pressed, should open the floating search with the field focused", async () => {
       const user = userEvent.setup();
       renderPage();
 
-      await user.keyboard("{Control>}k{/Control}");
+      await user.keyboard("{Control>}f{/Control}");
 
-      expect(screen.getByLabelText("Pesquisar no livro")).toHaveFocus();
+      expect(screen.getByLabelText("Pesquisar no texto")).toHaveFocus();
     });
 
-    it("when Cmd+K is pressed, should also focus the search field", async () => {
+    it("when Cmd+F is pressed, should also open the floating search", async () => {
       const user = userEvent.setup();
       renderPage();
 
-      await user.keyboard("{Meta>}k{/Meta}");
+      await user.keyboard("{Meta>}f{/Meta}");
 
-      expect(screen.getByLabelText("Pesquisar no livro")).toHaveFocus();
+      expect(screen.getByLabelText("Pesquisar no texto")).toHaveFocus();
     });
 
     it("when searching, should count the occurrences in the text and move with Enter", async () => {
@@ -773,7 +773,7 @@ describe("BookPage — progress, continue, find, export", () => {
       delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
     });
 
-    it("when in reading mode, should keep the search in the top bar and Ctrl+K should focus it", async () => {
+    it("when in reading mode, should keep the search field in the top bar and Ctrl+F should open the floating one above it", async () => {
       const user = userEvent.setup();
       renderPage();
       await user.click(screen.getByRole("button", { name: /Modo leitura/ }));
@@ -784,9 +784,12 @@ describe("BookPage — progress, continue, find, export", () => {
         within(region).getByLabelText("Pesquisar no livro"),
       ).toBeInTheDocument();
 
-      await user.keyboard("{Control>}k{/Control}");
+      await user.keyboard("{Control>}f{/Control}");
 
-      expect(within(region).getByLabelText("Pesquisar no livro")).toHaveFocus();
+      const floating = screen.getByLabelText("Pesquisar no texto");
+
+      expect(floating).toHaveFocus();
+      expect(region).not.toContainElement(floating);
     });
 
     it("when the search is cleared, should drop the counter", async () => {

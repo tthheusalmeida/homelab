@@ -636,6 +636,37 @@ describe('BookService', () => {
       expect(await books.search(book.id, '   ')).toEqual([]);
     });
 
+    describe('with a phrase', () => {
+      const phraseBook = async () => {
+        const a = await article(
+          'Casas',
+          '# Casas\n\nA vida é boa na casa.\n\nUma casa da vida nova.\n\nA casa da esquina deu vida ao bairro.',
+        );
+        const book = await books.create({ title: 'T' });
+        await books.addChapter(book.id, a);
+
+        return book;
+      };
+
+      it('when the whole phrase is in a line, should list those lines first and center the snippet on it', async () => {
+        const book = await phraseBook();
+
+        const hits = await books.search(book.id, 'casa da vida');
+
+        expect(hits.map((hit) => hit.line)).toEqual([5, 3, 7]);
+        expect(hits[0].snippet).toContain('casa da vida');
+      });
+
+      it('when "da" is the only extra word, should not need it in the line', async () => {
+        const book = await phraseBook();
+
+        const lines = (await books.search(book.id, 'casa da vida')).map((hit) => hit.line);
+
+        // "A vida é boa na casa." não tem "da", mas tem "casa" e "vida"
+        expect(lines).toContain(3);
+      });
+    });
+
     it('when a heading matches, should return it without the # marker', async () => {
       const { book } = await setup();
 
