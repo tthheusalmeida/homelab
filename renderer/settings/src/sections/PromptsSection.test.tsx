@@ -91,8 +91,8 @@ describe('PromptsSection', () => {
 
     renderWithProviders(<PromptsSection />);
 
-    expect(await screen.findByRole('note')).toHaveTextContent('Você muda só as instruções');
-    expect(screen.getByRole('note')).toHaveTextContent('formato da resposta');
+    expect((await screen.findAllByRole('note'))[0]).toHaveTextContent('Você muda só as instruções');
+    expect(screen.getAllByRole('note')[0]).toHaveTextContent('formato da resposta');
   });
 
   it('when there are no versions yet, should say the app default is in use', async () => {
@@ -472,5 +472,100 @@ describe('PromptsSection with several prompts', () => {
         { kind: 'infographic', id: 'i1' },
       ]),
     );
+  });
+});
+
+describe('PromptsSection examples and guide', () => {
+  it('when opened, should list the ready examples of the prompt with their added line', async () => {
+    mockPrompts();
+
+    renderWithProviders(<PromptsSection />);
+
+    const list = await screen.findByRole('list', { name: 'Exemplos prontos' });
+
+    expect(within(list).getByText('Para prova')).toBeInTheDocument();
+    expect(within(list).getByText('Enxuto')).toBeInTheDocument();
+    expect(within(list).getByText(/Priorize datas, nomes próprios/)).toBeInTheDocument();
+  });
+
+  it('when starting from an example, should open the editor with its name and the whole default plus the adjustment', async () => {
+    mockPrompts();
+    const user = userEvent.setup();
+
+    renderWithProviders(<PromptsSection />);
+    await user.click(await screen.findByRole('button', { name: 'Usar como base: Para prova' }));
+
+    const dialog = await screen.findByRole('dialog');
+
+    expect(within(dialog).getByLabelText('Nome')).toHaveValue('Para prova');
+
+    const body = (within(dialog).getByLabelText('Instruções') as HTMLTextAreaElement).value;
+
+    expect(body.startsWith(DEFAULT_TEXT)).toBe(true);
+    expect(body).toContain('# AJUSTES');
+    expect(body).toContain('- Priorize datas, nomes próprios');
+  });
+
+  it('when saving the example, should send the default with the adjustment and use it', async () => {
+    const { invoke } = mockPrompts();
+    const user = userEvent.setup();
+
+    renderWithProviders(<PromptsSection />);
+    await user.click(await screen.findByRole('button', { name: 'Usar como base: Enxuto' }));
+    await user.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Salvar' }),
+    );
+
+    await waitFor(() => expect(payloadsOf(invoke, IpcChannels.prompts.save)).toHaveLength(1));
+
+    const [request] = payloadsOf(invoke, IpcChannels.prompts.save) as PromptSaveRequest[];
+
+    expect(request.name).toBe('Enxuto');
+    expect(request.activate).toBe(true);
+    expect(request.text.startsWith(DEFAULT_TEXT)).toBe(true);
+    expect(request.text).toContain('- Use só termos e palavras-chave');
+  });
+
+  it('when opened, should say what can be added and where to be careful', async () => {
+    mockPrompts();
+
+    renderWithProviders(<PromptsSection />);
+
+    expect(await screen.findByText('Você pode acrescentar')).toBeInTheDocument();
+    expect(screen.getByText('Tenha cuidado com')).toBeInTheDocument();
+    expect(screen.getByText(/Não peça quantidades/)).toBeInTheDocument();
+    expect(screen.getByText(/Não peça outro formato de resposta/)).toBeInTheDocument();
+    expect(screen.getByText(/Não apague o texto base/)).toBeInTheDocument();
+  });
+
+  it('when the limit of versions is reached on the back, should show its message and keep the editor open', async () => {
+    mockApi({
+      [IpcChannels.prompts.list]: () =>
+        ok({
+          kinds: [
+            {
+              kind: 'mindMap',
+              label: 'Mapa mental',
+              description: 'd',
+              defaultText: DEFAULT_TEXT,
+              versions: [],
+              activeId: null,
+            },
+          ],
+          limits: PROMPT_LIMITS,
+        }),
+      [IpcChannels.prompts.save]: () =>
+        failure('VALIDATION', 'Cada prompt pode ter até 20 versões. Exclua alguma antes.'),
+    });
+    const user = userEvent.setup();
+
+    renderWithProviders(<PromptsSection />);
+    await user.click(await screen.findByRole('button', { name: 'Usar como base: Para prova' }));
+    await user.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Salvar' }),
+    );
+
+    expect(await screen.findByText(/pode ter até 20 versões/)).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 });

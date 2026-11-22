@@ -26,6 +26,7 @@ import {
   type PromptEditorTarget,
 } from '../components/PromptEditorDialog';
 import { useActivatePrompt, useDeletePrompt, usePrompts, useSavePrompt } from '../hooks';
+import { PROMPT_GUIDES, withExample } from '../prompt-guides';
 import { Strings } from '../strings';
 
 const text = Strings.prompts;
@@ -103,6 +104,7 @@ function KindPanel({ info, limits }: { info: PromptKindInfo; limits: PromptLimit
 
   const busy = save.isPending || remove.isPending || activate.isPending;
   const kind = info.kind;
+  const guide = PROMPT_GUIDES[kind];
 
   // Todo erro de gravação aparece como alerta no rodapé (o texto vem do back, em português).
   useErrorAlert(save.isError && (save.error.message || text.saveFailed));
@@ -213,6 +215,67 @@ function KindPanel({ info, limits }: { info: PromptKindInfo; limits: PromptLimit
             </ul>
           )}
         </SettingsPanel>
+      </SettingsGroup>
+
+      <SettingsGroup title={text.examples} hint={text.examplesHint}>
+        <ul className="grid gap-2 sm:grid-cols-2" aria-label={text.examples}>
+          {guide.examples.map((example) => (
+            <li
+              key={example.id}
+              className="flex flex-col justify-between gap-2 rounded-md border bg-card p-3"
+            >
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium">{example.name}</span>
+
+                <span className="text-xs text-muted-foreground">{example.description}</span>
+
+                <q className="text-xs text-foreground/80">{example.addition}</q>
+              </div>
+
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="self-start"
+                disabled={busy}
+                aria-label={`${text.useAsBase}: ${example.name}`}
+                onClick={() =>
+                  open({
+                    mode: 'create',
+                    name: example.name,
+                    text: withExample(info.defaultText, example),
+                  })
+                }
+              >
+                {text.useAsBase}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </SettingsGroup>
+
+      <SettingsGroup title={text.guide} hint={text.guideHint}>
+        <div className="flex flex-col gap-3">
+          <Callout role="note">
+            <p className="font-medium">{text.canAdd}</p>
+
+            <ul className="mt-1 list-disc pl-5">
+              {guide.canAdd.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </Callout>
+
+          <Callout tone="warning" role="note">
+            <p className="font-medium">{text.careful}</p>
+
+            <ul className="mt-1 list-disc pl-5">
+              {guide.careful.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </Callout>
+        </div>
       </SettingsGroup>
 
       {editor && (

@@ -46,6 +46,12 @@ Seção do grupo **IA** (`PromptsSection`, em `renderer/settings/src/sections`).
 ## Backup
 Os prompts entram no backup como o item **Prompts** (caixa própria em Configurações > Backup, `config/prompts.json` dentro do zip), com **uma versão por registro** (`kind`, `id`, `name`, `text`, `active`); a contagem mostrada é o número de versões. Ao restaurar, cada registro passa pelas mesmas conferências de quando o usuário grava: prompt conhecido, nome de 1 a 40 caracteres, texto de 40 a 20 000 e até 20 versões por prompt; o que não passar conta como "mantido". **Mesclar** só acrescenta versões cujo nome ainda não existe no mesmo prompt (ignorando maiúsculas e acentos), dá novo id se o do backup já existir e **mantém a versão em uso**. **Substituir** troca tudo e usa a versão marcada como ativa no backup (com cópia de segurança do arquivo, como nos outros itens). Código: `PromptStore.exportAll` e `importAll`.
 
+## Exemplos e orientações (para quem não sabe o que escrever)
+A tela mostra, para cada prompt, dois blocos que existem só para ajudar (dados em `renderer/settings/src/prompt-guides.ts`, um guia por prompt; o `Record<PromptKind, …>` obriga a escrever o guia de todo prompt novo):
+- **Exemplos prontos:** três por prompt (por exemplo, no mapa mental: "Para prova", "Enxuto" e "Passos e comandos"). Cada um tem nome, uma frase do que faz e a **linha que acrescenta**. "Usar como base" abre o editor com o nome do exemplo e o **texto padrão inteiro mais um ajuste no final**, sob o título `# AJUSTES` (`withExample`). Acrescentar, em vez de reescrever, mantém tudo o que já funciona no padrão. O usuário muda o que quiser e salva; vale a mesma validação do back (o resumo, que tem ~11 mil caracteres no padrão, ainda cabe no limite de 20 mil).
+- **Como escrever:** "Você pode acrescentar" (o que costuma valer a pena pedir naquele prompt) e "Tenha cuidado com" (não pedir quantidades nem outro formato, não apagar o texto base; no resumo, que apagar as regras de fidelidade deixa a IA inventar e que o nível de detalhe é escolhido em cada tarefa; no infográfico e na classificação, que a estrutura e os níveis são do app).
+- Um teste garante que todo prompt tem guia, exemplos com ids únicos, ajustes curtos, sem pedir números nem JSON e sem citar ferramentas internas.
+
 ## Código
 - `shared/contracts/prompts.ts`: tipos, `PROMPT_KINDS`, `PROMPT_LIMITS`.
 - `back/modules/ai/prompts/`: `prompt-catalog.ts` (rótulo, descrição e padrão de cada prompt), `prompt.store.ts` (disco), `prompt.service.ts` (regras e versões), e um `*.prompt.ts` por prompt (`buildXPrompt(input, instructions?)`: com o segundo argumento usa o texto do usuário).
@@ -62,7 +68,7 @@ Os prompts entram no backup como o item **Prompts** (caixa própria em Configura
 Erros: texto curto ou longo demais, nome vazio, longo ou repetido, versões demais e tipo desconhecido → `VALIDATION`; versão inexistente → `NOT_FOUND`. **Depois de atualizar o app em desenvolvimento, reinicie o `npm run dev`** (a lista de canais permitidos fica no preload).
 
 ## Testes
-`prompt.store.spec.ts` (inclui exportar e importar), `backup.service.spec.ts` (item Prompts), `prompt.service.spec.ts`, `prompts.handler.spec.ts`, `PromptsSection.test.tsx` (versões, editor, erros e troca entre prompts), o spec de cada `*.prompt.spec.ts` (instruções do usuário + contrato fixo) e o uso no `mind-map.service.spec.ts`.
+`prompt.store.spec.ts` (inclui exportar e importar), `backup.service.spec.ts` (item Prompts), `prompt.service.spec.ts`, `prompts.handler.spec.ts`, `PromptsSection.test.tsx` (versões, editor, erros, troca entre prompts, exemplos e orientações) e `prompt-guides.test.ts`, o spec de cada `*.prompt.spec.ts` (instruções do usuário + contrato fixo) e o uso no `mind-map.service.spec.ts`.
 
 ## Próximas fases
 Escolher a versão a cada geração (hoje vale a versão em uso, global); prompts de novas gerações (como os cartões de estudo) entram em `PROMPT_KINDS` e `prompt-catalog.ts`.

@@ -145,6 +145,15 @@ export const Strings = {
     loadFailed: 'Não foi possível carregar os prompts.',
     retry: 'Tentar de novo',
     copySuffix: ' (cópia)',
+    examples: 'Exemplos prontos',
+    examplesHint:
+      'Cada exemplo abre o editor com o texto padrão inteiro mais um ajuste no final (em "# AJUSTES"). Mude o que quiser antes de salvar.',
+    useAsBase: 'Usar como base',
+    guide: 'Como escrever',
+    guideHint:
+      'Escreva frases curtas dizendo como a IA deve trabalhar, no mesmo estilo do texto padrão.',
+    canAdd: 'Você pode acrescentar',
+    careful: 'Tenha cuidado com',
   },
   infographic: {
     tabs: 'Galeria do infográfico',
