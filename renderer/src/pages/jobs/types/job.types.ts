@@ -43,6 +43,8 @@ export interface Job {
   retryable?: boolean;
   /** Aviso da etapa em andamento, ex.: "Tentando de novo (tentativa 2 de 3): ...". */
   note?: string;
+  /** Andamento dentro da etapa em execução (ex.: parte 2 de 5). */
+  progress?: { done: number; total: number };
   /** Falhou porque o vídeo exige login: a tela oferece "Entrar no site" e tenta de novo. */
   errorCode?: "ACCESS_REQUIRED";
   /** Endereço do vídeo que pediu login. */

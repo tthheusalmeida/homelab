@@ -67,6 +67,15 @@ describe('JobPipeline', () => {
     ).toBeInTheDocument();
   });
 
+  it('when the running step has progress, should show the part and a determinate bar', () => {
+    render(<JobPipeline job={makeJob({ progress: { done: 2, total: 4 } })} />);
+
+    expect(screen.getByText('parte 2 de 4')).toBeInTheDocument();
+    expect(
+      screen.getByRole('progressbar', { name: 'Em andamento: Converter áudio' }),
+    ).toHaveAttribute('aria-valuenow', '25');
+  });
+
   it('when the job failed, should show the error as an alert', () => {
     render(
       <JobPipeline

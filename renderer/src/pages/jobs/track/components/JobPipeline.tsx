@@ -157,14 +157,16 @@ export function JobPipeline({ job }: JobPipelineProps) {
                   </span>
 
                   <span className="shrink-0 text-[11px] text-muted-foreground">
-                    {TrackStrings.stepStates[row.status] ?? row.status}
+                    {running && job.progress
+                      ? TrackStrings.stepPart(job.progress.done, job.progress.total)
+                      : (TrackStrings.stepStates[row.status] ?? row.status)}
                   </span>
                 </div>
 
                 {running && (
                   <ProgressBar
-                    value={0}
-                    total={0}
+                    value={job.progress ? job.progress.done - 1 : 0}
+                    total={job.progress?.total ?? 0}
                     label={TrackStrings.stepProgress(row.label)}
                     className="h-1"
                   />

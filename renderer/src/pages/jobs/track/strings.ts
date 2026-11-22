@@ -74,6 +74,7 @@ export const TrackStrings = {
   pipelineCount: (done: number, total: number) =>
     `${done}/${total} ${total === 1 ? "etapa" : "etapas"}`,
   stepProgress: (label: string) => `Em andamento: ${label}`,
+  stepPart: (done: number, total: number) => `parte ${done} de ${total}`,
   phases: { queue: "Na fila", process: "Processando", done: "Concluído" },
   stepStates: {
     pending: "aguardando",

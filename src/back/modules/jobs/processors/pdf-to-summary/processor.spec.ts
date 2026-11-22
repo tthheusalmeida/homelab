@@ -267,19 +267,19 @@ describe('PdfToSummaryJobProcessor', () => {
     expect(body).toContain('ok 1');
   });
 
-  it('when resuming, should show in the job note how many parts were already done', async () => {
+  it('when summarizing, should report the current part as step progress and no note', async () => {
     await store.saveSummary(key, 0, '## S1\n\nok 1');
-    const notes: Array<string | undefined> = [];
+    const seen: Array<{ progress?: { done: number; total: number }; note?: string }> = [];
 
     ai.chat.mockImplementation(async () => {
-      notes.push(job.note);
+      seen.push({ progress: job.progress, note: job.note });
 
       return '## S\n\nx';
     });
 
     await processor.process(job, dto);
 
-    expect(notes[0]).toBe('Resumindo a parte 2 de 3 (retomado: 1 já estavam prontas)');
+    expect(seen[0]).toEqual({ progress: { done: 2, total: 3 }, note: undefined });
   });
 
   it('when the AI retries, should show the attempt together with the part in the job note', async () => {
@@ -294,9 +294,7 @@ describe('PdfToSummaryJobProcessor', () => {
 
     await processor.process(job, dto);
 
-    expect(note).toBe(
-      'Resumindo a parte 1 de 3 — Tentando de novo (tentativa 2 de 3): serviço sobrecarregado',
-    );
+    expect(note).toBe('Tentando de novo (tentativa 2 de 3): serviço sobrecarregado');
   });
 
   it('when the user cancels, should stop before the next part and keep what is done', async () => {
@@ -484,9 +482,7 @@ describe('PdfToSummaryJobProcessor', () => {
 
       await processor.process(job, dto);
 
-      expect(note).toBe(
-        'Preenchendo título, categoria e tags — Tentando de novo (tentativa 2 de 3): serviço sobrecarregado',
-      );
+      expect(note).toBe('Tentando de novo (tentativa 2 de 3): serviço sobrecarregado');
     });
 
     it('when the user cancels before this step, should not call the AI', async () => {
