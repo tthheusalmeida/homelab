@@ -62,6 +62,24 @@ describe('VideoToSummaryJobProcessor', () => {
     ]);
   });
 
+  it('when the user has custom instructions, should summarize with them and the chosen detail', async () => {
+    const withPrompts = new VideoToSummaryJobProcessor(
+      video as unknown as VideoService,
+      whisper as unknown as WhisperService,
+      {
+        instructionsFor: jest.fn().mockReturnValue('Resuma em tópicos curtos para a prova.'),
+      } as never,
+    );
+
+    await withPrompts.process(job, dto);
+
+    expect(video.summarize).toHaveBeenCalledWith(
+      buildSummaryPrompt('detailed', 'Resuma em tópicos curtos para a prova.'),
+      'fala crua',
+      expect.any(Object),
+    );
+  });
+
   it('when no detail is given, should summarize with the detailed prompt, normalized transcript and chosen model', async () => {
     await processor.process(job, dto);
 

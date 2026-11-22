@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 
 import { Job } from '../../domain/job.entity';
 import { JobProcessor } from '../../domain/job-processor.interface';
@@ -12,6 +12,7 @@ import {
   DEFAULT_SUMMARY_DETAIL,
   isSummaryDetail,
 } from '../../../ai/prompts/summary-specialist.prompt';
+import { PromptService } from '../../../ai/prompts/prompt.service';
 import { WhisperService } from '../../../ai/whisper/whisper.service';
 import { VideoService, VideoSummarizeOptions } from '../../../video/video.service';
 
@@ -27,6 +28,8 @@ export class VideoToSummaryJobProcessor implements JobProcessor<VideoToSummaryDt
   constructor(
     private readonly videoService: VideoService,
     private readonly whisperService: WhisperService,
+    // Sem ele (testes), vale sempre o prompt padrão.
+    @Optional() private readonly prompts?: PromptService,
   ) {}
 
   async process(job: Job, input: VideoToSummaryDto): Promise<void> {
@@ -79,7 +82,10 @@ export class VideoToSummaryJobProcessor implements JobProcessor<VideoToSummaryDt
   ): Promise<string> {
     return job.runStep(VideoToResumeSteps.SUMMARIZE.name, () =>
       this.videoService.summarize(
-        buildSummaryPrompt(options.detail ?? DEFAULT_SUMMARY_DETAIL),
+        buildSummaryPrompt(
+          options.detail ?? DEFAULT_SUMMARY_DETAIL,
+          this.prompts?.instructionsFor('summary'),
+        ),
         transcription,
         // Enquanto a IA tenta de novo, a tela mostra "tentativa x de y".
         { ...options, onRetry: (info) => job.setNote(retryNote(info)) },

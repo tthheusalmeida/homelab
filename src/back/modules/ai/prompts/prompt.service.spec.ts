@@ -1,12 +1,15 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
-import { PROMPT_LIMITS } from '../../../../shared/contracts/prompts';
+import { PROMPT_KINDS, PROMPT_LIMITS } from '../../../../shared/contracts/prompts';
 
 import { PROMPT_CATALOG } from './prompt-catalog';
 import { PromptMessages, PromptService } from './prompt.service';
 import { PromptStore } from './prompt.store';
 
 const text = (size = 60) => 'x'.repeat(size);
+
+/** Posição do mapa mental na lista de prompts (os testes de versões usam ele). */
+const MIND_MAP = PROMPT_KINDS.indexOf('mindMap');
 
 describe('PromptService', () => {
   let service: PromptService;
@@ -31,6 +34,13 @@ describe('PromptService', () => {
       expect(limits).toEqual(PROMPT_LIMITS);
     });
 
+    it('when listing, should offer the summary default without the detail level, which each task chooses', () => {
+      const summary = service.overview().kinds.find((kind) => kind.kind === 'summary');
+
+      expect(summary?.defaultText).toContain('# PRINCÍPIO FUNDAMENTAL');
+      expect(summary?.defaultText).not.toContain('# NÍVEL DE DETALHE');
+    });
+
     it('when listing, should never expose the fixed contract (limits, output format) in the default text', () => {
       for (const { defaultText } of service.overview().kinds) {
         expect(defaultText).not.toContain('Responda APENAS com um JSON');
@@ -40,8 +50,9 @@ describe('PromptService', () => {
   });
 
   describe('kinds', () => {
-    it('when listing, should offer the mind map, the infographic and the classification', () => {
+    it('when listing, should offer the summary, the mind map, the infographic and the classification', () => {
       expect(service.overview().kinds.map((kind) => kind.kind)).toEqual([
+        'summary',
         'mindMap',
         'infographic',
         'classification',
@@ -70,10 +81,10 @@ describe('PromptService', () => {
   describe('save', () => {
     it('when creating a version, should add it without activating it by default', () => {
       const overview = service.save({ kind: 'mindMap', name: 'Curto', text: text() });
-      const [version] = overview.kinds[0].versions;
+      const [version] = overview.kinds[MIND_MAP].versions;
 
       expect(version).toEqual({ id: expect.any(String), name: 'Curto', text: text() });
-      expect(overview.kinds[0].activeId).toBeNull();
+      expect(overview.kinds[MIND_MAP].activeId).toBeNull();
     });
 
     it('when creating with activate, should leave the new version in use', () => {
@@ -84,15 +95,16 @@ describe('PromptService', () => {
         activate: true,
       });
 
-      expect(overview.kinds[0].activeId).toBe(overview.kinds[0].versions[0].id);
+      expect(overview.kinds[MIND_MAP].activeId).toBe(overview.kinds[MIND_MAP].versions[0].id);
     });
 
     it('when updating a version, should change its name and text and keep its id', () => {
-      const { id } = service.save({ kind: 'mindMap', name: 'Curto', text: text() }).kinds[0]
+      const { id } = service.save({ kind: 'mindMap', name: 'Curto', text: text() }).kinds[MIND_MAP]
         .versions[0];
 
-      const [version] = service.save({ kind: 'mindMap', id, name: 'Longo', text: text(80) })
-        .kinds[0].versions;
+      const [version] = service.save({ kind: 'mindMap', id, name: 'Longo', text: text(80) }).kinds[
+        MIND_MAP
+      ].versions;
 
       expect(version).toEqual({ id, name: 'Longo', text: text(80) });
     });
@@ -142,8 +154,9 @@ describe('PromptService', () => {
 
     it('when the text has surrounding blanks and Windows line breaks, should clean them', () => {
       const body = `  linha um ${'a'.repeat(40)}\r\nlinha dois  `;
-      const [version] = service.save({ kind: 'mindMap', name: ' Meu   prompt ', text: body })
-        .kinds[0].versions;
+      const [version] = service.save({ kind: 'mindMap', name: ' Meu   prompt ', text: body }).kinds[
+        MIND_MAP
+      ].versions;
 
       expect(version.name).toBe('Meu prompt');
       expect(version.text).toBe(`linha um ${'a'.repeat(40)}\nlinha dois`);
@@ -158,7 +171,7 @@ describe('PromptService', () => {
     });
 
     it('when renaming a version to its own name, should not count it as taken', () => {
-      const { id } = service.save({ kind: 'mindMap', name: 'Curto', text: text() }).kinds[0]
+      const { id } = service.save({ kind: 'mindMap', name: 'Curto', text: text() }).kinds[MIND_MAP]
         .versions[0];
 
       expect(() =>
@@ -191,11 +204,11 @@ describe('PromptService', () => {
 
   describe('activate and delete', () => {
     it('when activating a version and going back to the default, should follow the choice', () => {
-      const { id } = service.save({ kind: 'mindMap', name: 'Curto', text: text() }).kinds[0]
+      const { id } = service.save({ kind: 'mindMap', name: 'Curto', text: text() }).kinds[MIND_MAP]
         .versions[0];
 
-      expect(service.activate({ kind: 'mindMap', id }).kinds[0].activeId).toBe(id);
-      expect(service.activate({ kind: 'mindMap', id: null }).kinds[0].activeId).toBeNull();
+      expect(service.activate({ kind: 'mindMap', id }).kinds[MIND_MAP].activeId).toBe(id);
+      expect(service.activate({ kind: 'mindMap', id: null }).kinds[MIND_MAP].activeId).toBeNull();
     });
 
     it('when activating a version that does not exist, should answer not found', () => {
@@ -208,9 +221,9 @@ describe('PromptService', () => {
         name: 'Curto',
         text: text(),
         activate: true,
-      }).kinds[0].versions[0];
+      }).kinds[MIND_MAP].versions[0];
 
-      const [kind] = service.delete({ kind: 'mindMap', id }).kinds;
+      const kind = service.delete({ kind: 'mindMap', id }).kinds[MIND_MAP];
 
       expect(kind.versions).toEqual([]);
       expect(kind.activeId).toBeNull();
@@ -218,11 +231,11 @@ describe('PromptService', () => {
 
     it('when deleting a version that is not in use, should keep the active one', () => {
       const first = service.save({ kind: 'mindMap', name: 'A', text: text(), activate: true })
-        .kinds[0].versions[0];
-      const second = service.save({ kind: 'mindMap', name: 'B', text: text() }).kinds[0]
+        .kinds[MIND_MAP].versions[0];
+      const second = service.save({ kind: 'mindMap', name: 'B', text: text() }).kinds[MIND_MAP]
         .versions[1];
 
-      const [kind] = service.delete({ kind: 'mindMap', id: second.id }).kinds;
+      const kind = service.delete({ kind: 'mindMap', id: second.id }).kinds[MIND_MAP];
 
       expect(kind.versions).toEqual([first]);
       expect(kind.activeId).toBe(first.id);
@@ -246,7 +259,7 @@ describe('PromptService', () => {
 
     it('when the version in use is deleted, should return the default again', () => {
       const { id } = service.save({ kind: 'mindMap', name: 'Meu', text: text(), activate: true })
-        .kinds[0].versions[0];
+        .kinds[MIND_MAP].versions[0];
 
       service.delete({ kind: 'mindMap', id });
 

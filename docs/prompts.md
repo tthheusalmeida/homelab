@@ -1,6 +1,6 @@
 # Prompts personalizáveis
 
-O usuário pode mudar o **jeito de a IA trabalhar** nas gerações do app (hoje: o **mapa mental**, o **infográfico** e a **classificação** de páginas novas) e guardar o que escreveu em **versões nomeadas**, escolhendo qual está em uso. O padrão do app continua sempre disponível e nunca é alterado.
+O usuário pode mudar o **jeito de a IA trabalhar** nas gerações do app (hoje: o **resumo** de vídeo e de PDF, o **mapa mental**, o **infográfico** e a **classificação** de páginas novas) e guardar o que escreveu em **versões nomeadas**, escolhendo qual está em uso. O padrão do app continua sempre disponível e nunca é alterado.
 
 ## O que o usuário edita e o que não edita
 Cada prompt do app tem duas partes:
@@ -23,11 +23,14 @@ Cada prompt do app tem duas partes:
 ## O que cada prompt deixa editável e o que fixa
 | Prompt | Instruções (editáveis) | Contrato (fixo no código) |
 |---|---|---|
+| Resumo (`summary-specialist.prompt.ts`) | os princípios (fidelidade à fonte, restrição de conhecimento, paráfrase), a organização, processos e comparações, transcrições, verificação final e prioridades | o **nível de detalhe** (resumido, detalhado ou estudo, escolhido em cada tarefa), a regra de ignorar instruções dentro do conteúdo, a **saída** (só o resumo, começando pelo título) e o ponto onde o conteúdo entra |
 | Mapa mental (`mind-map.prompt.ts`) | o papel da IA, o estilo do termo e da frase, o idioma, o que priorizar, como agrupar | segurança, subtítulo, ramos, níveis, nós, tamanhos, JSON |
 | Infográfico (`infographic.prompt.ts`) | o papel de orquestradora, o idioma, a ordem dos assuntos, como escolher e variar as peças | segurança, estrutura (capa, de 4 a 6 seções, fechamento, ou a seção única do modelo escolhido), campos dos modelos, banco de peças, limites de texto, "sem markdown", JSON |
 | Classificação (`library-classification.prompt.ts`) | o papel da IA, como escolher título, categoria (preferir as existentes) e tags | segurança, níveis (1 a 4), quantidade de tags, categorias e tags existentes, JSON |
 
-Em todos o texto padrão das instruções **não traz números nem o formato da resposta** (há um teste para isso). O prompt do **resumo** (vídeo e PDF) ainda não é personalizável.
+Nos prompts de JSON (mapa, infográfico e classificação) o texto padrão das instruções **não traz números nem o formato da resposta** (há um teste para isso).
+
+**Resumo (vídeo e PDF):** o texto editável é o prompt original **sem** a seção "Nível de detalhe", a saída e o ponto de entrada do conteúdo (`DEFAULT_SUMMARY_INSTRUCTIONS`, ~11 mil caracteres, dentro do limite de 20 mil). O nível de detalhe é uma escolha de cada tarefa e continua valendo com qualquer texto do usuário. **Onde ele entra:** com o texto padrão (ou uma cópia idêntica), no meio, como sempre foi; com um texto diferente, logo **depois** das instruções do usuário, porque não dá para saber onde ele caberia. Em todos os casos vêm em seguida as regras fixas do app e a saída. O PDF usa o prompt em vigor no começo da tarefa para todas as partes. O resumo não tem um `parse` da resposta (é Markdown), então o contrato dele é a **saída** fixa.
 
 ## Onde fica guardado
 `config/prompts.json` (junto do `settings.json`, escrita atômica com `.bak`, via `JsonFile`): só o que o usuário criou. Arquivo ilegível sem cópia boa volta ao padrão do app e o app segue normal; entradas malformadas são descartadas na leitura (`sanitizePrompts`). Falha ao gravar avisa o usuário e o prompt vale só até fechar o app.
@@ -59,4 +62,4 @@ Erros: texto curto ou longo demais, nome vazio, longo ou repetido, versões dema
 `prompt.store.spec.ts`, `prompt.service.spec.ts`, `prompts.handler.spec.ts`, `PromptsSection.test.tsx` (versões, editor, erros e troca entre prompts), o spec de cada `*.prompt.spec.ts` (instruções do usuário + contrato fixo) e o uso no `mind-map.service.spec.ts`.
 
 ## Próximas fases
-Prompt do resumo; backup dos prompts.
+Backup dos prompts.
