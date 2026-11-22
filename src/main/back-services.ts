@@ -14,6 +14,7 @@ import { VideoToTranscriptJobProcessor } from '../back/modules/jobs/processors/v
 import { BookService } from '../back/modules/library/application/book.service';
 import { LibraryClassifier } from '../back/modules/library/application/library-classifier';
 import { InfographicService } from '../back/modules/library/application/infographic.service';
+import { PromptService } from '../back/modules/ai/prompts/prompt.service';
 import { MindMapService } from '../back/modules/library/application/mind-map.service';
 import { LibraryService } from '../back/modules/library/application/library.service';
 import { InfographicStore } from '../back/modules/library/infrastructure/infographic-store';
@@ -54,6 +55,7 @@ export class BackServices {
       libraryClassifier: this.get(LibraryClassifier),
       mindMaps: this.get(MindMapService),
       infographics: this.get(InfographicService),
+      prompts: this.get(PromptService),
       books: this.get(BookService),
       jobs: this.jobs(),
     };

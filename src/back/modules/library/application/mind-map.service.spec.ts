@@ -67,6 +67,21 @@ describe('MindMapService', () => {
       expect(ai.chat).toHaveBeenCalledWith(expect.objectContaining({ providerId: 'gemini' }));
     });
 
+    it('when the user has custom instructions, should send them (with the fixed rules) instead of the default', async () => {
+      const withPrompts = new MindMapService(
+        library as unknown as LibraryService,
+        ai as unknown as AIService,
+        store,
+        { instructionsFor: jest.fn().mockReturnValue('Mapa só com palavras-chave.') } as never,
+      );
+
+      await withPrompts.generate('1');
+
+      expect(sentMessage().startsWith('Mapa só com palavras-chave.')).toBe(true);
+      expect(sentMessage()).toContain('# REGRAS FIXAS DO APLICATIVO');
+      expect(sentMessage()).toContain('Responda APENAS com um JSON válido');
+    });
+
     it('when a model is chosen, should use it instead of the cheapest', async () => {
       const map = await service.generate('1', ' gemini-x ');
 

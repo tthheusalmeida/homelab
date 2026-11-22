@@ -63,6 +63,10 @@ export class SettingsBackConfig extends BackConfig {
     return this.appPaths.infographicsFile;
   }
 
+  get promptsFile(): string {
+    return this.appPaths.promptsFile;
+  }
+
   get chatsFile(): string {
     return this.appPaths.chatsFile;
   }

@@ -27,6 +27,12 @@ import type {
 import type { ComponentRequest, ComponentsInstallRequest, ComponentsStatus } from './components';
 import type { PdfInspection } from './pdf';
 import type {
+  PromptActivateRequest,
+  PromptDeleteRequest,
+  PromptSaveRequest,
+  PromptsOverview,
+} from './prompts';
+import type {
   SetAutoCheckRequest,
   TranslatedNotes,
   TranslationAvailability,
@@ -143,6 +149,10 @@ export interface IpcContracts {
   [IpcChannels.appearance.get]: { request: void; response: Appearance };
   [IpcChannels.appearance.update]: { request: AppearancePatch; response: Appearance };
 
+  [IpcChannels.prompts.list]: { request: void; response: PromptsOverview };
+  [IpcChannels.prompts.save]: { request: PromptSaveRequest; response: PromptsOverview };
+  [IpcChannels.prompts.delete]: { request: PromptDeleteRequest; response: PromptsOverview };
+  [IpcChannels.prompts.activate]: { request: PromptActivateRequest; response: PromptsOverview };
   [IpcChannels.support.get]: { request: void; response: SupportSettings };
   [IpcChannels.support.update]: { request: Partial<SupportSettings>; response: SupportSettings };
 

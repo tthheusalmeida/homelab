@@ -21,6 +21,7 @@ export const StateFiles = {
   usage: 'ai-usage.json',
   mindMaps: 'mind-maps.json',
   infographics: 'infographics.json',
+  prompts: 'prompts.json',
 } as const;
 
 /**
@@ -42,6 +43,8 @@ export interface AppPaths {
   usageFile: string;
   mindMapsFile: string;
   infographicsFile: string;
+  /** Prompts personalizados (em `config/`, junto com as configurações). */
+  promptsFile: string;
 }
 
 export function createAppPaths(rootDir: string): AppPaths {
@@ -64,6 +67,7 @@ export function createAppPaths(rootDir: string): AppPaths {
     usageFile: path.join(dataDir, StateFiles.usage),
     mindMapsFile: path.join(dataDir, StateFiles.mindMaps),
     infographicsFile: path.join(dataDir, StateFiles.infographics),
+    promptsFile: path.join(configDir, StateFiles.prompts),
   };
 }
 

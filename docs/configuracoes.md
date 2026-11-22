@@ -25,6 +25,7 @@ Documentos/HomeLab/
 ```
 
 - `settings.json` (em `config/`): só a pasta da biblioteca, a aparência, o endereço do Ollama e `support.starPromptHidden` (convite da estrela, `apoio.md`), `updates.autoCheck` (verificação automática de atualizações, padrão ligada). Escrita atômica com cópia `.bak` da última versão boa; valores ausentes recebem o padrão; valores antigos de pastas e do Whisper que sobrarem no arquivo são ignorados. Arquivo ilegível: usa o `.bak` (e avisa); sem `.bak`, vai para `.corrupt` e o app segue com os padrões.
+- `prompts.json` (em `config/`): os prompts de IA que o usuário personalizou, em versões nomeadas (ver `prompts.md`).
 - `jobs.json`, `chats.json` e `ai-usage.json` (em `data/`): ver `persistencia.md`.
 - `secrets.json` fica em `app.getPath('userData')` (ex.: `%APPDATA%\homelab-desktop`), **fora da raiz e fora do backup**: chaves de API **cifradas** com `safeStorage` (DPAPI no Windows, Keychain no macOS, libsecret no Linux), pela API **assíncrona**. Se o sistema trocar a chave de criptografia (`shouldReEncrypt`), o segredo é regravado. Sem criptografia disponível, o app recusa salvar. Segredo que não decifra conta como não configurado.
 - O renderer **nunca** recebe a chave: só `configured` e a versão mascarada (`••••••••` + 4 últimos caracteres).

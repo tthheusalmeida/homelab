@@ -9,6 +9,7 @@ import { AppHandler, type AppInfo } from './app.handler';
 import { BackupHandler, type BackupPort } from './backup.handler';
 import { ComponentsHandler, type ComponentsPort } from './components.handler';
 import { PdfHandler, type PdfPort } from './pdf.handler';
+import { PromptsHandler, type PromptsPort } from './prompts.handler';
 import { JobLeftoversHandler, type JobLeftoversPort } from './leftovers.handler';
 import { PlatformHandler, type PlatformLoginsPort } from './platform.handler';
 import { NoticeHandler, type PendingNotices } from './notice.handler';
@@ -46,6 +47,7 @@ export interface BackReaders {
   libraryClassifier: LibraryClassifierPort;
   mindMaps: MindMapPort;
   infographics: InfographicPort;
+  prompts: PromptsPort;
   books: BookReader & BookWriter;
   jobs: {
     catalog: JobCatalogPort;
@@ -92,6 +94,7 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
     new LibraryHandler(deps.back.library, deps.back.libraryClassifier),
     new MindMapHandler(deps.back.mindMaps, deps.mindMapImages),
     new InfographicHandler(deps.back.infographics),
+    new PromptsHandler(deps.back.prompts),
     new BookHandler(deps.back.books),
     new BackupHandler(deps.backup),
     new PdfHandler(deps.pdf),

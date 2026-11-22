@@ -68,3 +68,6 @@ Excluir um resumo (janela "Sobre a página" > **Excluir**) **apaga também o map
 
 ## Barra de botões
 Os controles (zoom, ajustar, recolher, baixar) ficam na `FloatingToolbar` (`components/FloatingToolbar.tsx`), a mesma barra flutuante do infográfico; os botões de zoom vêm de `ZoomButtons`. Para um controle novo nas duas telas, use esses componentes. A barra fica na mesma altura do infográfico (20 px acima da borda da janela) na página e no modo leitura.
+
+## Prompt personalizável
+As **instruções** do mapa (o estilo: o que priorizar, o idioma, o tom) podem ser trocadas pelo usuário em versões nomeadas (Configurações > Prompts; ver `prompts.md`). Os limites (ramos, níveis, nós, tamanho dos textos), as regras de segurança e o formato JSON da resposta ficam num contrato fixo no código (`mindMapContract`) e continuam sendo conferidos por `parseMindMap`.

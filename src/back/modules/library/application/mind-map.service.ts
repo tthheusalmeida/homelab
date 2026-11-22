@@ -1,8 +1,9 @@
-import { BadGatewayException, BadRequestException, Injectable } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Injectable, Optional } from '@nestjs/common';
 
 import type { LibraryMindMap, LibraryMindMapNode } from '../../../../shared/contracts/library';
 import { AIService } from '../../ai/ai.service';
 import { buildMindMapPrompt } from '../../ai/prompts/mind-map.prompt';
+import { PromptService } from '../../ai/prompts/prompt.service';
 import { cheapestModel } from '../../ai/providers/gemini/gemini.pricing';
 
 import {
@@ -33,6 +34,8 @@ export class MindMapService {
     private readonly library: LibraryService,
     private readonly ai: AIService,
     private readonly store: MindMapStore,
+    // Sem ele (testes), vale sempre o prompt padrão.
+    @Optional() private readonly prompts?: PromptService,
   ) {}
 
   /** O mapa guardado da página, ou `null` se ainda não foi gerado. */
@@ -123,10 +126,13 @@ export class MindMapService {
 
     try {
       answer = await this.ai.chat({
-        message: buildMindMapPrompt({
-          title: meta.title,
-          content: content.slice(0, MAX_CONTENT_CHARS),
-        }),
+        message: buildMindMapPrompt(
+          {
+            title: meta.title,
+            content: content.slice(0, MAX_CONTENT_CHARS),
+          },
+          this.prompts?.instructionsFor('mindMap'),
+        ),
         modelId: model,
         providerId: 'gemini',
       });
