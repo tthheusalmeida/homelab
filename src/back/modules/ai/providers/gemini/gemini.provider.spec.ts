@@ -102,6 +102,24 @@ describe('GeminiProvider', () => {
   });
 
   describe('chat', () => {
+    it('when the answer must be JSON, should turn on the Gemini JSON response mode', async () => {
+      generateContent.mockResolvedValue({ text: '{}', usageMetadata: {} });
+
+      await build().chat({ message: 'oi', model: 'gemini-3.5-flash', json: true });
+
+      expect(generateContent).toHaveBeenCalledWith(
+        expect.objectContaining({ config: { responseMimeType: 'application/json' } }),
+      );
+    });
+
+    it('when the answer is plain text, should not send any response config', async () => {
+      generateContent.mockResolvedValue({ text: 'oi', usageMetadata: {} });
+
+      await build().chat({ message: 'oi', model: 'gemini-3.5-flash' });
+
+      expect(generateContent.mock.calls[0][0]).not.toHaveProperty('config');
+    });
+
     it('when chat succeeds, should strip the models/ prefix, return text and record usage with cost', async () => {
       generateContent.mockResolvedValue({
         text: 'resp',

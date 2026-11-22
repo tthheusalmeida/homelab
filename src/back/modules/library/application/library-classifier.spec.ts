@@ -57,6 +57,26 @@ describe('LibraryClassifier', () => {
     );
   });
 
+  it('when the user has custom instructions, should send them with the fixed rules instead of the default', async () => {
+    answer({ title: 'T', category: ['Química'], tags: ['a'] });
+    const withPrompts = new LibraryClassifier(
+      library as unknown as LibraryService,
+      ai as unknown as AIService,
+      {
+        instructionsFor: jest.fn().mockReturnValue('Classifique por assunto, sem rodeios.'),
+      } as never,
+    );
+
+    await withPrompts.suggest('id1');
+
+    const message = (ai.chat.mock.calls as Array<[{ message: string }]>)[0][0].message;
+
+    expect(message.startsWith('Classifique por assunto, sem rodeios.')).toBe(true);
+    expect(message).toContain('# REGRAS FIXAS DO APLICATIVO');
+    expect(message).toContain('# CATEGORIAS EXISTENTES');
+    expect(message).toContain('Responda APENAS com um JSON válido');
+  });
+
   it('when no model is given, should use gemini with the cheapest model', async () => {
     answer({ title: 'T', category: ['Química'], tags: ['a'] });
 

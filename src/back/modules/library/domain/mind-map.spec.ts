@@ -287,3 +287,47 @@ describe('hashContent', () => {
     expect(hashContent('abc')).not.toBe(hashContent('abd'));
   });
 });
+
+describe('parseMindMap: sloppy answers from the AI', () => {
+  const tree =
+    '{"subtitle": "Sobre redes", "nodes": [{"label": "Camadas", "note": "Níveis.", "children": [{"label": "TCP", "children": []}]}]}';
+
+  it('when the JSON has trailing commas and comments, should still parse it', () => {
+    const answer = '{\n // mapa\n "nodes": [{"label": "A", "children": [],},],\n}';
+
+    expect(parseMindMap(answer).nodes).toEqual([{ label: 'A', children: [] }]);
+  });
+
+  it('when the answer was cut in the middle, should keep the branches that came whole', () => {
+    const cut =
+      '{"subtitle": "S", "nodes": [{"label": "A", "children": []}, {"label": "B", "children": [{"label": "B1", "children": []}, {"label": "B2", "ch';
+    const result = parseMindMap(cut);
+
+    expect(result.nodes.map((node) => node.label)).toEqual(['A', 'B']);
+    expect(result.nodes[1].children.map((node) => node.label)).toEqual(['B1', 'B2']);
+  });
+
+  it('when the answer was cut inside a fence, should still read it', () => {
+    expect(
+      parseMindMap('```json\n{"nodes": [{"label": "A", "children": []}, {"label": "B"').nodes,
+    ).toHaveLength(2);
+  });
+
+  it('when the map comes wrapped in a single key, should unwrap it', () => {
+    expect(parseMindMap(`{"mapa_mental": ${tree}}`).nodes[0].label).toBe('Camadas');
+  });
+
+  it('when the answer has text with braces before the JSON, should skip them', () => {
+    expect(parseMindMap(`Segue o mapa {pronto}:\n${tree}`).nodes[0].label).toBe('Camadas');
+  });
+
+  it('when a text value has a raw line break, should keep it as a space', () => {
+    const answer = '{"nodes": [{"label": "Duas\nlinhas", "children": []}]}';
+
+    expect(parseMindMap(answer).nodes[0].label).toBe('Duas linhas');
+  });
+
+  it('when there is no JSON at all, should throw InvalidMindMapError', () => {
+    expect(() => parseMindMap('Desculpe, não consegui gerar o mapa.')).toThrow(InvalidMindMapError);
+  });
+});

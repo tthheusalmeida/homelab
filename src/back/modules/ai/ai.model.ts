@@ -52,6 +52,8 @@ export interface AIChatRequest {
   message: string;
   model: string;
   thinking?: string;
+  /** A resposta precisa ser um JSON: liga o modo de resposta em JSON do provedor, quando existe. */
+  json?: boolean;
   /** Chamado antes de cada nova tentativa automática (para mostrar "tentando de novo"). */
   onRetry?: (info: AIRetryInfo) => void;
   /**

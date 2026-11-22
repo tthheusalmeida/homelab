@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 
 import { Job, JobCancelledError } from '../../domain/job.entity';
 import { JobProcessor } from '../../domain/job-processor.interface';
 import { retryNote } from '../../domain/retry-note';
 
 import { AIService } from '../../../ai/ai.service';
+import { PromptService } from '../../../ai/prompts/prompt.service';
 import {
   buildSummaryPrompt,
   DEFAULT_SUMMARY_DETAIL,
@@ -56,6 +57,8 @@ export class PdfToSummaryJobProcessor implements JobProcessor<PdfToSummaryDto, s
     private readonly videoService: VideoService,
     private readonly checkpoints: PdfCheckpointStore,
     private readonly classifier: LibraryClassifier,
+    // Sem ele (testes), vale sempre o prompt padrão.
+    @Optional() private readonly prompts?: PromptService,
   ) {}
 
   async process(job: Job, input: PdfToSummaryDto): Promise<void> {
@@ -94,7 +97,7 @@ export class PdfToSummaryJobProcessor implements JobProcessor<PdfToSummaryDto, s
       const total = manifest.parts.length;
       const resumed = (await this.checkpoints.progress(key))?.done ?? 0;
       const detail = isSummaryDetail(input.detail) ? input.detail : DEFAULT_SUMMARY_DETAIL;
-      const prompt = buildSummaryPrompt(detail);
+      const prompt = buildSummaryPrompt(detail, this.prompts?.instructionsFor('summary'));
       const summaries: string[] = [];
 
       for (const part of manifest.parts) {

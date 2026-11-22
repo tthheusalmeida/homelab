@@ -4,6 +4,8 @@ import { HttpModule } from '@nestjs/axios';
 import { AIService } from './ai.service';
 import { AiUsageService } from './usage/ai-usage.service';
 
+import { PromptService } from './prompts/prompt.service';
+import { PromptStore } from './prompts/prompt.store';
 import { OllamaProvider } from './providers/ollama/ollama.provider';
 import { GeminiProvider } from './providers/gemini/gemini.provider';
 
@@ -13,7 +15,14 @@ import { GeminiProvider } from './providers/gemini/gemini.provider';
  */
 @Module({
   imports: [HttpModule],
-  providers: [AIService, AiUsageService, OllamaProvider, GeminiProvider],
-  exports: [AIService, AiUsageService],
+  providers: [
+    AIService,
+    AiUsageService,
+    PromptStore,
+    PromptService,
+    OllamaProvider,
+    GeminiProvider,
+  ],
+  exports: [AIService, AiUsageService, PromptStore, PromptService],
 })
 export class AIModule {}

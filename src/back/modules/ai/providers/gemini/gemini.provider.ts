@@ -124,6 +124,8 @@ export class GeminiProvider implements AIProvider {
                   parts: [{ text: turn.content }],
                 }))
               : request.message,
+            // Modo JSON: a resposta já vem como JSON puro, sem cerca de código nem texto em volta.
+            ...(request.json ? { config: { responseMimeType: 'application/json' } } : {}),
           });
 
           if (!result.text) {

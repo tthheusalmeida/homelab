@@ -26,6 +26,12 @@ export const IpcChannels = {
     get: 'appearance:get',
     update: 'appearance:update',
   },
+  prompts: {
+    list: 'prompts:list',
+    save: 'prompts:save',
+    delete: 'prompts:delete',
+    activate: 'prompts:activate',
+  },
   support: {
     get: 'support:get',
     update: 'support:update',

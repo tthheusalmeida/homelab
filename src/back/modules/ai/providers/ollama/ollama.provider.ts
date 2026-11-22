@@ -133,6 +133,7 @@ export class OllamaProvider implements AIProvider {
           ],
           think: request.thinking === 'on',
           stream: false,
+          ...(request.json ? { format: 'json' } : {}),
           // Com histórico, o contexto precisa caber a conversa (senão o Ollama a corta sem avisar).
           ...(history
             ? {

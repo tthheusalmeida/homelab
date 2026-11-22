@@ -90,6 +90,31 @@ describe('PdfToSummaryJobProcessor', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   });
 
+  it('when the user has custom instructions, should send them in every part', async () => {
+    const withPrompts = new PdfToSummaryJobProcessor(
+      ai as unknown as AIService,
+      video as unknown as VideoService,
+      store,
+      classifier as unknown as LibraryClassifier,
+      {
+        instructionsFor: jest.fn().mockReturnValue('Resuma em tópicos curtos para a prova.'),
+      } as never,
+    );
+
+    await withPrompts.process(job, dto);
+
+    const messages = (ai.chat.mock.calls as Array<[{ message: string }]>).map(
+      ([call]) => call.message,
+    );
+
+    expect(messages).toHaveLength(3);
+
+    for (const message of messages) {
+      expect(message).toContain('Resuma em tópicos curtos para a prova.');
+      expect(message).toContain('# REGRAS FIXAS DO APLICATIVO');
+    }
+  });
+
   it('when processing, should summarize each part in order using the chosen model', async () => {
     await processor.process(job, dto);
 

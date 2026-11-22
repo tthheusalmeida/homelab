@@ -22,6 +22,7 @@ Status: **implementado** (ver "Como ficou" no fim; o smoke E2E fica para o usuá
 | Consumo de IA | `userData/ai-usage.json` (limite de 5.000 registros) | Sim |
 | Mapas mentais (gerados pela IA e **editados pelo usuário**) | `data/mind-maps.json` (um por resumo; ver `mapa-mental.md`) | Sim, como o item **Mapas mentais** (opcional, caixa própria). O mapa da IA é cache, mas as **edições do usuário ficam neste mesmo arquivo**. Excluir o resumo apaga o mapa dele |
 | Infográficos (gerados pela IA: modelo, textos e peças) | `data/infographics.json` (um por resumo; ver `infografico.md`) | Sim, como o item **Infográficos** (opcional, caixa própria). Excluir o resumo apaga o infográfico dele |
+| Prompts personalizados (versões nomeadas e a versão em uso) | `config/prompts.json` (ver `prompts.md`) | Sim, como o item **Prompts** (opcional, caixa própria): uma versão por registro. Mesclar só acrescenta versões com nome novo e mantém a em uso; Substituir troca tudo, inclusive a em uso |
 | Aparência (tema, cor e leitura) | `localStorage` + `settings.json` (duplicada) | Sim |
 
 ## Estrutura nova
@@ -37,7 +38,8 @@ Documentos/HomeLab/                  raiz FIXA (não é configurável)
 │  ├─ mind-maps.json                 mapas mentais, com as edições do usuário
 │  └─ infographics.json              infográficos gerados
 ├─ config/
-│  └─ settings.json                  configurações (move de userData)
+│  ├─ settings.json                  configurações (move de userData)
+│  └─ prompts.json                   prompts de IA personalizados (versões nomeadas)
 └─ temp/{video,audio,pdf}/           temporários (nunca entram no backup); `pdf/` guarda o progresso dos resumos de PDF
 ```
 

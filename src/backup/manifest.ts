@@ -19,6 +19,7 @@ export const FILE_ITEMS = {
   chats: 'data/chats.json',
   mindMaps: 'data/mind-maps.json',
   infographics: 'data/infographics.json',
+  prompts: 'config/prompts.json',
   usage: 'data/ai-usage.json',
   settings: 'config/settings.json',
 } as const;
@@ -30,6 +31,7 @@ export const ITEM_KINDS: Record<BackupItemId, BackupItemKind> = {
   chats: 'records',
   mindMaps: 'records',
   infographics: 'records',
+  prompts: 'records',
   usage: 'records',
   settings: 'records',
 };

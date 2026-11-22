@@ -1,4 +1,11 @@
-import { INFOGRAPHIC_LIMITS, INFOGRAPHIC_SECTIONS } from '../../../../shared/infographic-layouts';
+import {
+  INFOGRAPHIC_ACCEPTED_MIN_ITEMS,
+  INFOGRAPHIC_LAYOUT_IDS,
+  INFOGRAPHIC_LIMITS,
+  INFOGRAPHIC_MIN_ACCEPTED_SECTIONS,
+  INFOGRAPHIC_SECTIONS,
+  layoutInfo,
+} from '../../../../shared/infographic-layouts';
 import { INFOGRAPHIC_PIECE_KEYS } from '../../../../shared/infographic-pieces';
 
 import { InvalidInfographicError, parseInfographic } from './infographic';
@@ -134,7 +141,7 @@ describe('parseInfographic', () => {
         story({
           sections: [
             steps({ title: '' }),
-            steps({ items: items(2) }),
+            steps({ items: items(1) }),
             steps(),
             timeline(),
             ...more(),
@@ -432,5 +439,183 @@ describe('parseInfographic', () => {
     );
 
     expect(dropped.sections.map((section) => section.layout)).not.toContain('cycle');
+  });
+});
+
+describe('parseInfographic: sloppy answers from the AI', () => {
+  it('when the JSON has trailing commas and comments, should still parse it', () => {
+    const text = JSON.stringify(story()).replace(/\}\]\}$/, '},],} // fim');
+
+    expect(parseInfographic(text).sections.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('when the answer was cut in the middle of a section, should keep the sections that came whole', () => {
+    const whole = JSON.stringify(story());
+    const cutAt = whole.indexOf('"title":"Partes"') + 12;
+    const result = parseInfographic(whole.slice(0, cutAt));
+
+    expect(result.sections.map((section) => section.title)).toEqual([
+      'Como funciona',
+      'A história',
+    ]);
+  });
+
+  it('when only the minimum accepted number of sections holds up, should still accept the story', () => {
+    const text = JSON.stringify(
+      story({ sections: [steps(), timeline(), { layout: 'pizza', title: 'X', items: items(3) }] }),
+    );
+
+    expect(parseInfographic(text).sections).toHaveLength(INFOGRAPHIC_MIN_ACCEPTED_SECTIONS);
+  });
+
+  it('when the infographic comes wrapped in a single key, should unwrap it', () => {
+    const wrapped = JSON.stringify({ infographic: story() });
+
+    expect(parseInfographic(wrapped).title).toBe('Como a internet funciona');
+  });
+
+  it('when the cover has no title, should use the page title instead of failing', () => {
+    const noTitle = JSON.stringify(story({ title: undefined }));
+
+    expect(() => parseInfographic(noTitle)).toThrow(InvalidInfographicError);
+    expect(parseInfographic(noTitle, undefined, 'Redes de computadores').title).toBe(
+      'Redes de computadores',
+    );
+  });
+
+  it('when the cover has a title, should keep it over the page title', () => {
+    expect(parseInfographic(JSON.stringify(story()), undefined, 'Outro').title).toBe(
+      'Como a internet funciona',
+    );
+  });
+
+  it('when there is prose with braces before the JSON, should skip it', () => {
+    expect(parseInfographic(`Aqui vai {o resultado}:\n${JSON.stringify(story())}`).title).toBe(
+      'Como a internet funciona',
+    );
+  });
+});
+
+describe('InvalidInfographicError problems', () => {
+  const problemsOf = (text: string) => {
+    try {
+      parseInfographic(text);
+    } catch (error) {
+      return (error as InvalidInfographicError).problems;
+    }
+
+    return [];
+  };
+
+  it('when the answer is not JSON, should say so', () => {
+    expect(problemsOf('Desculpe, não consigo.')).toEqual(['a resposta não tem um JSON utilizável']);
+  });
+
+  it('when the cover has no title and no sections list, should say both', () => {
+    const problems = problemsOf(JSON.stringify({ intro: 'x' }));
+
+    expect(problems).toContain('a capa não tem título');
+    expect(problems).toContain('a resposta não tem a lista "sections"');
+  });
+
+  it('when sections are dropped, should say which one and why', () => {
+    const problems = problemsOf(
+      JSON.stringify(
+        story({
+          sections: [
+            { layout: 'pizza', title: 'X', items: items(3) },
+            { layout: 'steps', title: '', items: items(3) },
+            steps({ items: items(1) }),
+            { layout: 'versus', title: 'V', items: items(3) },
+          ],
+        }),
+      ),
+    );
+
+    expect(problems).toEqual(
+      expect.arrayContaining([
+        'seção 1: modelo desconhecido (pizza)',
+        'seção 2: modelo steps sem título',
+        'seção 3: modelo steps com itens de menos (1 de 2)',
+        'seção 4: comparativo sem os dois lados',
+        '0 seção(ões) utilizável(is) de 4 (mínimo 2)',
+      ]),
+    );
+  });
+});
+
+describe('parseInfographic: short summaries (fewer items than the prompt asks for)', () => {
+  const only = (section: Record<string, unknown>) =>
+    parseInfographic(JSON.stringify(story({ sections: [steps(), section] })));
+
+  it.each([
+    ['radial', { layout: 'radial', title: 'Conceitos', items: items(3) }],
+    ['mosaic', { layout: 'mosaic', title: 'Visão geral', items: items(2) }],
+    ['steps', { layout: 'steps', title: 'Passos', items: items(2) }],
+    ['funnel', { layout: 'funnel', title: 'Funil', items: items(2) }],
+    ['timeline', { layout: 'timeline', title: 'Linha', items: items(2, { tag: '2020' }) }],
+    ['myths', { layout: 'myths', title: 'Mitos', items: items(2) }],
+    ['ranking', { layout: 'ranking', title: 'Ranking', items: items(2, { value: 50 }) }],
+    ['numbers', { layout: 'numbers', title: 'Números', items: items(2, { tag: '10' }) }],
+    [
+      'versus',
+      {
+        layout: 'versus',
+        title: 'Comparativo',
+        sides: [{ title: 'A' }, { title: 'B' }],
+        items: items(2, { extra: 'lado B' }),
+      },
+    ],
+  ])(
+    'when a %s section has fewer items than the prompt asks for but enough to draw, should keep it',
+    (layout, section) => {
+      expect(only(section).sections.map((entry) => entry.layout)).toContain(layout);
+    },
+  );
+
+  it('when a cycle has fewer than 4 items, should drop it (it is a diamond of four)', () => {
+    expect(() =>
+      parseInfographic(
+        JSON.stringify(
+          story({ sections: [steps(), { layout: 'cycle', title: 'Ciclo', items: items(3) }] }),
+        ),
+      ),
+    ).toThrow(InvalidInfographicError);
+  });
+
+  it('when a radial map has fewer than 3 facets, should drop it', () => {
+    expect(() =>
+      parseInfographic(
+        JSON.stringify(
+          story({ sections: [steps(), { layout: 'radial', title: 'Mapa', items: items(2) }] }),
+        ),
+      ),
+    ).toThrow(InvalidInfographicError);
+  });
+
+  it('when the accepted minimum is read for each layout, should never be above what the prompt asks', () => {
+    for (const id of INFOGRAPHIC_LAYOUT_IDS) {
+      expect(INFOGRAPHIC_ACCEPTED_MIN_ITEMS[id]).toBeLessThanOrEqual(layoutInfo(id).minItems);
+      expect(INFOGRAPHIC_ACCEPTED_MIN_ITEMS[id]).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('when a real log answer is read (radial with 3, mosaic with 2, versus with 2), should become a story', () => {
+    const answerText = JSON.stringify(
+      story({
+        sections: [
+          { layout: 'radial', title: 'Conceitos', items: items(3) },
+          { layout: 'mosaic', title: 'Visão geral', items: items(2) },
+          {
+            layout: 'versus',
+            title: 'Comparativo',
+            sides: [{ title: 'Antes' }, { title: 'Depois' }],
+            items: items(2, { extra: 'B' }),
+          },
+        ],
+      }),
+    );
+
+    expect(parseInfographic(answerText).sections).toHaveLength(3);
   });
 });

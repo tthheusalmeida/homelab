@@ -44,6 +44,9 @@ export abstract class BackConfig {
   /** Arquivo dos infográficos gerados pela IA; sem valor, ficam só em memória (testes). */
   abstract readonly infographicsFile: string | null;
 
+  /** Arquivo dos prompts personalizados; sem valor, ficam só em memória (testes). */
+  abstract readonly promptsFile: string | null;
+
   /** Chave do Gemini; `null` quando não configurada (o provider responde `NOT_CONFIGURED`). */
   abstract readonly geminiApiKey: string | null;
 }

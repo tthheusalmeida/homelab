@@ -1,6 +1,14 @@
 /** O que pode entrar num backup. Cada item é uma caixa de seleção na tela. */
 export type BackupItemId =
-  'library' | 'inbox' | 'jobs' | 'chats' | 'mindMaps' | 'infographics' | 'usage' | 'settings';
+  | 'library'
+  | 'inbox'
+  | 'jobs'
+  | 'chats'
+  | 'mindMaps'
+  | 'infographics'
+  | 'prompts'
+  | 'usage'
+  | 'settings';
 
 export const BACKUP_ITEM_IDS: readonly BackupItemId[] = [
   'library',
@@ -9,6 +17,7 @@ export const BACKUP_ITEM_IDS: readonly BackupItemId[] = [
   'chats',
   'mindMaps',
   'infographics',
+  'prompts',
   'usage',
   'settings',
 ];

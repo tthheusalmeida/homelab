@@ -89,6 +89,7 @@ export interface BackupDeps {
     chats: BackupCollection;
     mindMaps: BackupCollection;
     infographics: BackupCollection;
+    prompts: BackupCollection;
     usage: BackupCollection;
   };
   settings: BackupSettingsPort;
@@ -138,6 +139,7 @@ const RESTORE_ORDER: readonly BackupItemId[] = [
   'chats',
   'mindMaps',
   'infographics',
+  'prompts',
   'inbox',
   'library',
 ];
@@ -398,6 +400,11 @@ export class BackupService {
 
         return { data: { version: BACKUP_VERSION, infographics }, count: infographics.length };
       }
+      case 'prompts': {
+        const versions = this.deps.collections.prompts.export();
+
+        return { data: { version: BACKUP_VERSION, versions }, count: versions.length };
+      }
       case 'usage': {
         const records = this.deps.collections.usage.export();
 
@@ -514,7 +521,7 @@ export class BackupService {
   }
 
   private async applyCollection(
-    id: 'jobs' | 'chats' | 'mindMaps' | 'infographics' | 'usage',
+    id: 'jobs' | 'chats' | 'mindMaps' | 'infographics' | 'prompts' | 'usage',
     run: RestoreRun,
   ): Promise<BackupRestoreItemResult> {
     const key = {
@@ -522,6 +529,7 @@ export class BackupService {
       chats: 'chats',
       mindMaps: 'maps',
       infographics: 'infographics',
+      prompts: 'versions',
       usage: 'records',
     }[id];
     const data = this.readStaged(id, run) as Record<string, unknown> | null;

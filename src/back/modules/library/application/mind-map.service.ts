@@ -1,8 +1,10 @@
-import { BadGatewayException, BadRequestException, Injectable } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Injectable, Optional } from '@nestjs/common';
 
 import type { LibraryMindMap, LibraryMindMapNode } from '../../../../shared/contracts/library';
 import { AIService } from '../../ai/ai.service';
 import { buildMindMapPrompt } from '../../ai/prompts/mind-map.prompt';
+import { PromptService } from '../../ai/prompts/prompt.service';
+import { INVALID_ANSWER_RETRY_HINT, MAX_ANSWER_ATTEMPTS } from '../../ai/prompts/retry-hint';
 import { cheapestModel } from '../../ai/providers/gemini/gemini.pricing';
 
 import {
@@ -10,6 +12,7 @@ import {
   InvalidMindMapError,
   parseEditedMindMap,
   parseMindMap,
+  type ParsedMindMap,
   type StoredMindMap,
 } from '../domain/mind-map';
 import { DocumentTypeOptions } from '../domain/library.types';
@@ -33,6 +36,8 @@ export class MindMapService {
     private readonly library: LibraryService,
     private readonly ai: AIService,
     private readonly store: MindMapStore,
+    // Sem ele (testes), vale sempre o prompt padrão.
+    @Optional() private readonly prompts?: PromptService,
   ) {}
 
   /** O mapa guardado da página, ou `null` se ainda não foi gerado. */
@@ -119,32 +124,14 @@ export class MindMapService {
 
     const model = modelId?.trim() || cheapestModel();
 
-    let answer: string;
-
-    try {
-      answer = await this.ai.chat({
-        message: buildMindMapPrompt({
-          title: meta.title,
-          content: content.slice(0, MAX_CONTENT_CHARS),
-        }),
-        modelId: model,
-        providerId: 'gemini',
-      });
-    } catch (error) {
-      throw new BadGatewayException(failureMessage(error), { cause: error });
-    }
-
-    let parsed;
-
-    try {
-      parsed = parseMindMap(answer);
-    } catch (error) {
-      if (error instanceof InvalidMindMapError) {
-        throw new BadGatewayException('A IA não retornou um mapa mental válido. Tente novamente.');
-      }
-
-      throw error;
-    }
+    const prompt = buildMindMapPrompt(
+      {
+        title: meta.title,
+        content: content.slice(0, MAX_CONTENT_CHARS),
+      },
+      this.prompts?.instructionsFor('mindMap'),
+    );
+    const parsed = await this.askUntilReadable(prompt, model);
 
     const stored: StoredMindMap = {
       contentHash: hashContent(content),
@@ -156,6 +143,42 @@ export class MindMapService {
     this.store.set(id, stored);
 
     return toView(stored, stored.contentHash);
+  }
+
+  /**
+   * Pede o mapa à IA e o lê. Se a resposta vier inválida (a IA erra o formato de vez em quando), pede
+   * de novo, lembrando o formato, até `MAX_ANSWER_ATTEMPTS` vezes; falha do provedor (limite, chave,
+   * rede) não repete aqui: ele já tem as suas tentativas.
+   */
+  private async askUntilReadable(prompt: string, model: string): Promise<ParsedMindMap> {
+    for (let attempt = 1; ; attempt += 1) {
+      let answer: string;
+
+      try {
+        answer = await this.ai.chat({
+          message: attempt === 1 ? prompt : `${prompt}\n\n${INVALID_ANSWER_RETRY_HINT}`,
+          modelId: model,
+          providerId: 'gemini',
+          json: true,
+        });
+      } catch (error) {
+        throw new BadGatewayException(failureMessage(error), { cause: error });
+      }
+
+      try {
+        return parseMindMap(answer);
+      } catch (error) {
+        if (!(error instanceof InvalidMindMapError)) {
+          throw error;
+        }
+
+        if (attempt >= MAX_ANSWER_ATTEMPTS) {
+          throw new BadGatewayException(
+            'A IA não retornou um mapa mental válido. Tente novamente.',
+          );
+        }
+      }
+    }
   }
 }
 

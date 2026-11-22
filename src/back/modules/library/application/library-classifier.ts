@@ -1,8 +1,9 @@
-import { BadGatewayException, Injectable } from '@nestjs/common';
+import { BadGatewayException, Injectable, Optional } from '@nestjs/common';
 
 import type { AIProviderName, AIRetryInfo } from '../../ai/ai.model';
 import { AIService } from '../../ai/ai.service';
 import { buildClassificationPrompt } from '../../ai/prompts/library-classification.prompt';
+import { PromptService } from '../../ai/prompts/prompt.service';
 import { cheapestModel } from '../../ai/providers/gemini/gemini.pricing';
 
 import type { CategoryNode } from '../domain/categories';
@@ -42,6 +43,8 @@ export class LibraryClassifier {
   constructor(
     private readonly library: LibraryService,
     private readonly ai: AIService,
+    // Sem ele (testes), vale sempre o prompt padrão.
+    @Optional() private readonly prompts?: PromptService,
   ) {}
 
   /** Pede ao Gemini uma sugestão de título, categoria e tags para o documento. */
@@ -70,12 +73,15 @@ export class LibraryClassifier {
 
     const model = input.modelId;
 
-    const prompt = buildClassificationPrompt({
-      title: input.title,
-      content: input.content.slice(0, input.maxContentChars ?? MAX_CONTENT_CHARS),
-      categories: flattenCategories(tree),
-      tags: knownTags,
-    });
+    const prompt = buildClassificationPrompt(
+      {
+        title: input.title,
+        content: input.content.slice(0, input.maxContentChars ?? MAX_CONTENT_CHARS),
+        categories: flattenCategories(tree),
+        tags: knownTags,
+      },
+      this.prompts?.instructionsFor('classification'),
+    );
 
     let answer: string;
 
@@ -84,6 +90,7 @@ export class LibraryClassifier {
         message: prompt,
         modelId: model,
         providerId: input.providerId,
+        json: true,
         ...(input.thinking ? { thinking: input.thinking } : {}),
         ...(input.onRetry ? { onRetry: input.onRetry } : {}),
       });
