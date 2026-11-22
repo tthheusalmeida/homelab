@@ -1,16 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { FindBar } from "./FindBar";
 
-const setup = (
-  props: Partial<React.ComponentProps<typeof FindBar>> = {},
-) => {
+const setup = (props: Partial<React.ComponentProps<typeof FindBar>> = {}) => {
   const handlers = {
     onChange: vi.fn(),
     onNext: vi.fn(),
     onPrev: vi.fn(),
+    onClose: vi.fn(),
   };
 
   render(
@@ -23,12 +22,42 @@ const setup = (
 const input = () => screen.getByLabelText("Pesquisar na página");
 
 describe("FindBar", () => {
+  it("when rendered, should float fixed, centered and at the very top, outside the page tree", () => {
+    const { container } = render(
+      <div>
+        <FindBar
+          value=""
+          count={0}
+          index={-1}
+          onChange={() => {}}
+          onNext={() => {}}
+          onPrev={() => {}}
+          onClose={() => {}}
+        />
+      </div>,
+    );
+
+    const bar = screen.getByRole("search");
+
+    expect(container).not.toContainElement(bar);
+    expect(bar).toHaveClass("fixed", "top-0", "mx-auto", "inset-x-0");
+  });
+
   it("when rendered, should show the field with the Ctrl+F hint", () => {
     setup();
 
     expect(input()).toHaveAttribute(
       "placeholder",
       "Pesquisar na página... (Ctrl+F)",
+    );
+  });
+
+  it("when a label is given, should use it in the field and the hint", () => {
+    setup({ label: "Pesquisar no livro" });
+
+    expect(screen.getByLabelText("Pesquisar no livro")).toHaveAttribute(
+      "placeholder",
+      "Pesquisar no livro... (Ctrl+F)",
     );
   });
 
@@ -40,7 +69,7 @@ describe("FindBar", () => {
     expect(onChange).toHaveBeenCalledWith("d");
   });
 
-  it("when the query is short, should not show the counter or buttons", () => {
+  it("when the query is short, should not show the counter or arrows", () => {
     setup({ value: "d" });
 
     expect(screen.queryByText(/ocorrência|de \d+/i)).not.toBeInTheDocument();
@@ -99,51 +128,12 @@ describe("FindBar", () => {
     expect(onPrev).toHaveBeenCalledTimes(1);
   });
 
-  it("when Escape is pressed with text, should clear the search", async () => {
-    const { onChange, user } = setup({ value: "docker", count: 1, index: 0 });
-
-    await user.type(input(), "{Escape}");
-
-    expect(onChange).toHaveBeenCalledWith("");
-  });
-
-  it("when Escape is pressed with an empty field, should do nothing", async () => {
-    const { onChange, user } = setup();
-
-    await user.type(input(), "{Escape}");
-
-    expect(onChange).not.toHaveBeenCalled();
-  });
-
-  it("when the clear button is clicked, should clear the search", async () => {
-    const { onChange, user } = setup({ value: "docker", count: 1, index: 0 });
-
-    await user.click(screen.getByRole("button", { name: "Limpar pesquisa" }));
-
-    expect(onChange).toHaveBeenCalledWith("");
-  });
-
-  it("when a label is given, should use it in the field and the hint", () => {
-    setup({ label: "Pesquisar no livro" });
-
-    expect(screen.getByLabelText("Pesquisar no livro")).toHaveAttribute(
-      "placeholder",
-      "Pesquisar no livro... (Ctrl+F)",
-    );
-  });
-
-  it("when closable and Escape is pressed with an empty field, should close", async () => {
-    const onClose = vi.fn();
-    const { user } = setup({ onClose });
-
-    await user.type(input(), "{Escape}");
-
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it("when closable and Escape is pressed with text, should only clear it", async () => {
-    const onClose = vi.fn();
-    const { onChange, user } = setup({ value: "docker", onClose });
+  it("when Escape is pressed with text, should only clear the search", async () => {
+    const { onChange, onClose, user } = setup({
+      value: "docker",
+      count: 1,
+      index: 0,
+    });
 
     await user.type(input(), "{Escape}");
 
@@ -151,52 +141,74 @@ describe("FindBar", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("when closable, should show the close button even before searching", async () => {
-    const onClose = vi.fn();
-    const { user } = setup({ onClose, compact: true });
+  it("when Escape is pressed with an empty field, should close", async () => {
+    const { onChange, onClose, user } = setup();
+
+    await user.type(input(), "{Escape}");
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("when the close button is clicked, should close", async () => {
+    const { onClose, user } = setup();
 
     await user.click(screen.getByRole("button", { name: "Fechar pesquisa" }));
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("when floating, should render outside its parent, fixed on the window and with counter inline", () => {
-    const { container } = render(
-      <div>
-        <FindBar
-          floating
-          value="docker"
-          count={3}
-          index={0}
-          onChange={() => {}}
-          onNext={() => {}}
-          onPrev={() => {}}
-          onClose={() => {}}
-        />
-      </div>,
-    );
-
-    const bar = screen.getByRole("search");
-
-    expect(container).not.toContainElement(bar);
-    expect(bar).toHaveClass("fixed");
-    expect(bar).toHaveTextContent("1 de 3");
-  });
-
   it("when an input ref is given, should point to the field", () => {
     const ref = { current: null as HTMLInputElement | null };
-    render(
-      <FindBar
-        value=""
-        count={0}
-        index={-1}
-        onChange={() => {}}
-        onNext={() => {}}
-        onPrev={() => {}}
-        inputRef={ref}
-      />,
-    );
+    setup({ inputRef: ref });
 
     expect(ref.current).toBe(input());
+  });
+
+  describe("results list", () => {
+    const items = [
+      { before: "uma ", match: "casa", after: " grande" },
+      { before: "outra ", match: "casa", after: "…" },
+    ];
+
+    it("when there are results, should list each snippet with the match in bold", () => {
+      setup({
+        value: "casa",
+        count: 2,
+        index: 0,
+        results: { items, current: 0, onSelect: vi.fn() },
+      });
+
+      const list = screen.getByRole("list", { name: "Resultados da pesquisa" });
+
+      expect(list.querySelectorAll("li")).toHaveLength(2);
+      expect(list.querySelector("strong")).toHaveTextContent("casa");
+      expect(screen.getAllByRole("button", { current: true })).toHaveLength(1);
+    });
+
+    it("when a result is clicked, should select its occurrence", async () => {
+      const onSelect = vi.fn();
+      const { user } = setup({
+        value: "casa",
+        count: 2,
+        index: 0,
+        results: { items, current: 0, onSelect },
+      });
+
+      await user.click(
+        within(screen.getByRole("list")).getAllByRole("button")[1],
+      );
+
+      expect(onSelect).toHaveBeenCalledWith(1);
+    });
+
+    it("when the query is short or there are no results, should not show the list", () => {
+      setup({
+        value: "c",
+        results: { items, current: 0, onSelect: vi.fn() },
+      });
+
+      expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    });
   });
 });

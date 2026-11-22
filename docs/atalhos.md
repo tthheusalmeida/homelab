@@ -5,8 +5,8 @@
 - Lista todas as telas do menu (filtra sem diferenciar acento e caixa) e, com 2 letras ou mais, busca **páginas da biblioteca** pelo texto (`library:documents:list`, até 6 resultados). Setas movem, Enter abre, Esc fecha.
 
 ## Buscar no texto (Ctrl F)
-- `Ctrl+F` (ou `Cmd+F`) abre uma **barra flutuante** no canto da janela (acima do modo leitura) e foca o campo, no **livro** e nas **páginas da biblioteca** (transcrição, resumo e demais). No livro o campo do painel (modo normal) e da barra de cima (modo leitura) continua, com a lista de ocorrências no painel. Não vale no mapa mental nem no infográfico. Esc limpa o texto; com o campo vazio, fecha a barra.
-- Código único: `hooks/use-find.ts` (estado, Ctrl+F e destaque) + `components/FindBar.tsx` (campo, "3 de 12" e setas). Para ligar em outra tela: `const find = useFind(container, versão)` e `<FindBar floating {...find.barProps} onClose={find.close} />`.
+- `Ctrl+F` (ou `Cmd+F`) abre **um só campo de busca**, flutuante, centralizado no topo (colado na borda de cima) e acima do modo leitura, no **livro** e nas **páginas da biblioteca** (transcrição, resumo e demais). Não há campo fixo no painel. Nas páginas, a barra traz a **lista de ocorrências** com trecho (até 100; clicar vai até a ocorrência, também no modo leitura); no livro a lista continua no painel, com capítulo e módulo. Não vale no mapa mental nem no infográfico. Esc limpa o texto; com o campo vazio, fecha a barra.
+- Código único: `hooks/use-find.ts` (estado, Ctrl+F e destaque) + `components/FindBar.tsx` (campo, "3 de 12" e setas). Para ligar em outra tela: `const find = useFind(container, versão)` e `<FindBar {...find.barProps} results={find.results} onClose={find.close} />`.
 - Como casa: a **frase inteira** primeiro ("casa da vida", ignorando acento, caixa e quebra de linha); se não existe, cada palavra em **qualquer pedaço de palavra** ("casa" acha "casamento" e "encasar"), sem conectores de até 2 letras quando há palavras maiores (`lib/find.ts`, `shared/search-words.ts`). Enter vai para a próxima, Shift+Enter para a anterior.
 
 ## Atalhos "G e uma letra" (estilo terminal)

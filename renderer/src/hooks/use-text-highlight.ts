@@ -50,6 +50,29 @@ function reveal(range: Range | undefined) {
   });
 }
 
+/** Trecho ao redor de uma ocorrência (para a lista de resultados). */
+export interface FoundSnippet {
+  before: string;
+  match: string;
+  after: string;
+}
+
+/** Quantos trechos entram na lista (o contador e a navegação seguem contando todos). */
+const MAX_SNIPPETS = 100;
+const SNIPPET_CONTEXT = 36;
+
+function snippetOf(range: Range): FoundSnippet {
+  const text = range.startContainer.nodeValue ?? "";
+  const from = Math.max(0, range.startOffset - SNIPPET_CONTEXT);
+  const to = Math.min(text.length, range.endOffset + SNIPPET_CONTEXT);
+
+  return {
+    before: (from > 0 ? "…" : "") + text.slice(from, range.startOffset),
+    match: text.slice(range.startOffset, range.endOffset),
+    after: text.slice(range.endOffset, to) + (to < text.length ? "…" : ""),
+  };
+}
+
 export interface TextHighlight {
   /** Quantas ocorrências foram achadas no texto. */
   count: number;
@@ -57,6 +80,10 @@ export interface TextHighlight {
   index: number;
   next: () => void;
   prev: () => void;
+  /** Vai para a ocorrência de número `target` (0 a count-1), rolando até ela. */
+  select: (target: number) => void;
+  /** Trechos das primeiras ocorrências, na ordem do texto. */
+  snippets: FoundSnippet[];
 }
 
 /**
@@ -74,6 +101,7 @@ export function useTextHighlight(
   const revealedFor = useRef("");
   const [count, setCount] = useState(0);
   const [index, setIndex] = useState(-1);
+  const [snippets, setSnippets] = useState<FoundSnippet[]>([]);
 
   const termsKey = searchPhrase(query);
 
@@ -92,6 +120,7 @@ export function useTextHighlight(
     rangesRef.current = ranges;
     paint(MATCH, ranges);
     setCount(ranges.length);
+    setSnippets(ranges.slice(0, MAX_SNIPPETS).map(snippetOf));
     setIndex((current) => {
       if (ranges.length === 0) {
         return -1;
@@ -138,10 +167,21 @@ export function useTextHighlight(
     });
   }, []);
 
+  const select = useCallback((target: number) => {
+    const range = rangesRef.current[target];
+
+    if (range) {
+      reveal(range);
+      setIndex(target);
+    }
+  }, []);
+
   return {
     count,
     index,
     next: useCallback(() => go(1), [go]),
     prev: useCallback(() => go(-1), [go]),
+    select,
+    snippets,
   };
 }

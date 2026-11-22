@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 
 import { Button } from "#ui/button";
 import { Input } from "#ui/input";
+import type { FoundSnippet } from "#hooks/use-text-highlight";
 import { cn } from "#lib/utils";
 
 export interface FindBarProps {
@@ -14,23 +15,25 @@ export interface FindBarProps {
   index: number;
   onNext: () => void;
   onPrev: () => void;
+  /** Fecha a barra (Esc com o campo vazio e o botão de fechar). */
+  onClose: () => void;
   /** Para focar o campo de fora (Ctrl+F). */
   inputRef?: React.Ref<HTMLInputElement>;
   /** Onde se pesquisa ("livro", "página"...). */
   label?: string;
-  /** Contador e setas na mesma linha do campo (barras de cima). */
-  compact?: boolean;
-  /** Flutua no canto da janela, acima de tudo (inclusive do modo leitura). */
-  floating?: boolean;
-  /** Esconde a barra: Esc com o campo vazio e o botão de fechar. Sem ele, a barra é fixa. */
-  onClose?: () => void;
-  className?: string;
+  /** Lista de ocorrências com trecho; clicar em uma vai até ela. Sem ela, só o campo. */
+  results?: {
+    items: FoundSnippet[];
+    current: number;
+    onSelect: (index: number) => void;
+  };
 }
 
 /**
- * Campo de busca dentro de um texto: mostra "3 de 12" e navega entre as
- * ocorrências (Enter = próxima, Shift+Enter = anterior, Esc limpa e, vazio,
- * fecha; Ctrl+F foca o campo, ver `useFind`).
+ * Busca dentro do texto da tela, flutuante e centralizada no topo (colado na borda), acima de tudo,
+ * inclusive do modo leitura. Mostra "3 de 12", navega entre as ocorrências (Enter = próxima,
+ * Shift+Enter = anterior, Esc limpa e, vazio, fecha) e, com `results`, lista os trechos achados.
+ * Abre com Ctrl+F (ver `useFind`).
  */
 export function FindBar({
   value,
@@ -39,124 +42,130 @@ export function FindBar({
   index,
   onNext,
   onPrev,
+  onClose,
   inputRef,
   label = "Pesquisar na página",
-  compact: compactProp = false,
-  floating = false,
-  onClose,
-  className,
+  results,
 }: FindBarProps) {
   const searching = value.trim().length >= 2;
-  const compact = compactProp || floating;
 
-  const bar = (
+  return createPortal(
     <div
-      className={cn(
-        "min-w-0 flex-1",
-        compact && "flex items-center gap-2",
-        className,
-      )}
+      role="search"
+      className="fixed inset-x-0 top-0 z-[70] mx-auto flex w-[min(34rem,calc(100vw-2rem))] animate-enter-fade flex-col gap-2 rounded-lg border bg-popover p-2 text-popover-foreground shadow-lg"
     >
-      <div className="relative flex min-w-0 flex-1 items-center gap-1">
-        <Search className="pointer-events-none absolute left-2.5 size-4 text-muted-foreground" />
+      <div className="flex items-center gap-2">
+        <div className="relative flex min-w-0 flex-1 items-center">
+          <Search className="pointer-events-none absolute left-2.5 size-4 text-muted-foreground" />
 
-        <Input
-          ref={inputRef}
-          type="search"
-          value={value}
-          placeholder={`${label}... (Ctrl+F)`}
-          aria-label={label}
-          className="pl-8"
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
+          <Input
+            ref={inputRef}
+            type="search"
+            value={value}
+            placeholder={`${label}... (Ctrl+F)`}
+            aria-label={label}
+            className="pl-8"
+            onChange={(event) => onChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
 
-              if (event.shiftKey) {
-                onPrev();
-              } else {
-                onNext();
+                if (event.shiftKey) {
+                  onPrev();
+                } else {
+                  onNext();
+                }
               }
-            }
 
-            if (event.key === "Escape" && (value !== "" || onClose)) {
-              event.preventDefault();
-              event.stopPropagation();
+              if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
 
-              if (value !== "") {
-                onChange("");
-              } else {
-                onClose?.();
+                if (value !== "") {
+                  onChange("");
+                } else {
+                  onClose();
+                }
               }
-            }
-          }}
-        />
+            }}
+          />
+        </div>
+
+        {searching && (
+          <span
+            aria-live="polite"
+            className="whitespace-nowrap text-xs text-muted-foreground"
+          >
+            {count === 0 ? "Nenhuma ocorrência" : `${index + 1} de ${count}`}
+          </span>
+        )}
+
+        <div className="flex gap-1">
+          {searching && (
+            <>
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                aria-label="Ocorrência anterior"
+                disabled={count === 0}
+                onClick={onPrev}
+              >
+                <ChevronUp />
+              </Button>
+
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                aria-label="Próxima ocorrência"
+                disabled={count === 0}
+                onClick={onNext}
+              >
+                <ChevronDown />
+              </Button>
+            </>
+          )}
+
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Fechar pesquisa"
+            onClick={onClose}
+          >
+            <X />
+          </Button>
+        </div>
       </div>
 
-      {(searching || (compact && onClose)) && (
-        <div
-          className={cn(
-            "flex items-center justify-between gap-2 text-xs text-muted-foreground",
-            !compact && "mt-1.5",
-          )}
+      {searching && results && results.items.length > 0 && (
+        <ul
+          aria-label="Resultados da pesquisa"
+          className="max-h-[50dvh] space-y-1 overflow-y-auto"
         >
-          {searching && (
-            <span aria-live="polite" className="whitespace-nowrap">
-              {count === 0 ? "Nenhuma ocorrência" : `${index + 1} de ${count}`}
-            </span>
-          )}
-
-          <div className="flex gap-1">
-            {searching && (
-              <>
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  aria-label="Ocorrência anterior"
-                  disabled={count === 0}
-                  onClick={onPrev}
-                >
-                  <ChevronUp />
-                </Button>
-
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  aria-label="Próxima ocorrência"
-                  disabled={count === 0}
-                  onClick={onNext}
-                >
-                  <ChevronDown />
-                </Button>
-              </>
-            )}
-
-            <Button
-              type="button"
-              size="icon-sm"
-              variant="ghost"
-              aria-label={onClose ? "Fechar pesquisa" : "Limpar pesquisa"}
-              onClick={() => (onClose ? onClose() : onChange(""))}
-            >
-              <X />
-            </Button>
-          </div>
-        </div>
+          {results.items.map((item, position) => (
+            <li key={position}>
+              <button
+                type="button"
+                aria-current={position === results.current || undefined}
+                className={cn(
+                  "w-full rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted",
+                  position === results.current && "bg-muted",
+                )}
+                onClick={() => results.onSelect(position)}
+              >
+                {item.before}
+                <strong className="font-semibold text-foreground">
+                  {item.match}
+                </strong>
+                {item.after}
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
-    </div>
+    </div>,
+    document.body,
   );
-
-  return floating
-    ? createPortal(
-        <div
-          role="search"
-          className="fixed right-4 top-16 z-[70] flex w-[min(30rem,calc(100vw-2rem))] animate-enter-fade rounded-lg border bg-popover p-2 text-popover-foreground shadow-lg"
-        >
-          {bar}
-        </div>,
-        document.body,
-      )
-    : bar;
 }

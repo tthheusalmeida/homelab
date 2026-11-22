@@ -825,6 +825,22 @@ describe("DocumentPage — Ctrl+F find", () => {
     expect(await screen.findByText("1 de 1")).toBeInTheDocument();
   });
 
+  it("when searching, should list the occurrences with a snippet and go to the one clicked", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.keyboard("{Control>}f{/Control}");
+    await user.type(screen.getByLabelText("Pesquisar na página"), "introdução");
+
+    const list = await screen.findByRole("list", {
+      name: "Resultados da pesquisa",
+    });
+
+    await user.click(within(list).getByRole("button"));
+
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+  });
+
   it("when Escape is pressed on the empty field, should close the bar", async () => {
     const user = userEvent.setup();
     renderPage();

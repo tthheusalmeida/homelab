@@ -78,6 +78,32 @@ describe("useTextHighlight", () => {
     expect(hook.result.current.count).toBe(3);
   });
 
+  it("when there are matches, should give a snippet with the text around each one", () => {
+    const { hook } = setup("rede");
+
+    expect(hook.result.current.snippets).toEqual([
+      { before: "Outro parágrafo sobre IMAGEM e ", match: "rede", after: "." },
+    ]);
+  });
+
+  it("when select is called, should go to that occurrence and scroll to it", () => {
+    const { hook } = setup("imagem");
+    scrolled.length = 0;
+
+    act(() => hook.result.current.select(1));
+
+    expect(hook.result.current.index).toBe(1);
+    expect(scrolled).toHaveLength(1);
+  });
+
+  it("when select is called with a missing occurrence, should do nothing", () => {
+    const { hook } = setup("imagem");
+
+    act(() => hook.result.current.select(9));
+
+    expect(hook.result.current.index).toBe(0);
+  });
+
   it("when the query has an accent, should match the text without it", () => {
     const { hook } = setup("conteiner");
 

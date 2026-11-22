@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "#ui/card";
 
@@ -20,8 +19,6 @@ interface BookSidebarProps {
   completedAt?: string | null;
   /** Texto digitado na busca (decide se os resultados aparecem). */
   query: string;
-  /** Campo de busca (com próxima/anterior); vem de fora porque o modo leitura usa o mesmo. */
-  findBar?: ReactNode;
   /** `undefined` enquanto a pesquisa não rodou (consulta curta). */
   hits?: BookSearchHit[];
   isSearching?: boolean;
@@ -80,7 +77,6 @@ export function BookSidebar({
   readCount = 0,
   completedAt = null,
   query,
-  findBar,
   hits,
   isSearching,
   onSelectChapter,
@@ -104,8 +100,6 @@ export function BookSidebar({
         embedded ? "space-y-2" : "space-y-4 lg:sticky lg:top-4 lg:self-start"
       }
     >
-      {findBar}
-
       <BookProgressCard
         read={readCount}
         total={totalChapters}

@@ -14,7 +14,7 @@ function Host() {
 
   return (
     <>
-      {find.open && <FindBar floating {...find.barProps} onClose={find.close} />}
+      {find.open && <FindBar {...find.barProps} onClose={find.close} />}
       <div ref={setContainer}>
         <p>A casa da vida e outra casa.</p>
       </div>

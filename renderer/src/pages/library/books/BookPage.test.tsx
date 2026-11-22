@@ -294,6 +294,7 @@ describe("BookPage", () => {
     ];
     const user = userEvent.setup();
     renderPage();
+    await user.keyboard("{Control>}f{/Control}");
     await user.type(screen.getByLabelText("Pesquisar no livro"), "linha");
     const heading = screen.getByRole("heading", { name: "Imagens" });
     heading.scrollIntoView = vi.fn();
@@ -311,6 +312,7 @@ describe("BookPage", () => {
     const user = userEvent.setup();
     renderPage();
 
+    await user.keyboard("{Control>}f{/Control}");
     await user.type(screen.getByLabelText("Pesquisar no livro"), "docker");
 
     await vi.waitFor(() =>

@@ -62,6 +62,12 @@ export function useFind(container: HTMLElement | null, version?: unknown) {
       onPrev: highlight.prev,
       inputRef,
     },
+    /** Lista de ocorrências com trecho (clicar vai até ela), para o `FindBar`. */
+    results: {
+      items: highlight.snippets,
+      current: highlight.index,
+      onSelect: highlight.select,
+    },
     close,
   };
 }

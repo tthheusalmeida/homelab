@@ -117,7 +117,11 @@ export function DocumentPage() {
   const find = useFind(container, data?.content);
   const findBar =
     find.open && !alternateView ? (
-      <FindBar floating {...find.barProps} onClose={find.close} />
+      <FindBar
+        {...find.barProps}
+        results={find.results}
+        onClose={find.close}
+      />
     ) : undefined;
 
   if (isLoading) {

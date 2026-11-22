@@ -275,14 +275,10 @@ export function BookPage() {
   const goToChapter = (documentId: string) =>
     goToElement(chapterElementId(documentId));
 
-  // Campo do painel (modo normal) e da barra de cima (modo leitura); a lista de ocorrências fica no painel.
-  const findBar = <FindBar label="Pesquisar no livro" {...find.barProps} />;
-
-  // Ctrl+F: a mesma busca, flutuante sobre o texto (a lista fica no painel).
+  // Ctrl+F: a busca flutuante sobre o texto (a lista de ocorrências fica no painel).
   const floatingFind = find.open && (
     <FindBar
-      floating
-      label="Pesquisar no texto"
+      label="Pesquisar no livro"
       {...find.barProps}
       onClose={find.close}
     />
@@ -309,7 +305,6 @@ export function BookPage() {
         <ReadingMode
           title={book.title}
           onExit={() => setReader(false)}
-          actions={findBar}
           follow={
             <BookOutlineCard
               modules={modules}
@@ -496,7 +491,6 @@ export function BookPage() {
               readCount={readCount}
               completedAt={book.completedAt}
               query={find.search}
-              findBar={findBar}
               hits={results.data}
               isSearching={results.isFetching}
               onSelectChapter={goToChapter}

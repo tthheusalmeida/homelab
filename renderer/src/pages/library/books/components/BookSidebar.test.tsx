@@ -44,7 +44,6 @@ const setup = (
     <BookSidebar
       modules={modules}
       query=""
-      findBar={<input aria-label="campo de busca" />}
       {...handlers}
       {...props}
     />,
@@ -71,18 +70,6 @@ describe("BookSidebar", () => {
     await user.click(screen.getByRole("button", { name: "2. Redes" }));
 
     expect(onSelectChapter).toHaveBeenCalledWith("d2");
-  });
-
-  it("when rendered, should show the given find bar at the top", () => {
-    setup();
-
-    const aside = screen.getByRole("complementary", {
-      name: "Painel do livro",
-    });
-
-    expect(aside.firstElementChild).toBe(
-      within(aside).getByLabelText("campo de busca"),
-    );
   });
 
   it("when the query is short, should not show the results card", () => {
@@ -138,7 +125,6 @@ describe("BookSidebar — active chapter", () => {
         modules={modules}
         activeChapterId="d2"
         query=""
-        findBar={null}
         onSelectChapter={() => {}}
         onSelectHit={() => {}}
       />,
@@ -161,7 +147,6 @@ describe("BookSidebar — read chapters", () => {
         modules={modules}
         readIds={["d1"]}
         query=""
-        findBar={null}
         onSelectChapter={() => {}}
         onSelectHit={() => {}}
         onToggleRead={() => {}}

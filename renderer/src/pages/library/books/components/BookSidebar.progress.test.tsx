@@ -28,7 +28,6 @@ const renderSidebar = (
     <BookSidebar
       modules={modules}
       query=""
-      findBar={<input aria-label="campo de busca" />}
       onSelectChapter={() => {}}
       onSelectHit={() => {}}
       {...props}
@@ -62,17 +61,14 @@ describe("BookSidebar — progress", () => {
     expect(within(panel).getByRole("progressbar")).toBeInTheDocument();
   });
 
-  it("when rendered, should put the progress right after the find bar", () => {
+  it("when rendered, should put the progress at the top of the panel", () => {
     renderSidebar();
 
     const panel = screen.getByRole("complementary", {
       name: "Painel do livro",
     });
 
-    expect(panel.children[0]).toBe(
-      within(panel).getByLabelText("campo de busca"),
-    );
-    expect(panel.children[1]).toContainElement(screen.getByRole("progressbar"));
+    expect(panel.children[0]).toContainElement(screen.getByRole("progressbar"));
   });
 
   it("when the book is completed, should replace the progress by the completion date", () => {
