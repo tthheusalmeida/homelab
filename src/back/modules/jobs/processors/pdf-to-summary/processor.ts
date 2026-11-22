@@ -39,10 +39,6 @@ export const PdfJobMessages = {
   partFailed: (part: number, total: number, done: number, reason: string): string =>
     `Falha ao resumir a parte ${part} de ${total}.${reason ? ` ${reason}` : ''} ` +
     `${done} de ${total} partes já estão salvas: use "Tentar de novo" para continuar de onde parou.`,
-  partNote: (part: number, total: number, resumed: number): string =>
-    resumed > 0
-      ? `Resumindo a parte ${part} de ${total} (retomado: ${resumed} já estavam prontas)`
-      : `Resumindo a parte ${part} de ${total}`,
 } as const;
 
 /** Nome do arquivo sem a extensão `.pdf`, usado como título quando o usuário não informa um. */
@@ -95,7 +91,6 @@ export class PdfToSummaryJobProcessor implements JobProcessor<PdfToSummaryDto, s
     return job.runStep(PdfToSummarySteps.SUMMARIZE_PARTS.name, async () => {
       const key = input.checkpointKey;
       const total = manifest.parts.length;
-      const resumed = (await this.checkpoints.progress(key))?.done ?? 0;
       const detail = isSummaryDetail(input.detail) ? input.detail : DEFAULT_SUMMARY_DETAIL;
       const prompt = buildSummaryPrompt(detail, this.prompts?.instructionsFor('summary'));
       const summaries: string[] = [];
@@ -113,9 +108,7 @@ export class PdfToSummaryJobProcessor implements JobProcessor<PdfToSummaryDto, s
           continue;
         }
 
-        const note = PdfJobMessages.partNote(part.index + 1, total, resumed);
-
-        job.setNote(note);
+        job.setProgress(part.index + 1, total);
 
         const summary = await this.summarizePart({
           job,
@@ -125,7 +118,6 @@ export class PdfToSummaryJobProcessor implements JobProcessor<PdfToSummaryDto, s
           part,
           total,
           covered: this.headingsOf(summaries),
-          note,
         });
 
         await this.checkpoints.saveSummary(key, part.index, summary);
@@ -144,17 +136,16 @@ export class PdfToSummaryJobProcessor implements JobProcessor<PdfToSummaryDto, s
     part: ManifestPart;
     total: number;
     covered: string[];
-    note: string;
   }): Promise<string> {
-    const { job, input, prompt, text, part, total, covered, note } = args;
+    const { job, input, prompt, text, part, total, covered } = args;
 
     try {
       return await this.aiService.chat({
         providerId: input.providerId,
         modelId: input.modelId,
         thinking: input.thinking ?? 'off',
-        // Enquanto a IA tenta de novo, a tela mostra "tentativa x de y" junto da parte.
-        onRetry: (info) => job.setNote(`${note} — ${retryNote(info)}`),
+        // Enquanto a IA tenta de novo, a tela mostra só "tentativa x de y".
+        onRetry: (info) => job.setNote(retryNote(info)),
         message: `
       ${prompt}
       ${this.partIntro(part, total, covered)}${text}
@@ -253,7 +244,7 @@ export class PdfToSummaryJobProcessor implements JobProcessor<PdfToSummaryDto, s
         providerId: input.providerId,
         modelId: input.modelId,
         thinking: input.thinking ?? 'off',
-        onRetry: (info) => job.setNote(`Preenchendo título, categoria e tags — ${retryNote(info)}`),
+        onRetry: (info) => job.setNote(retryNote(info)),
       });
       const page = {
         title: suggestion.title,

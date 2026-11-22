@@ -33,6 +33,8 @@ export interface JobView {
   retryable?: boolean;
   /** Aviso da etapa em andamento, ex.: "Tentando de novo (2 de 3): serviço sobrecarregado". */
   note?: string;
+  /** Andamento dentro da etapa em execução (ex.: parte 2 de 5). */
+  progress?: { done: number; total: number };
   /** Falhou porque o vídeo exige login: a tela oferece "Entrar no site" e depois tenta de novo. */
   errorCode?: 'ACCESS_REQUIRED';
   /** Endereço do vídeo que pediu login (junto com `errorCode`). */

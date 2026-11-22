@@ -142,12 +142,33 @@ describe('Job', () => {
         'label',
         'name',
         'note',
+        'progress',
         'retryable',
         'startedAt',
         'status',
         'steps',
       ].sort(),
     );
+  });
+
+  describe('progress', () => {
+    it('when progress is set, should expose it in the JSON but not save it to disk', () => {
+      const job = newJob();
+
+      job.setProgress(2, 5);
+
+      expect(job.toJSON().progress).toEqual({ done: 2, total: 5 });
+      expect(job.snapshot()).not.toHaveProperty('progress');
+    });
+
+    it('when the step changes, should clear the progress', () => {
+      const job = newJob();
+
+      job.setProgress(2, 5);
+      job.completeStep(job.steps[0].name);
+
+      expect(job.progress).toBeUndefined();
+    });
   });
 
   describe('note', () => {
