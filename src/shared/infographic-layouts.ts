@@ -137,8 +137,35 @@ export function layoutInfo(id: InfographicLayoutId): InfographicLayoutInfo {
   return info;
 }
 
+/**
+ * O mínimo de itens que a leitura da resposta **aceita** em cada modelo. O prompt pede de `minItems`
+ * a `maxItems`, mas um resumo curto não tem itens para tanto, e a IA (que só pode usar o que o
+ * resumo diz) devolve menos: descartar a seção por isso derrubava resumos inteiros. Os desenhos
+ * aguentam menos itens; só o ciclo precisa dos quatro (é um losango) e o mapa de conceitos de três
+ * (um centro com menos de três facetas não forma um mapa).
+ */
+export const INFOGRAPHIC_ACCEPTED_MIN_ITEMS: Record<InfographicLayoutId, number> = {
+  steps: 2,
+  funnel: 2,
+  timeline: 2,
+  versus: 2,
+  numbers: 2,
+  radial: 3,
+  ranking: 2,
+  cycle: 4,
+  myths: 2,
+  mosaic: 2,
+};
+
 /** Quantas seções tem a história (com um modelo escolhido pelo usuário, é uma só). */
 export const INFOGRAPHIC_SECTIONS = { min: 4, max: 6 } as const;
+
+/**
+ * O mínimo de seções válidas para aceitar uma história. O prompt pede de `min` a `max`, mas a
+ * resposta é aceita com menos: seção que não se sustenta some e o resto ainda conta uma história.
+ * Só abaixo disto a resposta é recusada (e a geração tenta de novo).
+ */
+export const INFOGRAPHIC_MIN_ACCEPTED_SECTIONS = 2;
 
 /** Limites de texto (a IA é cortada neles, e o prompt os informa). */
 export const INFOGRAPHIC_LIMITS = {

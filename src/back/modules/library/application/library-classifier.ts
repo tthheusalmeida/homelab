@@ -90,6 +90,7 @@ export class LibraryClassifier {
         message: prompt,
         modelId: model,
         providerId: input.providerId,
+        json: true,
         ...(input.thinking ? { thinking: input.thinking } : {}),
         ...(input.onRetry ? { onRetry: input.onRetry } : {}),
       });

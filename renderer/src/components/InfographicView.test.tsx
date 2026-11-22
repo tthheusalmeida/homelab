@@ -9,7 +9,11 @@ import type {
   LibraryInfographicItem,
   LibraryInfographicSection,
 } from '#shared/contracts/library';
-import { INFOGRAPHIC_LAYOUT_IDS, type InfographicLayoutId } from '#shared/infographic-layouts';
+import {
+  INFOGRAPHIC_ACCEPTED_MIN_ITEMS,
+  INFOGRAPHIC_LAYOUT_IDS,
+  type InfographicLayoutId,
+} from '#shared/infographic-layouts';
 
 import { InfographicView } from './InfographicView';
 import { radialPositions } from './infographic/RadialLayout';
@@ -654,7 +658,8 @@ describe('InfographicView: troca de peças', () => {
 });
 
 describe('InfographicView: edição de textos', () => {
-  const texts = () => Array.from(document.querySelectorAll<HTMLElement>('[data-slot="editable-text"]'));
+  const texts = () =>
+    Array.from(document.querySelectorAll<HTMLElement>('[data-slot="editable-text"]'));
   const clickAll = async (onPick: ReturnType<typeof vi.fn>) => {
     for (const text of texts()) {
       await userEvent.click(text);
@@ -806,4 +811,33 @@ describe('InfographicView: edição de textos', () => {
     expect(onPickPiece).toHaveBeenCalledTimes(1);
     expect(onPickText).toHaveBeenCalledTimes(1);
   });
+});
+
+describe('InfographicView: resumos curtos (menos itens do que o prompt pede)', () => {
+  it.each(INFOGRAPHIC_LAYOUT_IDS)(
+    'when the %s section has only the minimum number of items the reading accepts, should still draw its title and every item',
+    (layout) => {
+      const count = INFOGRAPHIC_ACCEPTED_MIN_ITEMS[layout];
+      const sample = SAMPLES[layout];
+      const view = story([
+        {
+          ...sample,
+          items: sample.items.slice(0, count).map((entry, index) => ({
+            ...entry,
+            title: `Item mínimo ${index + 1}`,
+            // o modelo Números mostra o texto, e não o título
+            text: `Item mínimo ${index + 1}`,
+          })),
+        },
+      ]);
+
+      render(<InfographicView data={view} />);
+
+      expect(screen.getByRole('region', { name: `Seção ${layout}` })).toBeInTheDocument();
+
+      for (let index = 1; index <= count; index += 1) {
+        expect(screen.getAllByText(`Item mínimo ${index}`).length).toBeGreaterThan(0);
+      }
+    },
+  );
 });

@@ -1,4 +1,10 @@
-import { BadGatewayException, BadRequestException, Injectable, Optional } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+  Logger,
+  Optional,
+} from '@nestjs/common';
 
 import type {
   LibraryInfographic,
@@ -11,12 +17,14 @@ import {
 import { AIService } from '../../ai/ai.service';
 import { buildInfographicPrompt } from '../../ai/prompts/infographic.prompt';
 import { PromptService } from '../../ai/prompts/prompt.service';
+import { INVALID_ANSWER_RETRY_HINT, MAX_ANSWER_ATTEMPTS } from '../../ai/prompts/retry-hint';
 import { cheapestModel } from '../../ai/providers/gemini/gemini.pricing';
 
 import { DocumentTypeOptions } from '../domain/library.types';
 import {
   InvalidInfographicError,
   parseInfographic,
+  type ParsedInfographic,
   type StoredInfographic,
 } from '../domain/infographic';
 import { hashContent } from '../domain/mind-map';
@@ -36,6 +44,8 @@ const MAX_CONTENT_CHARS = 150_000;
 export class InfographicService {
   /** Gerações em andamento por página: pedir de novo no meio do caminho espera a mesma resposta. */
   private readonly inFlight = new Map<string, Promise<LibraryInfographic>>();
+
+  private readonly logger = new Logger(InfographicService.name);
 
   constructor(
     private readonly library: LibraryService,
@@ -145,36 +155,15 @@ export class InfographicService {
 
     const model = options.modelId?.trim() || cheapestModel();
 
-    let answer: string;
-
-    try {
-      answer = await this.ai.chat({
-        message: buildInfographicPrompt(
-          {
-            title: meta.title,
-            content: content.slice(0, MAX_CONTENT_CHARS),
-            layout: options.layout,
-          },
-          this.prompts?.instructionsFor('infographic'),
-        ),
-        modelId: model,
-        providerId: 'gemini',
-      });
-    } catch (error) {
-      throw new BadGatewayException(failureMessage(error), { cause: error });
-    }
-
-    let parsed;
-
-    try {
-      parsed = parseInfographic(answer, options.layout);
-    } catch (error) {
-      if (error instanceof InvalidInfographicError) {
-        throw new BadGatewayException('A IA não retornou um infográfico válido. Tente novamente.');
-      }
-
-      throw error;
-    }
+    const prompt = buildInfographicPrompt(
+      {
+        title: meta.title,
+        content: content.slice(0, MAX_CONTENT_CHARS),
+        layout: options.layout,
+      },
+      this.prompts?.instructionsFor('infographic'),
+    );
+    const parsed = await this.askUntilReadable(prompt, model, options.layout, meta.title);
 
     const stored: StoredInfographic = {
       contentHash: hashContent(content),
@@ -186,6 +175,52 @@ export class InfographicService {
     this.store.set(id, stored);
 
     return toView(stored, stored.contentHash);
+  }
+
+  /**
+   * Pede o infográfico à IA e o lê. Se a resposta vier inválida (a IA erra o formato de vez em
+   * quando), pede de novo, lembrando o formato, até `MAX_ANSWER_ATTEMPTS` vezes; falha do provedor
+   * (limite, chave, rede) não repete aqui: ele já tem as suas tentativas.
+   */
+  private async askUntilReadable(
+    prompt: string,
+    model: string,
+    layout: InfographicLayoutId | undefined,
+    pageTitle: string,
+  ): Promise<ParsedInfographic> {
+    for (let attempt = 1; ; attempt += 1) {
+      let answer: string;
+
+      try {
+        answer = await this.ai.chat({
+          message: attempt === 1 ? prompt : `${prompt}\n\n${INVALID_ANSWER_RETRY_HINT}`,
+          modelId: model,
+          providerId: 'gemini',
+          json: true,
+        });
+      } catch (error) {
+        throw new BadGatewayException(failureMessage(error), { cause: error });
+      }
+
+      try {
+        return parseInfographic(answer, layout, pageTitle);
+      } catch (error) {
+        if (!(error instanceof InvalidInfographicError)) {
+          throw error;
+        }
+
+        // O motivo e o começo e o fim da resposta ficam no log: sem eles não dá para saber o que a IA devolveu.
+        this.logger.warn(
+          `Infográfico recusado (tentativa ${attempt} de ${MAX_ANSWER_ATTEMPTS}): ${error.problems.join('; ') || error.message} | resposta com ${answer.length} caracteres: ${describeAnswer(answer)}`,
+        );
+
+        if (attempt >= MAX_ANSWER_ATTEMPTS) {
+          throw new BadGatewayException(
+            `A IA não retornou um infográfico válido${error.problems.length ? ` (${error.problems[0]})` : ''}. Tente novamente.`,
+          );
+        }
+      }
+    }
   }
 }
 
@@ -200,4 +235,11 @@ function failureMessage(error: unknown): string {
   return error instanceof Error && error.message.trim() !== ''
     ? error.message
     : 'Não foi possível gerar o infográfico com a IA. Tente novamente.';
+}
+
+/** O começo e o fim da resposta da IA, em uma linha, para o log (o meio de uma resposta longa não ajuda). */
+export function describeAnswer(answer: string): string {
+  const flat = answer.replace(/\s+/g, ' ').trim();
+
+  return flat.length <= 700 ? flat : `${flat.slice(0, 450)} [...] ${flat.slice(-250)}`;
 }

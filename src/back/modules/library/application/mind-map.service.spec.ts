@@ -1,6 +1,7 @@
 import { BadGatewayException, BadRequestException, NotFoundException } from '@nestjs/common';
 
 import type { AIService } from '../../ai/ai.service';
+import { MAX_ANSWER_ATTEMPTS } from '../../ai/prompts/retry-hint';
 import { cheapestModel } from '../../ai/providers/gemini/gemini.pricing';
 
 import { MindMapStore } from '../infrastructure/mind-map-store';
@@ -40,6 +41,53 @@ describe('MindMapService', () => {
       ai as unknown as AIService,
       store,
     );
+  });
+
+  describe('answers that cannot be read', () => {
+    const sent = () =>
+      (ai.chat.mock.calls as Array<[{ message: string; json?: boolean }]>).map(([call]) => call);
+
+    it('when the first answer is invalid and the second is fine, should ask again and save the good one', async () => {
+      ai.chat.mockResolvedValueOnce('não é json').mockResolvedValueOnce(goodAnswer);
+
+      await expect(service.generate('1')).resolves.toBeDefined();
+
+      expect(ai.chat).toHaveBeenCalledTimes(2);
+      expect(sent()[0].message).not.toContain('# ATENÇÃO');
+      expect(sent()[1].message).toContain('# ATENÇÃO');
+      expect(sent()[1].message).toContain('APENAS um objeto JSON válido');
+    });
+
+    it('when every attempt is invalid, should give up after the maximum number of attempts with the usual message', async () => {
+      ai.chat.mockResolvedValue('não é json');
+
+      await expect(service.generate('1')).rejects.toThrow(
+        'A IA não retornou um mapa mental válido. Tente novamente.',
+      );
+      expect(ai.chat).toHaveBeenCalledTimes(MAX_ANSWER_ATTEMPTS);
+    });
+
+    it('when the provider fails, should not ask again (it has its own retries)', async () => {
+      ai.chat.mockRejectedValue(new Error('Limite de uso da IA atingido.'));
+
+      await expect(service.generate('1')).rejects.toThrow('Limite de uso da IA atingido.');
+      expect(ai.chat).toHaveBeenCalledTimes(1);
+    });
+
+    it('when asking, should request the JSON mode on every attempt', async () => {
+      ai.chat.mockResolvedValueOnce('não é json').mockResolvedValueOnce(goodAnswer);
+
+      await service.generate('1');
+
+      expect(sent().every((call) => call.json === true)).toBe(true);
+    });
+
+    it('when the answer comes with a trailing comma and a fence, should read it without asking again', async () => {
+      ai.chat.mockResolvedValue(`\`\`\`json\n${goodAnswer.replace(/\}$/, ',}')}\n\`\`\``);
+
+      await expect(service.generate('1')).resolves.toBeDefined();
+      expect(ai.chat).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('generate', () => {

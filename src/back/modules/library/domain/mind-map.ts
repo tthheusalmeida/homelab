@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { MIND_MAP_EDIT_LIMITS, type MindMapLimits } from '../../../../shared/mind-map-limits';
+import { parseJsonObject } from '../../../utils/json-answer';
 import { MIND_MAP_LIMITS } from '../../ai/prompts/mind-map.prompt';
 
 export interface MindMapNode {
@@ -99,20 +100,30 @@ function cleanNote(value: unknown, label: string, cleaner: Cleaner): string {
   return note.toLowerCase().replace(/[\s.]+$/, '') === label.toLowerCase() ? '' : note;
 }
 
-/** Extrai o JSON da resposta, mesmo se vier dentro de cercas de código ou com texto em volta. */
+/**
+ * Extrai o JSON da resposta, mesmo com cercas de código, texto em volta, defeitos pequenos ou o fim
+ * cortado (ver `parseJsonObject`). Se a IA embrulhou o mapa em uma chave só (`{"mapa": {...}}`),
+ * desembrulha.
+ */
 function parseAnswerJson(text: string): unknown {
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
+  let parsed = parseJsonObject(text);
 
-  if (start === -1 || end <= start) {
+  while (
+    parsed &&
+    !('nodes' in parsed) &&
+    Object.keys(parsed).length === 1 &&
+    typeof Object.values(parsed)[0] === 'object' &&
+    Object.values(parsed)[0] !== null &&
+    !Array.isArray(Object.values(parsed)[0])
+  ) {
+    parsed = Object.values(parsed)[0] as Record<string, unknown>;
+  }
+
+  if (!parsed) {
     throw new InvalidMindMapError();
   }
 
-  try {
-    return JSON.parse(text.slice(start, end + 1));
-  } catch {
-    throw new InvalidMindMapError();
-  }
+  return parsed;
 }
 
 /**

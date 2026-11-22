@@ -118,6 +118,22 @@ describe('AIService', () => {
     });
   });
 
+  it('when chat asks for JSON, should pass the flag to the provider', async () => {
+    gemini.chat.mockResolvedValue('{}');
+
+    await service.chat({ message: 'oi', modelId: 'm', providerId: 'gemini', json: true });
+
+    expect(gemini.chat).toHaveBeenCalledWith(expect.objectContaining({ json: true }));
+  });
+
+  it('when chat does not ask for JSON, should not add the flag', async () => {
+    gemini.chat.mockResolvedValue('resposta');
+
+    await service.chat({ message: 'oi', modelId: 'm', providerId: 'gemini' });
+
+    expect(gemini.chat).toHaveBeenCalledWith(expect.not.objectContaining({ json: true }));
+  });
+
   it('when chat is called with a conversation, should hand the whole history to the provider', async () => {
     gemini.chat.mockResolvedValue('resposta');
     const messages = [

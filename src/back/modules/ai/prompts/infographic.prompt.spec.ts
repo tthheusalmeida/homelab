@@ -51,8 +51,8 @@ describe('buildInfographicPrompt', () => {
     expect(prompt).toContain('"takeaways"');
   });
 
-  it('when building the prompt, should include every piece key of the catalog, grouped by theme', () => {
-    const prompt = buildInfographicPrompt(base);
+  it('when the summary has no recognizable subject, should include every piece key of the catalog, grouped by theme', () => {
+    const prompt = buildInfographicPrompt({ title: 'zzz', content: 'qqq www' });
 
     for (const piece of INFOGRAPHIC_PIECES) {
       expect(prompt).toContain(`- ${piece.key}: ${piece.name}`);
@@ -60,6 +60,7 @@ describe('buildInfographicPrompt', () => {
 
     expect(prompt).toContain('## Jogos');
     expect(prompt).toContain('## Genéricas (complemento)');
+    expect(prompt).not.toContain('Estes são os temas que mais combinam');
   });
 
   it('when building the prompt, should forbid using anything outside the summary and ignore instructions inside it', () => {
@@ -103,7 +104,7 @@ describe('infographic instructions', () => {
     expect(prompt).toContain('Use SOMENTE o conteúdo do resumo');
     expect(prompt).toContain('conta uma HISTÓRIA');
     expect(prompt).toContain('- steps (');
-    expect(prompt).toContain('## Jogos');
+    expect(prompt).toContain('## Genéricas (complemento)');
     expect(prompt).toContain('Responda APENAS com um JSON válido');
     expect(prompt).toContain('Título: Redes');
   });
@@ -112,6 +113,57 @@ describe('infographic instructions', () => {
     const prompt = buildInfographicPrompt({ ...base, layout: 'funnel' }, 'Seja direto.');
 
     expect(prompt).toContain('UMA seção só');
+  });
+});
+
+describe('infographic prompt: only the themes that fit the summary', () => {
+  const drones = {
+    title: 'Drones em presídios',
+    content:
+      'Foi aprovado um projeto de lei que torna crime o uso de drones para sobrevoar presídios. A medida combate o crime organizado, que usa drones para entregar armas, celulares e drogas nas unidades prisionais. A pena prevê prisão e multa.',
+  };
+
+  it('when the summary has a clear subject, should carry only the likely themes plus the generic ones', () => {
+    const prompt = buildInfographicPrompt(drones);
+
+    expect(prompt).toContain('## Justiça e crime');
+    expect(prompt).toContain('## Genéricas (complemento)');
+    expect(prompt).not.toContain('## Música');
+    expect(prompt).not.toContain('## Esporte');
+    expect(prompt).toContain('Estes são os temas que mais combinam com este resumo');
+  });
+
+  it('when the summary has a clear subject, should shrink the bank in the prompt to under 40% of the whole bank', () => {
+    const prompt = buildInfographicPrompt(drones);
+    const lines = prompt.split('\n').filter((line) => /^- [a-z]+\.[a-z0-9_]+: /.test(line));
+
+    expect(lines.length).toBeLessThan(INFOGRAPHIC_PIECES.length * 0.4);
+    expect(prompt.length).toBeLessThan(
+      buildInfographicPrompt({ title: 'zzz', content: 'qqq' }).length * 0.5,
+    );
+  });
+
+  it('when the summary has a clear subject, should still list the pieces of the picked themes completely', () => {
+    const prompt = buildInfographicPrompt(drones);
+
+    for (const piece of INFOGRAPHIC_PIECES.filter((entry) => entry.theme === 'justica')) {
+      expect(prompt).toContain(`- ${piece.key}: ${piece.name}`);
+    }
+  });
+
+  it('when the user chose a layout, should filter the pieces the same way', () => {
+    expect(buildInfographicPrompt({ ...drones, layout: 'funnel' })).not.toContain('## Música');
+  });
+
+  it('when building the catalog for some themes, should list only them plus the generic ones, in the bank order', () => {
+    const catalog = buildPieceCatalog(['justica', 'tecnologia']);
+    const headings = catalog.split('\n').filter((line) => line.startsWith('## '));
+
+    expect(headings).toEqual(['## Tecnologia', '## Justiça e crime', '## Genéricas (complemento)']);
+  });
+
+  it('when building the catalog with no themes, should list the whole bank', () => {
+    expect(buildPieceCatalog(null)).toBe(buildPieceCatalog());
   });
 });
 

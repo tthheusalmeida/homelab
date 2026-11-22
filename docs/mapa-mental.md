@@ -71,3 +71,6 @@ Os controles (zoom, ajustar, recolher, baixar) ficam na `FloatingToolbar` (`comp
 
 ## Prompt personalizável
 As **instruções** do mapa (o estilo: o que priorizar, o idioma, o tom) podem ser trocadas pelo usuário em versões nomeadas (Configurações > Prompts; ver `prompts.md`). Os limites (ramos, níveis, nós, tamanho dos textos), as regras de segurança e o formato JSON da resposta ficam num contrato fixo no código (`mindMapContract`) e continuam sendo conferidos por `parseMindMap`.
+
+## Respostas inválidas da IA
+O mapa usa as mesmas defesas do infográfico: modo JSON na chamada, leitor tolerante (comentários, vírgulas sobrando, cerca de código, resposta cortada no fim, mapa embrulhado em uma chave) e até 3 tentativas com um lembrete do formato antes de mostrar "A IA não retornou um mapa mental válido". Ver `infografico.md`.

@@ -43,6 +43,9 @@ Seção do grupo **IA** (`PromptsSection`, em `renderer/settings/src/sections`).
 - **Editor** (`PromptEditorDialog`): nome e instruções, contador de caracteres (limites de `PROMPT_LIMITS`), "Usar esta versão depois de salvar" (marcado ao criar) e confirmação ao fechar com mudança não salva. Erros do back (nome repetido, texto curto ou longo) aparecem como **alerta no rodapé**, com a janela aberta.
 - Os componentes são os do app (`SettingsGroup`, `SettingsPanel`, `OptionSelect`, `ActionMenu`, `ConfirmDialog`, `Callout`, `ui/dialog`); os hooks ficam em `settings/src/hooks.ts` (`usePrompts`, `useSavePrompt`, `useDeletePrompt`, `useActivatePrompt`; cada gravação já traz a visão atualizada).
 
+## Se a IA errar o formato
+Mesmo com um texto seu, a resposta é lida pelo leitor tolerante e a geração tenta de novo (até 3 vezes) antes de falhar; ver "Respostas inválidas da IA" em `infografico.md`. Se um prompt seu fizer a IA errar muito, volte ao padrão do app no seletor "Em uso".
+
 ## Backup
 Os prompts entram no backup como o item **Prompts** (caixa própria em Configurações > Backup, `config/prompts.json` dentro do zip), com **uma versão por registro** (`kind`, `id`, `name`, `text`, `active`); a contagem mostrada é o número de versões. Ao restaurar, cada registro passa pelas mesmas conferências de quando o usuário grava: prompt conhecido, nome de 1 a 40 caracteres, texto de 40 a 20 000 e até 20 versões por prompt; o que não passar conta como "mantido". **Mesclar** só acrescenta versões cujo nome ainda não existe no mesmo prompt (ignorando maiúsculas e acentos), dá novo id se o do backup já existir e **mantém a versão em uso**. **Substituir** troca tudo e usa a versão marcada como ativa no backup (com cópia de segurança do arquivo, como nos outros itens). Código: `PromptStore.exportAll` e `importAll`.
 

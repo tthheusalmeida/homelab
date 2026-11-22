@@ -7,12 +7,15 @@ import type {
 } from '../../../../shared/contracts/library';
 import {
   INFOGRAPHIC_LIMITS,
+  INFOGRAPHIC_ACCEPTED_MIN_ITEMS,
+  INFOGRAPHIC_MIN_ACCEPTED_SECTIONS,
   INFOGRAPHIC_SECTIONS,
   isInfographicLayoutId,
   layoutInfo,
   type InfographicLayoutId,
 } from '../../../../shared/infographic-layouts';
 import { INFOGRAPHIC_PIECE_KEYS } from '../../../../shared/infographic-pieces';
+import { parseJsonObject } from '../../../utils/json-answer';
 
 import { fillMissingPieces } from './infographic-pieces';
 
@@ -31,7 +34,14 @@ export interface StoredInfographic extends ParsedInfographic {
 
 /** A resposta da IA não tem um infográfico utilizável. */
 export class InvalidInfographicError extends Error {
-  constructor(message = 'A IA não retornou um infográfico válido.') {
+  /**
+   * @param problems o que não se sustentou (uma frase por problema, ex.: "seção 2 (cycle): itens de
+   * menos (3 de 4)"), para o log e para entender por que a resposta da IA foi recusada.
+   */
+  constructor(
+    message = 'A IA não retornou um infográfico válido.',
+    readonly problems: string[] = [],
+  ) {
     super(message);
     this.name = 'InvalidInfographicError';
   }
@@ -73,26 +83,33 @@ function piece(value: unknown): string {
   return INFOGRAPHIC_PIECE_KEYS.has(key) ? key : '';
 }
 
-/** Extrai o JSON da resposta, mesmo dentro de cercas de código ou com texto em volta. */
+/** Chaves que só o infográfico tem: se alguma vier no objeto, ele já é o infográfico (não está embrulhado). */
+const INFOGRAPHIC_KEYS = ['title', 'sections', 'items', 'layout', 'kicker'] as const;
+
+/**
+ * Extrai o JSON da resposta, mesmo com cercas de código, texto em volta, defeitos pequenos ou o fim
+ * cortado (ver `parseJsonObject`). Se a IA embrulhou o infográfico em uma chave só
+ * (`{"infographic": {...}}`), desembrulha.
+ */
 function parseAnswerJson(answer: string): Record<string, unknown> {
-  const start = answer.indexOf('{');
-  const end = answer.lastIndexOf('}');
+  let parsed = parseJsonObject(answer);
 
-  if (start === -1 || end <= start) {
-    throw new InvalidInfographicError();
-  }
+  while (parsed && !INFOGRAPHIC_KEYS.some((key) => key in parsed!)) {
+    const values = Object.values(parsed);
+    const only = values.length === 1 ? values[0] : null;
 
-  try {
-    const parsed: unknown = JSON.parse(answer.slice(start, end + 1));
-
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      throw new InvalidInfographicError();
+    if (typeof only !== 'object' || only === null || Array.isArray(only)) {
+      break;
     }
 
-    return parsed as Record<string, unknown>;
-  } catch (error) {
-    throw error instanceof InvalidInfographicError ? error : new InvalidInfographicError();
+    parsed = only as Record<string, unknown>;
   }
+
+  if (!parsed) {
+    throw new InvalidInfographicError(undefined, ['a resposta não tem um JSON utilizável']);
+  }
+
+  return parsed;
 }
 
 const WINNERS: readonly LibraryInfographicWinner[] = ['a', 'b', 'tie'];
@@ -169,21 +186,31 @@ function cleanTexts(value: unknown, maxItems: number, maxChars: number): string[
 /**
  * Uma seção do infográfico: modelo (o do usuário, se houver), título, itens dentro do mínimo e do
  * máximo do modelo e os campos que o modelo usa. Seção que não se sustenta (sem modelo conhecido,
- * sem título, com itens de menos, ou comparativo sem os dois lados) é descartada: `null`.
+ * sem título, com itens abaixo do mínimo aceito (`INFOGRAPHIC_ACCEPTED_MIN_ITEMS`), ou comparativo sem os dois lados) é descartada: `null`.
  */
 function parseSection(
   raw: unknown,
   forcedLayout?: InfographicLayoutId,
+  problems: string[] = [],
+  position = 1,
 ): LibraryInfographicSection | null {
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+  const drop = (why: string): null => {
+    problems.push(`seção ${position}: ${why}`);
+
     return null;
+  };
+
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    return drop('não é um objeto');
   }
 
   const source = raw as Record<string, unknown>;
   const layout = forcedLayout ?? (isInfographicLayoutId(source.layout) ? source.layout : null);
 
   if (!layout) {
-    return null;
+    return drop(
+      `modelo desconhecido (${typeof source.layout === 'string' ? source.layout : 'sem "layout"'})`,
+    );
   }
 
   const info = layoutInfo(layout);
@@ -193,8 +220,14 @@ function parseSection(
     .filter((item): item is LibraryInfographicItem => item !== null)
     .slice(0, info.maxItems);
 
-  if (title === '' || items.length < info.minItems) {
-    return null;
+  if (title === '') {
+    return drop(`modelo ${layout} sem título`);
+  }
+
+  const acceptedMin = INFOGRAPHIC_ACCEPTED_MIN_ITEMS[layout];
+
+  if (items.length < acceptedMin) {
+    return drop(`modelo ${layout} com itens de menos (${items.length} de ${acceptedMin})`);
   }
 
   const section: LibraryInfographicSection = { layout, title, piece: piece(source.piece), items };
@@ -212,7 +245,7 @@ function parseSection(
     const sides = cleanSides(source.sides);
 
     if (!sides) {
-      return null;
+      return drop('comparativo sem os dois lados');
     }
 
     section.sides = sides;
@@ -226,24 +259,40 @@ function parseSection(
  * abertura, peça), seções (cada uma no seu modelo) e fechamento. Textos são cortados, peças
  * desconhecidas viram vazias e seções que não se sustentam somem. Com `forcedLayout` (escolha do
  * usuário) o infográfico tem **uma** seção, nesse modelo (a IA pode ter respondido com a seção
- * solta, sem a lista). Sem título ou com seções de menos (no modo livre, ao menos duas, para ser
+ * solta, sem a lista). Sem título (nem o da página, que serve de reserva) ou com seções de menos (no modo livre, ao menos duas, para ser
  * uma história), lança `InvalidInfographicError`.
  */
 export function parseInfographic(
   answer: string,
   forcedLayout?: InfographicLayoutId,
+  fallbackTitle?: string,
 ): ParsedInfographic {
   const source = parseAnswerJson(answer);
-  const title = text(source.title, INFOGRAPHIC_LIMITS.maxTitleChars, true);
+  // A IA às vezes esquece o título da capa: o da página serve (é o assunto do infográfico).
+  const title =
+    text(source.title, INFOGRAPHIC_LIMITS.maxTitleChars, true) ||
+    text(fallbackTitle, INFOGRAPHIC_LIMITS.maxTitleChars, true);
   const rawSections = Array.isArray(source.sections) ? source.sections : [source];
+  const problems: string[] = [];
   const sections = rawSections
-    .map((entry) => parseSection(entry, forcedLayout))
+    .map((entry, index) => parseSection(entry, forcedLayout, problems, index + 1))
     .filter((section): section is LibraryInfographicSection => section !== null)
     .slice(0, forcedLayout ? 1 : INFOGRAPHIC_SECTIONS.max);
-  const needed = forcedLayout ? 1 : INFOGRAPHIC_SECTIONS.min;
+  const needed = forcedLayout ? 1 : INFOGRAPHIC_MIN_ACCEPTED_SECTIONS;
+
+  if (title === '') {
+    problems.unshift('a capa não tem título');
+  }
+
+  if (!Array.isArray(source.sections)) {
+    problems.push('a resposta não tem a lista "sections"');
+  }
 
   if (title === '' || sections.length < needed) {
-    throw new InvalidInfographicError();
+    problems.push(
+      `${sections.length} seção(ões) utilizável(is) de ${rawSections.length} (mínimo ${needed})`,
+    );
+    throw new InvalidInfographicError(undefined, problems);
   }
 
   const result: ParsedInfographic = { title, piece: piece(source.piece), sections };

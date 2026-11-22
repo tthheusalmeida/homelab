@@ -9,6 +9,9 @@ export class AiChatDto {
 
   thinking?: string;
 
+  /** A resposta precisa ser um JSON: o provedor liga o modo de resposta em JSON, quando existe. */
+  json?: boolean;
+
   /** Conversa inteira, com a mensagem nova por último; sem ela vale só `message`. */
   messages?: AIChatTurn[];
 

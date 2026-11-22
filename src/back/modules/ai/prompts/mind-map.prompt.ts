@@ -82,7 +82,7 @@ ${input.content}
 
 # SAÍDA
 
-Responda APENAS com um JSON válido, sem texto antes ou depois e sem cercas de código, neste formato (\`children\` é uma lista vazia quando o nó não tem filhos):
+Responda APENAS com um JSON válido (todo texto entre aspas duplas, sem comentários e sem vírgula sobrando), sem texto antes ou depois e sem cercas de código, neste formato (\`children\` é uma lista vazia quando o nó não tem filhos):
 {"subtitle": "...", "nodes": [{"label": "...", "note": "...", "children": [{"label": "...", "note": "...", "children": []}]}]}
 `.trim();
 }

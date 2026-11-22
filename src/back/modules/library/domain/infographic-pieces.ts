@@ -9,70 +9,13 @@ import {
 } from '../../../../shared/infographic-pieces';
 
 import { singular, synonymsOf } from '../../../../shared/infographic-synonyms';
+import { stemOf as stem, wordsOf as tokens } from '../../../../shared/infographic-text';
 
 import type { ParsedInfographic } from './infographic';
-
-/** Palavras que não ajudam a achar uma peça. */
-const STOP = new Set([
-  'para',
-  'com',
-  'uma',
-  'umas',
-  'uns',
-  'dos',
-  'das',
-  'por',
-  'que',
-  'como',
-  'mais',
-  'menos',
-  'sobre',
-  'entre',
-  'sem',
-  'sao',
-  'ser',
-  'tem',
-  'seu',
-  'sua',
-  'seus',
-  'suas',
-  'isso',
-  'esse',
-  'essa',
-  'ate',
-  'nos',
-  'nas',
-  'pelo',
-  'pela',
-  'quando',
-  'onde',
-  'cada',
-  'muito',
-  'muitos',
-]);
-
-/** Minúsculas, sem acento e sem pontuação. */
-function normalize(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-}
-
-function tokens(text: string): string[] {
-  return normalize(text)
-    .split(' ')
-    .filter((word) => word.length >= 3 && !STOP.has(word));
-}
 
 /** Quanto vale um sinônimo da palavra no nome ou nas palavras-chave (sempre menos que a palavra exata: 4 e 3). */
 const SYNONYM_NAME = 2;
 const SYNONYM_TAG = 1.5;
-
-/** Raiz curta de uma palavra: "endividamento" e "endividar" se encontram em "endivi". */
-const stem = (word: string) => word.slice(0, 5);
 
 interface IndexedPiece {
   info: InfographicPieceInfo;

@@ -61,7 +61,7 @@ ${input.content}
 
 # SAÍDA
 
-Responda APENAS com um JSON válido, sem texto antes ou depois e sem cercas de código, neste formato:
+Responda APENAS com um JSON válido (todo texto entre aspas duplas, sem comentários e sem vírgula sobrando), sem texto antes ou depois e sem cercas de código, neste formato:
 {"title": "...", "category": ["...", "..."], "tags": ["...", "..."]}
 `.trim();
 }
