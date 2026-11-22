@@ -1,8 +1,12 @@
+import { randomUUID } from 'node:crypto';
+
 import { Injectable, Optional } from '@nestjs/common';
 
+import type { RecordImportResult, RestoreMode } from '../../../../shared/contracts/backup';
 import {
   isPromptKind,
   PROMPT_KINDS,
+  PROMPT_LIMITS,
   type PromptKind,
   type PromptVersion,
 } from '../../../../shared/contracts/prompts';
@@ -23,7 +27,34 @@ interface PromptsFileData {
   prompts: StoredPrompts;
 }
 
+/** Uma versão como vai para o backup: uma por registro, dizendo a que prompt pertence e se está em uso. */
+export interface PromptRecord extends PromptVersion {
+  kind: PromptKind;
+  active: boolean;
+}
+
 const emptyPrompt = (): StoredPrompt => ({ activeId: null, versions: [] });
+
+const sameName = (a: string, b: string) =>
+  a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }) === 0;
+
+/** O registro do backup só vale se tiver o formato e os tamanhos que o app aceita ao gravar. */
+function isRecord(value: unknown): value is PromptRecord {
+  if (!isVersion(value)) {
+    return false;
+  }
+
+  const { kind, active, name, text } = value as unknown as Record<string, unknown>;
+
+  return (
+    isPromptKind(kind) &&
+    typeof active === 'boolean' &&
+    (name as string).trim() !== '' &&
+    (name as string).length <= PROMPT_LIMITS.maxNameChars &&
+    (text as string).length >= PROMPT_LIMITS.minChars &&
+    (text as string).length <= PROMPT_LIMITS.maxChars
+  );
+}
 
 function isVersion(value: unknown): value is PromptVersion {
   if (typeof value !== 'object' || value === null) {
@@ -101,11 +132,53 @@ export class PromptStore {
     this.save();
   }
 
-  /** Tudo o que está guardado, para o backup. */
-  exportAll(): Array<{ kind: PromptKind; prompt: StoredPrompt }> {
-    return Object.entries(this.load())
-      .filter((entry): entry is [PromptKind, StoredPrompt] => isPromptKind(entry[0]))
-      .map(([kind, prompt]) => ({ kind, prompt: structuredClone(prompt) }));
+  /** Todas as versões guardadas, uma por registro (usado pelo backup). */
+  exportAll(): PromptRecord[] {
+    return PROMPT_KINDS.flatMap((kind) => {
+      const { versions, activeId } = this.get(kind);
+
+      return versions.map((version) => ({ kind, ...version, active: version.id === activeId }));
+    });
+  }
+
+  /**
+   * Traz versões de um backup. `merge` só **acrescenta** as que ainda não existem (mesmo nome no
+   * mesmo prompt conta como já existente) e mantém a versão em uso; `replace` troca tudo e também
+   * a versão em uso. Ignora registros inválidos e o que passar do limite de versões por prompt.
+   */
+  importAll(raw: unknown[], mode: RestoreMode): RecordImportResult {
+    const incoming = raw.filter(isRecord);
+    const base: StoredPrompts = mode === 'replace' ? {} : structuredClone(this.load());
+    let added = 0;
+
+    for (const record of incoming) {
+      const stored = (base[record.kind] ??= emptyPrompt());
+      const taken =
+        stored.versions.some((version) => sameName(version.name, record.name)) ||
+        stored.versions.length >= PROMPT_LIMITS.maxVersionsPerKind;
+
+      if (taken) {
+        continue;
+      }
+
+      // o id do backup pode já existir aqui (mesclando); nesse caso a versão ganha um novo
+      const id = stored.versions.some((version) => version.id === record.id)
+        ? randomUUID()
+        : record.id;
+
+      stored.versions.push({ id, name: record.name.trim(), text: record.text });
+
+      if (record.active && mode === 'replace') {
+        stored.activeId = id;
+      }
+
+      added += 1;
+    }
+
+    this.prompts = base;
+    this.save();
+
+    return { added, skipped: raw.length - added };
   }
 
   private load(): StoredPrompts {

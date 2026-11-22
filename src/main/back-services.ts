@@ -15,6 +15,7 @@ import { BookService } from '../back/modules/library/application/book.service';
 import { LibraryClassifier } from '../back/modules/library/application/library-classifier';
 import { InfographicService } from '../back/modules/library/application/infographic.service';
 import { PromptService } from '../back/modules/ai/prompts/prompt.service';
+import { PromptStore } from '../back/modules/ai/prompts/prompt.store';
 import { MindMapService } from '../back/modules/library/application/mind-map.service';
 import { LibraryService } from '../back/modules/library/application/library.service';
 import { InfographicStore } from '../back/modules/library/infrastructure/infographic-store';
@@ -72,6 +73,7 @@ export class BackServices {
     chats: BackupCollection;
     mindMaps: BackupCollection;
     infographics: BackupCollection;
+    prompts: BackupCollection;
     usage: BackupCollection;
   } {
     const jobs = this.get<JobService>(JobService);
@@ -79,6 +81,7 @@ export class BackServices {
     const usage = this.get<AiUsageService>(AiUsageService);
     const mindMaps = this.get<MindMapStore>(MindMapStore);
     const infographics = this.get<InfographicStore>(InfographicStore);
+    const prompts = this.get<PromptStore>(PromptStore);
 
     return {
       jobs: {
@@ -96,6 +99,10 @@ export class BackServices {
       infographics: {
         export: () => infographics.exportAll(),
         import: (items, mode) => infographics.importAll(items, mode),
+      },
+      prompts: {
+        export: () => prompts.exportAll(),
+        import: (items, mode) => prompts.importAll(items, mode),
       },
       usage: {
         export: () => usage.exportRecords(),

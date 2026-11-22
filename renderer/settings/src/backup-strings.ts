@@ -64,6 +64,7 @@ export const ITEM_LABELS: Record<BackupItemId, { label: string; hint: string }> 
   chats: { label: 'Chats', hint: 'Todas as conversas' },
   mindMaps: { label: 'Mapas mentais', hint: 'Os mapas das páginas, com as suas edições' },
   infographics: { label: 'Infográficos', hint: 'Os infográficos das páginas, com as suas edições' },
+  prompts: { label: 'Prompts', hint: 'As versões dos prompts de IA que você criou e qual está em uso' },
   usage: { label: 'Consumo de IA', hint: 'Histórico de tokens e custo' },
   settings: { label: 'Aparência e configurações', hint: 'Tema, cor e endereço do Ollama' },
 };

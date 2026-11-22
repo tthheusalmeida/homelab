@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
+import { PROMPT_LIMITS } from '../../../../shared/contracts/prompts';
 import type { BackAlerts } from '../../../config/back-alerts';
 import type { BackConfig } from '../../../config/back-config';
 
@@ -86,12 +87,122 @@ describe('PromptStore', () => {
     expect(persistFailed).toHaveBeenCalledWith('os prompts', expect.any(String));
   });
 
-  it('when exporting, should list each stored prompt with its kind', () => {
+  it('when exporting, should list one record per version with its kind and whether it is in use', () => {
+    const store = new PromptStore(config(file));
+
+    store.set('mindMap', {
+      activeId: 'v1',
+      versions: [...stored.versions, { id: 'v2', name: 'Longo', text: text('longo') }],
+    });
+
+    expect(store.exportAll()).toEqual([
+      { kind: 'mindMap', id: 'v1', name: 'Curto', text: stored.versions[0].text, active: true },
+      { kind: 'mindMap', id: 'v2', name: 'Longo', text: text('longo'), active: false },
+    ]);
+  });
+});
+
+const text = (suffix: string) => `Instruções do usuário para o mapa mental, versão ${suffix}.`;
+
+const record = (overrides: Record<string, unknown> = {}) => ({
+  kind: 'mindMap',
+  id: 'r1',
+  name: 'Do backup',
+  text: text('backup'),
+  active: false,
+  ...overrides,
+});
+
+describe('PromptStore import', () => {
+  let dir: string;
+  let file: string;
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prompts-import-'));
+    file = path.join(dir, 'config', 'prompts.json');
+  });
+
+  afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  it('when merging, should add only the versions whose name is new and keep the one in use', () => {
     const store = new PromptStore(config(file));
 
     store.set('mindMap', stored);
 
-    expect(store.exportAll()).toEqual([{ kind: 'mindMap', prompt: stored }]);
+    const result = store.importAll(
+      [record({ id: 'a', name: 'curto' }), record({ id: 'b', name: 'Novo', active: true })],
+      'merge',
+    );
+
+    expect(result).toEqual({ added: 1, skipped: 1 });
+    expect(store.get('mindMap').versions.map((version) => version.name)).toEqual(['Curto', 'Novo']);
+    expect(store.get('mindMap').activeId).toBe('v1');
+  });
+
+  it('when merging a version whose id already exists here, should give it a new id', () => {
+    const store = new PromptStore(config(file));
+
+    store.set('mindMap', {
+      activeId: null,
+      versions: [{ id: 'r1', name: 'Local', text: text('x') }],
+    });
+    store.importAll([record({ id: 'r1', name: 'Do backup' })], 'merge');
+
+    const ids = store.get('mindMap').versions.map((version) => version.id);
+
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+  });
+
+  it('when replacing, should swap everything and use the version marked as active', () => {
+    const store = new PromptStore(config(file));
+
+    store.set('mindMap', stored);
+    store.set('infographic', stored);
+
+    const result = store.importAll([record({ id: 'a', active: true })], 'replace');
+
+    expect(result).toEqual({ added: 1, skipped: 0 });
+    expect(store.get('mindMap').activeId).toBe('a');
+    expect(store.get('infographic')).toEqual({ activeId: null, versions: [] });
+  });
+
+  it('when a record is invalid (kind, sizes or shape), should skip it', () => {
+    const store = new PromptStore(config(file));
+
+    const result = store.importAll(
+      [
+        record({ kind: 'desconhecido' }),
+        record({ text: 'curto' }),
+        record({ name: '   ' }),
+        record({ name: 'n'.repeat(PROMPT_LIMITS.maxNameChars + 1) }),
+        record({ text: 'x'.repeat(PROMPT_LIMITS.maxChars + 1) }),
+        { id: 1 },
+        null,
+        record({ name: 'Boa' }),
+      ],
+      'merge',
+    );
+
+    expect(result).toEqual({ added: 1, skipped: 7 });
+    expect(store.get('mindMap').versions.map((version) => version.name)).toEqual(['Boa']);
+  });
+
+  it('when the limit of versions per prompt is reached, should skip the rest', () => {
+    const store = new PromptStore(config(file));
+    const many = Array.from({ length: PROMPT_LIMITS.maxVersionsPerKind + 3 }, (_, index) =>
+      record({ id: `v${index}`, name: `Versão ${index}` }),
+    );
+
+    const result = store.importAll(many, 'replace');
+
+    expect(result).toEqual({ added: PROMPT_LIMITS.maxVersionsPerKind, skipped: 3 });
+  });
+
+  it('when importing, should keep the result on disk', () => {
+    new PromptStore(config(file)).importAll([record({ active: true })], 'replace');
+
+    expect(new PromptStore(config(file)).get('mindMap').activeId).toBe('r1');
   });
 });
 

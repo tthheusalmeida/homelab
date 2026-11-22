@@ -74,6 +74,7 @@ interface Env {
   chats: FakeCollection;
   mindMaps: FakeCollection;
   infographics: FakeCollection;
+  prompts: FakeCollection;
   usage: FakeCollection;
   settings: SettingsStore;
   events: FakeEventPublisher;
@@ -92,6 +93,7 @@ function makeEnv(label: string, overrides: Partial<BackupDeps> = {}): Env {
   const chats = new FakeCollection();
   const mindMaps = new FakeCollection();
   const infographics = new FakeCollection();
+  const prompts = new FakeCollection();
   const usage = new FakeCollection();
   const settings = new SettingsStore(
     new JsonFile<SettingsPatch>(path.join(dir, 'config', 'settings.json')),
@@ -109,7 +111,7 @@ function makeEnv(label: string, overrides: Partial<BackupDeps> = {}): Env {
     tempDir,
     libraryDir: () => library,
     inboxDir: () => inbox,
-    collections: { jobs, chats, mindMaps, infographics, usage },
+    collections: { jobs, chats, mindMaps, infographics, prompts, usage },
     settings,
     reindexLibrary: reindex,
     filePicker: picker,
@@ -127,6 +129,7 @@ function makeEnv(label: string, overrides: Partial<BackupDeps> = {}): Env {
     chats,
     mindMaps,
     infographics,
+    prompts,
     usage,
     settings,
     events,
@@ -195,6 +198,7 @@ describe('BackupService', () => {
         'chats',
         'mindMaps',
         'infographics',
+        'prompts',
         'usage',
         'settings',
       ]);
@@ -205,6 +209,7 @@ describe('BackupService', () => {
       expect(byId.chats).toMatchObject({ kind: 'records', count: 1 });
       expect(byId.mindMaps).toMatchObject({ kind: 'records', count: 0 });
       expect(byId.infographics).toMatchObject({ kind: 'records', count: 0 });
+      expect(byId.prompts).toMatchObject({ kind: 'records', count: 0 });
       expect(byId.usage).toMatchObject({ kind: 'records', count: 0 });
       expect(byId.settings).toMatchObject({ kind: 'records', count: 1 });
     });
@@ -665,6 +670,50 @@ describe('BackupService', () => {
       expect(
         fs.existsSync(path.join(result.safetyCopyPath as string, 'data', 'mind-maps.json')),
       ).toBe(true);
+    });
+
+    it('when restoring prompts (merge), should add the missing versions and report the rest as kept', async () => {
+      const a = env('a');
+      const b = env('b');
+
+      a.prompts.items = [{ id: 'v1' }, { id: 'v2' }];
+      b.prompts.items = [{ id: 'v1' }];
+      const { token } = await backupFrom(a, b, ['prompts']);
+
+      const result = await b.service.restore({ token, items: ['prompts'], mode: 'merge' });
+
+      expect(b.prompts.items).toEqual([{ id: 'v1' }, { id: 'v2' }]);
+      expect(result.items).toEqual([{ id: 'prompts', added: 1, skipped: 1 }]);
+    });
+
+    it('when restoring prompts (replace), should swap them and keep a safety copy of the file', async () => {
+      const a = env('a');
+      const b = env('b');
+
+      a.prompts.items = [{ id: 'v1', title: 'do backup' }];
+      b.prompts.items = [{ id: 'v9', title: 'da máquina' }];
+      const { token } = await backupFrom(a, b, ['prompts']);
+
+      const result = await b.service.restore({ token, items: ['prompts'], mode: 'replace' });
+
+      expect(b.prompts.items).toEqual([{ id: 'v1', title: 'do backup' }]);
+      expect(
+        fs.existsSync(path.join(result.safetyCopyPath as string, 'config', 'prompts.json')),
+      ).toBe(true);
+    });
+
+    it('when saving prompts, should write them in config/prompts.json with the version count', async () => {
+      const e = env('a');
+      const destination = path.join(e.dir, 'prompts.zip');
+
+      e.picker.pickSavePath.mockResolvedValue(destination);
+      e.prompts.items = [{ id: 'v1' }, { id: 'v2' }, { id: 'v3' }];
+
+      await e.service.create({ items: ['prompts'] });
+
+      const saved = JSON.parse((await readZipText(destination, 'config/prompts.json')) ?? '{}');
+
+      expect(saved).toEqual({ version: BACKUP_VERSION, versions: e.prompts.items });
     });
 
     it('when restoring only the infographics, should not touch the mind maps', async () => {
