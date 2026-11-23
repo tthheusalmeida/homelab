@@ -245,8 +245,11 @@ describe("DocumentPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
 
-    expect(screen.queryByText("Editar página")).not.toBeInTheDocument();
-    expect(screen.getByText("Situação")).toBeInTheDocument();
+    // A janela do editor sai com uma transição: espera sumir em vez de contar com o tempo.
+    await waitFor(() =>
+      expect(screen.queryByText("Editar página")).not.toBeInTheDocument(),
+    );
+    expect(await screen.findByText("Situação")).toBeInTheDocument();
   });
 
   it("when the edit is saved, should return to the about window", async () => {
