@@ -110,17 +110,27 @@ describe("useTextHighlight", () => {
     expect(hook.result.current.count).toBe(1);
   });
 
-  it("when a new query is typed, should scroll to the first occurrence", () => {
+  it("when a new query is typed, should not scroll by itself", () => {
     setup("imagem");
 
+    expect(scrolled).toHaveLength(0);
+  });
+
+  it("when next is called for the first time on a query, should show the first occurrence and scroll to it", () => {
+    const { hook } = setup("imagem");
+
+    act(() => hook.result.current.next());
+
+    expect(hook.result.current.index).toBe(0);
     expect(scrolled).toHaveLength(1);
     expect(scrolled[0].tagName).toBe("P");
   });
 
-  it("when next is called, should go to the following occurrence and scroll to it", () => {
+  it("when next is called again, should go to the following occurrence and scroll to it", () => {
     const { hook } = setup("imagem");
-    scrolled.length = 0;
 
+    act(() => hook.result.current.next());
+    scrolled.length = 0;
     act(() => hook.result.current.next());
 
     expect(hook.result.current.index).toBe(1);
@@ -132,13 +142,23 @@ describe("useTextHighlight", () => {
 
     act(() => hook.result.current.next());
     act(() => hook.result.current.next());
+    act(() => hook.result.current.next());
 
     expect(hook.result.current.index).toBe(0);
   });
 
-  it("when prev is called on the first occurrence, should wrap to the last", () => {
+  it("when prev is called for the first time on a query, should go to the last occurrence", () => {
     const { hook } = setup("imagem");
 
+    act(() => hook.result.current.prev());
+
+    expect(hook.result.current.index).toBe(1);
+  });
+
+  it("when prev is called on the first occurrence after navigating, should wrap to the last", () => {
+    const { hook } = setup("imagem");
+
+    act(() => hook.result.current.next());
     act(() => hook.result.current.prev());
 
     expect(hook.result.current.index).toBe(1);
@@ -158,6 +178,7 @@ describe("useTextHighlight", () => {
   it("when the query changes, should recount and go back to the first occurrence", () => {
     const { hook } = setup("imagem");
     act(() => hook.result.current.next());
+    act(() => hook.result.current.next());
 
     hook.rerender({ q: "rede", version: 0 });
 
@@ -174,6 +195,7 @@ describe("useTextHighlight", () => {
 
   it("when the text is redrawn with the same query, should keep the current occurrence", () => {
     const { hook } = setup("imagem");
+    act(() => hook.result.current.next());
     act(() => hook.result.current.next());
 
     hook.rerender({ q: "imagem", version: 1 });

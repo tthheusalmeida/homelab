@@ -72,16 +72,6 @@ export interface BookReading {
   modules: { id: string; title: string; chapters: BookReadingChapter[] }[];
 }
 
-export interface BookSearchHit {
-  documentId: string;
-  chapterTitle: string;
-  moduleId: string;
-  moduleTitle: string;
-  /** Linha (base 1) do trecho dentro do documento. */
-  line: number;
-  snippet: string;
-}
-
 /** Payload de `library:books:list` (a query `documentId` do `GET library/books`). */
 export interface BookListRequest {
   /** Marca em cada livro se ele contém esse documento (`containsDocument`). */
@@ -90,12 +80,6 @@ export interface BookListRequest {
 
 export interface BookRequest {
   id: string;
-}
-
-/** Payload de `library:books:search`. Termo vazio ou só de espaços → lista vazia. */
-export interface BookSearchRequest {
-  id: string;
-  q: string;
 }
 
 /** Campos da capa e do cabeçalho de um livro (criar e editar). */

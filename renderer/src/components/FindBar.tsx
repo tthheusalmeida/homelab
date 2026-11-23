@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 
@@ -33,7 +34,7 @@ export interface FindBarProps {
  * Busca dentro do texto da tela, flutuante e centralizada no topo (colado na borda), acima de tudo,
  * inclusive do modo leitura. Mostra "3 de 12", navega entre as ocorrências (Enter = próxima,
  * Shift+Enter = anterior, Esc limpa e, vazio, fecha) e, com `results`, lista os trechos achados.
- * Abre com Ctrl+F (ver `useFind`).
+ * Abre com Ctrl+F (ver `useFind`). Clicar fora dela também fecha.
  */
 export function FindBar({
   value,
@@ -48,9 +49,27 @@ export function FindBar({
   results,
 }: FindBarProps) {
   const searching = value.trim().length >= 2;
+  const rootRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+
+  closeRef.current = onClose;
+
+  // Clicar fora da barra fecha (e limpa a busca, como o Esc com o campo vazio).
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        closeRef.current();
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
 
   return createPortal(
     <div
+      ref={rootRef}
       role="search"
       className="fixed inset-x-0 top-0 z-[70] mx-auto flex w-[min(34rem,calc(100vw-2rem))] animate-enter-fade flex-col gap-2 rounded-lg border bg-popover p-2 text-popover-foreground shadow-lg"
     >

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { findMatches, searchPhrase, searchTerms } from "./find";
+import {
+  findMatches,
+  findMatchesIn,
+  prepareText,
+  searchPhrase,
+  searchTerms,
+} from "./find";
 
 describe("searchTerms", () => {
   it("when the query has several words, should split them", () => {
@@ -95,5 +101,26 @@ describe("findMatches", () => {
     expect(findMatches("texto", ["zzz"])).toEqual([]);
     expect(findMatches("", ["a"])).toEqual([]);
     expect(findMatches("texto", [])).toEqual([]);
+  });
+});
+
+describe("prepareText / findMatchesIn", () => {
+  it("when the same prepared text is searched with different terms, should find each with the original positions", () => {
+    const prepared = prepareText("Contêineres e  imagens\nde Rede");
+
+    expect(findMatchesIn(prepared, ["conteiner"])).toEqual([{ start: 0, end: 9 }]);
+    expect(findMatchesIn(prepared, ["e imagens de"])).toEqual([{ start: 12, end: 25 }]);
+    expect(findMatchesIn(prepared, ["rede"])).toEqual([{ start: 26, end: 30 }]);
+  });
+
+  it("when prepared text is searched, should give the same result as findMatches", () => {
+    const text = "A casa, a CASA e o casarão";
+
+    expect(findMatchesIn(prepareText(text), ["casa"])).toEqual(findMatches(text, ["casa"]));
+  });
+
+  it("when the text or the terms are empty, should find nothing", () => {
+    expect(findMatchesIn(prepareText(""), ["a"])).toEqual([]);
+    expect(findMatchesIn(prepareText("texto"), [])).toEqual([]);
   });
 });

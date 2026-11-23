@@ -5,7 +5,6 @@ import type {
   BookModuleDraft,
   BookPosition,
   BookReading,
-  BookSearchHit,
   BookSummary,
   BookUpdateRequest,
 } from '../../shared/contracts/books';
@@ -18,7 +17,6 @@ export interface BookReader {
   list(documentId?: string): Promise<BookSummary[]>;
   get(id: string): Promise<BookDetail>;
   read(id: string): Promise<BookReading>;
-  search(id: string, query: string): Promise<BookSearchHit[]>;
 }
 
 /** Porta de escrita do `BookService` do back (as regras de módulos, capítulos e progresso ficam lá). */
@@ -53,7 +51,6 @@ export class BookHandler extends IpcHandler {
       this.route(IpcChannels.library.books.list, ({ documentId }) => this.books.list(documentId)),
       this.route(IpcChannels.library.books.get, ({ id }) => this.books.get(id)),
       this.route(IpcChannels.library.books.read, ({ id }) => this.books.read(id)),
-      this.route(IpcChannels.library.books.search, ({ id, q }) => this.books.search(id, q ?? '')),
     ];
   }
 

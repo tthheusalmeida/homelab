@@ -22,6 +22,23 @@ const setup = (props: Partial<React.ComponentProps<typeof FindBar>> = {}) => {
 const input = () => screen.getByLabelText("Pesquisar na página");
 
 describe("FindBar", () => {
+  it("when the user clicks outside the bar, should close it", async () => {
+    const { onClose, user } = setup();
+
+    await user.click(document.body);
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("when the user clicks inside the bar, should not close it", async () => {
+    const { onClose, user } = setup({ value: "ab" });
+
+    await user.click(input());
+    await user.click(screen.getByRole("button", { name: "Próxima ocorrência" }));
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it("when rendered, should float fixed, centered and at the very top, outside the page tree", () => {
     const { container } = render(
       <div>

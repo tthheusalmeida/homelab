@@ -27,9 +27,7 @@ const renderSidebar = (
   render(
     <BookSidebar
       modules={modules}
-      query=""
       onSelectChapter={() => {}}
-      onSelectHit={() => {}}
       {...props}
     />,
   );

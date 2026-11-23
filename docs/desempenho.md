@@ -27,3 +27,6 @@ Os pacotes `@fontsource` trazem todos os alfabetos (cirílico, vietnamita, grego
 
 ## Gráfico de Consumo sem biblioteca
 O gráfico de barras da tela de Consumo é o `BarChart` (`renderer/src/components/BarChart.tsx`, com a escala redonda em `lib/chart-scale.ts`): grade, eixo, barras e tooltip do app (`Tip`), tudo em HTML e CSS, nos dois temas. Tirou a dependência `recharts` (e o `redux`, `immer` e `d3` que ela trazia): o arquivo da tela caiu de 369 kB para 11 kB e o JS total de 1.761 kB para 1.402 kB. Para um gráfico de barras novo, reutilize o `BarChart`.
+
+## Busca no texto (Ctrl+F) sem refazer o trabalho caro
+Tirar acento e caixa de cada letra do livro é o passo caro da busca. `prepareText` (`lib/find.ts`) faz isso **uma vez por trecho de texto** e o `use-text-highlight` guarda o resultado num `WeakMap` por nó; cada consulta nova é só `indexOf` (1 milhão de letras: ~110 ms na primeira busca, ~1 ms nas seguintes). A conversão de cada letra também fica em cache. Além disso, a página do livro não se redesenha a cada tecla (`BookContent` memoizado com callbacks estáveis), a busca só começa com 2+ letras e o destaque é pintado pelo navegador (CSS Custom Highlight API), sem mexer no HTML.

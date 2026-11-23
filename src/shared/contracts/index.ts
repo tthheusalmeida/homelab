@@ -17,8 +17,6 @@ import type {
   BookMarkChapterReadRequest,
   BookReading,
   BookRequest,
-  BookSearchHit,
-  BookSearchRequest,
   BookSetPositionRequest,
   BookSetStructureRequest,
   BookSummary,
@@ -307,7 +305,6 @@ export interface IpcContracts {
   [IpcChannels.library.books.list]: { request: BookListRequest; response: BookSummary[] };
   [IpcChannels.library.books.get]: { request: BookRequest; response: BookDetail };
   [IpcChannels.library.books.read]: { request: BookRequest; response: BookReading };
-  [IpcChannels.library.books.search]: { request: BookSearchRequest; response: BookSearchHit[] };
   [IpcChannels.library.books.create]: { request: BookCreateRequest; response: BookDetail };
   [IpcChannels.library.books.update]: { request: BookUpdateRequest; response: BookDetail };
   [IpcChannels.library.books.delete]: { request: BookRequest; response: void };

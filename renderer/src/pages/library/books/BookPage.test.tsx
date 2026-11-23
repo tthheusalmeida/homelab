@@ -10,19 +10,13 @@ const reading = {
   isError: false,
 };
 const detail = { data: undefined as unknown };
-const search = { data: undefined as unknown, isFetching: false };
 const remove = { mutate: vi.fn(), isPending: false, isError: false };
 const setRead = { mutate: vi.fn(), isPending: false, isError: false };
 const savePosition = { mutate: vi.fn(), isPending: false, isError: false };
-const useBookSearchSpy = vi.fn();
 
 vi.mock("./hooks", () => ({
   useBookReading: () => reading,
   useBook: () => detail,
-  useBookSearch: (id: string, q: string) => {
-    useBookSearchSpy(id, q);
-    return search;
-  },
   useDeleteBook: () => remove,
   useSetChapterRead: () => setRead,
   useResetBookProgress: () => ({
@@ -124,13 +118,10 @@ describe("BookPage", () => {
         },
       ],
     };
-    search.data = undefined;
-    search.isFetching = false;
     remove.mutate.mockReset();
     remove.isError = false;
     setRead.mutate.mockReset();
     savePosition.mutate.mockReset();
-    useBookSearchSpy.mockClear();
   });
 
   it("when loading, should show the loading state", () => {
@@ -281,43 +272,35 @@ describe("BookPage", () => {
     });
   });
 
-  it("when a search result is clicked, should scroll to the heading above the match", async () => {
-    search.data = [
-      {
-        documentId: "d1",
-        chapterTitle: "Docker",
-        moduleId: "m1",
-        moduleTitle: "Módulo 1",
-        line: 7,
-        snippet: "linha 7",
-      },
-    ];
+  it("when searching, should list the matches in the find bar and scroll to the clicked one", async () => {
     const user = userEvent.setup();
     renderPage();
     await user.keyboard("{Control>}f{/Control}");
     await user.type(screen.getByLabelText("Pesquisar no livro"), "linha");
-    const heading = screen.getByRole("heading", { name: "Imagens" });
-    heading.scrollIntoView = vi.fn();
 
-    await user.click(
-      within(
-        screen.getByRole("list", { name: "Resultados da pesquisa" }),
-      ).getByRole("button"),
-    );
+    const list = await screen.findByRole("list", {
+      name: "Resultados da pesquisa",
+    });
+    const paragraph = screen.getByText("linha 7");
+    paragraph.scrollIntoView = vi.fn();
 
-    expect(heading.scrollIntoView).toHaveBeenCalled();
+    await user.click(within(list).getByRole("button"));
+
+    expect(paragraph.scrollIntoView).toHaveBeenCalled();
   });
 
-  it("when typing in the search, should query the book after the debounce", async () => {
+  it("when searching, should not show the results in the side panel", async () => {
     const user = userEvent.setup();
     renderPage();
-
     await user.keyboard("{Control>}f{/Control}");
-    await user.type(screen.getByLabelText("Pesquisar no livro"), "docker");
+    await user.type(screen.getByLabelText("Pesquisar no livro"), "linha");
+    await screen.findByRole("list", { name: "Resultados da pesquisa" });
 
-    await vi.waitFor(() =>
-      expect(useBookSearchSpy).toHaveBeenLastCalledWith("b1", "docker"),
-    );
+    expect(
+      within(
+        screen.getByRole("complementary", { name: "Painel do livro" }),
+      ).queryByRole("list", { name: "Resultados da pesquisa" }),
+    ).not.toBeInTheDocument();
   });
 
   it("when the book has no available chapters, should show the empty state", () => {

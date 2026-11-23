@@ -42,7 +42,6 @@ import { BookOutlineCard, BookSidebar } from "./components/BookSidebar";
 import {
   useBook,
   useBookReading,
-  useBookSearch,
   useDeleteBook,
   useResetBookProgress,
   useSaveBookPosition,
@@ -52,10 +51,8 @@ import {
   chapterElementId,
   goToElement,
   headingElementId,
-  hitTargetId,
 } from "./reader";
 import { bookStats } from "./stats";
-import type { BookSearchHit } from "./types";
 import { useSnackbar } from "#components/Snackbar";
 import { PageLoading, PageError } from "#components/PageState";
 
@@ -90,7 +87,6 @@ export function BookPage() {
   const continued = useRef(false);
 
   const find = useFind(container, reading.data);
-  const results = useBookSearch(bookId, find.query);
 
   const contents = useMemo(() => {
     const map = new Map<string, string>();
@@ -133,6 +129,44 @@ export function BookPage() {
   const activeChapterId = activeElementId
     ? owner.get(activeElementId)
     : undefined;
+
+  // Estáveis de propósito: o texto do livro é memoizado e não deve ser redesenhado a
+  // cada tecla digitada na busca.
+  const goToChapter = useCallback(
+    (documentId: string) => goToElement(chapterElementId(documentId)),
+    [],
+  );
+
+  const bookRef = useRef(reading.data?.book);
+  bookRef.current = reading.data?.book;
+
+  const { mutate: mutateRead } = setRead;
+  const { error: showError } = snackbar;
+
+  const handleToggleRead = useCallback(
+    (documentId: string, read: boolean) => {
+      const current = bookRef.current;
+
+      if (!current) {
+        return;
+      }
+
+      const wasCompleted = current.completedAt !== null;
+
+      mutateRead(
+        { id: current.id, documentId, read },
+        {
+          onSuccess: (updated) => {
+            if (updated.completedAt && !wasCompleted) {
+              setCelebrate(true);
+            }
+          },
+          onError: (error) => showError(error.message),
+        },
+      );
+    },
+    [mutateRead, showError],
+  );
 
   const continueReading = useCallback(() => {
     const position = reading.data?.book.lastPosition;
@@ -234,22 +268,6 @@ export function BookPage() {
   const readCount = readIds.filter((id) => contents.has(id)).length;
   const completed = book.completedAt !== null;
 
-  function handleToggleRead(documentId: string, read: boolean) {
-    const wasCompleted = completed;
-
-    setRead.mutate(
-      { id: book.id, documentId, read },
-      {
-        onSuccess: (updated) => {
-          if (updated.completedAt && !wasCompleted) {
-            setCelebrate(true);
-          }
-        },
-        onError: (error) => snackbar.error(error.message),
-      },
-    );
-  }
-
   function handleReset() {
     resetProgress.mutate(book.id, {
       onSuccess: () => {
@@ -257,10 +275,6 @@ export function BookPage() {
         snackbar.success("Progresso de leitura zerado");
       },
     });
-  }
-
-  function handleHit(hit: BookSearchHit) {
-    goToElement(hitTargetId(hit, contents.get(hit.documentId) ?? ""));
   }
 
   function handleDelete() {
@@ -272,14 +286,12 @@ export function BookPage() {
     });
   }
 
-  const goToChapter = (documentId: string) =>
-    goToElement(chapterElementId(documentId));
-
-  // Ctrl+F: a busca flutuante sobre o texto (a lista de ocorrências fica no painel).
+  // Ctrl+F: a busca flutuante sobre o texto, com a lista de ocorrências.
   const floatingFind = find.open && (
     <FindBar
       label="Pesquisar no livro"
       {...find.barProps}
+      results={find.results}
       onClose={find.close}
     />
   );
@@ -323,11 +335,7 @@ export function BookPage() {
               readIds={readIds}
               readCount={readCount}
               completedAt={book.completedAt}
-              query={find.search}
-              hits={results.data}
-              isSearching={results.isFetching}
               onSelectChapter={goToChapter}
-              onSelectHit={handleHit}
               onToggleRead={handleToggleRead}
             />
           }
@@ -490,11 +498,7 @@ export function BookPage() {
               readIds={readIds}
               readCount={readCount}
               completedAt={book.completedAt}
-              query={find.search}
-              hits={results.data}
-              isSearching={results.isFetching}
               onSelectChapter={goToChapter}
-              onSelectHit={handleHit}
               onToggleRead={handleToggleRead}
             />
           </div>

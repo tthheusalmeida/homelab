@@ -93,15 +93,6 @@ export interface BookReading {
   }[];
 }
 
-export interface BookSearchHit {
-  documentId: string;
-  chapterTitle: string;
-  moduleId: string;
-  moduleTitle: string;
-  line: number;
-  snippet: string;
-}
-
 export interface CreateBookInput extends Partial<BookCoverData> {
   title: string;
   kind?: BookKind;

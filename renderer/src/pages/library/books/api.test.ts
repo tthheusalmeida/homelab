@@ -12,7 +12,6 @@ import {
   readBook,
   resetBookProgress,
   saveBookPosition,
-  searchBook,
   setBookStructure,
   setChapterRead,
   updateBook,
@@ -57,20 +56,6 @@ describe('books api: leitura por IPC', () => {
 
     expect(invoke).toHaveBeenCalledWith(IpcChannels.library.books.get, { id: 'a b' });
     expect(invoke).toHaveBeenCalledWith(IpcChannels.library.books.read, { id: 'a b' });
-  });
-
-  it('when searching, should send the id and the term untouched (even if empty)', async () => {
-    const hits = [{ documentId: 'd1', line: 2 }];
-    const invoke = mockApi({ [IpcChannels.library.books.search]: () => ok(hits) });
-
-    await expect(searchBook('b1', 'café & chá')).resolves.toEqual(hits);
-    await searchBook('b1', '');
-
-    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.books.search, {
-      id: 'b1',
-      q: 'café & chá',
-    });
-    expect(invoke).toHaveBeenCalledWith(IpcChannels.library.books.search, { id: 'b1', q: '' });
   });
 
   it('when the book does not exist, should reject with the NOT_FOUND message', async () => {

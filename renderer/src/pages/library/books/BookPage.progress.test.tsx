@@ -9,7 +9,6 @@ const reading = {
   isLoading: false,
   isError: false,
 };
-const search = { data: undefined as unknown, isFetching: false };
 const setRead = { mutate: vi.fn(), isPending: false, isError: false };
 const savePosition = { mutate: vi.fn(), isPending: false, isError: false };
 const idle = { mutate: vi.fn(), isPending: false, isError: false };
@@ -18,7 +17,6 @@ const reset = { mutate: vi.fn(), isPending: false, isError: false };
 vi.mock("./hooks", () => ({
   useBookReading: () => reading,
   useBook: () => ({ data: undefined }),
-  useBookSearch: () => search,
   useDeleteBook: () => idle,
   useSetChapterRead: () => setRead,
   useResetBookProgress: () => reset,
@@ -98,7 +96,6 @@ describe("BookPage — progress, continue, find, export", () => {
     reading.data = readingData();
     reading.isLoading = false;
     reading.isError = false;
-    search.data = undefined;
     setRead.mutate.mockReset();
     savePosition.mutate.mockReset();
     reset.mutate.mockReset();
@@ -768,6 +765,7 @@ describe("BookPage — progress, continue, find, export", () => {
       expect(await screen.findByText("1 de 3")).toBeInTheDocument();
 
       await user.keyboard("{Enter}");
+      await user.keyboard("{Enter}");
 
       expect(await screen.findByText("2 de 3")).toBeInTheDocument();
 
@@ -863,7 +861,6 @@ describe("BookPage — back to top", () => {
     reading.data = readingData();
     reading.isLoading = false;
     reading.isError = false;
-    search.data = undefined;
     document.documentElement.scrollTo = vi.fn() as never;
   });
 

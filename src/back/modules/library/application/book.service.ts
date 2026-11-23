@@ -1,7 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { significantWords } from '../../../../shared/search-words';
-
 import {
   BookValidationError,
   bookDocumentIds,
@@ -23,7 +21,7 @@ import {
   type ModuleInput,
 } from '../domain/book';
 import { DocumentStatusOptions } from '../domain/library.types';
-import { compareNatural, normalizeKey } from '../domain/naming';
+import { compareNatural } from '../domain/naming';
 import { BookStorage } from '../infrastructure/book-storage';
 import { LibraryIndex } from '../infrastructure/library-index';
 import { LibraryService } from './library.service';
@@ -73,20 +71,6 @@ export interface BookReading {
     chapters: (BookChapter & { content: string })[];
   }[];
 }
-
-export interface BookSearchHit {
-  documentId: string;
-  chapterTitle: string;
-  moduleId: string;
-  moduleTitle: string;
-  /** Linha (base 1) do trecho dentro do documento. */
-  line: number;
-  snippet: string;
-}
-
-const MAX_HITS_PER_CHAPTER = 3;
-const MAX_HITS = 50;
-const SNIPPET_RADIUS = 80;
 
 @Injectable()
 export class BookService {
@@ -349,65 +333,6 @@ export class BookService {
     return { book: meta, modules: result };
   }
 
-  /**
-   * Procura dentro do texto dos capítulos. Uma linha casa quando tem a frase
-   * inteira ou todas as palavras (sem diferenciar maiúscula nem acento; "da",
-   * "de" soltos não contam). As linhas com a frase vêm primeiro. Devolve o
-   * capítulo, a linha e um trecho para o front rolar até o ponto.
-   */
-  async search(id: string, query: string): Promise<BookSearchHit[]> {
-    const phrase = normalizeKey(query ?? '');
-    const words = significantWords(phrase.split(' ').filter((word) => word !== ''));
-
-    if (words.length === 0) {
-      return [];
-    }
-
-    const reading = await this.read(id);
-    const hits: BookSearchHit[] = [];
-    const exact = new Set<BookSearchHit>();
-
-    for (const module of reading.modules) {
-      for (const chapter of module.chapters) {
-        let inChapter = 0;
-
-        for (const [index, line] of chapter.content.split(/\r?\n/).entries()) {
-          if (inChapter >= MAX_HITS_PER_CHAPTER) {
-            break;
-          }
-
-          const found = findSnippet(line, words, phrase);
-
-          if (found === null) {
-            continue;
-          }
-
-          const hit: BookSearchHit = {
-            documentId: chapter.documentId,
-            chapterTitle: chapter.title,
-            moduleId: module.id,
-            moduleTitle: module.title,
-            line: index + 1,
-            snippet: found.snippet,
-          };
-
-          hits.push(hit);
-          inChapter += 1;
-
-          if (found.exact) {
-            exact.add(hit);
-          }
-
-          if (hits.length >= MAX_HITS) {
-            return rankExact(hits, exact);
-          }
-        }
-      }
-    }
-
-    return rankExact(hits, exact);
-  }
-
   private async load(id: string): Promise<Book> {
     const book = await this.storage.find(id);
 
@@ -466,41 +391,4 @@ export class BookService {
       throw error;
     }
   }
-}
-
-/** Linhas com a frase inteira primeiro; dentro de cada grupo, a ordem do livro. */
-function rankExact(hits: BookSearchHit[], exact: Set<BookSearchHit>): BookSearchHit[] {
-  return [...hits.filter((hit) => exact.has(hit)), ...hits.filter((hit) => !exact.has(hit))];
-}
-
-/**
- * Trecho de uma linha ao redor da frase (ou da primeira palavra), se ela tiver
- * a frase ou todas as palavras. `exact` diz se a frase inteira está na linha.
- */
-function findSnippet(
-  line: string,
-  words: string[],
-  phrase: string,
-): { snippet: string; exact: boolean } | null {
-  const plain = line
-    .replace(/^#{1,6}\s+/, '')
-    .replace(/[*`_>|]/g, '')
-    .trim();
-  const normalized = normalizeKey(plain);
-  const exact = normalized.includes(phrase);
-
-  if (!exact && !words.every((word) => normalized.includes(word))) {
-    return null;
-  }
-
-  // normalizeKey pode encurtar o texto (acentos decompostos); a posição só é
-  // usada como referência aproximada para o recorte.
-  const at = Math.max(0, normalized.indexOf(exact ? phrase : words[0]));
-  const start = Math.max(0, at - SNIPPET_RADIUS);
-  const end = Math.min(plain.length, at + SNIPPET_RADIUS);
-
-  return {
-    snippet: `${start > 0 ? '…' : ''}${plain.slice(start, end).trim()}${end < plain.length ? '…' : ''}`,
-    exact,
-  };
 }

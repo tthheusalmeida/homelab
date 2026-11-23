@@ -566,15 +566,33 @@
   }
 }
 
-/* Destaque dos termos achados na busca do livro (CSS Custom Highlight API). */
+/*
+ * Destaque dos termos achados na busca (CSS Custom Highlight API): o navegador pinta por cima do
+ * texto, sem mexer no HTML nem redesenhar nada. Cor de destaque do app, com linha por baixo.
+ */
+/* Opacidade da marca atual: animada por JS ao sumir (o destaque em si não aceita transição). */
+@property --find-alpha {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
 ::highlight(find-match) {
-  background-color: oklch(0.85 0.17 95 / 0.55);
+  background-color: color-mix(in oklab, var(--primary) 22%, transparent);
   color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 ::highlight(find-current) {
-  background-color: oklch(0.75 0.18 55);
-  color: black;
+  background-color: color-mix(in oklab, var(--primary) calc(55% * var(--find-alpha)), transparent);
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--primary) calc(100% * var(--find-alpha)), transparent);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 3px;
 }
 
 /* Exportar livro em PDF: a versão de impressão só aparece ao imprimir. */

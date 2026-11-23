@@ -9,7 +9,6 @@ import {
   readBook,
   resetBookProgress,
   saveBookPosition,
-  searchBook,
   setChapterRead,
   setBookStructure,
   updateBook,
@@ -45,17 +44,6 @@ export function useBookReading(id?: string) {
     queryKey: [...BOOKS_KEY, "reading", id],
     queryFn: () => readBook(id!),
     enabled: Boolean(id),
-  });
-}
-
-/** Pesquisa dentro do livro; só roda com 2 ou mais caracteres. */
-export function useBookSearch(id: string | undefined, q: string) {
-  const query = q.trim();
-
-  return useQuery({
-    queryKey: [...BOOKS_KEY, "search", id, query],
-    queryFn: () => searchBook(id!, query),
-    enabled: Boolean(id) && query.length >= 2,
   });
 }
 

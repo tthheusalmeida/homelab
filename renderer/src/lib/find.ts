@@ -6,8 +6,17 @@ export interface TextRange {
 }
 
 /** Tira o acento e a caixa de UM caractere (para a posição não se deslocar). */
+const foldCache = new Map<string, string>();
+
 function fold(char: string): string {
-  return char.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  let folded = foldCache.get(char);
+
+  if (folded === undefined) {
+    folded = char.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    foldCache.set(char, folded);
+  }
+
+  return folded;
 }
 
 /** A consulta inteira, sem acento nem caixa e com os espaços colapsados ("" se tiver menos de 2 letras). */
@@ -27,31 +36,49 @@ export function searchTerms(query: string): string[] {
   return significantWords([...new Set(words)]);
 }
 
-/**
- * Posições (no texto original) de cada ocorrência de qualquer termo, ignorando
- * acento, caixa e quebras de linha (qualquer espaço vale como um), em qualquer
- * pedaço de palavra ("casa" acha "casamento" e "encasar"). Ocorrências que se
- * sobrepõem viram uma só.
- */
-export function findMatches(text: string, terms: string[]): TextRange[] {
-  if (terms.length === 0 || text === "") {
-    return [];
-  }
+/** Texto já sem acento, caixa e espaços repetidos, com a posição de cada letra no original. */
+export interface PreparedText {
+  folded: string;
+  origin: number[];
+}
 
-  let folded = "";
+/**
+ * Prepara um texto para a busca. É a parte cara (passa por todas as letras), por isso quem busca
+ * muitas vezes no mesmo texto (a cada tecla) deve guardar o resultado e usar `findMatchesIn`.
+ */
+export function prepareText(text: string): PreparedText {
+  const pieces: string[] = [];
   const origin: number[] = [];
+  let lastWasSpace = false;
 
   for (let index = 0; index < text.length; index += 1) {
-    const piece = /\s/.test(text[index]) ? " " : fold(text[index]);
+    const char = text[index];
+    const space = char === " " || /\s/.test(char);
+    const piece = space ? " " : fold(char);
 
-    if (piece === " " && folded.endsWith(" ")) {
+    if (space && lastWasSpace) {
       continue;
     }
 
+    lastWasSpace = space;
+
     for (let offset = 0; offset < piece.length; offset += 1) {
-      folded += piece[offset];
       origin.push(index);
     }
+
+    pieces.push(piece);
+  }
+
+  return { folded: pieces.join(""), origin };
+}
+
+/** Procura os termos num texto já preparado (só `indexOf`; barato). */
+export function findMatchesIn(
+  { folded, origin }: PreparedText,
+  terms: string[],
+): TextRange[] {
+  if (terms.length === 0 || folded === "") {
+    return [];
   }
 
   const found: TextRange[] = [];
@@ -83,4 +110,18 @@ export function findMatches(text: string, terms: string[]): TextRange[] {
   }
 
   return merged;
+}
+
+/**
+ * Posições (no texto original) de cada ocorrência de qualquer termo, ignorando
+ * acento, caixa e quebras de linha (qualquer espaço vale como um), em qualquer
+ * pedaço de palavra ("casa" acha "casamento" e "encasar"). Ocorrências que se
+ * sobrepõem viram uma só.
+ */
+export function findMatches(text: string, terms: string[]): TextRange[] {
+  if (terms.length === 0 || text === "") {
+    return [];
+  }
+
+  return findMatchesIn(prepareText(text), terms);
 }
