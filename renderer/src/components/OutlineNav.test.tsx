@@ -41,9 +41,9 @@ describe('OutlineNav', () => {
     const active = screen.getByRole('button', { name: 'Detalhes' });
 
     expect(active).toHaveAttribute('aria-current', 'location');
-    expect(active).toHaveClass('bg-foreground/12', 'text-foreground', 'font-semibold');
+    expect(active).toHaveClass('text-foreground', 'font-semibold');
+    expect(active.className).not.toContain('bg-foreground');
     expect(screen.getByRole('button', { name: 'Fim' })).not.toHaveAttribute('aria-current');
-    expect(screen.getByRole('button', { name: 'Fim' })).not.toHaveClass('bg-foreground/12');
   });
 
   it('when an item is active, should color earlier markers green and the current one with the accent', () => {
@@ -142,19 +142,19 @@ describe('OutlineNav', () => {
       expect(button('Sub-subtítulo')).toHaveClass(
         'font-semibold',
         'text-foreground',
-        'bg-foreground/12',
       );
     });
   });
 
   describe('active item contrast', () => {
-    it('when an item is active, should use a background and the full text color, not only the accent color', () => {
+    it('when an item is active, should use bold and the full text color, with no background, not only the accent color', () => {
       renderNav({ activeId: 'a' });
 
       const active = screen.getByRole('button', { name: 'Introdução' });
 
-      expect(active).toHaveClass('bg-foreground/12', 'text-foreground', 'font-semibold');
+      expect(active).toHaveClass('text-foreground', 'font-semibold');
       expect(active.className).not.toContain('text-primary');
+      expect(active.className).not.toContain('bg-foreground');
     });
 
     it('when an item is active, should not draw any colored border or bar', () => {
@@ -171,7 +171,7 @@ describe('OutlineNav', () => {
       renderNav({ activeId: 'a' });
 
       expect(screen.getByRole('button', { name: 'Detalhes' }).className).not.toContain(
-        'bg-foreground/12',
+        'font-semibold',
       );
     });
   });
