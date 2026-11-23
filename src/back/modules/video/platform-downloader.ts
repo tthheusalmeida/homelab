@@ -1,5 +1,8 @@
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { isAbortError } from '../../utils/exec-streaming';
+import { onlyChanges, parseYtDlpPercent, type PercentListener } from '../../utils/progress';
 import { isLoginPageUrl } from '../../../shared/media-url';
 
 import { AccessRequiredError } from './access-required.error';
@@ -46,6 +49,10 @@ export interface PlatformTools {
 export type RunProgram = (
   file: string,
   args: string[],
+  /** Recebe o texto que o programa escreve enquanto roda (para acompanhar o download). */
+  onText?: (text: string) => void,
+  /** Cancela o programa (e os que ele abriu). */
+  signal?: AbortSignal,
 ) => Promise<{ stdout: string; stderr: string }>;
 
 export interface PlatformDownloaderDeps {
@@ -117,10 +124,33 @@ function errorText(error: unknown): string {
  * áudio, que é o que a transcrição usa. Se o site pedir login, lança `AccessRequiredError`; se o
  * yt-dlp falhar por outro motivo, tenta se atualizar uma vez (os sites mudam) e tenta de novo.
  */
+/** Apaga o que sobrou de um download interrompido (`<nome>.*.part`, `.ytdl`, `.temp`). */
+async function removePartialFiles(dir: string, baseName: string): Promise<void> {
+  try {
+    for (const name of await fs.promises.readdir(dir)) {
+      if (name.startsWith(`${baseName}.`) && /\.(part|ytdl|temp)$/i.test(name)) {
+        await fs.promises.rm(path.join(dir, name), { force: true });
+      }
+    }
+  } catch {
+    // pasta inexistente: nada a limpar
+  }
+}
+
 export class PlatformDownloader {
   constructor(private readonly deps: PlatformDownloaderDeps) {}
 
-  async download(url: string, baseName: string, destinationDir: string): Promise<string> {
+  /** Quem acompanha o download atual (um job por vez usa o downloader). */
+  private onProgress?: PercentListener;
+  private signal?: AbortSignal;
+
+  async download(
+    url: string,
+    baseName: string,
+    destinationDir: string,
+    onProgress?: PercentListener,
+    signal?: AbortSignal,
+  ): Promise<string> {
     const ytDlp = this.deps.tools?.ytDlpPath();
 
     if (!ytDlp) {
@@ -129,11 +159,47 @@ export class PlatformDownloader {
 
     const cookies = (await this.deps.tools?.cookiesFor(url)) ?? null;
 
+    this.onProgress = onProgress && onlyChanges(onProgress);
+    this.signal = signal;
+
     try {
       return await this.attempt(ytDlp, url, baseName, destinationDir, cookies?.file);
+    } catch (error) {
+      if (isAbortError(error)) {
+        // Cancelado: apaga o que o yt-dlp deixou pela metade (o `.part` seria tomado por download pronto).
+        await removePartialFiles(destinationDir, baseName);
+      }
+
+      throw error;
     } finally {
+      this.onProgress = undefined;
+      this.signal = undefined;
       await cookies?.cleanup();
     }
+  }
+
+  /** Roda o yt-dlp; com alguém acompanhando, lê a porcentagem que ele escreve. */
+  private runYtDlp(ytDlp: string, args: string[]) {
+    const notify = this.onProgress;
+    const signal = this.signal;
+
+    if (!notify && !signal) {
+      return this.deps.run(ytDlp, args);
+    }
+
+    return this.deps.run(
+      ytDlp,
+      args,
+      notify &&
+        ((text) => {
+          const percent = parseYtDlpPercent(text);
+
+          if (percent !== null) {
+            notify(percent);
+          }
+        }),
+      signal,
+    );
   }
 
   private async attempt(
@@ -149,11 +215,16 @@ export class PlatformDownloader {
     let stdout: string;
 
     try {
-      ({ stdout } = await this.deps.run(
+      ({ stdout } = await this.runYtDlp(
         ytDlp,
         this.args(url, baseName, destinationDir, cookiesFile, browser, referer),
       ));
     } catch (error) {
+      // Cancelado: não é falha do site (nada de pedir login, atualizar o yt-dlp ou tentar de novo).
+      if (isAbortError(error)) {
+        throw error;
+      }
+
       const text = errorText(error);
 
       if (isAccessFailure(text) || (browser && COOKIE_READ_FAILURE.test(text))) {
@@ -282,7 +353,9 @@ export class PlatformDownloader {
     return [
       '--no-playlist',
       '--no-warnings',
-      '--no-progress',
+      ...(this.onProgress
+        ? ['--newline', '--progress-template', 'download:HLPROG %(progress._percent_str)s']
+        : ['--no-progress']),
       '--no-simulate',
       '-f',
       'bestaudio/best',

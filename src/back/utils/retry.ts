@@ -44,3 +44,20 @@ export async function withRetry<T>(run: () => Promise<T>, options: RetryOptions)
     }
   }
 }
+
+/** Espera `promise`, mas termina na hora com `AbortError` se o `signal` for abortado. */
+export function raceAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const abort = () =>
+      reject(Object.assign(new Error('Operação cancelada.'), { name: 'AbortError' }));
+
+    if (signal.aborted) {
+      abort();
+
+      return;
+    }
+
+    signal.addEventListener('abort', abort, { once: true });
+    promise.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+  });
+}

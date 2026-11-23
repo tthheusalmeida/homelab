@@ -1,3 +1,5 @@
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { AccessRequiredError } from './access-required.error';
@@ -322,5 +324,114 @@ describe('PlatformDownloader', () => {
     await expect(downloader.download(URL_, 'job1', 'C:\\tmp')).rejects.toThrow(
       PlatformMessages.noFile,
     );
+  });
+});
+
+describe('PlatformDownloader: andamento do download', () => {
+  it('when someone follows the download, should ask yt-dlp for progress lines and report the percent', async () => {
+    const run = jest.fn(async (_file: string, args: string[], onText?: (text: string) => void) => {
+      onText?.('HLPROG  10.0%\n');
+      onText?.('HLPROG  55.5%\n');
+      onText?.('HLPROG 100.0%\n');
+
+      expect(args).toContain('--newline');
+      expect(args).not.toContain('--no-progress');
+
+      return { stdout: 'HLPROG 100.0%\n/tmp/dl/v.m4a\n', stderr: '' };
+    });
+    const { downloader } = build(run);
+    const seen: number[] = [];
+
+    const file = await downloader.download(URL_, 'job', '/tmp/dl', (percent) => seen.push(percent));
+
+    expect(seen).toEqual([10, 55, 100]);
+    expect(file).toBe(path.resolve('/tmp/dl/v.m4a'));
+  });
+
+  it('when nobody follows the download, should keep the quiet arguments and not stream', async () => {
+    const run = jest.fn(async (_file: string, args: string[]) => {
+      expect(args).toContain('--no-progress');
+
+      return { stdout: '/tmp/dl/v.m4a\n', stderr: '' };
+    });
+    const { downloader } = build(run);
+
+    await downloader.download(URL_, 'job', '/tmp/dl');
+
+    expect(run.mock.calls[0]).toHaveLength(2);
+  });
+
+  it('when the download ends, should stop reporting to the previous listener', async () => {
+    const run = jest.fn(async () => ({ stdout: '/tmp/dl/v.m4a\n', stderr: '' }));
+    const { downloader } = build(run);
+
+    await downloader.download(URL_, 'job', '/tmp/dl', () => undefined);
+    await downloader.download(URL_, 'job2', '/tmp/dl');
+
+    expect(run.mock.calls[1]).toHaveLength(2);
+  });
+});
+
+describe('PlatformDownloader: cancelamento', () => {
+  const abort = () => Object.assign(new Error('Operação cancelada.'), { name: 'AbortError' });
+
+  it('when cancelled, should pass the signal to the program and not retry, update or ask for login', async () => {
+    const controller = new AbortController();
+    const run = jest.fn(async () => {
+      throw abort();
+    });
+    const { downloader } = build(run as unknown as RunProgram);
+
+    await expect(
+      downloader.download(URL_, 'job', os.tmpdir(), undefined, controller.signal),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(run.mock.calls[0] as unknown[]).toEqual([
+      YT_DLP,
+      expect.any(Array),
+      undefined,
+      controller.signal,
+    ]);
+  });
+
+  it('when cancelled, should remove the partial files of that download and keep the other files', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dl-cancel-'));
+
+    try {
+      fs.writeFileSync(path.join(dir, 'job.webm.part'), 'x');
+      fs.writeFileSync(path.join(dir, 'job.f251.webm.ytdl'), 'x');
+      fs.writeFileSync(path.join(dir, 'outro.webm.part'), 'x');
+      fs.writeFileSync(path.join(dir, 'job.m4a'), 'x');
+
+      const run = jest.fn(async () => {
+        throw abort();
+      });
+      const { downloader } = build(run as unknown as RunProgram);
+
+      await expect(
+        downloader.download(URL_, 'job', dir, undefined, new AbortController().signal),
+      ).rejects.toMatchObject({ name: 'AbortError' });
+
+      expect(fs.readdirSync(dir).sort()).toEqual(['job.m4a', 'outro.webm.part']);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('when cancelled, should still clean up the temporary cookies', async () => {
+    const cleanup = jest.fn().mockResolvedValue(undefined);
+    const run = jest.fn(async () => {
+      throw abort();
+    });
+    const { downloader } = build(run as unknown as RunProgram, {
+      cookies: { file: 'c.txt', cleanup },
+    });
+
+    await expect(
+      downloader.download(URL_, 'job', os.tmpdir(), undefined, new AbortController().signal),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+
+    expect(cleanup).toHaveBeenCalled();
   });
 });

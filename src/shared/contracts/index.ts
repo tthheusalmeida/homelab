@@ -353,7 +353,7 @@ export interface IpcContracts {
   [IpcChannels.jobs.leftovers]: { request: void; response: JobLeftovers };
   /** Apaga esses arquivos; o que um processo na fila ou rodando usa nunca é apagado. */
   [IpcChannels.jobs.cleanLeftovers]: { request: void; response: JobCleanResult };
-  /** Cancela um job na fila (sai da fila) ou rodando (para ao fim da etapa em andamento). */
+  /** Cancela um job na fila (sai da fila) ou rodando (interrompe a etapa em andamento). */
   [IpcChannels.jobs.cancel]: { request: JobRequest; response: JobCancelResult };
   /** Cria um job novo com os mesmos dados de um que falhou. */
   [IpcChannels.jobs.retry]: { request: JobRetryRequest; response: JobCreated };

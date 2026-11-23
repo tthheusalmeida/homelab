@@ -163,8 +163,8 @@ Excluir um job não apaga os documentos que ele gerou.
 ### jobs: cancelar, tentar de novo e desfazer exclusão
 | Canal | Payload | Retorno |
 |---|---|---|
-| `jobs:cancel` | `{ id }` | `{ id, outcome: 'cancelled' \| 'cancelling' \| 'not-active' }`. Na fila: sai dela e termina como falha "Cancelado pelo usuário.". Rodando: o cancelamento é pedido e o job para **ao fim da etapa em andamento** (download, ffmpeg, Whisper e IA não são interrompidos no meio). Cancelar não gera aviso de falha. |
-| `jobs:retry` | `{ id, providerId?, modelId?, thinking? }` | `{ id, status }` do **novo** job, criado com os mesmos dados do que falhou (o original continua no histórico). Só job `failed` que guardou os dados de criação (`request`); job antigo sem `request` responde `VALIDATION` com mensagem clara. Num **resumo de PDF** os campos de modelo trocam o modelo do job novo (o trabalho continua de onde parou, só as partes que faltam usam o modelo novo); nos outros tipos eles são ignorados. |
+| `jobs:cancel` | `{ id }` | `{ id, outcome: 'cancelled' \| 'cancelling' \| 'not-active' }`. Na fila: sai dela e termina como falha "Cancelado pelo usuário.". Rodando: o job é **interrompido na hora**: download, ffmpeg, Whisper e a chamada à IA são cortados (ver `persistencia.md`), e o job termina como falha "Cancelado pelo usuário." e libera a fila para o próximo. Cancelar não gera aviso de falha. |
+| `jobs:retry` | `{ id, providerId?, modelId?, thinking? }` | `{ id, status }` do **mesmo** job, que volta à fila e continua da etapa que parou (as etapas concluídas não são refeitas; ver `persistencia.md`). Só job `failed` que guardou os dados de criação (`request`); job antigo sem `request` responde `VALIDATION` com mensagem clara. Num **resumo de PDF** os campos de modelo trocam o modelo do job novo (o trabalho continua de onde parou, só as partes que faltam usam o modelo novo); nos outros tipos eles são ignorados. |
 | `jobs:leftovers` | — | `{ files, bytes }`: o que processos não terminados (falhos, cancelados ou interrompidos) deixaram no disco: progresso de resumos de PDF e vídeos e áudios temporários. Não apaga nada. |
 | `jobs:clean-leftovers` | — | `{ files, bytes, failed }`: apaga esses arquivos; `failed` conta o que estava em uso e não pôde ser apagado. **Nunca apaga o que um job na fila ou rodando usa**, nem os documentos gerados (inbox e biblioteca). |
 | `jobs:undo-delete` | — | `{ restored: string[] }`. Traz de volta o que a **última** exclusão tirou (guardado só em memória, enquanto o app está aberto). |
@@ -217,7 +217,7 @@ Enviados com `webContents.send` a todas as janelas; a ponte (`window.api.on(even
 | `backup:progress` | `{ phase: preparing|running|verifying|done, processed, total, currentFile? }` | criar e restaurar backup |
 | `pdf:progress` | o mesmo (`processed` e `total` em páginas) | ler o texto de um PDF |
 | `library-move:progress` | o mesmo | mover a biblioteca |
-| `app:notice` | `{ id, level: info|warning|error, title, message?, detail?, link? }` | job terminou ou falhou, falha ao gravar em disco |
+| `app:notice` | `{ id, level: info|warning|error, title, message?, detail?, link? }` | job terminou ou falhou, falha ao gravar em disco (aviso com `link` para a tela em que o usuário já está não é mostrado: dentro de Em andamento, o resultado já está no job) |
 
 ## Regras
 - Um endpoint HTTP = um canal. `:id` e query viram campos do payload.

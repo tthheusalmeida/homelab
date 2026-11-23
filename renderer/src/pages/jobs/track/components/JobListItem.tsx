@@ -147,7 +147,7 @@ export function JobListItem({
                 </Tip>
               )}
 
-              {job.retryable && job.resume && (
+              {job.retryable && (job.resume || job.name === "video-to-summary") && (
                 <Tip content={TrackStrings.changeModel.hint}>
                   <Button size="sm" variant="outline" disabled={busy} onClick={onChangeModel}>
                     {TrackStrings.changeModel.button}

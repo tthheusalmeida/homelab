@@ -58,7 +58,13 @@ describe('VideoToTranscriptJobProcessor', () => {
   it('when processing, should download using the job id as file name', async () => {
     await processor.process(job, 'http://x/v.mp4');
 
-    expect(video.download).toHaveBeenCalledWith('http://x/v.mp4', `${job.id}.mp4`);
+    expect(video.download).toHaveBeenCalledWith(
+      'http://x/v.mp4',
+      `${job.id}.mp4`,
+      undefined,
+      expect.any(Function),
+      expect.any(AbortSignal),
+    );
   });
 
   it('when processing, should save a .md named <slug>_<job id>', async () => {
@@ -83,7 +89,11 @@ describe('VideoToTranscriptJobProcessor', () => {
   it('when processing, should ask whisper for the timed segments of the audio', async () => {
     await processor.process(job, 'http://x/v.mp4');
 
-    expect(whisper.transcribeSegments).toHaveBeenCalledWith('/tmp/a.wav');
+    expect(whisper.transcribeSegments).toHaveBeenCalledWith(
+      '/tmp/a.wav',
+      expect.any(Function),
+      expect.any(AbortSignal),
+    );
   });
 
   it('when processing, should add a pending transcription frontmatter with the video url', async () => {

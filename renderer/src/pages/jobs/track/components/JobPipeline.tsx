@@ -1,9 +1,10 @@
-import { Check, X } from 'lucide-react';
+import { Check, CircleAlert, X } from 'lucide-react';
 
 import { HexDot } from '#components/Hex';
 import { ProgressBar } from '#components/ProgressBar';
 import { formatDateTime, formatDuration } from '#lib/format';
 import { cn } from '#lib/utils';
+import { Collapsible, CollapsibleContent } from '#ui/collapsible';
 
 import { type Job, type JobStatus, JobStatusOptions } from '../../types/job.types';
 import { TrackStrings } from '../strings';
@@ -88,6 +89,17 @@ function Marker({ status }: { status: JobStatus }) {
   );
 }
 
+/** Erro de uma etapa: ícone e texto em vermelho, sem caixa nem alerta. */
+function StepError({ message }: { message: string }) {
+  return (
+    <p className="flex items-start gap-1.5 text-[11px] text-destructive">
+      <CircleAlert aria-hidden className="mt-px size-3.5 shrink-0" />
+
+      <span className="min-w-0 break-words">{message}</span>
+    </p>
+  );
+}
+
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
@@ -108,6 +120,8 @@ interface JobPipelineProps {
  */
 export function JobPipeline({ job }: JobPipelineProps) {
   const rows = pipelineRows(job);
+  // O erro aparece na etapa em que ocorreu; sem etapa com falha (cancelado na fila, por exemplo), fica no fim.
+  const failedKey = rows.findLast((row) => row.status === JobStatusOptions.FAILED)?.key;
   const done = rows.filter((row) => row.status === JobStatusOptions.COMPLETED).length;
   const started = job.startedAt ? new Date(job.startedAt).getTime() : null;
   const finished = job.completedAt ? new Date(job.completedAt).getTime() : null;
@@ -124,6 +138,9 @@ export function JobPipeline({ job }: JobPipelineProps) {
       <ol aria-label={TrackStrings.pipeline} className="flex flex-col">
         {rows.map((row, index) => {
           const running = row.status === JobStatusOptions.RUNNING;
+          const showError = Boolean(job.error) && row.key === failedKey;
+          // Só a etapa em questão abre o espaço de andamento, tentativa e erro; as outras ficam recolhidas.
+          const expanded = running || row.status === JobStatusOptions.FAILED;
 
           return (
             <li
@@ -158,33 +175,50 @@ export function JobPipeline({ job }: JobPipelineProps) {
 
                   <span className="shrink-0 text-[11px] text-muted-foreground">
                     {running && job.progress
-                      ? TrackStrings.stepPart(job.progress.done, job.progress.total)
+                      ? job.progress.unit === 'percent'
+                        ? TrackStrings.stepPercent(job.progress.done)
+                        : TrackStrings.stepPart(job.progress.done, job.progress.total)
                       : (TrackStrings.stepStates[row.status] ?? row.status)}
                   </span>
                 </div>
 
-                {running && (
-                  <ProgressBar
-                    value={job.progress ? job.progress.done - 1 : 0}
-                    total={job.progress?.total ?? 0}
-                    label={TrackStrings.stepProgress(row.label)}
-                    className="h-1"
-                  />
-                )}
+                {/* O espaço tem altura mínima: a mensagem entra sem empurrar o que há dentro da etapa. Abre e fecha com a transição de altura do app. */}
+                <Collapsible open={expanded}>
+                  <CollapsibleContent>
+                    <div data-slot="step-detail" className="flex min-h-9 flex-col gap-1">
+                      {running && (
+                        <ProgressBar
+                          value={
+                            job.progress
+                              ? job.progress.unit === 'percent'
+                                ? job.progress.done
+                                : job.progress.done - 1
+                              : 0
+                          }
+                          // sempre determinada: sem medida a barra fica em 0, nunca num "um terço" que parece já ter andado
+                          total={job.progress?.total ?? 100}
+                          label={TrackStrings.stepProgress(row.label)}
+                          className="h-1"
+                        />
+                      )}
+
+                      {running && job.note && (
+                        <p className="text-[11px] break-words text-amber-500">
+                          {job.note}
+                        </p>
+                      )}
+
+                      {showError && <StepError message={job.error ?? ''} />}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
             </li>
           );
         })}
       </ol>
 
-      {job.error && (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs break-words text-destructive"
-        >
-          {job.error}
-        </p>
-      )}
+      {job.error && !failedKey && <StepError message={job.error} />}
 
       <dl className="grid grid-cols-3 gap-3 border-t pt-3">
         <Fact

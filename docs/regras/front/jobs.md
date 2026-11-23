@@ -46,7 +46,7 @@
 - **Duração**: só aparece com `startedAt` e `completedAt`; formatada como `ms/s/m/h`.
 
 ### Resumo de PDF que parou e arquivos temporários
-- Resumo de PDF falho ou interrompido mostra **"N de M partes já estão salvas em disco"** (barra fina) e, além de **Tentar de novo** (mesmo modelo), o botão **Trocar modelo**: abre uma janela para escolher outra IA e continua de onde parou, sem refazer as partes prontas.
+- Resumo de PDF falho ou interrompido mostra **"N de M partes já estão salvas em disco"** (barra fina) e, além de **Tentar de novo** (mesmo modelo), o botão **Trocar modelo** (também nos resumos de vídeo que falharam): abre uma janela para escolher outra IA e continua de onde parou, sem refazer as partes prontas.
 - **Limpar arquivos temporários** (cabeçalho, sempre visível): mede o que processos não terminados deixaram (progresso de PDF, vídeos e áudios temporários), mostra a quantidade e o tamanho e só apaga depois de confirmar, avisando que resumos de PDF parados não poderão mais ser continuados. Não mexe em processos em andamento nem nos documentos gerados.
 
 ### Status (badge)

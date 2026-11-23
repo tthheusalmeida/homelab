@@ -146,6 +146,7 @@ export class PdfToSummaryJobProcessor implements JobProcessor<PdfToSummaryDto, s
         thinking: input.thinking ?? 'off',
         // Enquanto a IA tenta de novo, a tela mostra só "tentativa x de y".
         onRetry: (info) => job.setNote(retryNote(info)),
+        signal: job.signal,
         message: `
       ${prompt}
       ${this.partIntro(part, total, covered)}${text}
@@ -245,6 +246,7 @@ export class PdfToSummaryJobProcessor implements JobProcessor<PdfToSummaryDto, s
         modelId: input.modelId,
         thinking: input.thinking ?? 'off',
         onRetry: (info) => job.setNote(retryNote(info)),
+        signal: job.signal,
       });
       const page = {
         title: suggestion.title,

@@ -123,26 +123,30 @@ export class OllamaProvider implements AIProvider {
     try {
       const history = request.messages;
       const response = await firstValueFrom(
-        this.httpService.post(`${this.baseUrl}/api/chat`, {
-          model: request.model,
-          messages: history ?? [
-            {
-              role: 'user',
-              content: request.message,
-            },
-          ],
-          think: request.thinking === 'on',
-          stream: false,
-          ...(request.json ? { format: 'json' } : {}),
-          // Com histórico, o contexto precisa caber a conversa (senão o Ollama a corta sem avisar).
-          ...(history
-            ? {
-                options: {
-                  num_ctx: chooseContextWindow(history, await this.contextLimit(request.model)),
-                },
-              }
-            : {}),
-        }),
+        this.httpService.post(
+          `${this.baseUrl}/api/chat`,
+          {
+            model: request.model,
+            messages: history ?? [
+              {
+                role: 'user',
+                content: request.message,
+              },
+            ],
+            think: request.thinking === 'on',
+            stream: false,
+            ...(request.json ? { format: 'json' } : {}),
+            // Com histórico, o contexto precisa caber a conversa (senão o Ollama a corta sem avisar).
+            ...(history
+              ? {
+                  options: {
+                    num_ctx: chooseContextWindow(history, await this.contextLimit(request.model)),
+                  },
+                }
+              : {}),
+          },
+          ...(request.signal ? [{ signal: request.signal }] : []),
+        ),
       );
 
       const latencyMs = Date.now() - startedAt;

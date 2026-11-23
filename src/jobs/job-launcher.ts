@@ -17,12 +17,17 @@ interface JobLike {
   name?: string;
   /** Dados com que o job foi criado (guardados para tentar de novo). */
   request?: unknown;
+  /** Volta o job a `pending` mantendo as etapas já concluídas (ver `Job.resetForRetry`). */
+  resetForRetry(): void;
+  replaceRequest(request: unknown): void;
 }
 
 /** Parte do `JobService` do back usada para criar jobs. */
 export interface JobFactory {
   create(name: string, hints?: unknown, request?: unknown): JobLike;
   findById(id: string): JobLike;
+  /** Grava o job de novo (já a pending, antes de entrar na fila). */
+  save(job: JobLike): void;
 }
 
 /** Prepara o resumo de PDF: grava o texto em disco e devolve os dados do job (ver `PdfJobPreparer`). */
@@ -113,8 +118,9 @@ export class JobLauncher {
   }
 
   /**
-   * Cria outro job com os mesmos dados de um que falhou (o original continua no histórico). Nos
-   * resumos de PDF o novo job continua da parte seguinte à última que ficou pronta em disco.
+   * Retoma o **mesmo** job que falhou: ele volta para a fila e continua da etapa que parou, sem
+   * refazer as etapas já concluídas (o resultado de cada uma está em disco). O histórico não ganha
+   * um job novo. Nos resumos (de vídeo e de PDF) dá para trocar o modelo na retomada.
    */
   retry(
     id: string,
@@ -133,10 +139,19 @@ export class JobLauncher {
     }
 
     switch (original.name) {
-      case JobTypeIds.VIDEO_TO_TRANSCRIPT:
-        return this.startVideoToTranscript(original.request as CreateVideoToTranscriptRequest);
-      case JobTypeIds.VIDEO_TO_SUMMARY:
-        return this.startVideoToSummary(original.request as CreateVideoToSummaryRequest);
+      case JobTypeIds.VIDEO_TO_TRANSCRIPT: {
+        const url = (original.request as CreateVideoToTranscriptRequest).url;
+
+        return this.requeue(original, this.deps.transcriptProcessor, url);
+      }
+      case JobTypeIds.VIDEO_TO_SUMMARY: {
+        const request = {
+          ...(original.request as CreateVideoToSummaryRequest),
+          ...definedOnly(overrides),
+        };
+
+        return this.requeue(original, this.deps.summaryProcessor, request, request);
+      }
       case JobTypeIds.PDF_TO_SUMMARY: {
         const input = {
           ...(original.request as { checkpointKey: string }),
@@ -145,11 +160,25 @@ export class JobLauncher {
 
         return this.deps.pdf
           .assertProgressExists(input.checkpointKey)
-          .then(() => this.enqueuePdf(input));
+          .then(() => this.requeue(original, this.deps.pdfProcessor, input, input));
       }
       default:
         throw new BadRequestException('Este tipo de job não pode ser repetido.');
     }
+  }
+
+  /** Volta o job a `pending` (guardando os dados novos, se houver) e o enfileira de novo. */
+  private requeue(job: JobLike, processor: unknown, input: unknown, request?: unknown): JobCreated {
+    job.resetForRetry();
+
+    if (request !== undefined) {
+      job.replaceRequest(request);
+    }
+
+    this.deps.jobs.save(job);
+    this.deps.runner.run(job, processor, input);
+
+    return this.created(job);
   }
 
   private created(job: JobLike): JobCreated {

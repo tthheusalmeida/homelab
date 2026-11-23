@@ -23,6 +23,11 @@ import { VideoToTranscriptJobProcessor } from './processors/video-to-transcript/
 import { VideoToSummaryJobProcessor } from './processors/video-to-resume/processor';
 import { PdfToSummaryJobProcessor } from './processors/pdf-to-summary/processor';
 import { PdfCheckpointStore } from '../pdf/pdf-checkpoint.store';
+import {
+  FileJobArtifactStore,
+  JobArtifactStore,
+  MemoryJobArtifactStore,
+} from './infrastructure/job-artifact.store';
 
 @Module({
   imports: [VideoModule, AIModule, LibraryModule],
@@ -33,6 +38,16 @@ import { PdfCheckpointStore } from '../pdf/pdf-checkpoint.store';
     VideoToTranscriptJobProcessor,
     VideoToSummaryJobProcessor,
     PdfToSummaryJobProcessor,
+
+    {
+      provide: JobArtifactStore,
+      inject: [BackConfig],
+      // Resultado de cada etapa em disco, ao lado do áudio temporário (sem pasta, só na memória).
+      useFactory: (config: BackConfig) =>
+        config.audioTempDir
+          ? new FileJobArtifactStore(config.audioTempDir)
+          : new MemoryJobArtifactStore(),
+    },
 
     {
       provide: PdfCheckpointStore,
@@ -61,6 +76,7 @@ import { PdfCheckpointStore } from '../pdf/pdf-checkpoint.store';
     VideoToSummaryJobProcessor,
     PdfToSummaryJobProcessor,
     PdfCheckpointStore,
+    JobArtifactStore,
   ],
 })
 export class JobsModule {}

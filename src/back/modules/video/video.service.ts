@@ -12,6 +12,8 @@ import { SummaryDetail } from '../ai/prompts/summary-specialist.prompt';
 import { splitText } from '../../utils/text';
 import { AIService } from '../ai/ai.service';
 import { BackConfig } from '../../config/back-config';
+import { abortError, execStreaming, isAbortError } from '../../utils/exec-streaming';
+import { ffmpegPercentTracker, onlyChanges, type PercentListener } from '../../utils/progress';
 import { isDirectMediaUrl, isHttpUrl } from '../../../shared/media-url';
 import { PlatformDownloader } from './platform-downloader';
 
@@ -29,6 +31,8 @@ export interface VideoSummarizeOptions {
   detail?: SummaryDetail;
   /** Chamado antes de cada nova tentativa automática do provedor de IA. */
   onRetry?: (info: AIRetryInfo) => void;
+  /** Cancela a chamada à IA (cancelar o job). */
+  signal?: AbortSignal;
 }
 
 /** Tamanho máximo (em caracteres) de cada parte enviada ao modelo. */
@@ -48,7 +52,8 @@ export class VideoService {
       get ffmpegPath() {
         return config.ffmpegPath?.();
       },
-      run: (file, args) => execFileAsync(file, args),
+      run: (file, args, onText, signal) =>
+        onText || signal ? execStreaming(file, args, onText, signal) : execFileAsync(file, args),
     });
   }
 
@@ -60,6 +65,8 @@ export class VideoService {
     url: string,
     fileName: string = 'video-baixado.mp4',
     destinationDir: string = this.config.videoTempDir,
+    onProgress?: PercentListener,
+    signal?: AbortSignal,
   ): Promise<string> {
     if (!isHttpUrl(url)) {
       throw new Error(VideoMessages.invalidUrl);
@@ -68,18 +75,34 @@ export class VideoService {
     if (this.config.platformTools && !isDirectMediaUrl(url)) {
       fs.mkdirSync(destinationDir, { recursive: true });
 
-      return this.platform.download(url, path.parse(fileName).name, destinationDir);
+      return this.platform.download(
+        url,
+        path.parse(fileName).name,
+        destinationDir,
+        onProgress,
+        signal,
+      );
     }
 
-    return this.downloadFile(url, fileName, destinationDir);
+    return this.downloadFile(url, fileName, destinationDir, onProgress, signal);
   }
 
-  private downloadFile(url: string, fileName: string, destinationDir: string): Promise<string> {
+  private downloadFile(
+    url: string,
+    fileName: string,
+    destinationDir: string,
+    onProgress?: PercentListener,
+    signal?: AbortSignal,
+  ): Promise<string> {
     // path.resolve lida automaticamente com diferenças de sistema operacional
     const outputPath = path.resolve(destinationDir, fileName);
 
     // Garante que a pasta de destino existe antes de criar o stream
     fs.mkdirSync(destinationDir, { recursive: true });
+
+    if (signal?.aborted) {
+      return Promise.reject(abortError());
+    }
 
     return new Promise((resolve, reject) => {
       const fileStream = fs.createWriteStream(outputPath);
@@ -118,7 +141,13 @@ export class VideoService {
           // Libera o response atual porque ele não contém o vídeo.
           response.resume();
 
-          this.downloadFile(new URL(response.headers.location, url).href, fileName, destinationDir)
+          this.downloadFile(
+            new URL(response.headers.location, url).href,
+            fileName,
+            destinationDir,
+            onProgress,
+            signal,
+          )
             .then(resolve)
             .catch(reject);
 
@@ -131,6 +160,19 @@ export class VideoService {
           reject(new Error(`Falha ao baixar. Status Code: ${response.statusCode}`));
 
           return;
+        }
+
+        // Com o tamanho total no cabeçalho, acompanha quanto já chegou.
+        const total = Number(response.headers['content-length']);
+
+        if (onProgress && total > 0) {
+          const notify = onlyChanges(onProgress);
+          let received = 0;
+
+          response.on('data', (chunk: Buffer) => {
+            received += chunk.length;
+            notify(Math.min(100, Math.floor((received / total) * 100)));
+          });
         }
 
         // Envia o conteúdo da resposta diretamente para o arquivo.
@@ -146,17 +188,32 @@ export class VideoService {
         cleanup();
 
         reject(
-          new Error(`Erro durante o download: ${error.message}`, {
-            cause: error,
-          }),
+          signal?.aborted
+            ? abortError()
+            : new Error(`Erro durante o download: ${error.message}`, {
+                cause: error,
+              }),
         );
       });
+
+      // Cancelado: fecha a conexão e apaga o arquivo pela metade (nunca fica um vídeo cortado).
+      signal?.addEventListener(
+        'abort',
+        () => {
+          request.destroy();
+          cleanup();
+          reject(abortError());
+        },
+        { once: true },
+      );
     });
   }
 
   async toAudio(
     videoPath: string,
     destinationDir: string = this.config.audioTempDir,
+    onProgress?: PercentListener,
+    signal?: AbortSignal,
   ): Promise<string> {
     try {
       fs.mkdirSync(destinationDir, { recursive: true });
@@ -167,7 +224,7 @@ export class VideoService {
       const audioFileName = `${videoName}.wav`;
       const audioPath = path.resolve(destinationDir, audioFileName);
 
-      await execFileAsync(this.config.ffmpegPath?.() ?? 'ffmpeg', [
+      const ffmpegArgs = [
         '-i',
         videoPath,
         // Remove o vídeo
@@ -183,10 +240,33 @@ export class VideoService {
         'pcm_s16le',
 
         audioPath,
-      ]);
+      ];
+      const ffmpeg = this.config.ffmpegPath?.() ?? 'ffmpeg';
+
+      try {
+        if (onProgress || signal) {
+          await execStreaming(
+            ffmpeg,
+            ffmpegArgs,
+            onProgress && ffmpegPercentTracker(onlyChanges(onProgress)),
+            signal,
+          );
+        } else {
+          await execFileAsync(ffmpeg, ffmpegArgs);
+        }
+      } catch (error) {
+        // Cancelado ou falhou no meio: o áudio pela metade não pode ser tomado por pronto.
+        await fs.promises.rm(audioPath, { force: true }).catch(() => undefined);
+
+        throw error;
+      }
 
       return audioPath;
     } catch (error) {
+      if (isAbortError(error)) {
+        throw error;
+      }
+
       throw new Error('Falha ao converter o vídeo para áudio.', {
         cause: error,
       });
@@ -220,7 +300,7 @@ export class VideoService {
     options: VideoSummarizeOptions,
   ): Promise<string> {
     try {
-      const { providerId, modelId, thinking = 'off', detail, onRetry } = options;
+      const { providerId, modelId, thinking = 'off', detail, onRetry, signal } = options;
 
       // O resumo curto vai de uma vez; os detalhados resumem por partes para o
       // modelo não comprimir uma aula longa em poucos parágrafos.
@@ -232,6 +312,10 @@ export class VideoService {
       const parts: string[] = [];
 
       for (const [index, chunk] of chunks.entries()) {
+        if (signal?.aborted) {
+          throw abortError();
+        }
+
         const note = this.partNote(index, chunks.length, this.headingsOf(parts));
 
         parts.push(
@@ -240,6 +324,7 @@ export class VideoService {
             modelId,
             thinking,
             ...(onRetry ? { onRetry } : {}),
+            ...(signal ? { signal } : {}),
             message: `
       ${prompt}
       ${note}${chunk}
@@ -250,6 +335,10 @@ export class VideoService {
 
       return parts.join('\n\n');
     } catch (error) {
+      if (isAbortError(error)) {
+        throw error;
+      }
+
       console.log(error);
 
       // O motivo (limite de uso, serviço ocupado...) vem na mensagem do provedor de IA.

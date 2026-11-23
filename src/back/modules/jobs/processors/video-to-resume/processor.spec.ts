@@ -89,6 +89,7 @@ describe('VideoToSummaryJobProcessor', () => {
       thinking: 'on',
       detail: 'detailed',
       onRetry: expect.any(Function),
+      signal: expect.any(AbortSignal),
     });
   });
 

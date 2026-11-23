@@ -77,7 +77,7 @@ Tipo de job `pdf-to-summary` ("Resumo de PDF"), criado por `jobs:create-pdf-to-s
 - **Cancelar** vale entre as partes: o que ficou pronto continua salvo.
 - **App fechado, queda de energia ou travamento**: ao abrir, o job aparece como falho ("Interrompido ao fechar o app.") e o aviso de abertura acrescenta que o resumo de PDF guardou o que já estava pronto e que "Tentar de novo" continua de onde parou (conta os jobs com progresso ainda em disco).
 - **Percebido na lista de tarefas:** o job falho de PDF leva `resume: { done, total }` (lido do disco a cada consulta), para a tela mostrar "N de M partes prontas".
-- **Tentar de novo** (`jobs:retry`) cria outro job com a mesma chave. Dá para **trocar o modelo** na retomada (`providerId`, `modelId`, `thinking` no pedido): só as partes que faltam usam o modelo novo. Escolher o mesmo PDF de novo em Nova tarefa, com outro modelo, também continua o mesmo trabalho (mesma chave). Se a pasta de progresso foi apagada, recusa com "O texto deste PDF não está mais guardado no app... Escolha o arquivo de novo".
+- **Tentar de novo** (`jobs:retry`) retoma o **mesmo job** (mesma chave de progresso). Dá para **trocar o modelo** na retomada (`providerId`, `modelId`, `thinking` no pedido): só as partes que faltam usam o modelo novo. Escolher o mesmo PDF de novo em Nova tarefa, com outro modelo, também continua o mesmo trabalho (mesma chave). Se a pasta de progresso foi apagada, recusa com "O texto deste PDF não está mais guardado no app... Escolha o arquivo de novo".
 - Falha ao **salvar o documento** (disco cheio): o progresso fica, e tentar de novo salva sem chamar a IA.
 
 **Limpeza**

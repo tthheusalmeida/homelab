@@ -30,14 +30,14 @@ export interface Job {
   startedAt?: string;
   status: JobStatus;
   error?: string;
-  /** O cancelamento foi pedido: o job para ao fim da etapa em andamento. */
+  /** O cancelamento foi pedido: a etapa em andamento está sendo interrompida. */
   cancelRequested?: boolean;
   /** Falhou e guarda os dados de criação: dá para tentar de novo. */
   retryable?: boolean;
   /** Aviso da etapa em andamento, ex.: "Tentando de novo (tentativa 2 de 3): ...". */
   note?: string;
   /** Andamento dentro da etapa em execução (ex.: parte 2 de 5). */
-  progress?: { done: number; total: number };
+  progress?: { done: number; total: number; unit?: "parts" | "percent" };
   /** Falhou porque o vídeo exige login: a tela oferece "Entrar no site" e tenta de novo. */
   errorCode?: "ACCESS_REQUIRED";
   /** Endereço do vídeo que pediu login. */

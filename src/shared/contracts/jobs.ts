@@ -34,7 +34,8 @@ export interface JobView {
   /** Aviso da etapa em andamento, ex.: "Tentando de novo (2 de 3): serviço sobrecarregado". */
   note?: string;
   /** Andamento dentro da etapa em execução (ex.: parte 2 de 5). */
-  progress?: { done: number; total: number };
+  /** Andamento da etapa em execução: partes (padrão) ou porcentagem de 0 a 100. */
+  progress?: { done: number; total: number; unit?: 'parts' | 'percent' };
   /** Falhou porque o vídeo exige login: a tela oferece "Entrar no site" e depois tenta de novo. */
   errorCode?: 'ACCESS_REQUIRED';
   /** Endereço do vídeo que pediu login (junto com `errorCode`). */
@@ -68,7 +69,7 @@ export interface JobRequest {
 }
 
 /**
- * Tentar de novo. Num resumo de PDF dá para trocar o modelo (`providerId`, `modelId`, `thinking`):
+ * Tentar de novo (retoma o mesmo job). Num resumo (de PDF ou de vídeo) dá para trocar o modelo (`providerId`, `modelId`, `thinking`):
  * o trabalho continua de onde parou, só que as partes que faltam usam o modelo novo.
  */
 export interface JobRetryRequest extends JobRequest {

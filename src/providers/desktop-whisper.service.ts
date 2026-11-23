@@ -1,6 +1,8 @@
 import type { TranscriptSegment, WhisperService } from '../back/modules/ai/whisper/whisper.service';
 
 import type { WhisperBinaryResolver, WhisperLocation } from './whisper-binary-resolver';
+import { isAbortError } from '../back/utils/exec-streaming';
+import { onlyChanges, parseWhisperPercent, type PercentListener } from '../back/utils/progress';
 import { parseWhisperJson } from './whisper-json';
 
 export const WhisperServiceMessages = {
@@ -9,7 +11,14 @@ export const WhisperServiceMessages = {
 } as const;
 
 /** Executa um programa com argumentos (o `execFile` promisificado no app). */
-export type WhisperRunner = (file: string, args: string[]) => Promise<unknown>;
+export type WhisperRunner = (
+  file: string,
+  args: string[],
+  /** Recebe o texto que o programa escreve enquanto roda (para acompanhar o andamento). */
+  onText?: (text: string) => void,
+  /** Cancela o programa. */
+  signal?: AbortSignal,
+) => Promise<unknown>;
 
 export interface WhisperFiles {
   exists(file: string): boolean;
@@ -34,13 +43,35 @@ export interface DesktopWhisperDeps {
 export class DesktopWhisperService implements WhisperService {
   constructor(private readonly deps: DesktopWhisperDeps) {}
 
-  async transcribe(audioPath: string): Promise<string> {
-    return this.runWhisper(audioPath, '--output-txt', '.txt', (raw) => raw.trim());
+  async transcribe(
+    audioPath: string,
+    onProgress?: PercentListener,
+    signal?: AbortSignal,
+  ): Promise<string> {
+    return this.runWhisper(
+      audioPath,
+      '--output-txt',
+      '.txt',
+      (raw) => raw.trim(),
+      onProgress,
+      signal,
+    );
   }
 
   /** Mesma execução, mas pedindo o JSON para obter o tempo de cada trecho. */
-  async transcribeSegments(audioPath: string): Promise<TranscriptSegment[]> {
-    return this.runWhisper(audioPath, '--output-json', '.json', parseWhisperJson);
+  async transcribeSegments(
+    audioPath: string,
+    onProgress?: PercentListener,
+    signal?: AbortSignal,
+  ): Promise<TranscriptSegment[]> {
+    return this.runWhisper(
+      audioPath,
+      '--output-json',
+      '.json',
+      parseWhisperJson,
+      onProgress,
+      signal,
+    );
   }
 
   private async runWhisper<T>(
@@ -48,6 +79,8 @@ export class DesktopWhisperService implements WhisperService {
     outputFlag: '--output-txt' | '--output-json',
     extension: '.txt' | '.json',
     parse: (raw: string) => T,
+    onProgress?: PercentListener,
+    signal?: AbortSignal,
   ): Promise<T> {
     const config = this.deps.config();
     const executable = this.deps.resolver.resolveExecutable(config);
@@ -60,7 +93,8 @@ export class DesktopWhisperService implements WhisperService {
     const outputPath = `${audioPath}${extension}`;
 
     try {
-      await this.deps.run(executable, [
+      const notify = onProgress && onlyChanges(onProgress);
+      const args = [
         '-m',
         model,
         '-f',
@@ -68,13 +102,38 @@ export class DesktopWhisperService implements WhisperService {
         '-l',
         'pt',
         '--no-prints',
+        // sem quem acompanhe, não pede o andamento
+        ...(notify ? ['--print-progress'] : []),
         outputFlag,
         '-of',
         audioPath,
-      ]);
+      ];
+
+      if (notify || signal) {
+        await this.deps.run(
+          executable,
+          args,
+          notify &&
+            ((text) => {
+              const percent = parseWhisperPercent(text);
+
+              if (percent !== null) {
+                notify(percent);
+              }
+            }),
+          signal,
+        );
+      } else {
+        await this.deps.run(executable, args);
+      }
 
       return parse(await this.deps.files.readText(outputPath));
     } catch (error) {
+      // Cancelado: sobe como cancelamento, não como falha de transcrição.
+      if (isAbortError(error)) {
+        throw error;
+      }
+
       throw new Error(WhisperServiceMessages.transcribeFailed, { cause: error });
     } finally {
       await this.deps.files.remove(outputPath).catch(() => undefined);

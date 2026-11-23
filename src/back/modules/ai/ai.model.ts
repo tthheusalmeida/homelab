@@ -56,6 +56,8 @@ export interface AIChatRequest {
   json?: boolean;
   /** Chamado antes de cada nova tentativa automática (para mostrar "tentando de novo"). */
   onRetry?: (info: AIRetryInfo) => void;
+  /** Cancela a chamada em andamento (e as esperas entre tentativas). */
+  signal?: AbortSignal;
   /**
    * Conversa inteira (incluindo a mensagem nova, que é a última). Quando existe, o provedor a usa
    * no lugar de `message`; sem ela vale só `message` (jobs de resumo, que são de uma mensagem só).

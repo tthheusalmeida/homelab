@@ -3,6 +3,8 @@ import { Injectable, Optional } from '@nestjs/common';
 import { Job } from '../../domain/job.entity';
 import { JobProcessor } from '../../domain/job-processor.interface';
 import { retryNote } from '../../domain/retry-note';
+import { ensureAudio, removeAudioStep, skipToTranscript } from '../../domain/video-pipeline';
+import { JobArtifactStore, MemoryJobArtifactStore } from '../../infrastructure/job-artifact.store';
 
 import { normalizeText, removeAllegedAuthorship } from '../../../../utils/text';
 import { VideoToSummaryDto } from './dto/video-to-summary.dto';
@@ -25,53 +27,83 @@ import { DocumentTypeOptions } from '../../../library/domain/library.types';
 
 @Injectable()
 export class VideoToSummaryJobProcessor implements JobProcessor<VideoToSummaryDto, string> {
+  private readonly artifacts: JobArtifactStore;
+
   constructor(
     private readonly videoService: VideoService,
     private readonly whisperService: WhisperService,
     // Sem ele (testes), vale sempre o prompt padrão.
     @Optional() private readonly prompts?: PromptService,
-  ) {}
+    // Sem ele (testes), o resultado das etapas fica só na memória.
+    @Optional() artifacts?: JobArtifactStore,
+  ) {
+    this.artifacts = artifacts ?? new MemoryJobArtifactStore();
+  }
 
+  /**
+   * Cada etapa concluída deixa o resultado em disco (vídeo, áudio, transcrição, resumo): retomar o
+   * mesmo job continua da etapa que parou, mesmo com outra IA, sem repetir o que já ficou pronto.
+   */
   async process(job: Job, input: VideoToSummaryDto): Promise<void> {
-    const videoPath = await this.downloadVideo(job, input.url);
-    const audioPath = await this.convertToAudio(job, videoPath);
-    await this.deleteVideo(job, videoPath);
+    const steps = {
+      download: VideoToResumeSteps.DOWNLOAD_VIDEO.name,
+      convert: VideoToResumeSteps.CONVERT_TO_AUDIO.name,
+      deleteVideo: VideoToResumeSteps.DELETE_VIDEO.name,
+      transcribe: VideoToResumeSteps.TRANSCRIBE.name,
+    };
+    const saved = await this.artifacts.load(job.id);
+    let audioPath = saved.audioPath;
+    let resumed = true;
+    let transcript = saved.transcript;
+    let summary = saved.summary;
 
-    const rawTranscription = await this.transcribe(job, audioPath);
-    const transcription = removeAllegedAuthorship(normalizeText(rawTranscription));
-    const detail = isSummaryDetail(input.detail) ? input.detail : DEFAULT_SUMMARY_DETAIL;
-    const summary = await this.summarize(job, transcription, {
-      providerId: input.providerId,
-      modelId: input.modelId,
-      thinking: input.thinking,
-      detail,
-    });
+    if (summary !== undefined || transcript !== undefined) {
+      skipToTranscript(job, steps);
+    } else {
+      const audio = await ensureAudio(job, this.artifacts, this.videoService, steps, input.url);
 
-    await this.saveFile(job, summary, input.url);
-    await this.deleteAudio(job, audioPath);
-  }
+      audioPath = audio.audioPath;
+      resumed = audio.resumed;
+      transcript = removeAllegedAuthorship(normalizeText(await this.transcribe(job, audioPath)));
+      await this.artifacts.save(job.id, { transcript });
+    }
 
-  private async downloadVideo(job: Job, videoUrl: string): Promise<string> {
-    return job.runStep(VideoToResumeSteps.DOWNLOAD_VIDEO.name, () =>
-      this.videoService.download(videoUrl, `${job.id}.mp4`),
-    );
-  }
+    if (summary === undefined) {
+      const detail = isSummaryDetail(input.detail) ? input.detail : DEFAULT_SUMMARY_DETAIL;
 
-  private async convertToAudio(job: Job, videoPath: string): Promise<string> {
-    return job.runStep(VideoToResumeSteps.CONVERT_TO_AUDIO.name, () =>
-      this.videoService.toAudio(videoPath),
-    );
-  }
+      summary = await this.summarize(job, transcript ?? '', {
+        providerId: input.providerId,
+        modelId: input.modelId,
+        thinking: input.thinking,
+        detail,
+      });
+      await this.artifacts.save(job.id, { summary });
+    } else {
+      job.skipStep(VideoToResumeSteps.SUMMARIZE.name);
+    }
 
-  private async deleteVideo(job: Job, videoPath: string): Promise<void> {
-    return job.runStep(VideoToResumeSteps.DELETE_VIDEO.name, () =>
-      this.videoService.deleteVideo(videoPath),
-    );
+    if (!job.isStepCompleted(VideoToResumeSteps.SAVE_FILE.name)) {
+      await this.saveFile(job, summary, input.url);
+    }
+
+    if (audioPath) {
+      await removeAudioStep(
+        job,
+        this.videoService,
+        VideoToResumeSteps.DELETE_AUDIO.name,
+        audioPath,
+        resumed,
+      );
+    } else {
+      job.skipStep(VideoToResumeSteps.DELETE_AUDIO.name);
+    }
+
+    await this.artifacts.clear(job.id);
   }
 
   private async transcribe(job: Job, audioPath: string): Promise<string> {
     return job.runStep(VideoToResumeSteps.TRANSCRIBE.name, () =>
-      this.whisperService.transcribe(audioPath),
+      this.whisperService.transcribe(audioPath, (percent) => job.setPercent(percent), job.signal),
     );
   }
 
@@ -88,7 +120,7 @@ export class VideoToSummaryJobProcessor implements JobProcessor<VideoToSummaryDt
         ),
         transcription,
         // Enquanto a IA tenta de novo, a tela mostra "tentativa x de y".
-        { ...options, onRetry: (info) => job.setNote(retryNote(info)) },
+        { ...options, onRetry: (info) => job.setNote(retryNote(info)), signal: job.signal },
       ),
     );
   }
@@ -109,12 +141,6 @@ export class VideoToSummaryJobProcessor implements JobProcessor<VideoToSummaryDt
         buildBaseName(meta.title, job.id),
         '.md',
       ),
-    );
-  }
-
-  private async deleteAudio(job: Job, audioPath: string): Promise<void> {
-    return job.runStep(VideoToResumeSteps.DELETE_AUDIO.name, () =>
-      this.videoService.deleteAudio(audioPath),
     );
   }
 }

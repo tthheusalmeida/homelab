@@ -40,6 +40,13 @@ export interface JobSnapshot {
   request?: unknown;
 }
 
+/** Andamento da etapa: partes (`parts`, padrão) ou porcentagem (`percent`, de 0 a 100). */
+export interface JobProgress {
+  done: number;
+  total: number;
+  unit?: 'parts' | 'percent';
+}
+
 export class Job {
   public readonly id: string;
   public readonly createdAt: Date;
@@ -52,17 +59,21 @@ export class Job {
   private _error?: string;
   private _errorInfo?: JobErrorInfo;
   private _cancelRequested = false;
+  /** Corta o que está em andamento (download, ffmpeg, Whisper, IA) quando o usuário cancela. */
+  private _abort?: AbortController;
   /** Aviso passageiro da etapa em andamento (ex.: "Tentando de novo (2 de 3)"); não vai para o disco. */
   private _note?: string;
   /** Andamento dentro da etapa em execução (ex.: parte 2 de 5); não vai para o disco. */
-  private _progress?: { done: number; total: number };
+  private _progress?: JobProgress;
 
   private _steps: JobStep[] = [];
+  /** Avisado a cada mudança de etapa: o runner grava o job, e o andamento sobrevive a um fechamento do app. */
+  private _onChange?: () => void;
 
   constructor(
     name: string,
     private readonly _documentHints: DocumentHints = {},
-    private readonly _request?: unknown,
+    private _request?: unknown,
   ) {
     const jobTypeConfig = JobTypeConfig[name as keyof typeof JobTypeConfig];
 
@@ -133,15 +144,88 @@ export class Job {
     this._note = note;
   }
 
-  get progress(): { done: number; total: number } | undefined {
+  get progress(): JobProgress | undefined {
     return this._progress;
   }
 
   setProgress(done: number, total: number): void {
+    // avanço de parte: a tentativa da IA da parte anterior já foi superada
+    this._note = undefined;
     this._progress = { done, total };
   }
 
-  /** Falhou e guarda os dados de criação: dá para criar outro igual. */
+  /** Porcentagem da etapa em andamento (download, conversão, transcrição). */
+  setPercent(percent: number): void {
+    this._progress = {
+      done: Math.min(100, Math.max(0, Math.floor(percent))),
+      total: 100,
+      unit: 'percent',
+    };
+  }
+
+  /** Quem é avisado quando uma etapa começa, termina ou falha (o runner grava o job). */
+  observe(listener: (() => void) | undefined): void {
+    this._onChange = listener;
+  }
+
+  /** Troca os dados de criação (ex.: outro modelo na retomada); o job continua o mesmo. */
+  replaceRequest(request: unknown): void {
+    this._request = request;
+  }
+
+  /**
+   * Prepara a retomada do mesmo job: volta a `pending` sem erro e sem pedido de cancelamento. As
+   * etapas já concluídas continuam concluídas; a que parou e as seguintes voltam a `pending`.
+   */
+  resetForRetry(): void {
+    let broken = false;
+
+    for (const step of this._steps) {
+      broken = broken || step.status !== JobStatus.COMPLETED;
+
+      if (broken) {
+        step.status = JobStatus.PENDING;
+      }
+    }
+
+    this._status = JobStatus.PENDING;
+    this._error = undefined;
+    this._errorInfo = undefined;
+    this._startedAt = undefined;
+    this._completedAt = undefined;
+    this._cancelRequested = false;
+    this._abort = new AbortController();
+    this._note = undefined;
+    this._progress = undefined;
+  }
+
+  /** Uma etapa que precisa rodar de novo (o arquivo dela sumiu) e tudo que vem depois dela. */
+  resetStepsFrom(name: string): void {
+    const index = this._steps.findIndex((step) => step.name === name);
+
+    if (index < 0) {
+      throw new Error(`Etapa "${name}" não existe no Job "${this.id}".`);
+    }
+
+    this._steps.slice(index).forEach((step) => (step.status = JobStatus.PENDING));
+    this._onChange?.();
+  }
+
+  /** Etapa que já estava pronta (o resultado dela está em disco): marca como concluída sem refazer. */
+  skipStep(name: string): void {
+    const step = this.findStep(name);
+
+    if (step.status !== JobStatus.COMPLETED) {
+      step.status = JobStatus.COMPLETED;
+      this._onChange?.();
+    }
+  }
+
+  isStepCompleted(name: string): boolean {
+    return this.findStep(name).status === JobStatus.COMPLETED;
+  }
+
+  /** Falhou e guarda os dados de criação: dá para retomar o mesmo job. */
   get retryable(): boolean {
     return this._status === JobStatus.FAILED && this._request !== undefined;
   }
@@ -149,6 +233,18 @@ export class Job {
   /** Pede para parar: a etapa em andamento termina e a próxima não começa (`runStep` lança). */
   requestCancel(): void {
     this._cancelRequested = true;
+    this.abortController.abort();
+  }
+
+  /** Sinal que as etapas repassam aos processos e chamadas de rede: aborta quando o job é cancelado. */
+  get signal(): AbortSignal {
+    return this.abortController.signal;
+  }
+
+  private get abortController(): AbortController {
+    this._abort ??= new AbortController();
+
+    return this._abort;
   }
 
   get label(): string | undefined {
@@ -228,8 +324,10 @@ export class Job {
     const step = this.findStep(name);
 
     this._note = undefined;
-    this._progress = undefined;
+    // toda etapa começa em 0%: sem medida real, fica em 0 e some ao concluir (nunca um valor inventado)
+    this._progress = { done: 0, total: 100, unit: 'percent' };
     step.status = JobStatus.RUNNING;
+    this._onChange?.();
   }
 
   completeStep(name: string): void {
@@ -238,6 +336,7 @@ export class Job {
     this._note = undefined;
     this._progress = undefined;
     step.status = JobStatus.COMPLETED;
+    this._onChange?.();
   }
 
   failStep(name: string): void {
@@ -246,6 +345,7 @@ export class Job {
     this._note = undefined;
     this._progress = undefined;
     step.status = JobStatus.FAILED;
+    this._onChange?.();
   }
 
   async runStep<T>(name: string, callback: () => Promise<T>): Promise<T> {

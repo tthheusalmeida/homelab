@@ -83,6 +83,7 @@ export class AIService {
       ...(dto.json ? { json: true } : {}),
       ...(dto.messages ? { messages: dto.messages } : {}),
       ...(dto.onRetry ? { onRetry: dto.onRetry } : {}),
+      ...(dto.signal ? { signal: dto.signal } : {}),
     });
   }
 

@@ -19,6 +19,7 @@ import {
   shell,
 } from 'electron';
 
+import { execStreaming } from '../back/utils/exec-streaming';
 import { JobService } from '../back/modules/jobs/application/job.service';
 import { ChatService } from '../back/modules/chat/chat.service';
 import { PdfCheckpointStore } from '../back/modules/pdf/pdf-checkpoint.store';
@@ -329,7 +330,8 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     totalMemoryMb: () => os.totalmem() / 1048576,
     ffmpegVersion: async () => (await run(ffmpegPath(), ['-version'], { timeout: 5000 })).stdout,
     whisperIo: {
-      run: (file, args) => run(file, args),
+      run: (file, args, onText, signal) =>
+        onText || signal ? execStreaming(file, args, onText, signal) : run(file, args),
       readText: (file) => fs.promises.readFile(file, 'utf8'),
       remove: (file) => fs.promises.unlink(file),
     },

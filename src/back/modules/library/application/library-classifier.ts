@@ -36,6 +36,8 @@ export interface ClassifyTextInput {
   /** Quantos caracteres do conteúdo vão ao modelo (padrão: o mesmo das páginas da biblioteca). */
   maxContentChars?: number;
   onRetry?: (info: AIRetryInfo) => void;
+  /** Cancela a chamada à IA (cancelar o job). */
+  signal?: AbortSignal;
 }
 
 @Injectable()
@@ -93,6 +95,7 @@ export class LibraryClassifier {
         json: true,
         ...(input.thinking ? { thinking: input.thinking } : {}),
         ...(input.onRetry ? { onRetry: input.onRetry } : {}),
+        ...(input.signal ? { signal: input.signal } : {}),
       });
     } catch (error) {
       throw new BadGatewayException('Não foi possível obter a sugestão da IA. Tente novamente.', {
