@@ -9,6 +9,7 @@ import { SetupGuide } from '#components/SetupGuide';
 import type { ExternalProviderInfo } from '#shared/contracts/providers';
 import { Field } from '../components/Field';
 import { ProviderCard } from '#components/ProviderCard';
+import { ProviderLogo } from '#components/ProviderLogo';
 import { useSnackbar } from '#components/Snackbar';
 import {
   ProviderActions,
@@ -18,7 +19,12 @@ import {
   testResultOf,
 } from '../components/ProviderParts';
 import { useExternalProviders, useSaveExternalProvider, useTestExternalProvider } from '../hooks';
-import { EXTERNAL_PROVIDER_GUIDES, EXTERNAL_PROVIDER_HINTS, Strings } from '../strings';
+import {
+  EXTERNAL_PROVIDER_COMPANIES,
+  EXTERNAL_PROVIDER_GUIDES,
+  EXTERNAL_PROVIDER_HINTS,
+  Strings,
+} from '../strings';
 
 interface SectionProps {
   onSaved: (restartRequired: boolean) => void;
@@ -71,7 +77,11 @@ function ExternalProviderCard({
     <ProviderCard
       index={index}
       defaultOpen={!provider.configured}
-      title={provider.label}
+      icon={<ProviderLogo
+          provider={provider.id}
+          label={EXTERNAL_PROVIDER_COMPANIES[provider.id] ?? provider.label}
+        />}
+      title={EXTERNAL_PROVIDER_COMPANIES[provider.id] ?? provider.label}
       description={EXTERNAL_PROVIDER_HINTS[provider.id] ?? ''}
       badge={
         <Badge variant={provider.configured ? 'secondary' : 'outline'}>

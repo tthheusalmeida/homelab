@@ -16,11 +16,46 @@ describe('ExternalProvidersSection', () => {
 
     renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
 
-    const trigger = await screen.findByRole('button', { name: /^Gemini/ });
+    const trigger = await screen.findByRole('button', { name: /^Google/ });
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(trigger).toHaveTextContent('Configurada');
-    expect(trigger).toHaveTextContent('Modelos de IA do Google, na nuvem.');
+    expect(trigger).toHaveTextContent(
+      'Google · Gemini é a família de modelos de IA do Google, na nuvem.',
+    );
+    expect(trigger.querySelector('[data-provider-logo="gemini"]')).not.toBeNull();
     expect(screen.queryByLabelText(/chave da API/i)).not.toBeInTheDocument();
+  });
+
+  it('when Anthropic is listed, should show its title and one-line description', async () => {
+    mockApi({
+      [IpcChannels.providers.external.list]: () =>
+        ok([{ id: 'anthropic', label: 'Anthropic', configured: false, maskedKey: null }]),
+    });
+
+    renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
+
+    const trigger = await screen.findByRole('button', { name: /^Anthropic/ });
+    expect(trigger).toHaveTextContent(
+      'Anthropic · Claude é a família de modelos de IA da Anthropic, na nuvem.',
+    );
+    expect(trigger.querySelector('[data-provider-logo="anthropic"]')).not.toBeNull();
+  });
+
+  it('when the Anthropic key is not configured and the card is opened, should show the step by step', async () => {
+    const user = userEvent.setup();
+    mockApi({
+      [IpcChannels.providers.external.list]: () =>
+        ok([{ id: 'anthropic', label: 'Anthropic', configured: false, maskedKey: null }]),
+    });
+
+    renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
+    await openCard(user, 'Anthropic');
+
+    expect(screen.getByText('Como criar a chave da Anthropic')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Abrir o painel' })).toHaveAttribute(
+      'href',
+      'https://platform.claude.com/settings/keys',
+    );
   });
 
   it('when the key is not configured, should say so in the header', async () => {
@@ -36,7 +71,7 @@ describe('ExternalProvidersSection', () => {
     mockApi({ [IpcChannels.providers.external.list]: () => ok([unconfigured]) });
 
     renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Gemini');
+    await openCard(user, 'Google');
 
     expect(screen.getByText(/Informe a chave da API/)).toBeVisible();
     expect(screen.getByLabelText('Chave da API')).toHaveValue('');
@@ -47,7 +82,7 @@ describe('ExternalProvidersSection', () => {
     mockApi({ [IpcChannels.providers.external.list]: () => ok([configured]) });
 
     renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Gemini');
+    await openCard(user, 'Google');
 
     expect(screen.getByText('Chave atual: ••••••••1234')).toBeVisible();
     expect(screen.getByLabelText('Nova chave da API')).toHaveAttribute('type', 'password');
@@ -58,7 +93,7 @@ describe('ExternalProvidersSection', () => {
     mockApi({ [IpcChannels.providers.external.list]: () => ok([unconfigured]) });
 
     renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Gemini');
+    await openCard(user, 'Google');
 
     expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Testar' })).toBeDisabled();
@@ -73,7 +108,7 @@ describe('ExternalProvidersSection', () => {
     });
 
     renderWithProviders(<ExternalProvidersSection onSaved={onSaved} />);
-    await openCard(user, 'Gemini');
+    await openCard(user, 'Google');
 
     await user.type(screen.getByLabelText('Chave da API'), '  AIza-nova  ');
     await user.click(screen.getByRole('button', { name: 'Salvar' }));
@@ -95,7 +130,7 @@ describe('ExternalProvidersSection', () => {
     });
 
     renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Gemini');
+    await openCard(user, 'Google');
 
     await user.type(screen.getByLabelText('Chave da API'), 'AIza-candidata');
     await user.click(screen.getByRole('button', { name: 'Testar' }));
@@ -116,7 +151,7 @@ describe('ExternalProvidersSection', () => {
     });
 
     renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Gemini');
+    await openCard(user, 'Google');
     await user.click(screen.getByRole('button', { name: 'Testar' }));
 
     await waitFor(() =>
@@ -135,7 +170,7 @@ describe('ExternalProvidersSection', () => {
     });
 
     renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Gemini');
+    await openCard(user, 'Google');
     await user.click(screen.getByRole('button', { name: 'Testar' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('API key not valid.');
@@ -151,7 +186,7 @@ describe('ExternalProvidersSection', () => {
     });
 
     renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Gemini');
+    await openCard(user, 'Google');
 
     await user.type(screen.getByLabelText('Chave da API'), 'AIza-x');
     await user.click(screen.getByRole('button', { name: 'Testar' }));
@@ -175,7 +210,7 @@ describe('ExternalProvidersSection', () => {
     });
 
     renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Gemini');
+    await openCard(user, 'Google');
 
     await user.type(screen.getByLabelText('Chave da API'), 'AIza-x');
     await user.click(screen.getByRole('button', { name: 'Salvar' }));
@@ -203,7 +238,7 @@ describe('ExternalProvidersSection', () => {
     const user = userEvent.setup();
 
     renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Gemini');
+    await openCard(user, 'Google');
 
     expect(screen.queryByRole('region', { name: 'Como criar a chave do Gemini' })).not.toBeInTheDocument();
   });
@@ -235,7 +270,7 @@ describe('ExternalProvidersSection', () => {
     mockApi({ [IpcChannels.providers.external.list]: () => ok([configured]) });
 
     renderWithProviders(<ExternalProvidersSection onSaved={vi.fn()} />);
-    await openCard(user, 'Gemini');
+    await openCard(user, 'Google');
 
     expect(screen.getByRole('link', { name: /ver consumo no Gemini/ })).toHaveAttribute(
       'href',

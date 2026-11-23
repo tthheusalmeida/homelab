@@ -208,7 +208,7 @@ export const SECTIONS: ReadonlyArray<SectionInfo> = [
   {
     id: 'external',
     label: 'IAs externas',
-    description: 'Serviços de inteligência artificial na nuvem, como o Gemini.',
+    description: 'Serviços de inteligência artificial na nuvem, como o Gemini e a Anthropic.',
   },
   {
     id: 'local',
@@ -286,10 +286,34 @@ export const EXTERNAL_PROVIDER_GUIDES: Record<
     ],
     note: 'O uso gratuito tem limites por minuto e por dia. Para ir além, ative o faturamento no Google Cloud. Quem tem a chave usa a sua cota: não compartilhe.',
   },
+  anthropic: {
+    title: 'Como criar a chave da Anthropic',
+    steps: [
+      {
+        text: 'Abra o painel da Anthropic (Claude Console) e entre com a sua conta.',
+        link: { href: 'https://platform.claude.com/settings/keys', label: 'Abrir o painel' },
+      },
+      { text: 'Clique em "Criar chave" (Create Key).' },
+      { text: 'Quando perguntar onde a chave será usada, escolha "Em outro lugar" (Somewhere else).' },
+      { text: 'Dê um nome à chave, por exemplo "HomeLab".' },
+      { text: 'Escolha o período de validade da chave.' },
+      { text: 'Copie a chave gerada (ela começa com "sk-ant-"): ela só aparece uma vez.' },
+      { text: 'Cole a chave no campo "Chave da API" abaixo e clique em "Testar" para conferir.' },
+      { text: 'Clique em "Salvar" e reinicie o HomeLab para a chave passar a valer.' },
+    ],
+    note: 'O uso da API é pago por consumo: adicione crédito na conta no painel. Quem tem a chave gasta o seu crédito: não compartilhe.',
+  },
+};
+
+/** Nome da empresa de cada serviço, que é o título do cartão (o modelo vai na descrição). */
+export const EXTERNAL_PROVIDER_COMPANIES: Record<string, string> = {
+  gemini: 'Google',
+  anthropic: 'Anthropic',
 };
 
 export const EXTERNAL_PROVIDER_HINTS: Record<string, string> = {
-  gemini: 'Modelos de IA do Google, na nuvem.',
+  gemini: 'Google · Gemini é a família de modelos de IA do Google, na nuvem.',
+  anthropic: 'Anthropic · Claude é a família de modelos de IA da Anthropic, na nuvem.',
 };
 
 export const LOCAL_PROVIDER_HINTS: Record<string, string> = {
