@@ -610,20 +610,33 @@
   pointer-events: none;
   background: var(--primary);
   clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-  animation: hl-find-marker-pulse 1.6s ease-in-out infinite;
+  /* Entra da esquerda para a direita e depois vai e volta sem parar (até a busca acabar). */
+  animation:
+    hl-find-marker-in 0.35s ease-out,
+    hl-find-marker-bob 0.8s ease-in-out 0.35s infinite alternate;
 }
 
 .find-marker[hidden] {
   display: none;
 }
 
-@keyframes hl-find-marker-pulse {
-  0%,
-  100% {
-    scale: 1;
+@keyframes hl-find-marker-in {
+  from {
+    translate: -18px 0;
+    opacity: 0;
   }
-  50% {
-    scale: 0.8;
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+@keyframes hl-find-marker-bob {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 6px 0;
   }
 }
 
