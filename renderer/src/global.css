@@ -610,14 +610,14 @@
   pointer-events: none;
   background: var(--primary);
   clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-  animation: find-marker-pulse 1.6s ease-in-out infinite;
+  animation: hl-find-marker-pulse 1.6s ease-in-out infinite;
 }
 
 .find-marker[hidden] {
   display: none;
 }
 
-@keyframes find-marker-pulse {
+@keyframes hl-find-marker-pulse {
   0%,
   100% {
     scale: 1;
