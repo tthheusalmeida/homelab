@@ -1,5 +1,8 @@
 # Atalhos, paleta de comandos e notificações
 
+## Zoom da janela
+`Ctrl +` (a tecla do `=`, sem Shift), `Ctrl -` e `Ctrl 0` mudam o zoom da janela inteira. O menu padrão do Electron só reconhecia `Ctrl Shift =` para aumentar, então em teclados com o `+` na tecla do `=` o aumento não funcionava; o main (`before-input-event`, `isZoomInShortcut` em `shortcuts.ts`) cuida do `Ctrl =` e o menu segue com os demais.
+
 ## Paleta de comandos (Ctrl K)
 - `Ctrl+K` (ou `Cmd+K`) em qualquer tela, o botão **Buscar** do cabeçalho, ou `/` fora de campos de texto. Código: `components/CommandPalette.tsx`.
 - Lista todas as telas do menu (filtra sem diferenciar acento e caixa) e, com 2 letras ou mais, busca **páginas da biblioteca** pelo texto (`library:documents:list`, até 6 resultados). Setas movem, Enter abre, Esc fecha.

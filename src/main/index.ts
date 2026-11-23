@@ -75,7 +75,7 @@ import { resolveFfmpegPath } from '../providers/ffmpeg-binary-resolver';
 import { resolveYtDlpPath } from '../providers/ytdlp-binary-resolver';
 import { seedBinDir } from './bin-seed';
 import { resolveBinDir, resolveDataRoot, resolveFrontDist, resolveResourcesDir } from './paths';
-import { isSettingsShortcut } from './shortcuts';
+import { isSettingsShortcut, isZoomInShortcut } from './shortcuts';
 import { createAppUpdater } from './app-updater-factory';
 import { createElectronNativeUpdater } from './electron-native-updater';
 import { SystemNotifier } from './system-notifier';
@@ -84,6 +84,10 @@ import { ReleaseNotesTranslator } from '../updates/release-notes-translator';
 import { UPDATE_REPOSITORY } from '../updates/release-source';
 import { resolveStaticFile } from './static-files';
 import { createSplashWindowOptions, createWindowOptions } from './window-options';
+
+/** Mesmo passo do menu padrão (cada "+" aumenta meio nível) e o limite do Chromium. */
+const ZOOM_LEVEL_STEP = 0.5;
+const MAX_ZOOM_LEVEL = 9;
 
 const run = promisify(execFile);
 
@@ -196,6 +200,13 @@ function guardWindow(window: BrowserWindow, allowedOrigins: string[]): void {
     if (isSettingsShortcut(input)) {
       event.preventDefault();
       showSettings();
+    }
+
+    if (isZoomInShortcut(input)) {
+      event.preventDefault();
+      window.webContents.setZoomLevel(
+        Math.min(MAX_ZOOM_LEVEL, window.webContents.getZoomLevel() + ZOOM_LEVEL_STEP),
+      );
     }
   });
 }
