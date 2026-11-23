@@ -92,7 +92,7 @@ function Marker({ status }: { status: JobStatus }) {
 /** Erro de uma etapa: ícone e texto em vermelho, sem caixa nem alerta. */
 function StepError({ message }: { message: string }) {
   return (
-    <p title={message} className="flex items-start gap-1.5 text-[11px] text-destructive">
+    <p className="flex items-start gap-1.5 text-[11px] text-destructive">
       <CircleAlert aria-hidden className="mt-px size-3.5 shrink-0" />
 
       <span className="min-w-0 break-words">{message}</span>
@@ -203,7 +203,7 @@ export function JobPipeline({ job }: JobPipelineProps) {
                       )}
 
                       {running && job.note && (
-                        <p title={job.note} className="text-[11px] break-words text-amber-500">
+                        <p className="text-[11px] break-words text-amber-500">
                           {job.note}
                         </p>
                       )}
