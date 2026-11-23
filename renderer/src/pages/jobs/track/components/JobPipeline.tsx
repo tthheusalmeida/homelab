@@ -1,4 +1,4 @@
-import { Check, X } from 'lucide-react';
+import { Check, CircleAlert, X } from 'lucide-react';
 
 import { HexDot } from '#components/Hex';
 import { ProgressBar } from '#components/ProgressBar';
@@ -88,6 +88,17 @@ function Marker({ status }: { status: JobStatus }) {
   );
 }
 
+/** Erro de uma etapa: ícone e texto em vermelho, sem caixa nem alerta. */
+function StepError({ message }: { message: string }) {
+  return (
+    <p title={message} className="flex items-start gap-1.5 text-[11px] text-destructive">
+      <CircleAlert aria-hidden className="mt-px size-3.5 shrink-0" />
+
+      <span className="min-w-0 break-words">{message}</span>
+    </p>
+  );
+}
+
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
@@ -132,7 +143,7 @@ export function JobPipeline({ job }: JobPipelineProps) {
             <li
               key={row.key}
               data-status={row.status}
-              className="relative flex min-h-12 gap-3 pb-3 last:pb-0"
+              className="relative flex gap-3 pb-3 last:pb-0"
             >
               {index < rows.length - 1 && (
                 <span
@@ -168,49 +179,38 @@ export function JobPipeline({ job }: JobPipelineProps) {
                   </span>
                 </div>
 
-                {running && job.note && (
-                  <p role="status" className="text-[11px] break-words text-amber-500">
-                    {job.note}
-                  </p>
-                )}
+                {/* Espaço fixo para o andamento, a tentativa da IA ou o erro: a mensagem entra sem empurrar as etapas de baixo. */}
+                <div data-slot="step-detail" className="flex min-h-9 flex-col gap-1">
+                  {running && (
+                    <ProgressBar
+                      value={
+                        job.progress
+                          ? job.progress.unit === 'percent'
+                            ? job.progress.done
+                            : job.progress.done - 1
+                          : 0
+                      }
+                      total={job.progress?.total ?? 0}
+                      label={TrackStrings.stepProgress(row.label)}
+                      className="h-1"
+                    />
+                  )}
 
-                {showError && (
-                  <p
-                    role="alert"
-                    className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs break-words text-destructive"
-                  >
-                    {job.error}
-                  </p>
-                )}
+                  {running && job.note && (
+                    <p title={job.note} className="text-[11px] break-words text-amber-500">
+                      {job.note}
+                    </p>
+                  )}
 
-                {running && (
-                  <ProgressBar
-                    value={
-                      job.progress
-                        ? job.progress.unit === 'percent'
-                          ? job.progress.done
-                          : job.progress.done - 1
-                        : 0
-                    }
-                    total={job.progress?.total ?? 0}
-                    label={TrackStrings.stepProgress(row.label)}
-                    className="h-1"
-                  />
-                )}
+                  {showError && <StepError message={job.error ?? ''} />}
+                </div>
               </div>
             </li>
           );
         })}
       </ol>
 
-      {job.error && !failedKey && (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs break-words text-destructive"
-        >
-          {job.error}
-        </p>
-      )}
+      {job.error && !failedKey && <StepError message={job.error} />}
 
       <dl className="grid grid-cols-3 gap-3 border-t pt-3">
         <Fact

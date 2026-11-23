@@ -94,9 +94,9 @@ describe('JobPipeline', () => {
 
     const rows = screen.getAllByRole('listitem');
 
-    expect(within(rows[1]).getByRole('status')).toHaveTextContent('tentativa 2 de 3');
-    expect(within(rows[0]).queryByRole('status')).not.toBeInTheDocument();
-    expect(within(rows[2]).queryByRole('status')).not.toBeInTheDocument();
+    expect(within(rows[1]).getByText(/tentativa 2 de 3/)).toBeInTheDocument();
+    expect(within(rows[0]).queryByText(/tentativa/)).not.toBeInTheDocument();
+    expect(within(rows[2]).queryByText(/tentativa/)).not.toBeInTheDocument();
   });
 
   it('when the retry was solved and the note is gone, should not show the attempt anymore', () => {
@@ -106,7 +106,7 @@ describe('JobPipeline', () => {
 
     rerender(<JobPipeline job={makeJob({ note: undefined })} />);
 
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.queryByText(/tentativa/)).not.toBeInTheDocument();
   });
 
   it('when a step failed, should show the error inside that step and not again at the end', () => {
@@ -126,8 +126,8 @@ describe('JobPipeline', () => {
 
     const rows = screen.getAllByRole('listitem');
 
-    expect(screen.getAllByRole('alert')).toHaveLength(1);
-    expect(within(rows[1]).getByRole('alert')).toHaveTextContent('Limite de uso da IA.');
+    expect(screen.getAllByText('Limite de uso da IA.')).toHaveLength(1);
+    expect(within(rows[1]).getByText('Limite de uso da IA.')).toBeInTheDocument();
   });
 
   it('when the job failed without a failed step, should keep the error at the end', () => {
@@ -141,8 +141,10 @@ describe('JobPipeline', () => {
       />,
     );
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Cancelado pelo usuário.');
-    expect(within(screen.getAllByRole('listitem')[0]).queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByText('Cancelado pelo usuário.')).toBeInTheDocument();
+    expect(
+      within(screen.getAllByRole('listitem')[0]).queryByText('Cancelado pelo usuário.'),
+    ).not.toBeInTheDocument();
   });
 
   it('when the job was resumed and has no error, should show no alert in any step', () => {
@@ -159,16 +161,34 @@ describe('JobPipeline', () => {
       />,
     );
 
+    expect(screen.queryByText(/Falhou|erro/i)).not.toBeInTheDocument();
+  });
+
+  it('when rendering the steps, should reserve the same detail space in every step so messages do not push the rest', () => {
+    const { container } = render(<JobPipeline job={makeJob()} />);
+    const slots = container.querySelectorAll('[data-slot="step-detail"]');
+
+    expect(slots).toHaveLength(3);
+    slots.forEach((slot) => expect(slot).toHaveClass('min-h-9'));
+  });
+
+  it('when a step has an error, should show a red message with an icon, not an alert box', () => {
+    const { container } = render(
+      <JobPipeline
+        job={makeJob({
+          status: 'failed',
+          error: 'Sem internet.',
+          steps: [{ name: 'download', label: 'Baixar vídeo', status: 'failed' }],
+        })}
+      />,
+    );
+
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByText('Sem internet.').closest('p')).toHaveClass('text-destructive');
+    expect(container.querySelector('svg.lucide-circle-alert')).toBeInTheDocument();
   });
 
-  it('when rendering the steps, should reserve a minimum height for each one', () => {
-    render(<JobPipeline job={makeJob()} />);
-
-    screen.getAllByRole('listitem').forEach((row) => expect(row).toHaveClass('min-h-12'));
-  });
-
-  it('when the job failed, should show the error as an alert', () => {
+  it('when the job failed, should show the error inside the failed step', () => {
     render(
       <JobPipeline
         job={makeJob({
@@ -179,7 +199,7 @@ describe('JobPipeline', () => {
       />,
     );
 
-    expect(screen.getByRole('alert')).toHaveTextContent('ffmpeg não encontrado.');
+    expect(screen.getByText('ffmpeg não encontrado.')).toBeInTheDocument();
     expect(screen.getByText('falhou')).toBeInTheDocument();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
