@@ -364,14 +364,14 @@ export function DocumentPage() {
           {excerpts ? (
             <div
               ref={setRailSlot}
-              className={cn("hidden lg:block", sides.followOrder)}
+              className={cn("hidden md:block", sides.followOrder)}
             />
           ) : (
             hasLeftColumn && (
               <aside
                 aria-label="Onde você está"
                 className={cn(
-                  "hidden lg:sticky lg:top-4 lg:block lg:self-start",
+                  "hidden md:sticky md:top-4 md:block md:self-start",
                   sides.followOrder,
                 )}
               >

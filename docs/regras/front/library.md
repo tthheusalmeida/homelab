@@ -77,6 +77,8 @@ Os dados vêm dos canais `library:*` do main (ver `../back/library.md`). Qualque
   - Editar fecha a "Sobre" e abre a janela de edição (`EditDocumentDialog`, ocupa a tela toda; mesmo formulário da página de edição). Ao salvar ou cancelar, volta para a "Sobre" (já com os dados atualizados).
   - Remover fecha a "Sobre" e abre a confirmação. Cancelar volta para a "Sobre". Confirmar arquiva e vai para a biblioteca **já filtrada pela categoria do documento** (o estado de navegação `{ category }` é lido pelo `LibraryPage`). Se falhar, a confirmação continua aberta com "Não foi possível remover. Tente novamente.".
 
+- **Sumário sempre visível (leitura normal):** a coluna do sumário (e a linha do tempo da transcrição, no livro o cartão "Onde você está") aparece a partir de `md` (768 px), não só em `lg`: a janela do app vai até 900 px e o zoom da janela estreita mais. Entre 768 e 1023 px são duas colunas (sumário 14rem e texto, que se reajusta) e as opções descem para baixo do texto; a partir de 1024 px voltam as três colunas. No modo leitura sem painel fixo, o sumário aparece ao passar o mouse na margem. Quem precisar de espaço fecha a barra lateral de rotas (`useReadingSides`).
+
 ## Pré-preenchimento vindo dos jobs
 - Título, categoria e tags informados ao criar um job de resumo ou transcrição (ver `doc/jobs.md`) ficam no documento pendente. Ao abrir "Adicionar à biblioteca" na Classificação o diálogo já vem com esses valores (o `PublishDialog` sempre parte do que está no documento) e o botão Adicionar já fica habilitado se houver categoria.
 
