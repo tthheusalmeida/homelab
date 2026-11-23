@@ -140,8 +140,16 @@ describe('TrackPage — resumo de PDF', () => {
     await waitFor(() => expect(screen.queryByText(/não serão refeitas/)).not.toBeInTheDocument());
   });
 
-  it('when a video job failed, should not offer to change the model', async () => {
+  it('when a video summary failed, should offer to change the model and explain the steps are kept', async () => {
     setup([pdfJob({ name: 'video-to-summary', resume: undefined })]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Trocar modelo' }));
+
+    expect(screen.getByText(/etapas já concluídas .* não serão refeitas/)).toBeInTheDocument();
+  });
+
+  it('when a video transcript failed, should not offer to change the model', async () => {
+    setup([pdfJob({ name: 'video-to-transcript', resume: undefined })]);
 
     await screen.findByText('Resumo de PDF');
 

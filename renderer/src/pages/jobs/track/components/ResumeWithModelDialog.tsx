@@ -48,7 +48,9 @@ function ResumeForm({
         <DialogTitle>{TrackStrings.changeModel.title}</DialogTitle>
 
         <DialogDescription>
-          {TrackStrings.changeModel.description(job.resume?.done ?? 0, job.resume?.total ?? 0)}
+          {job.resume
+            ? TrackStrings.changeModel.description(job.resume.done, job.resume.total)
+            : TrackStrings.changeModel.descriptionSteps}
         </DialogDescription>
       </DialogHeader>
 

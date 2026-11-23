@@ -28,7 +28,7 @@ export interface JobLauncherPort {
   startVideoToTranscript(request: CreateVideoToTranscriptRequest): JobCreated;
   startVideoToSummary(request: CreateVideoToSummaryRequest): JobCreated;
   startPdfToSummary(request: CreatePdfToSummaryRequest): Promise<JobCreated>;
-  /** Cria outro job com os dados de um que falhou. */
+  /** Retoma o mesmo job que falhou, da etapa que parou. */
   retry(
     id: JobRetryRequest['id'],
     overrides?: Omit<JobRetryRequest, 'id'>,

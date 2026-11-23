@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 
+import { onlyChanges, parseYtDlpPercent, type PercentListener } from '../../utils/progress';
 import { isLoginPageUrl } from '../../../shared/media-url';
 
 import { AccessRequiredError } from './access-required.error';
@@ -46,6 +47,8 @@ export interface PlatformTools {
 export type RunProgram = (
   file: string,
   args: string[],
+  /** Recebe o texto que o programa escreve enquanto roda (para acompanhar o download). */
+  onText?: (text: string) => void,
 ) => Promise<{ stdout: string; stderr: string }>;
 
 export interface PlatformDownloaderDeps {
@@ -120,7 +123,15 @@ function errorText(error: unknown): string {
 export class PlatformDownloader {
   constructor(private readonly deps: PlatformDownloaderDeps) {}
 
-  async download(url: string, baseName: string, destinationDir: string): Promise<string> {
+  /** Quem acompanha o download atual (um job por vez usa o downloader). */
+  private onProgress?: PercentListener;
+
+  async download(
+    url: string,
+    baseName: string,
+    destinationDir: string,
+    onProgress?: PercentListener,
+  ): Promise<string> {
     const ytDlp = this.deps.tools?.ytDlpPath();
 
     if (!ytDlp) {
@@ -129,11 +140,31 @@ export class PlatformDownloader {
 
     const cookies = (await this.deps.tools?.cookiesFor(url)) ?? null;
 
+    this.onProgress = onProgress && onlyChanges(onProgress);
+
     try {
       return await this.attempt(ytDlp, url, baseName, destinationDir, cookies?.file);
     } finally {
+      this.onProgress = undefined;
       await cookies?.cleanup();
     }
+  }
+
+  /** Roda o yt-dlp; com alguém acompanhando, lê a porcentagem que ele escreve. */
+  private runYtDlp(ytDlp: string, args: string[]) {
+    const notify = this.onProgress;
+
+    if (!notify) {
+      return this.deps.run(ytDlp, args);
+    }
+
+    return this.deps.run(ytDlp, args, (text) => {
+      const percent = parseYtDlpPercent(text);
+
+      if (percent !== null) {
+        notify(percent);
+      }
+    });
   }
 
   private async attempt(
@@ -149,7 +180,7 @@ export class PlatformDownloader {
     let stdout: string;
 
     try {
-      ({ stdout } = await this.deps.run(
+      ({ stdout } = await this.runYtDlp(
         ytDlp,
         this.args(url, baseName, destinationDir, cookiesFile, browser, referer),
       ));
@@ -282,7 +313,9 @@ export class PlatformDownloader {
     return [
       '--no-playlist',
       '--no-warnings',
-      '--no-progress',
+      ...(this.onProgress
+        ? ['--newline', '--progress-template', 'download:HLPROG %(progress._percent_str)s']
+        : ['--no-progress']),
       '--no-simulate',
       '-f',
       'bestaudio/best',

@@ -76,6 +76,15 @@ describe('JobPipeline', () => {
     ).toHaveAttribute('aria-valuenow', '25');
   });
 
+  it('when the running step reports a percent, should show "N% de 100%" and fill the bar', () => {
+    render(<JobPipeline job={makeJob({ progress: { done: 10, total: 100, unit: 'percent' } })} />);
+
+    expect(screen.getByText('10% de 100%')).toBeInTheDocument();
+    expect(
+      screen.getByRole('progressbar', { name: 'Em andamento: Converter áudio' }),
+    ).toHaveAttribute('aria-valuenow', '10');
+  });
+
   it('when the job failed, should show the error as an alert', () => {
     render(
       <JobPipeline

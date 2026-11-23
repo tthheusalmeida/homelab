@@ -92,6 +92,8 @@ export class JobRunner {
     input: TInput,
   ): Promise<void> {
     this.current = job;
+    // Cada etapa que começa ou termina é gravada: fechar o app não perde o que já ficou pronto.
+    job.observe(() => this.repository.save(job));
 
     try {
       job.start();
@@ -117,6 +119,7 @@ export class JobRunner {
         this.notify(job);
       }
     } finally {
+      job.observe(undefined);
       this.current = null;
     }
   }

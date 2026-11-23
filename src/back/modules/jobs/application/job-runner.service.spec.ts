@@ -360,4 +360,55 @@ describe('JobRunner', () => {
       expect(job.status).toBe(JobStatus.COMPLETED);
     });
   });
+
+  describe('andamento em disco', () => {
+    it('when a step finishes while the job runs, should save the job right then', async () => {
+      const job = new Job('video-to-transcript');
+      const save = jest.spyOn(repository, 'save');
+      let savesAfterStep = 0;
+      const processor: JobProcessor<string> = {
+        process: jest.fn().mockImplementation(async () => {
+          save.mockClear();
+          job.startStep('download-video');
+          job.completeStep('download-video');
+          savesAfterStep = save.mock.calls.length;
+        }),
+      };
+
+      runner.run(job, processor, 'x');
+      await flush();
+
+      expect(savesAfterStep).toBe(2);
+    });
+
+    it('when the job ends, should stop saving on every step', async () => {
+      const job = new Job('video-to-transcript');
+      const processor: JobProcessor<string> = { process: jest.fn().mockResolvedValue(undefined) };
+
+      runner.run(job, processor, 'x');
+      await flush();
+
+      const save = jest.spyOn(repository, 'save');
+
+      job.startStep('download-video');
+
+      expect(save).not.toHaveBeenCalled();
+    });
+
+    it('when a reset job is queued again, should run it and complete it as the same job', async () => {
+      const job = new Job('video-to-transcript');
+
+      runner.run(job, { process: jest.fn().mockRejectedValue(new Error('caiu')) }, 'x');
+      await flush();
+      expect(job.status).toBe(JobStatus.FAILED);
+
+      job.resetForRetry();
+      runner.run(job, { process: jest.fn().mockResolvedValue(undefined) }, 'x');
+      await flush();
+
+      expect(job.status).toBe(JobStatus.COMPLETED);
+      expect(job.error).toBeUndefined();
+      expect(repository.findAll()).toHaveLength(1);
+    });
+  });
 });

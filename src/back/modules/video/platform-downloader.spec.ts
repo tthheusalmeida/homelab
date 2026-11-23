@@ -324,3 +324,48 @@ describe('PlatformDownloader', () => {
     );
   });
 });
+
+describe('PlatformDownloader: andamento do download', () => {
+  it('when someone follows the download, should ask yt-dlp for progress lines and report the percent', async () => {
+    const run = jest.fn(async (_file: string, args: string[], onText?: (text: string) => void) => {
+      onText?.('HLPROG  10.0%\n');
+      onText?.('HLPROG  55.5%\n');
+      onText?.('HLPROG 100.0%\n');
+
+      expect(args).toContain('--newline');
+      expect(args).not.toContain('--no-progress');
+
+      return { stdout: 'HLPROG 100.0%\n/tmp/dl/v.m4a\n', stderr: '' };
+    });
+    const { downloader } = build(run);
+    const seen: number[] = [];
+
+    const file = await downloader.download(URL_, 'job', '/tmp/dl', (percent) => seen.push(percent));
+
+    expect(seen).toEqual([10, 55, 100]);
+    expect(file).toBe(path.resolve('/tmp/dl/v.m4a'));
+  });
+
+  it('when nobody follows the download, should keep the quiet arguments and not stream', async () => {
+    const run = jest.fn(async (_file: string, args: string[]) => {
+      expect(args).toContain('--no-progress');
+
+      return { stdout: '/tmp/dl/v.m4a\n', stderr: '' };
+    });
+    const { downloader } = build(run);
+
+    await downloader.download(URL_, 'job', '/tmp/dl');
+
+    expect(run.mock.calls[0]).toHaveLength(2);
+  });
+
+  it('when the download ends, should stop reporting to the previous listener', async () => {
+    const run = jest.fn(async () => ({ stdout: '/tmp/dl/v.m4a\n', stderr: '' }));
+    const { downloader } = build(run);
+
+    await downloader.download(URL_, 'job', '/tmp/dl', () => undefined);
+    await downloader.download(URL_, 'job2', '/tmp/dl');
+
+    expect(run.mock.calls[1]).toHaveLength(2);
+  });
+});

@@ -158,14 +158,22 @@ export function JobPipeline({ job }: JobPipelineProps) {
 
                   <span className="shrink-0 text-[11px] text-muted-foreground">
                     {running && job.progress
-                      ? TrackStrings.stepPart(job.progress.done, job.progress.total)
+                      ? job.progress.unit === 'percent'
+                        ? TrackStrings.stepPercent(job.progress.done)
+                        : TrackStrings.stepPart(job.progress.done, job.progress.total)
                       : (TrackStrings.stepStates[row.status] ?? row.status)}
                   </span>
                 </div>
 
                 {running && (
                   <ProgressBar
-                    value={job.progress ? job.progress.done - 1 : 0}
+                    value={
+                      job.progress
+                        ? job.progress.unit === 'percent'
+                          ? job.progress.done
+                          : job.progress.done - 1
+                        : 0
+                    }
                     total={job.progress?.total ?? 0}
                     label={TrackStrings.stepProgress(row.label)}
                     className="h-1"

@@ -14,7 +14,13 @@ function setup(
   },
 ) {
   const calls: string[] = [];
-  const job = { id: 'job-1', status: 'pending' };
+  const job = {
+    id: 'job-1',
+    status: 'pending',
+    resetForRetry: jest.fn(),
+    replaceRequest: jest.fn(),
+  };
+  const retried = { ...original, resetForRetry: jest.fn(), replaceRequest: jest.fn() };
   const jobs = {
     create: jest.fn((name: string, hints?: unknown, request?: unknown) => {
       calls.push(`create:${name}`);
@@ -23,7 +29,8 @@ function setup(
 
       return job;
     }),
-    findById: jest.fn(() => original),
+    findById: jest.fn(() => retried),
+    save: jest.fn(),
   };
   const runner = {
     run: jest.fn(() => {
@@ -49,7 +56,7 @@ function setup(
     parseHints: parse,
   });
 
-  return { launcher, jobs, runner, parse, job, calls, pdf };
+  return { launcher, jobs, runner, parse, job, calls, pdf, retried };
 }
 
 describe('JobLauncher: transcrição', () => {
@@ -167,22 +174,24 @@ describe('JobLauncher: resumo', () => {
 describe('JobLauncher: tentar de novo', () => {
   const request = { url: 'https://exemplo.com/v.mp4' };
 
-  it('when a failed transcript job is retried, should create a new one with the same request', () => {
-    const { launcher, jobs, runner, job } = setup(undefined, {
+  it('when a failed transcript job is retried, should reset and queue the same job without creating another', () => {
+    const { launcher, jobs, runner, retried } = setup(undefined, {
       id: 'old',
       status: 'failed',
       name: 'video-to-transcript',
       request,
     });
 
-    expect(launcher.retry('old')).toEqual({ id: 'job-1', status: 'pending' });
-    expect(jobs.create).toHaveBeenCalledWith('video-to-transcript', { parsed: request }, request);
-    expect(runner.run).toHaveBeenCalledWith(job, transcriptProcessor, request.url);
+    expect(launcher.retry('old')).toEqual({ id: 'old', status: 'failed' });
+    expect(retried.resetForRetry).toHaveBeenCalledTimes(1);
+    expect(jobs.save).toHaveBeenCalledWith(retried);
+    expect(jobs.create).not.toHaveBeenCalled();
+    expect(runner.run).toHaveBeenCalledWith(retried, transcriptProcessor, request.url);
   });
 
-  it('when a failed summary job is retried, should queue it with the summary processor', () => {
+  it('when a failed summary job is retried, should queue the same job with the summary processor', () => {
     const summary = { url: 'https://exemplo.com/v.mp4', providerId: 'gemini', modelId: 'm' };
-    const { launcher, runner, job } = setup(undefined, {
+    const { launcher, runner, retried } = setup(undefined, {
       id: 'old',
       status: 'failed',
       name: 'video-to-summary',
@@ -191,11 +200,11 @@ describe('JobLauncher: tentar de novo', () => {
 
     void launcher.retry('old');
 
-    expect(runner.run).toHaveBeenCalledWith(job, summaryProcessor, summary);
+    expect(runner.run).toHaveBeenCalledWith(retried, summaryProcessor, summary);
   });
 
-  it('when the job did not fail, should refuse and create nothing', () => {
-    const { launcher, jobs } = setup(undefined, {
+  it('when the job did not fail, should refuse and queue nothing', () => {
+    const { launcher, runner, retried } = setup(undefined, {
       id: 'old',
       status: 'completed',
       name: 'video-to-summary',
@@ -203,18 +212,19 @@ describe('JobLauncher: tentar de novo', () => {
     });
 
     expect(() => launcher.retry('old')).toThrow('Só dá para tentar de novo');
-    expect(jobs.create).not.toHaveBeenCalled();
+    expect(retried.resetForRetry).not.toHaveBeenCalled();
+    expect(runner.run).not.toHaveBeenCalled();
   });
 
   it('when an old job kept no request, should refuse with a clear message', () => {
-    const { launcher, jobs } = setup(undefined, {
+    const { launcher, runner } = setup(undefined, {
       id: 'old',
       status: 'failed',
       name: 'video-to-summary',
     });
 
     expect(() => launcher.retry('old')).toThrow('não guardou os dados');
-    expect(jobs.create).not.toHaveBeenCalled();
+    expect(runner.run).not.toHaveBeenCalled();
   });
 });
 
@@ -266,24 +276,24 @@ describe('JobLauncher: resumo de PDF', () => {
     expect(runner.run).not.toHaveBeenCalled();
   });
 
-  it('when a failed pdf job is retried, should check the progress and queue a new job with the same key', async () => {
-    const { launcher, jobs, runner, job, pdf } = setup(undefined, {
+  it('when a failed pdf job is retried, should check the progress and queue the same job with the same key', async () => {
+    const { launcher, jobs, runner, retried, pdf } = setup(undefined, {
       id: 'old',
       status: 'failed',
       name: 'pdf-to-summary',
       request: input,
     });
 
-    await expect(launcher.retry('old')).resolves.toEqual({ id: 'job-1', status: 'pending' });
+    await expect(launcher.retry('old')).resolves.toEqual({ id: 'old', status: 'failed' });
 
     expect(pdf.assertProgressExists).toHaveBeenCalledWith(key);
     expect(pdf.prepare).not.toHaveBeenCalled();
-    expect(jobs.create).toHaveBeenCalledWith('pdf-to-summary', { parsed: input }, input);
-    expect(runner.run).toHaveBeenCalledWith(job, pdfProcessor, input);
+    expect(jobs.create).not.toHaveBeenCalled();
+    expect(runner.run).toHaveBeenCalledWith(retried, pdfProcessor, input);
   });
 
-  it('when the progress of a pdf job is gone, should refuse the retry and create nothing', async () => {
-    const { launcher, jobs, pdf } = setup(undefined, {
+  it('when the progress of a pdf job is gone, should refuse the retry and keep the job as it was', async () => {
+    const { launcher, runner, retried, pdf } = setup(undefined, {
       id: 'old',
       status: 'failed',
       name: 'pdf-to-summary',
@@ -293,7 +303,8 @@ describe('JobLauncher: resumo de PDF', () => {
     pdf.assertProgressExists.mockRejectedValue(new Error('não está mais guardado'));
 
     await expect(launcher.retry('old')).rejects.toThrow('não está mais guardado');
-    expect(jobs.create).not.toHaveBeenCalled();
+    expect(retried.resetForRetry).not.toHaveBeenCalled();
+    expect(runner.run).not.toHaveBeenCalled();
   });
 });
 
@@ -312,8 +323,8 @@ describe('JobLauncher: tentar de novo trocando o modelo', () => {
     },
   };
 
-  it('when a new model is given, should queue the new job with it and the same key', async () => {
-    const { launcher, jobs, runner, job } = setup(undefined, original);
+  it('when a new model is given, should keep it in the same job and queue it with the same key', async () => {
+    const { launcher, runner, retried } = setup(undefined, original);
 
     await launcher.retry('old', { providerId: 'ollama', modelId: 'qwen', thinking: 'off' });
 
@@ -324,32 +335,32 @@ describe('JobLauncher: tentar de novo trocando o modelo', () => {
       thinking: 'off',
     };
 
-    expect(jobs.create).toHaveBeenCalledWith('pdf-to-summary', { parsed: expected }, expected);
-    expect(runner.run).toHaveBeenCalledWith(job, pdfProcessor, expected);
+    expect(retried.replaceRequest).toHaveBeenCalledWith(expected);
+    expect(runner.run).toHaveBeenCalledWith(retried, pdfProcessor, expected);
   });
 
   it('when no model is given, should keep the original one', async () => {
-    const { launcher, runner, job } = setup(undefined, original);
+    const { launcher, runner, retried } = setup(undefined, original);
 
     await launcher.retry('old', { modelId: undefined });
 
-    expect(runner.run).toHaveBeenCalledWith(job, pdfProcessor, original.request);
+    expect(runner.run).toHaveBeenCalledWith(retried, pdfProcessor, original.request);
   });
 
   it('when only the model id is given, should change only that field', async () => {
-    const { launcher, runner, job } = setup(undefined, original);
+    const { launcher, runner, retried } = setup(undefined, original);
 
     await launcher.retry('old', { modelId: 'm2' });
 
-    expect(runner.run).toHaveBeenCalledWith(job, pdfProcessor, {
+    expect(runner.run).toHaveBeenCalledWith(retried, pdfProcessor, {
       ...original.request,
       modelId: 'm2',
     });
   });
 
-  it('when the job is a video job, should ignore the model overrides', () => {
+  it('when the job is a video summary, should resume it with the new model', () => {
     const request = { url: 'https://exemplo.com/v.mp4', providerId: 'gemini', modelId: 'm1' };
-    const { launcher, runner, job } = setup(undefined, {
+    const { launcher, runner, retried } = setup(undefined, {
       id: 'old',
       status: 'failed',
       name: 'video-to-summary',
@@ -358,6 +369,25 @@ describe('JobLauncher: tentar de novo trocando o modelo', () => {
 
     void launcher.retry('old', { modelId: 'outro' });
 
-    expect(runner.run).toHaveBeenCalledWith(job, summaryProcessor, request);
+    expect(retried.replaceRequest).toHaveBeenCalledWith({ ...request, modelId: 'outro' });
+    expect(runner.run).toHaveBeenCalledWith(retried, summaryProcessor, {
+      ...request,
+      modelId: 'outro',
+    });
+  });
+
+  it('when the job is a video transcript, should ignore the model overrides', () => {
+    const request = { url: 'https://exemplo.com/v.mp4' };
+    const { launcher, runner, retried } = setup(undefined, {
+      id: 'old',
+      status: 'failed',
+      name: 'video-to-transcript',
+      request,
+    });
+
+    void launcher.retry('old', { modelId: 'outro' });
+
+    expect(retried.replaceRequest).not.toHaveBeenCalled();
+    expect(runner.run).toHaveBeenCalledWith(retried, transcriptProcessor, request.url);
   });
 });

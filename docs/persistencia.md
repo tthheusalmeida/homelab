@@ -94,6 +94,9 @@ Hoje seus dados estão em pastas soltas (`D:\homelab\lib`, `D:/homelab/temp/docs
 
 **Ações nos jobs (cancelar, tentar de novo, desfazer)**
 - Canais `jobs:cancel`, `jobs:retry` e `jobs:undo-delete` (ver `docs/ipc-canais.md`). Cancelar é cooperativo: para ao fim da etapa em andamento.
+- **Tentar de novo retoma o mesmo job** (não cria outro): ele volta a `pending`, limpa o erro, mantém as etapas já concluídas e continua da que parou. Cada etapa que começa ou termina grava o job na hora (`Job.observe` → `JobRunner`), então fechar o app ou faltar energia não perde o andamento.
+- **Resultado das etapas em disco** (vídeo e áudio extraídos, transcrição, resumo da IA): `<jobId>.state.json` na pasta temporária do áudio (`FileJobArtifactStore`, escrita atômica; apagado quando o job termina). A retomada reaproveita: áudio já extraído → não baixa nem converte; transcrição pronta → não transcreve; resumo pronto → só salva. Se o arquivo sumiu (limpeza de temporários), a etapa volta a rodar. Resumos (de vídeo e de PDF) aceitam **trocar o modelo** na retomada, então qualquer IA continua de onde parou.
+- **Andamento em porcentagem** nas etapas que medem: baixar (link direto pelo tamanho; plataformas pelo `yt-dlp`), converter para áudio (tempo já convertido) e transcrever (progresso do Whisper). A tela mostra "10% de 100%" com a barra; etapas sem medida seguem só com o estado e as de PDF mostram "parte N de M".
 - Na tela Em andamento: botão **Cancelar** nos jobs ativos, **Tentar de novo** nos que falharam (e guardam `request`), linha ao vivo com **etapa n/total, nome da etapa e tempo decorrido** (e, quando a IA está tentando de novo, "Tentando de novo (tentativa x de 3): motivo"), e **Desfazer** no snackbar depois de excluir.
 
 ## Parte C. Seção de Chats

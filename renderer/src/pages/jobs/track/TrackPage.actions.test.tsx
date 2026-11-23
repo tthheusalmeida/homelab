@@ -117,7 +117,7 @@ describe("TrackPage — job actions", () => {
     await user.click(await screen.findByRole("button", { name: /Tentar de novo/ }));
 
     await waitFor(() => expect(payloadsOf(invoke, IpcChannels.jobs.retry)).toEqual([{ id: "f" }]));
-    expect(await screen.findByText("Nova tentativa criada: Resumo f")).toBeInTheDocument();
+    expect(await screen.findByText("Retomando de onde parou: Resumo f")).toBeInTheDocument();
   });
 
   it("when a failed job is not retryable, should not show the retry button", async () => {

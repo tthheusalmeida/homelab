@@ -27,6 +27,11 @@ export class JobService {
     return job;
   }
 
+  /** Grava o job de novo (ex.: ao voltar à fila numa retomada). */
+  save(job: Job): void {
+    this.repository.save(job);
+  }
+
   findById(id: string): Job {
     const job = this.repository.findById(id);
 

@@ -12,6 +12,8 @@ import { SummaryDetail } from '../ai/prompts/summary-specialist.prompt';
 import { splitText } from '../../utils/text';
 import { AIService } from '../ai/ai.service';
 import { BackConfig } from '../../config/back-config';
+import { execStreaming } from '../../utils/exec-streaming';
+import { ffmpegPercentTracker, onlyChanges, type PercentListener } from '../../utils/progress';
 import { isDirectMediaUrl, isHttpUrl } from '../../../shared/media-url';
 import { PlatformDownloader } from './platform-downloader';
 
@@ -48,7 +50,8 @@ export class VideoService {
       get ffmpegPath() {
         return config.ffmpegPath?.();
       },
-      run: (file, args) => execFileAsync(file, args),
+      run: (file, args, onText) =>
+        onText ? execStreaming(file, args, onText) : execFileAsync(file, args),
     });
   }
 
@@ -60,6 +63,7 @@ export class VideoService {
     url: string,
     fileName: string = 'video-baixado.mp4',
     destinationDir: string = this.config.videoTempDir,
+    onProgress?: PercentListener,
   ): Promise<string> {
     if (!isHttpUrl(url)) {
       throw new Error(VideoMessages.invalidUrl);
@@ -68,13 +72,18 @@ export class VideoService {
     if (this.config.platformTools && !isDirectMediaUrl(url)) {
       fs.mkdirSync(destinationDir, { recursive: true });
 
-      return this.platform.download(url, path.parse(fileName).name, destinationDir);
+      return this.platform.download(url, path.parse(fileName).name, destinationDir, onProgress);
     }
 
-    return this.downloadFile(url, fileName, destinationDir);
+    return this.downloadFile(url, fileName, destinationDir, onProgress);
   }
 
-  private downloadFile(url: string, fileName: string, destinationDir: string): Promise<string> {
+  private downloadFile(
+    url: string,
+    fileName: string,
+    destinationDir: string,
+    onProgress?: PercentListener,
+  ): Promise<string> {
     // path.resolve lida automaticamente com diferenças de sistema operacional
     const outputPath = path.resolve(destinationDir, fileName);
 
@@ -118,7 +127,12 @@ export class VideoService {
           // Libera o response atual porque ele não contém o vídeo.
           response.resume();
 
-          this.downloadFile(new URL(response.headers.location, url).href, fileName, destinationDir)
+          this.downloadFile(
+            new URL(response.headers.location, url).href,
+            fileName,
+            destinationDir,
+            onProgress,
+          )
             .then(resolve)
             .catch(reject);
 
@@ -131,6 +145,19 @@ export class VideoService {
           reject(new Error(`Falha ao baixar. Status Code: ${response.statusCode}`));
 
           return;
+        }
+
+        // Com o tamanho total no cabeçalho, acompanha quanto já chegou.
+        const total = Number(response.headers['content-length']);
+
+        if (onProgress && total > 0) {
+          const notify = onlyChanges(onProgress);
+          let received = 0;
+
+          response.on('data', (chunk: Buffer) => {
+            received += chunk.length;
+            notify(Math.min(100, Math.floor((received / total) * 100)));
+          });
         }
 
         // Envia o conteúdo da resposta diretamente para o arquivo.
@@ -157,6 +184,7 @@ export class VideoService {
   async toAudio(
     videoPath: string,
     destinationDir: string = this.config.audioTempDir,
+    onProgress?: PercentListener,
   ): Promise<string> {
     try {
       fs.mkdirSync(destinationDir, { recursive: true });
@@ -167,7 +195,7 @@ export class VideoService {
       const audioFileName = `${videoName}.wav`;
       const audioPath = path.resolve(destinationDir, audioFileName);
 
-      await execFileAsync(this.config.ffmpegPath?.() ?? 'ffmpeg', [
+      const ffmpegArgs = [
         '-i',
         videoPath,
         // Remove o vídeo
@@ -183,7 +211,14 @@ export class VideoService {
         'pcm_s16le',
 
         audioPath,
-      ]);
+      ];
+      const ffmpeg = this.config.ffmpegPath?.() ?? 'ffmpeg';
+
+      if (onProgress) {
+        await execStreaming(ffmpeg, ffmpegArgs, ffmpegPercentTracker(onlyChanges(onProgress)));
+      } else {
+        await execFileAsync(ffmpeg, ffmpegArgs);
+      }
 
       return audioPath;
     } catch (error) {
