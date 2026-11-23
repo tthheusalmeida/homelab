@@ -1,3 +1,4 @@
+import { AI_PROVIDER_IDS } from '../shared/contracts/ai';
 import * as fs from 'node:fs';
 import * as net from 'node:net';
 import * as os from 'node:os';
@@ -90,13 +91,13 @@ describe('BackContainer', () => {
     expect(chat.aiService).toBe(ai);
   });
 
-  it('when there is no Gemini key, should still start and list the providers', () => {
+  it('when there is no API key, should still start and list one provider per registered id', () => {
     expect(
       container
         .get<AIService>(AIService)
         .providersList()
         .map((p) => p.id),
-    ).toEqual(['ollama', 'gemini', 'anthropic']);
+    ).toEqual([...AI_PROVIDER_IDS]);
   });
 
   it('when the library service starts, should read the folders from the injected config', () => {

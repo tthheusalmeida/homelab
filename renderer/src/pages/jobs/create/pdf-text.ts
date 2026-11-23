@@ -1,3 +1,5 @@
+import { profileOf } from '#lib/ai-providers';
+
 /** Textos do formulário "Resumo de PDF" (interface em português). */
 export const PdfStrings = {
   fileLabel: 'Arquivo PDF',
@@ -23,14 +25,17 @@ export const PdfStrings = {
   callsHint: 'uma por parte, mais uma final',
 
   /** Onde o texto será processado, conforme o provedor escolhido. */
-  sendsTo: (providerId: string | undefined) =>
-    providerId === 'ollama'
-      ? 'O texto do PDF será processado no Ollama, no seu computador.'
-      : providerId === 'gemini'
-        ? 'O texto do PDF será enviado ao Gemini, um serviço externo. Não envie documentos que não possam sair do seu computador.'
-        : providerId === 'anthropic'
-          ? 'O texto do PDF será enviado à Anthropic, um serviço externo. Não envie documentos que não possam sair do seu computador.'
-          : 'Escolha o serviço de IA: o texto do PDF será enviado a ele.',
+  sendsTo: (providerId: string | undefined) => {
+    const profile = profileOf(providerId);
+
+    if (!profile) {
+      return 'Escolha o serviço de IA: o texto do PDF será enviado a ele.';
+    }
+
+    return profile.sentTo
+      ? `O texto do PDF será enviado ${profile.sentTo}, um serviço externo. Não envie documentos que não possam sair do seu computador.`
+      : `O texto do PDF será processado no ${profile.name}, no seu computador.`;
+  },
   resumeHint:
     'O progresso fica salvo em disco. Se o app fechar, o limite de uso acabar ou o computador desligar, use “Tentar de novo” em Acompanhar para continuar de onde parou, até com outro modelo.',
 

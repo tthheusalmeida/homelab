@@ -4,6 +4,7 @@ import type { PdfInspection } from '#shared/contracts/pdf';
 import type { AiProviderId } from '#shared/contracts/ai';
 import { useErrorAlert } from '#hooks/use-error-alert';
 import { Callout } from '#components/Callout';
+import { sendsOffDevice } from '#lib/ai-providers';
 import { OptionSelect } from '#components/OptionSelect';
 import { DialogForm } from '#ui/dialog';
 
@@ -129,7 +130,7 @@ export function PdfToSummaryForm({ onCreated }: PdfToSummaryFormProps) {
             disabled={locked}
           />
 
-          <Callout tone={ai.providerId === 'gemini' || ai.providerId === 'anthropic' ? 'warning' : 'info'} role="note">
+          <Callout tone={sendsOffDevice(ai.providerId) ? 'warning' : 'info'} role="note">
             {PdfStrings.sendsTo(ai.providerId)}
           </Callout>
 

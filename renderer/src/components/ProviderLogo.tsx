@@ -1,5 +1,4 @@
-import anthropicLogo from '../assets/providers/anthropic.png';
-import geminiLogo from '../assets/providers/gemini.png';
+import { profileOf } from '#lib/ai-providers';
 
 interface ProviderLogoProps {
   /** Id do serviço (`gemini`, `anthropic`...); um id sem imagem mostra a inicial do nome. */
@@ -9,24 +8,13 @@ interface ProviderLogoProps {
   className?: string;
 }
 
-interface Logo {
-  src: string;
-  /** A imagem já traz o próprio fundo: ocupa o quadrado inteiro, sem moldura. */
-  fullBleed?: boolean;
-}
-
-/** Imagens em `assets/providers` (origem e licença no README da pasta). */
-const LOGOS: Record<string, Logo> = {
-  gemini: { src: geminiLogo },
-  anthropic: { src: anthropicLogo, fullBleed: true },
-};
-
 /**
  * Selo do serviço de IA (Gemini, Anthropic...) para reconhecer cada um de relance: a imagem da
- * marca num quadrado discreto. É decorativo: o nome do serviço sempre aparece ao lado.
+ * marca, que vem do perfil do provider (`lib/ai-providers`), num quadrado discreto. É decorativo:
+ * o nome do serviço sempre aparece ao lado.
  */
 export function ProviderLogo({ provider, label, className = '' }: ProviderLogoProps) {
-  const logo = LOGOS[provider];
+  const logo = profileOf(provider)?.logo;
 
   return (
     <span

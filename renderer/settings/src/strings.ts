@@ -260,62 +260,6 @@ export const LOCAL_FIELD_LABELS: Record<string, string> = {
   url: 'Endereço (URL)',
 };
 
-/** Passo a passo de cada serviço externo; aparece até a chave ser salva. Novo serviço = nova entrada aqui. */
-export const EXTERNAL_PROVIDER_GUIDES: Record<
-  string,
-  {
-    title: string;
-    steps: ReadonlyArray<{ text: string; link?: { href: string; label: string } }>;
-    note?: string;
-  }
-> = {
-  gemini: {
-    title: 'Como criar a chave do Gemini',
-    steps: [
-      {
-        text: 'Abra o Google AI Studio e entre com a sua conta Google.',
-        link: { href: 'https://aistudio.google.com/apikey', label: 'Abrir o AI Studio' },
-      },
-      { text: 'Clique em "Criar chave de API" (Create API key).' },
-      {
-        text: 'Escolha um projeto do Google Cloud ou deixe o AI Studio criar um novo, e confirme.',
-      },
-      { text: 'Copie a chave gerada (ela começa com "AIza").' },
-      { text: 'Cole a chave no campo "Chave da API" abaixo e clique em "Testar" para conferir.' },
-      { text: 'Clique em "Salvar" e reinicie o HomeLab para a chave passar a valer.' },
-    ],
-    note: 'O uso gratuito tem limites por minuto e por dia. Para ir além, ative o faturamento no Google Cloud. Quem tem a chave usa a sua cota: não compartilhe.',
-  },
-  anthropic: {
-    title: 'Como criar a chave da Anthropic',
-    steps: [
-      {
-        text: 'Abra o painel da Anthropic (Claude Console) e entre com a sua conta.',
-        link: { href: 'https://platform.claude.com/settings/keys', label: 'Abrir o painel' },
-      },
-      { text: 'Clique em "Criar chave" (Create Key).' },
-      { text: 'Quando perguntar onde a chave será usada, escolha "Em outro lugar" (Somewhere else).' },
-      { text: 'Dê um nome à chave, por exemplo "HomeLab".' },
-      { text: 'Escolha o período de validade da chave.' },
-      { text: 'Copie a chave gerada (ela começa com "sk-ant-"): ela só aparece uma vez.' },
-      { text: 'Cole a chave no campo "Chave da API" abaixo e clique em "Testar" para conferir.' },
-      { text: 'Clique em "Salvar" e reinicie o HomeLab para a chave passar a valer.' },
-    ],
-    note: 'O uso da API é pago por consumo: adicione crédito na conta no painel. Quem tem a chave gasta o seu crédito: não compartilhe.',
-  },
-};
-
-/** Nome da empresa de cada serviço, que é o título do cartão (o modelo vai na descrição). */
-export const EXTERNAL_PROVIDER_COMPANIES: Record<string, string> = {
-  gemini: 'Google',
-  anthropic: 'Anthropic',
-};
-
-export const EXTERNAL_PROVIDER_HINTS: Record<string, string> = {
-  gemini: 'Google · Gemini é a família de modelos de IA do Google, na nuvem.',
-  anthropic: 'Anthropic · Claude é a família de modelos de IA da Anthropic, na nuvem.',
-};
-
 export const LOCAL_PROVIDER_HINTS: Record<string, string> = {
   whisper: 'Transcreve os áudios localmente.',
   ollama: 'Modelos de linguagem locais.',
