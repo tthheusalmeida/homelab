@@ -361,6 +361,81 @@ describe('JobRunner', () => {
     });
   });
 
+  describe('cancelar de verdade', () => {
+    const abortable = (): JobProcessor<string> => ({
+      process: (job: Job) =>
+        new Promise<void>((_resolve, reject) => {
+          job.signal.addEventListener('abort', () =>
+            reject(Object.assign(new Error('Operação cancelada.'), { name: 'AbortError' })),
+          );
+        }),
+    });
+
+    it('when a running job is cancelled, should stop its work right away and end as cancelled', async () => {
+      const job = new Job('video-to-transcript');
+
+      runner.run(job, abortable(), 'x');
+      await flush();
+
+      expect(runner.cancel(job.id)).toEqual({ id: job.id, outcome: 'cancelling' });
+      await flush();
+
+      expect(job.status).toBe(JobStatus.FAILED);
+      expect(job.error).toBe(CANCELLED_JOB_ERROR);
+    });
+
+    it('when a running job is cancelled, should let the next queued job run', async () => {
+      const first = new Job('video-to-transcript');
+      const second = new Job('video-to-transcript');
+      const next: JobProcessor<string> = { process: jest.fn().mockResolvedValue(undefined) };
+
+      runner.run(first, abortable(), 'x');
+      runner.run(second, next, 'y');
+      await flush();
+
+      runner.cancel(first.id);
+      await flush();
+      await flush();
+
+      expect(next.process).toHaveBeenCalled();
+      expect(second.status).toBe(JobStatus.COMPLETED);
+    });
+
+    it('when the stopped step throws any message, should still report the cancellation, not that error', async () => {
+      const job = new Job('video-to-transcript');
+      const processor: JobProcessor<string> = {
+        process: (current: Job) =>
+          new Promise<void>((_resolve, reject) => {
+            current.signal.addEventListener('abort', () =>
+              reject(new Error('Falha ao converter o vídeo para áudio.')),
+            );
+          }),
+      };
+
+      runner.run(job, processor, 'x');
+      await flush();
+      runner.cancel(job.id);
+      await flush();
+
+      expect(job.error).toBe(CANCELLED_JOB_ERROR);
+    });
+
+    it('when a cancelled job is resumed, should run again as the same job', async () => {
+      const job = new Job('video-to-transcript');
+
+      runner.run(job, abortable(), 'x');
+      await flush();
+      runner.cancel(job.id);
+      await flush();
+
+      job.resetForRetry();
+      runner.run(job, { process: jest.fn().mockResolvedValue(undefined) }, 'x');
+      await flush();
+
+      expect(job.status).toBe(JobStatus.COMPLETED);
+    });
+  });
+
   describe('andamento em disco', () => {
     it('when a step finishes while the job runs, should save the job right then', async () => {
       const job = new Job('video-to-transcript');

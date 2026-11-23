@@ -49,13 +49,19 @@ export async function ensureAudio(
   } else {
     job.resetStepsFrom(steps.download);
     videoPath = await job.runStep(steps.download, () =>
-      videos.download(url, `${job.id}.mp4`, undefined, (percent) => job.setPercent(percent)),
+      videos.download(
+        url,
+        `${job.id}.mp4`,
+        undefined,
+        (percent) => job.setPercent(percent),
+        job.signal,
+      ),
     );
     await store.save(job.id, { videoPath });
   }
 
   const audioPath = await job.runStep(steps.convert, () =>
-    videos.toAudio(videoPath, undefined, (percent) => job.setPercent(percent)),
+    videos.toAudio(videoPath, undefined, (percent) => job.setPercent(percent), job.signal),
   );
 
   await store.save(job.id, { audioPath });

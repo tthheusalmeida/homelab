@@ -103,7 +103,7 @@ export class VideoToSummaryJobProcessor implements JobProcessor<VideoToSummaryDt
 
   private async transcribe(job: Job, audioPath: string): Promise<string> {
     return job.runStep(VideoToResumeSteps.TRANSCRIBE.name, () =>
-      this.whisperService.transcribe(audioPath, (percent) => job.setPercent(percent)),
+      this.whisperService.transcribe(audioPath, (percent) => job.setPercent(percent), job.signal),
     );
   }
 
@@ -120,7 +120,7 @@ export class VideoToSummaryJobProcessor implements JobProcessor<VideoToSummaryDt
         ),
         transcription,
         // Enquanto a IA tenta de novo, a tela mostra "tentativa x de y".
-        { ...options, onRetry: (info) => job.setNote(retryNote(info)) },
+        { ...options, onRetry: (info) => job.setNote(retryNote(info)), signal: job.signal },
       ),
     );
   }

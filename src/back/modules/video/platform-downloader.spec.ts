@@ -1,3 +1,5 @@
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { AccessRequiredError } from './access-required.error';
@@ -367,5 +369,69 @@ describe('PlatformDownloader: andamento do download', () => {
     await downloader.download(URL_, 'job2', '/tmp/dl');
 
     expect(run.mock.calls[1]).toHaveLength(2);
+  });
+});
+
+describe('PlatformDownloader: cancelamento', () => {
+  const abort = () => Object.assign(new Error('Operação cancelada.'), { name: 'AbortError' });
+
+  it('when cancelled, should pass the signal to the program and not retry, update or ask for login', async () => {
+    const controller = new AbortController();
+    const run = jest.fn(async () => {
+      throw abort();
+    });
+    const { downloader } = build(run as unknown as RunProgram);
+
+    await expect(
+      downloader.download(URL_, 'job', os.tmpdir(), undefined, controller.signal),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(run.mock.calls[0] as unknown[]).toEqual([
+      YT_DLP,
+      expect.any(Array),
+      undefined,
+      controller.signal,
+    ]);
+  });
+
+  it('when cancelled, should remove the partial files of that download and keep the other files', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dl-cancel-'));
+
+    try {
+      fs.writeFileSync(path.join(dir, 'job.webm.part'), 'x');
+      fs.writeFileSync(path.join(dir, 'job.f251.webm.ytdl'), 'x');
+      fs.writeFileSync(path.join(dir, 'outro.webm.part'), 'x');
+      fs.writeFileSync(path.join(dir, 'job.m4a'), 'x');
+
+      const run = jest.fn(async () => {
+        throw abort();
+      });
+      const { downloader } = build(run as unknown as RunProgram);
+
+      await expect(
+        downloader.download(URL_, 'job', dir, undefined, new AbortController().signal),
+      ).rejects.toMatchObject({ name: 'AbortError' });
+
+      expect(fs.readdirSync(dir).sort()).toEqual(['job.m4a', 'outro.webm.part']);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('when cancelled, should still clean up the temporary cookies', async () => {
+    const cleanup = jest.fn().mockResolvedValue(undefined);
+    const run = jest.fn(async () => {
+      throw abort();
+    });
+    const { downloader } = build(run as unknown as RunProgram, {
+      cookies: { file: 'c.txt', cleanup },
+    });
+
+    await expect(
+      downloader.download(URL_, 'job', os.tmpdir(), undefined, new AbortController().signal),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+
+    expect(cleanup).toHaveBeenCalled();
   });
 });

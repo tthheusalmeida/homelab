@@ -63,6 +63,7 @@ describe('VideoToTranscriptJobProcessor', () => {
       `${job.id}.mp4`,
       undefined,
       expect.any(Function),
+      expect.any(AbortSignal),
     );
   });
 
@@ -88,7 +89,11 @@ describe('VideoToTranscriptJobProcessor', () => {
   it('when processing, should ask whisper for the timed segments of the audio', async () => {
     await processor.process(job, 'http://x/v.mp4');
 
-    expect(whisper.transcribeSegments).toHaveBeenCalledWith('/tmp/a.wav', expect.any(Function));
+    expect(whisper.transcribeSegments).toHaveBeenCalledWith(
+      '/tmp/a.wav',
+      expect.any(Function),
+      expect.any(AbortSignal),
+    );
   });
 
   it('when processing, should add a pending transcription frontmatter with the video url', async () => {

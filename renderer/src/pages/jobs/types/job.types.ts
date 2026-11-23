@@ -30,7 +30,7 @@ export interface Job {
   startedAt?: string;
   status: JobStatus;
   error?: string;
-  /** O cancelamento foi pedido: o job para ao fim da etapa em andamento. */
+  /** O cancelamento foi pedido: a etapa em andamento está sendo interrompida. */
   cancelRequested?: boolean;
   /** Falhou e guarda os dados de criação: dá para tentar de novo. */
   retryable?: boolean;

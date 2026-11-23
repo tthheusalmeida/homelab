@@ -330,7 +330,8 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     totalMemoryMb: () => os.totalmem() / 1048576,
     ffmpegVersion: async () => (await run(ffmpegPath(), ['-version'], { timeout: 5000 })).stdout,
     whisperIo: {
-      run: (file, args, onText) => (onText ? execStreaming(file, args, onText) : run(file, args)),
+      run: (file, args, onText, signal) =>
+        onText || signal ? execStreaming(file, args, onText, signal) : run(file, args),
       readText: (file) => fs.promises.readFile(file, 'utf8'),
       remove: (file) => fs.promises.unlink(file),
     },

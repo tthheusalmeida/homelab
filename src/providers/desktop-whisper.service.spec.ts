@@ -6,6 +6,7 @@ import {
   DesktopWhisperService,
   WhisperServiceMessages,
   type WhisperFiles,
+  type WhisperRunner,
 } from './desktop-whisper.service';
 import { WhisperBinaryResolver, type WhisperLocation } from './whisper-binary-resolver';
 
@@ -216,5 +217,57 @@ describe('DesktopWhisperService', () => {
       );
       expect(run).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('DesktopWhisperService: cancelamento', () => {
+  const abort = () => Object.assign(new Error('Operação cancelada.'), { name: 'AbortError' });
+
+  function build(run: WhisperRunner) {
+    const remove = jest.fn().mockResolvedValue(undefined);
+    const service = new DesktopWhisperService({
+      config: () => ({}) as never,
+      resolver: {
+        resolveExecutable: () => '/bin/whisper',
+        resolveModel: () => '/models/m.bin',
+      } as never,
+      run,
+      files: { exists: () => true, readText: jest.fn(), remove },
+    });
+
+    return { service, remove };
+  }
+
+  it('when cancelled, should pass the signal to the program and rethrow the cancellation as is', async () => {
+    const controller = new AbortController();
+    const run = jest.fn(async () => {
+      throw abort();
+    });
+    const { service } = build(run);
+
+    await expect(service.transcribe('/a.wav', undefined, controller.signal)).rejects.toMatchObject({
+      name: 'AbortError',
+    });
+
+    expect(run).toHaveBeenCalledWith(
+      '/bin/whisper',
+      expect.any(Array),
+      undefined,
+      controller.signal,
+    );
+  });
+
+  it('when cancelled, should remove the partial output file', async () => {
+    const { service, remove } = build(
+      jest.fn(async () => {
+        throw abort();
+      }),
+    );
+
+    await expect(
+      service.transcribeSegments('/a.wav', undefined, new AbortController().signal),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+
+    expect(remove).toHaveBeenCalledWith('/a.wav.json');
   });
 });

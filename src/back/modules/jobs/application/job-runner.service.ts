@@ -45,8 +45,9 @@ export class JobRunner {
 
   /**
    * Cancela um job. Na fila: sai dela e termina como falha "Cancelado pelo usuário". Rodando: o
-   * cancelamento é pedido e o job para ao fim da etapa em andamento (download, ffmpeg, Whisper e IA
-   * não são interrompidos no meio).
+   * cancelamento aborta o `signal` do job: o download, o ffmpeg, o Whisper e a IA são interrompidos na
+   * hora (processos encerrados com os filhos, conexões fechadas) e os arquivos pela metade são
+   * apagados. A etapa gravar o documento não é interrompida no meio; o job para antes da próxima.
    */
   cancel(id: string): JobCancelResult {
     const index = this.queue.findIndex((item) => item.job.id === id);
@@ -106,7 +107,10 @@ export class JobRunner {
       this.repository.save(job);
       this.notify(job);
     } catch (error) {
-      if (error instanceof AccessRequiredError) {
+      if (job.cancelRequested) {
+        // a etapa foi interrompida de propósito: o motivo é o cancelamento, não o erro que ele causou
+        job.fail(CANCELLED_JOB_ERROR);
+      } else if (error instanceof AccessRequiredError) {
         job.fail(error.message, { code: ACCESS_REQUIRED_CODE, url: error.url });
       } else {
         job.fail(error instanceof Error ? error.message : 'Erro desconhecido');

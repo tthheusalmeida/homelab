@@ -184,3 +184,34 @@ describe('Job: porcentagem da etapa', () => {
     expect(job.progress).toBeUndefined();
   });
 });
+
+describe('Job: cancelamento', () => {
+  it('when cancel is requested, should abort the signal the steps use', () => {
+    const job = new Job('video-to-summary');
+    const signal = job.signal;
+
+    expect(signal.aborted).toBe(false);
+
+    job.requestCancel();
+
+    expect(signal.aborted).toBe(true);
+    expect(job.cancelRequested).toBe(true);
+  });
+
+  it('when a cancelled job is reset for retry, should get a fresh signal that is not aborted', () => {
+    const job = new Job('video-to-summary');
+
+    job.requestCancel();
+    job.fail('Cancelado pelo usuário.');
+    job.resetForRetry();
+
+    expect(job.signal.aborted).toBe(false);
+    expect(job.cancelRequested).toBe(false);
+  });
+
+  it('when a job was restored from disk, should still give a usable signal', () => {
+    const restored = Job.restore(new Job('video-to-summary').snapshot());
+
+    expect(restored.signal.aborted).toBe(false);
+  });
+});

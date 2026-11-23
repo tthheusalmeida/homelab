@@ -87,7 +87,7 @@ describe("TrackPage — job actions", () => {
 
     await user.click(await screen.findByRole("button", { name: "Cancelar" }));
 
-    expect(await screen.findByText(/para ao fim da etapa em andamento/)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa em andamento está sendo interrompida/)).toBeInTheDocument();
   });
 
   it("when cancelling fails, should show the error", async () => {
@@ -104,7 +104,7 @@ describe("TrackPage — job actions", () => {
   it("when a job already asked to cancel, should not offer cancel again", async () => {
     setup([makeJob("a", "running", { cancelRequested: true, startedAt: new Date().toISOString() })]);
 
-    expect(await screen.findByText("Cancelando ao fim da etapa…")).toBeInTheDocument();
+    expect(await screen.findByText("Cancelando…")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Cancelar" })).not.toBeInTheDocument();
   });
 

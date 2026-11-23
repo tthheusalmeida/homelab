@@ -35,9 +35,9 @@ export const TrackStrings = {
         : `${count} processos restaurados`,
 
   cancel: "Cancelar",
-  cancelling: "Cancelando ao fim da etapa…",
+  cancelling: "Cancelando…",
   cancelled: "Tarefa cancelada",
-  cancelRequested: "Cancelamento pedido: a tarefa para ao fim da etapa em andamento",
+  cancelRequested: "Cancelando a tarefa: a etapa em andamento está sendo interrompida",
   notActive: "A tarefa já tinha terminado",
   retry: "Tentar de novo",
   resume: (done: number, total: number) =>

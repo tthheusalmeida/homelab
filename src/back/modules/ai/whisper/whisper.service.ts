@@ -12,11 +12,16 @@ export interface TranscriptSegment {
  */
 export abstract class WhisperService {
   /** Só o texto (usado pelo resumo). */
-  abstract transcribe(audioPath: string, onProgress?: (percent: number) => void): Promise<string>;
+  abstract transcribe(
+    audioPath: string,
+    onProgress?: (percent: number) => void,
+    signal?: AbortSignal,
+  ): Promise<string>;
 
   /** Texto com o tempo de cada trecho (usado pela transcrição com marcas de tempo). */
   abstract transcribeSegments(
     audioPath: string,
     onProgress?: (percent: number) => void,
+    signal?: AbortSignal,
   ): Promise<TranscriptSegment[]>;
 }

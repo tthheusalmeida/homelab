@@ -76,7 +76,11 @@ export class VideoToTranscriptJobProcessor implements JobProcessor<string, strin
 
   private async transcribe(job: Job, audioPath: string): Promise<TranscriptSegment[]> {
     return job.runStep(VideoToTranscriptSteps.TRANSCRIBE.name, () =>
-      this.whisperService.transcribeSegments(audioPath, (percent) => job.setPercent(percent)),
+      this.whisperService.transcribeSegments(
+        audioPath,
+        (percent) => job.setPercent(percent),
+        job.signal,
+      ),
     );
   }
 

@@ -28,7 +28,7 @@ export async function deleteAllJobs(): Promise<JobDeleteResult> {
   return ipc.invoke(IpcChannels.jobs.deleteAll);
 }
 
-/** Cancela um job: na fila sai dela; rodando, para ao fim da etapa em andamento. */
+/** Cancela um job: na fila sai dela; rodando, interrompe a etapa em andamento na hora. */
 export async function cancelJob(id: string): Promise<JobCancelResult> {
   return ipc.invoke(IpcChannels.jobs.cancel, { id });
 }

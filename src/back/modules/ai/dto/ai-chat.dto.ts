@@ -17,4 +17,7 @@ export class AiChatDto {
 
   /** Chamado antes de cada nova tentativa automática do provedor. */
   onRetry?: (info: AIRetryInfo) => void;
+
+  /** Cancela a chamada (usado ao cancelar um job). */
+  signal?: AbortSignal;
 }

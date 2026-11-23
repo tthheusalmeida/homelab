@@ -10,7 +10,7 @@ import { IpcError, IpcErrorCode } from '../../../../../shared/errors';
 import { BackConfig } from '../../../../config/back-config';
 import { AiUsageService } from '../../usage/ai-usage.service';
 
-import { defaultSleep, withRetry } from '../../../../utils/retry';
+import { defaultSleep, raceAbort, withRetry } from '../../../../utils/retry';
 
 import {
   classifyGeminiError,
@@ -125,7 +125,14 @@ export class GeminiProvider implements AIProvider {
                 }))
               : request.message,
             // Modo JSON: a resposta já vem como JSON puro, sem cerca de código nem texto em volta.
-            ...(request.json ? { config: { responseMimeType: 'application/json' } } : {}),
+            ...(request.json || request.signal
+              ? {
+                  config: {
+                    ...(request.json ? { responseMimeType: 'application/json' } : {}),
+                    ...(request.signal ? { abortSignal: request.signal } : {}),
+                  },
+                }
+              : {}),
           });
 
           if (!result.text) {
@@ -137,8 +144,10 @@ export class GeminiProvider implements AIProvider {
         {
           maxAttempts: GEMINI_MAX_ATTEMPTS,
           delaysMs: GEMINI_RETRY_DELAYS_MS,
-          isRetryable: (error) => classifyGeminiError(error).retryable,
-          sleep: (ms) => this.sleep(ms),
+          // cancelado: não repete nem espera a próxima tentativa
+          isRetryable: (error) => !request.signal?.aborted && classifyGeminiError(error).retryable,
+          sleep: (ms) =>
+            request.signal ? raceAbort(this.sleep(ms), request.signal) : this.sleep(ms),
           onRetry: ({ attempt, maxAttempts, delayMs, error }) =>
             request.onRetry?.({
               attempt,

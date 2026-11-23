@@ -59,6 +59,8 @@ export class Job {
   private _error?: string;
   private _errorInfo?: JobErrorInfo;
   private _cancelRequested = false;
+  /** Corta o que está em andamento (download, ffmpeg, Whisper, IA) quando o usuário cancela. */
+  private _abort?: AbortController;
   /** Aviso passageiro da etapa em andamento (ex.: "Tentando de novo (2 de 3)"); não vai para o disco. */
   private _note?: string;
   /** Andamento dentro da etapa em execução (ex.: parte 2 de 5); não vai para o disco. */
@@ -192,6 +194,7 @@ export class Job {
     this._startedAt = undefined;
     this._completedAt = undefined;
     this._cancelRequested = false;
+    this._abort = new AbortController();
     this._note = undefined;
     this._progress = undefined;
   }
@@ -230,6 +233,18 @@ export class Job {
   /** Pede para parar: a etapa em andamento termina e a próxima não começa (`runStep` lança). */
   requestCancel(): void {
     this._cancelRequested = true;
+    this.abortController.abort();
+  }
+
+  /** Sinal que as etapas repassam aos processos e chamadas de rede: aborta quando o job é cancelado. */
+  get signal(): AbortSignal {
+    return this.abortController.signal;
+  }
+
+  private get abortController(): AbortController {
+    this._abort ??= new AbortController();
+
+    return this._abort;
   }
 
   get label(): string | undefined {
