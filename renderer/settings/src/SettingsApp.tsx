@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import {
   Archive,
+  Bot,
   Cloud,
   Cpu,
   Download,
@@ -35,6 +36,7 @@ import { BackupSection } from './sections/BackupSection';
 import { UpdatesSection } from './sections/UpdatesSection';
 import { AccessSection } from './sections/AccessSection';
 import { ComponentsSection } from './sections/ComponentsSection';
+import { DefaultAiSection } from './sections/DefaultAiSection';
 import { ExternalProvidersSection } from './sections/ExternalProvidersSection';
 import { InfographicGallerySection } from './sections/InfographicGallerySection';
 import { LocalProvidersSection } from './sections/LocalProvidersSection';
@@ -52,6 +54,7 @@ const SECTION_ICONS: Record<SectionId, LucideIcon> = {
   paths: Folder,
   appearance: Palette,
   infographic: LayoutPanelTop,
+  ai: Bot,
   external: Cloud,
   local: Cpu,
   prompts: MessageSquareText,
@@ -160,6 +163,7 @@ export function SettingsApp({ initialSection }: { initialSection?: string | null
               {sectionId === 'paths' && <PathsSection onSaved={handleSaved} />}
               {sectionId === 'appearance' && <AppearanceSection />}
               {sectionId === 'infographic' && <InfographicGallerySection />}
+              {sectionId === 'ai' && <DefaultAiSection />}
               {sectionId === 'external' && <ExternalProvidersSection onSaved={handleSaved} />}
               {sectionId === 'local' && <LocalProvidersSection onSaved={handleSaved} />}
               {sectionId === 'prompts' && <PromptsSection />}

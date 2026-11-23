@@ -34,6 +34,7 @@ import { useCtrlWheelZoom } from '#hooks/use-ctrl-wheel-zoom';
 import { useStoredState } from '#hooks/use-stored-state';
 import { Callout } from '#components/Callout';
 import { EmptyState } from '#components/EmptyState';
+import { AiInUse } from '#components/AiInUse';
 import { GenerateButton } from '#components/GenerateButton';
 import { HexLoader } from '#components/Hex';
 import { IconButton } from '#components/IconButton';
@@ -303,6 +304,10 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
     <div className={cn('w-full', className)} aria-live="polite">
       <div className="mx-auto w-full space-y-4" style={{ maxWidth: `${50 * zoom}rem` }}>
       <div className="flex flex-wrap items-center justify-end gap-3">
+        <div className="mr-auto">
+          <AiInUse />
+        </div>
+
         {data && !editing && (
           <div className="flex items-center gap-2">
             {data.edited && (

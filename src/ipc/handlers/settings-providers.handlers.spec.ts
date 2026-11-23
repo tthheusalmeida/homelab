@@ -223,6 +223,33 @@ describe('LocalProvidersHandler', () => {
     });
   });
 
+  describe('SettingsHandler AI default', () => {
+    it('when ai:default-update is called, should save the preference and answer what was kept', async () => {
+      const preference = { providerId: 'anthropic' as const, modelId: null };
+      const updateAiDefault = jest.fn().mockReturnValue(preference);
+      const ipc = register(
+        new SettingsHandler({ updateAiDefault } as unknown as SettingsService, picker(), mover()),
+      );
+
+      await expect(ipc.invoke(IpcChannels.ai.defaultUpdate, { preference })).resolves.toEqual({
+        ok: true,
+        data: preference,
+      });
+      expect(updateAiDefault).toHaveBeenCalledWith(preference);
+    });
+
+    it('when ai:default-update clears the default, should pass null', async () => {
+      const updateAiDefault = jest.fn().mockReturnValue(null);
+      const ipc = register(
+        new SettingsHandler({ updateAiDefault } as unknown as SettingsService, picker(), mover()),
+      );
+
+      await ipc.invoke(IpcChannels.ai.defaultUpdate, { preference: null });
+
+      expect(updateAiDefault).toHaveBeenCalledWith(null);
+    });
+  });
+
   describe('SettingsHandler appearance', () => {
     it('when appearance:get is called, should answer the current appearance', async () => {
       const appearance = { theme: 'dark', accent: 'blue' };

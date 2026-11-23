@@ -29,6 +29,11 @@ export interface AiSelectionState {
   effective: AiChoice & { source: AiChoiceSource };
 }
 
+/** Define a IA padrão em Configurações (guardada em disco); `null` volta ao automático. */
+export interface AiDefaultRequest {
+  preference: AiPreference | null;
+}
+
 /** Troca a IA só nesta sessão do app; `null` volta ao padrão. */
 export interface AiSessionRequest {
   preference: AiPreference | null;

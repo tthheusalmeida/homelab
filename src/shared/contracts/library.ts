@@ -131,7 +131,7 @@ export interface LibraryUpdateRequest {
 
 export interface LibrarySuggestRequest {
   id: string;
-  /** Modelo do Gemini; sem ele usa o mais barato cadastrado. */
+  /** Modelo a usar; sem ele vale a IA em uso (padrão ou troca da sessão, ver `docs/ia-padrao.md`). */
   modelId?: string;
 }
 
@@ -139,7 +139,7 @@ export interface LibraryClassificationSuggestion {
   title: string;
   category: string[];
   tags: string[];
-  /** Modelo do Gemini que gerou a sugestão. */
+  /** Modelo que gerou a sugestão. */
   model: string;
 }
 
@@ -154,7 +154,7 @@ export interface LibraryMindMapNode {
 
 export interface LibraryMindMapRequest {
   id: string;
-  /** Modelo do Gemini; sem ele usa o mais barato cadastrado. */
+  /** Modelo a usar; sem ele vale a IA em uso (padrão ou troca da sessão, ver `docs/ia-padrao.md`). */
   modelId?: string;
 }
 
@@ -164,7 +164,7 @@ export interface LibraryMindMap {
   subtitle?: string;
   /** Ramos de primeiro nível (a raiz é o título da página). */
   nodes: LibraryMindMapNode[];
-  /** Modelo do Gemini que gerou o mapa. */
+  /** Modelo que gerou o mapa. */
   model: string;
   createdAt: string;
   /** O texto do resumo mudou depois que o mapa foi gerado (ou editado). */
@@ -264,7 +264,7 @@ export interface LibraryInfographic {
   sections: LibraryInfographicSection[];
   /** O que lembrar no fim (fechamento). */
   takeaways?: string[];
-  /** Modelo do Gemini que gerou o infográfico. */
+  /** Modelo que gerou o infográfico. */
   model: string;
   createdAt: string;
   /** O texto do resumo mudou depois que o infográfico foi gerado. */
@@ -286,7 +286,7 @@ export interface LibraryInfographicSaveRequest {
 
 export interface LibraryInfographicRequest {
   id: string;
-  /** Modelo do Gemini; sem ele usa o mais barato cadastrado. */
+  /** Modelo a usar; sem ele vale a IA em uso (padrão ou troca da sessão, ver `docs/ia-padrao.md`). */
   modelId?: string;
   /**
    * Um único modelo para o infográfico todo (uma seção só). Sem ele a IA conta a história inteira,

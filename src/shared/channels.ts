@@ -47,6 +47,7 @@ export const IpcChannels = {
     usage: 'ai:usage',
     selection: 'ai:selection',
     session: 'ai:session',
+    defaultUpdate: 'ai:default-update',
   },
   backup: {
     preview: 'backup:preview',

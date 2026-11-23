@@ -403,6 +403,20 @@ describe('MindMapView controls bar', () => {
     );
   });
 
+  it('when the AI in use badge is given, should show it over the map and keep it out of the drag', () => {
+    render(<MindMapView map={map} aiInUse={<p>IA em uso: Gemini</p>} />);
+
+    expect(screen.getByRole('group').parentElement).toContainElement(
+      screen.getByText('IA em uso: Gemini'),
+    );
+  });
+
+  it('when no AI badge is given, should not draw its corner', () => {
+    render(<MindMapView map={map} />);
+
+    expect(screen.queryByText(/IA em uso/)).not.toBeInTheDocument();
+  });
+
   it('when the controls bar is pressed, should not start dragging the map', () => {
     render(<MindMapView map={map} />);
 

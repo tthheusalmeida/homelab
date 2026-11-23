@@ -162,6 +162,7 @@ export type SectionId =
   | 'paths'
   | 'appearance'
   | 'infographic'
+  | 'ai'
   | 'external'
   | 'local'
   | 'prompts'
@@ -182,7 +183,7 @@ export interface SectionInfo {
 /** Grupos do menu das Configurações, na mesma ordem e com o mesmo comportamento da barra do app. */
 export const SECTION_GROUPS: ReadonlyArray<{ label: string; ids: readonly SectionId[] }> = [
   { label: 'Geral', ids: ['appearance', 'paths', 'infographic'] },
-  { label: 'IA', ids: ['external', 'local', 'prompts'] },
+  { label: 'IA', ids: ['ai', 'external', 'local', 'prompts'] },
   { label: 'Sistema', ids: ['components', 'access', 'backup', 'updates'] },
 ];
 
@@ -204,6 +205,12 @@ export const SECTIONS: ReadonlyArray<SectionInfo> = [
     label: 'Infográfico',
     description:
       'Galeria dos modelos e das peças que a IA usa para montar o infográfico de um resumo.',
+  },
+  {
+    id: 'ai',
+    label: 'IA padrão',
+    description:
+      'Qual IA faz a sugestão de título, o mapa mental e o infográfico. Dá para trocar só por um tempo, na hora, quando o serviço estiver sobrecarregado.',
   },
   {
     id: 'external',

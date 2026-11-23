@@ -36,6 +36,7 @@ Estado: app instalável e em uso (versão `0.1.x`). Todas as fases da migração
 | `docs/prompts.md` | Prompts personalizáveis: instruções editáveis (versões nomeadas) separadas do contrato fixo (limites, formato, segurança), onde ficam, canais e limites do texto |
 | `docs/leitura-de-pdf.md` | Criar página a partir de um PDF: leitura só do texto, limites, avisos, divisão em partes, IA por parte, progresso em disco e retomada |
 | `docs/persistencia.md` | Jobs e chats em disco, pasta-raiz única para backup, exclusão de jobs, seção de Chats |
+| `docs/ia-padrao.md` | IA padrão (Configurações), troca temporária por sessão, o chip "IA em uso" e as camadas que decidem qual IA vale |
 | `docs/adicionar-provider.md` | Como adicionar um provider de IA na nuvem (cinco passos, o que o compilador e os testes cobram, peças comuns para reaproveitar) |
 | `docs/regras-de-negocio.md` | Onde ficam as regras que **não mudam** (`docs/regras/back`, `docs/regras/front`) |
 
@@ -96,6 +97,7 @@ Uma feature deve **estender** o que já existe, não espalhar edições. Se entr
 - **Erro = alerta centralizado no rodapé (OBRIGATÓRIO):** falha de uma ação aparece pelo `Snackbar` (`useErrorAlert` em `hooks/use-error-alert.ts`), nunca como parágrafo ou aviso no meio do conteúdo, que empurra a tela. Modal usa só `ui/dialog` (rodapé filho direto ou `asDialogSlot`), espaço entre grupos de Configurações é `SettingsStack` (32px) e escolha de cor é `HexColorPicker`. Detalhes em `docs/identidade.md`.
 - **Ações por prioridade (OBRIGATÓRIO):** primária em destaque, secundárias em contorno e terciárias/perigosas (Excluir, Remover) dentro de um menu "Mais ações"; nunca Editar e Excluir lado a lado com o mesmo peso. Várias opções (ex.: baixar PNG/SVG/PDF) = um botão `ActionMenu` com rótulos curtos, nunca uma fileira de botões.
 - **Cores e marca:** nada de cor de destaque fixa (`cyan-*`, `blue-*`) em componente: ação = `primary`, marca = `brand` (ver `docs/identidade.md`); carregando = `LoadingState`/`HexLoader`, status = `HexDot`. Tema e cor são configuráveis em Configurações > Aparência.
+- **Barra de progresso (OBRIGATÓRIO):** todo progresso de processamento (arquivo, job, instalação, backup, atualização) usa o `ProgressBar` único de `components/`; ele é sempre **determinado e começa em 0%**: sem total conhecido mostra vazio, nunca uma faixa parcial (o antigo "1/3 pulsando" foi removido). Não crie barra própria para progresso.
 - **Movimento:** o que entra ou sai da tela anima (`animate-enter`, `animate-exit-down`, collapsible); use as utilities e réguas de `docs/movimento.md`, sem keyframes soltos. `prefers-reduced-motion` já é tratado globalmente.
 - Os `api.ts` do renderer falam só por `ipc.invoke(IpcChannels.x)`; nada de `fetch`, URL ou `import.meta.env`.
 - Arquivos de `renderer/src` vieram do front com CRLF e sem config do prettier; **não** rodar `prettier --write` em pastas, só em arquivos novos.

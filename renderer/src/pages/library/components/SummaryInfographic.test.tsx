@@ -32,6 +32,10 @@ vi.mock('../hooks/useLibrary', () => ({
   useSaveInfographic: () => ({ mutateAsync: saveInfo.mutateAsync, isPending: saveInfo.isPending }),
 }));
 vi.mock('#components/Snackbar', () => ({ useSnackbar: () => snackbar }));
+// O chip da IA em uso tem testes próprios; aqui só interessa que a aba o mostra.
+vi.mock('#components/AiInUse', () => ({
+  AiInUse: () => <span data-testid="ai-in-use">IA em uso</span>,
+}));
 vi.mock('#lib/infographic-image', () => ({
   captureInfographicPng: capture,
   captureInfographicPdf: capturePdf,
@@ -122,6 +126,12 @@ beforeEach(() => {
 });
 
 describe('SummaryInfographic', () => {
+  it('when the tab is shown, should say which AI generates the infographic and let the user switch it', () => {
+    renderTab();
+
+    expect(screen.getByTestId('ai-in-use')).toBeInTheDocument();
+  });
+
   it('when the infographic is loading, should show the loading state', () => {
     saved.state = { isPending: true, data: null };
 
