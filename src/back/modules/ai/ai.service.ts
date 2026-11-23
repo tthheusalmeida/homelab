@@ -22,6 +22,11 @@ export class AIService {
     this.providers = new Map(providers.map((provider) => [provider.name, provider]));
   }
 
+  /** Modelo mais barato do provider, se ele tiver catálogo de preços. */
+  cheapestModel(provider: AIProviderName): string | undefined {
+    return this.getProvider(provider).cheapestModel?.();
+  }
+
   providersList(): AIProviderInfo[] {
     return Array.from(this.providers.values()).map(({ name, label }) => ({ id: name, label }));
   }

@@ -1,11 +1,12 @@
 import { BadGatewayException, BadRequestException, Injectable, Optional } from '@nestjs/common';
 
 import type { LibraryMindMap, LibraryMindMapNode } from '../../../../shared/contracts/library';
+import type { AiChoice } from '../../../../shared/contracts/ai';
 import { AIService } from '../../ai/ai.service';
 import { buildMindMapPrompt } from '../../ai/prompts/mind-map.prompt';
 import { PromptService } from '../../ai/prompts/prompt.service';
 import { INVALID_ANSWER_RETRY_HINT, MAX_ANSWER_ATTEMPTS } from '../../ai/prompts/retry-hint';
-import { cheapestModel } from '../../ai/providers/gemini/gemini.pricing';
+import { DefaultAiService } from '../../ai/default-ai.service';
 
 import {
   hashContent,
@@ -36,6 +37,7 @@ export class MindMapService {
     private readonly library: LibraryService,
     private readonly ai: AIService,
     private readonly store: MindMapStore,
+    private readonly defaultAi: DefaultAiService,
     // Sem ele (testes), vale sempre o prompt padrão.
     @Optional() private readonly prompts?: PromptService,
   ) {}
@@ -122,7 +124,7 @@ export class MindMapService {
       throw new BadRequestException('O mapa mental só existe para resumos.');
     }
 
-    const model = modelId?.trim() || cheapestModel();
+    const choice = this.defaultAi.resolve({ modelId });
 
     const prompt = buildMindMapPrompt(
       {
@@ -131,11 +133,11 @@ export class MindMapService {
       },
       this.prompts?.instructionsFor('mindMap'),
     );
-    const parsed = await this.askUntilReadable(prompt, model);
+    const parsed = await this.askUntilReadable(prompt, choice);
 
     const stored: StoredMindMap = {
       contentHash: hashContent(content),
-      model,
+      model: choice.modelId,
       createdAt: new Date().toISOString(),
       ...parsed,
     };
@@ -150,15 +152,15 @@ export class MindMapService {
    * de novo, lembrando o formato, até `MAX_ANSWER_ATTEMPTS` vezes; falha do provedor (limite, chave,
    * rede) não repete aqui: ele já tem as suas tentativas.
    */
-  private async askUntilReadable(prompt: string, model: string): Promise<ParsedMindMap> {
+  private async askUntilReadable(prompt: string, choice: AiChoice): Promise<ParsedMindMap> {
     for (let attempt = 1; ; attempt += 1) {
       let answer: string;
 
       try {
         answer = await this.ai.chat({
           message: attempt === 1 ? prompt : `${prompt}\n\n${INVALID_ANSWER_RETRY_HINT}`,
-          modelId: model,
-          providerId: 'gemini',
+          modelId: choice.modelId,
+          providerId: choice.providerId,
           json: true,
         });
       } catch (error) {

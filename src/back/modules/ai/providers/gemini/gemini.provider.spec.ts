@@ -11,7 +11,7 @@ jest.mock('@google/genai', () => ({
 import { IpcError } from '../../../../../shared/errors';
 import type { BackConfig } from '../../../../config/back-config';
 import { GEMINI_NOT_CONFIGURED, GeminiProvider } from './gemini.provider';
-import { cheapestModel } from './gemini.pricing';
+import { cheapestModel, geminiCatalog } from './gemini.pricing';
 import { AiUsageService } from '../../usage/ai-usage.service';
 
 async function* asyncList<T>(items: T[]) {
@@ -387,6 +387,12 @@ describe('GeminiProvider', () => {
         .catch((e: Error) => e);
 
       expect((error as Error).cause).toBe(original);
+    });
+  });
+
+  describe('cheapestModel', () => {
+    it('when asked, should answer the cheapest model of its catalog', () => {
+      expect(build().cheapestModel()).toBe(geminiCatalog.cheapest());
     });
   });
 

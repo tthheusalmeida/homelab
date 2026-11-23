@@ -58,6 +58,7 @@ describe('createHandlers', () => {
           healthAi: { check: jest.fn() },
           ai: { providersList: jest.fn(), models: jest.fn(), thinking: jest.fn() },
           aiUsage: { getUsage: jest.fn() },
+          aiSelection: { state: jest.fn(), setSession: jest.fn() },
           chat: {
             send: jest.fn(),
             cancel: jest.fn(),

@@ -1,3 +1,4 @@
+import { createTestDefaultAi } from '../../../testing/default-ai.testing';
 import { BadGatewayException, NotFoundException } from '@nestjs/common';
 
 import type { AIService } from '../../ai/ai.service';
@@ -54,6 +55,7 @@ describe('LibraryClassifier', () => {
     classifier = new LibraryClassifier(
       library as unknown as LibraryService,
       ai as unknown as AIService,
+      createTestDefaultAi(),
     );
   });
 
@@ -62,6 +64,7 @@ describe('LibraryClassifier', () => {
     const withPrompts = new LibraryClassifier(
       library as unknown as LibraryService,
       ai as unknown as AIService,
+      createTestDefaultAi(),
       {
         instructionsFor: jest.fn().mockReturnValue('Classifique por assunto, sem rodeios.'),
       } as never,
@@ -235,6 +238,7 @@ describe('LibraryClassifier.classify (texto que ainda não está na biblioteca)'
     classifier = new LibraryClassifier(
       library as unknown as LibraryService,
       ai as unknown as AIService,
+      createTestDefaultAi(),
     );
   });
 

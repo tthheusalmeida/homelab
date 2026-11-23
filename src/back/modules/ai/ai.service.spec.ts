@@ -41,6 +41,16 @@ describe('AIService', () => {
     ]);
   });
 
+  it('when asking for the cheapest model, should delegate to the provider that has a catalog', () => {
+    gemini.cheapestModel = jest.fn().mockReturnValue('gemini-barato');
+
+    expect(service.cheapestModel('gemini')).toBe('gemini-barato');
+  });
+
+  it('when the provider has no price catalog (Ollama), should answer undefined', () => {
+    expect(service.cheapestModel('ollama')).toBeUndefined();
+  });
+
   it('when checking health, should aggregate every provider health', async () => {
     ollama.health.mockResolvedValue({
       service: 'ollama',

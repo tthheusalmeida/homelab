@@ -1,4 +1,5 @@
 import { AIService } from '../back/modules/ai/ai.service';
+import { DefaultAiService } from '../back/modules/ai/default-ai.service';
 import { AiUsageService } from '../back/modules/ai/usage/ai-usage.service';
 import { ChatService } from '../back/modules/chat/chat.service';
 import { HealthAIService } from '../back/modules/health/ai/health-ai.service';
@@ -51,6 +52,7 @@ export class BackServices {
       healthAi: this.get(HealthAIService),
       ai: this.get(AIService),
       aiUsage: this.get(AiUsageService),
+      aiSelection: this.get(DefaultAiService),
       chat: this.get(ChatService),
       library: this.get(LibraryService),
       libraryClassifier: this.get(LibraryClassifier),

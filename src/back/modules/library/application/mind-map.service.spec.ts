@@ -1,3 +1,4 @@
+import { createTestDefaultAi } from '../../../testing/default-ai.testing';
 import { BadGatewayException, BadRequestException, NotFoundException } from '@nestjs/common';
 
 import type { AIService } from '../../ai/ai.service';
@@ -40,6 +41,7 @@ describe('MindMapService', () => {
       library as unknown as LibraryService,
       ai as unknown as AIService,
       store,
+      createTestDefaultAi(),
     );
   });
 
@@ -120,6 +122,7 @@ describe('MindMapService', () => {
         library as unknown as LibraryService,
         ai as unknown as AIService,
         store,
+        createTestDefaultAi(),
         { instructionsFor: jest.fn().mockReturnValue('Mapa só com palavras-chave.') } as never,
       );
 

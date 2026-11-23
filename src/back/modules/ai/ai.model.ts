@@ -72,6 +72,8 @@ export interface AIProvider {
   readonly name: AIProviderName;
   /** Nome mostrado ao usuário (ex.: "Gemini"). */
   readonly label: string;
+  /** Modelo mais barato do catálogo do provider; `undefined` quando ele não tem catálogo de preços (Ollama). */
+  cheapestModel?(): string | undefined;
 
   health(): Promise<HealthCheck>;
 

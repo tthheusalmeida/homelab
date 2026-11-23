@@ -54,6 +54,10 @@ export class GeminiProvider implements AIProvider, ChatBackend {
     return this.ai;
   }
 
+  cheapestModel(): string {
+    return this.catalog.cheapest();
+  }
+
   normalizeModel(model: string): string {
     return model.startsWith('models/') ? model.replace(/^models\//, '') : model;
   }

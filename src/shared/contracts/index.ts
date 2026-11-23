@@ -4,6 +4,8 @@ import type {
   AiModelEntry,
   AiModelsRequest,
   AiProviderEntry,
+  AiSelectionState,
+  AiSessionRequest,
   AiThinkingEntry,
   AiThinkingRequest,
   AiUsageReport,
@@ -175,6 +177,8 @@ export interface IpcContracts {
   [IpcChannels.ai.models]: { request: AiModelsRequest; response: AiModelEntry[] };
   [IpcChannels.ai.thinking]: { request: AiThinkingRequest; response: AiThinkingEntry[] };
   [IpcChannels.ai.usage]: { request: AiUsageRequestFilter; response: AiUsageReport };
+  [IpcChannels.ai.selection]: { request: void; response: AiSelectionState };
+  [IpcChannels.ai.session]: { request: AiSessionRequest; response: AiSelectionState };
 
   /** Avisos criados enquanto o app abria (entregues uma vez só). Os seguintes chegam pelo evento `app:notice`. */
   [IpcChannels.notices.pending]: { request: void; response: AppNotice[] };

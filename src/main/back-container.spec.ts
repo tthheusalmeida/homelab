@@ -35,6 +35,7 @@ describe('BackContainer', () => {
     audioTempDir: path.join(root, 'ta'),
     ollamaUrl: 'http://127.0.0.1:1',
     apiKeyFor: () => null,
+    defaultAi: () => null,
     usageFile: null,
     jobsFile: null,
     chatsFile: null,

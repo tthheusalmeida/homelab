@@ -68,6 +68,16 @@ describe('SettingsBackConfig', () => {
     expect(new SettingsBackConfig(store, appPaths, {}).apiKeyFor('gemini')).toBeNull();
   });
 
+  it('when the AI default is saved in Settings, should expose it live; otherwise null', () => {
+    const config = new SettingsBackConfig(store, appPaths, {});
+
+    expect(config.defaultAi()).toBeNull();
+
+    store.update({ ai: { default: { providerId: 'anthropic', modelId: null } } });
+
+    expect(config.defaultAi()).toEqual({ providerId: 'anthropic', modelId: null });
+  });
+
   it('when asked for the usage file, should answer the one under data/ of the root', () => {
     expect(new SettingsBackConfig(store, appPaths, {}).usageFile).toBe(appPaths.usageFile);
   });

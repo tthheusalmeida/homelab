@@ -2,6 +2,7 @@ import { BackConfig } from '../back/config/back-config';
 
 import type { PlatformTools } from '../back/modules/video/platform-downloader';
 
+import type { AiPreference } from '../shared/contracts/ai';
 import type { ExternalProviderId } from '../shared/contracts/providers';
 import type { ApiKeys } from './api-keys';
 import type { AppPaths } from './app-paths';
@@ -24,6 +25,10 @@ export class SettingsBackConfig extends BackConfig {
     readonly platformTools?: PlatformTools,
   ) {
     super();
+  }
+
+  defaultAi(): AiPreference | null {
+    return this.settings.get().ai.default;
   }
 
   apiKeyFor(provider: ExternalProviderId): string | null {

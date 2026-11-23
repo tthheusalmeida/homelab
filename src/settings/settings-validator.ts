@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 
 import { IpcError, IpcErrorCode } from '../shared/errors';
+import { AI_PROVIDER_IDS } from '../shared/contracts/ai';
 import { ACCENT_IDS, THEME_MODES } from '../shared/contracts/appearance';
 import {
   isReadingFontSize,
@@ -25,6 +26,8 @@ export const SettingsMessages = {
   readingSwapInvalid: 'A opção de inverter os lados deve ser ligada ou desligada.',
   transcriptOptionInvalid: 'As opções da transcrição devem ser ligadas ou desligadas.',
   readingShadeInvalid: 'Escolha uma das intensidades de cor disponíveis.',
+  aiDefaultInvalid:
+    'A IA padrão deve ter um serviço conhecido e, se houver modelo, um nome não vazio.',
   supportStarPromptInvalid: 'O convite para apoiar o projeto deve estar marcado como visto ou não.',
   updatesAutoCheckInvalid: 'A verificação automática de atualizações deve ser ligada ou desligada.',
 } as const;
@@ -63,6 +66,17 @@ export function validateSettings(settings: SettingsData): void {
 
   if (typeof settings.updates.autoCheck !== 'boolean') {
     fail(SettingsMessages.updatesAutoCheckInvalid);
+  }
+
+  const aiDefault = settings.ai.default;
+
+  if (
+    aiDefault &&
+    (!AI_PROVIDER_IDS.includes(aiDefault.providerId) ||
+      (aiDefault.modelId !== null &&
+        (typeof aiDefault.modelId !== 'string' || !aiDefault.modelId.trim())))
+  ) {
+    fail(SettingsMessages.aiDefaultInvalid);
   }
 
   if (typeof settings.support.starPromptHidden !== 'boolean') {

@@ -3,6 +3,7 @@ import { HttpModule } from '@nestjs/axios';
 
 import { AI_PROVIDERS } from './ai-providers.token';
 import { AIService } from './ai.service';
+import { DefaultAiService } from './default-ai.service';
 import { AiUsageService } from './usage/ai-usage.service';
 
 import { PromptService } from './prompts/prompt.service';
@@ -23,6 +24,7 @@ const PROVIDER_CLASSES = [OllamaProvider, GeminiProvider, AnthropicProvider];
   imports: [HttpModule],
   providers: [
     AIService,
+    DefaultAiService,
     AiUsageService,
     PromptStore,
     PromptService,
@@ -33,6 +35,6 @@ const PROVIDER_CLASSES = [OllamaProvider, GeminiProvider, AnthropicProvider];
       inject: PROVIDER_CLASSES,
     },
   ],
-  exports: [AIService, AiUsageService, PromptStore, PromptService],
+  exports: [AIService, DefaultAiService, AiUsageService, PromptStore, PromptService],
 })
 export class AIModule {}

@@ -3,7 +3,7 @@ import { IpcError, IpcErrorCode } from '../../shared/errors';
 import { IpcRegistrar } from '../ipc-registrar';
 import { FakeIpcMain } from '../testing/fake-ipc-main';
 
-import { AiHandler, type AiCatalog, type AiUsageSource } from './ai.handler';
+import { AiHandler, type AiCatalog, type AiSelectionPort, type AiUsageSource } from './ai.handler';
 import { HealthHandler } from './health.handler';
 
 function register(...handlers: Parameters<IpcRegistrar['register']>[0]) {
@@ -82,12 +82,17 @@ describe('AiHandler', () => {
     models: jest.fn().mockResolvedValue([{ id: 'm1' }]),
     thinking: jest.fn().mockResolvedValue([{ id: 'low', label: 'Baixo' }]),
   });
+  const selection = (): Record<keyof AiSelectionPort, jest.Mock> => ({
+    state: jest.fn(),
+    setSession: jest.fn(),
+  });
+
   const usage = (): Record<keyof AiUsageSource, jest.Mock> => ({
     getUsage: jest.fn().mockReturnValue({ summary: { totalRequests: 0 } }),
   });
 
   it('when ai:providers is called, should answer the provider list', async () => {
-    const ipc = register(new AiHandler(catalog(), usage()));
+    const ipc = register(new AiHandler(catalog(), usage(), selection()));
 
     await expect(ipc.invoke(IpcChannels.ai.providers)).resolves.toEqual({
       ok: true,
@@ -97,7 +102,7 @@ describe('AiHandler', () => {
 
   it('when ai:models is called, should ask the catalog for the given provider', async () => {
     const source = catalog();
-    const ipc = register(new AiHandler(source, usage()));
+    const ipc = register(new AiHandler(source, usage(), selection()));
 
     await expect(ipc.invoke(IpcChannels.ai.models, { providerId: 'ollama' })).resolves.toEqual({
       ok: true,
@@ -108,7 +113,7 @@ describe('AiHandler', () => {
 
   it('when ai:thinking is called, should pass provider and model to the catalog', async () => {
     const source = catalog();
-    const ipc = register(new AiHandler(source, usage()));
+    const ipc = register(new AiHandler(source, usage(), selection()));
 
     await expect(
       ipc.invoke(IpcChannels.ai.thinking, { providerId: 'ollama', modelId: 'qwen3:8b' }),
@@ -118,7 +123,7 @@ describe('AiHandler', () => {
 
   it('when ai:usage is called with a provider, should filter by it', async () => {
     const source = usage();
-    const ipc = register(new AiHandler(catalog(), source));
+    const ipc = register(new AiHandler(catalog(), source, selection()));
 
     await ipc.invoke(IpcChannels.ai.usage, { provider: 'gemini' });
 
@@ -127,7 +132,7 @@ describe('AiHandler', () => {
 
   it('when ai:usage is called without a provider, should ask for all providers', async () => {
     const source = usage();
-    const ipc = register(new AiHandler(catalog(), source));
+    const ipc = register(new AiHandler(catalog(), source, selection()));
 
     await ipc.invoke(IpcChannels.ai.usage, {});
 
@@ -139,7 +144,7 @@ describe('AiHandler', () => {
     source.models.mockRejectedValue(
       new IpcError(IpcErrorCode.NOT_CONFIGURED, 'Chave da API do Gemini não configurada.'),
     );
-    const ipc = register(new AiHandler(source, usage()));
+    const ipc = register(new AiHandler(source, usage(), selection()));
 
     await expect(ipc.invoke(IpcChannels.ai.models, { providerId: 'gemini' })).resolves.toEqual({
       ok: false,
@@ -147,10 +152,45 @@ describe('AiHandler', () => {
     });
   });
 
+  it('when ai:selection is called, should answer the state of the AI in use', async () => {
+    const state = {
+      configured: null,
+      session: null,
+      effective: { providerId: 'gemini', modelId: 'm', source: 'auto' },
+    };
+    const port = selection();
+    port.state.mockReturnValue(state);
+    const ipc = register(new AiHandler(catalog(), usage(), port));
+
+    await expect(ipc.invoke(IpcChannels.ai.selection)).resolves.toEqual({ ok: true, data: state });
+  });
+
+  it('when ai:session is called, should switch the AI for this session and answer the new state', async () => {
+    const port = selection();
+    port.setSession.mockReturnValue({ session: { providerId: 'anthropic', modelId: null } });
+    const ipc = register(new AiHandler(catalog(), usage(), port));
+    const preference = { providerId: 'anthropic' as const, modelId: null };
+
+    await expect(ipc.invoke(IpcChannels.ai.session, { preference })).resolves.toMatchObject({
+      ok: true,
+    });
+    expect(port.setSession).toHaveBeenCalledWith(preference);
+  });
+
+  it('when ai:session clears the switch, should pass null to the service', async () => {
+    const port = selection();
+    port.setSession.mockReturnValue({});
+    const ipc = register(new AiHandler(catalog(), usage(), port));
+
+    await ipc.invoke(IpcChannels.ai.session, { preference: null });
+
+    expect(port.setSession).toHaveBeenCalledWith(null);
+  });
+
   it('when the provider is not supported, should answer INTERNAL keeping the message', async () => {
     const source = catalog();
     source.thinking.mockRejectedValue(new Error('Provider de IA não suportado: x'));
-    const ipc = register(new AiHandler(source, usage()));
+    const ipc = register(new AiHandler(source, usage(), selection()));
 
     await expect(
       ipc.invoke(IpcChannels.ai.thinking, { providerId: 'x' as 'ollama', modelId: 'm' }),

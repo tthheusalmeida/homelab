@@ -318,6 +318,12 @@ describe('AnthropicProvider', () => {
     });
   });
 
+  describe('cheapestModel', () => {
+    it('when asked, should answer the cheapest model of its catalog', () => {
+      expect(build().cheapestModel()).toBe(cheapestAnthropicModel());
+    });
+  });
+
   describe('models', () => {
     it('when models are listed, should keep only open priced models ordered by cost', async () => {
       list.mockReturnValue(

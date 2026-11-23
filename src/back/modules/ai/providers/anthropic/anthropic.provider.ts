@@ -62,6 +62,10 @@ export class AnthropicProvider implements AIProvider, ChatBackend {
     return this.ai;
   }
 
+  cheapestModel(): string {
+    return this.catalog.cheapest();
+  }
+
   normalizeModel(model: string): string {
     return model;
   }
