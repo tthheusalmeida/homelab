@@ -62,15 +62,6 @@ export const Strings = {
         'Ao lado do horário, mostra onde o trecho começa e termina na linha do tempo do áudio.',
       restore: 'Restaurar transcrição',
     },
-    summary: {
-      title: 'Resumo',
-      hint: 'Ajustes só dos resumos. Fonte, tamanho, zoom e cores seguem a Leitura.',
-      outline: 'Sumário',
-      outlineOption: 'Mostrar o sumário ao lado do texto',
-      outlineHint:
-        'Lista os títulos do resumo ao lado do texto (o lado segue o ajuste da Leitura), com o trecho em leitura em destaque.',
-      restore: 'Restaurar resumo',
-    },
   },
   library: {
     groupTitle: 'Pasta de documentos',

@@ -129,14 +129,9 @@ describe('validateSettings', () => {
     );
   });
 
-  it.each(['yes', 1, null])('when the summary outline option is %j, should reject', (value) => {
-    expectValidation((s) => (s.appearance.summary.outline = value as never), /opções do resumo/);
-  });
-
-  it('when the transcript and summary options are turned off, should accept', () => {
+  it('when the transcript options are turned off, should accept', () => {
     const settings = testDefaults();
     settings.appearance.transcript = { preview: false, progress: false };
-    settings.appearance.summary = { outline: false };
 
     expect(() => validateSettings(settings)).not.toThrow();
   });

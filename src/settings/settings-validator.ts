@@ -24,7 +24,6 @@ export const SettingsMessages = {
   readingPinInvalid: 'A opção do painel lateral deve ser ligada ou desligada.',
   readingSwapInvalid: 'A opção de inverter os lados deve ser ligada ou desligada.',
   transcriptOptionInvalid: 'As opções da transcrição devem ser ligadas ou desligadas.',
-  summaryOptionInvalid: 'As opções do resumo devem ser ligadas ou desligadas.',
   readingShadeInvalid: 'Escolha uma das intensidades de cor disponíveis.',
   supportStarPromptInvalid: 'O convite para apoiar o projeto deve estar marcado como visto ou não.',
   updatesAutoCheckInvalid: 'A verificação automática de atualizações deve ser ligada ou desligada.',
@@ -108,14 +107,10 @@ export function validateSettings(settings: SettingsData): void {
     fail(SettingsMessages.readingSwapInvalid);
   }
 
-  const { transcript, summary } = settings.appearance;
+  const { transcript } = settings.appearance;
 
   if (typeof transcript?.preview !== 'boolean' || typeof transcript.progress !== 'boolean') {
     fail(SettingsMessages.transcriptOptionInvalid);
-  }
-
-  if (typeof summary?.outline !== 'boolean') {
-    fail(SettingsMessages.summaryOptionInvalid);
   }
 
   const { ollama } = settings.local;

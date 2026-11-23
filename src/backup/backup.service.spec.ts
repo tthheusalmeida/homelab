@@ -1,4 +1,4 @@
-import { DEFAULT_SUMMARY, DEFAULT_TRANSCRIPT } from '../shared/contracts/document-views';
+import { DEFAULT_TRANSCRIPT } from '../shared/contracts/document-views';
 import { DEFAULT_READING } from '../shared/contracts/reading';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -885,7 +885,6 @@ describe('BackupService', () => {
         accent: 'cyan',
         reading: DEFAULT_READING,
         transcript: DEFAULT_TRANSCRIPT,
-        summary: DEFAULT_SUMMARY,
       });
       expect(result.items).toEqual([{ id: 'settings', added: 0, skipped: 1 }]);
       expect(result.restartRequired).toBe(false);
@@ -905,7 +904,6 @@ describe('BackupService', () => {
         accent: 'rose',
         reading: DEFAULT_READING,
         transcript: DEFAULT_TRANSCRIPT,
-        summary: DEFAULT_SUMMARY,
       });
       expect(b.settings.get().local.ollama.url).toBe('http://outro:1234');
       expect(b.settings.get().paths.libraryDir).toBe(b.library);

@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { DEFAULT_SUMMARY, DEFAULT_TRANSCRIPT } from '../shared/contracts/document-views';
+import { DEFAULT_TRANSCRIPT } from '../shared/contracts/document-views';
 import { DEFAULT_READING } from '../shared/contracts/reading';
 import type { SettingsPatch } from '../shared/contracts/settings';
 import { IpcError } from '../shared/errors';
@@ -127,7 +127,6 @@ describe('SettingsStore', () => {
       accent: 'cyan',
       reading: DEFAULT_READING,
       transcript: DEFAULT_TRANSCRIPT,
-      summary: DEFAULT_SUMMARY,
     });
   });
 
@@ -141,7 +140,6 @@ describe('SettingsStore', () => {
       accent: 'violet',
       reading: DEFAULT_READING,
       transcript: DEFAULT_TRANSCRIPT,
-      summary: DEFAULT_SUMMARY,
     });
   });
 
@@ -166,7 +164,6 @@ describe('SettingsStore', () => {
       accent: 'rose',
       reading: DEFAULT_READING,
       transcript: DEFAULT_TRANSCRIPT,
-      summary: DEFAULT_SUMMARY,
     });
   });
 
@@ -178,7 +175,6 @@ describe('SettingsStore', () => {
       accent: 'cyan',
       reading: DEFAULT_READING,
       transcript: DEFAULT_TRANSCRIPT,
-      summary: DEFAULT_SUMMARY,
     });
   });
 
@@ -247,12 +243,19 @@ describe('SettingsStore', () => {
     expect(create().recoveredFromBackup).toBe(false);
   });
 
-  it('when only part of transcript and summary changes, should keep the other fields', () => {
+  it('when only part of the transcript changes, should keep the other fields', () => {
     const store = create();
 
-    store.update({ appearance: { transcript: { progress: false }, summary: { outline: false } } });
+    store.update({ appearance: { transcript: { progress: false } } });
 
     expect(store.get().appearance.transcript).toEqual({ preview: true, progress: false });
-    expect(store.get().appearance.summary).toEqual({ outline: false });
+  });
+
+  it('when the saved file still has the removed summary option, should drop it', () => {
+    const store = create();
+
+    store.update({ appearance: { summary: { outline: false } } } as never);
+
+    expect(store.get().appearance).not.toHaveProperty('summary');
   });
 });

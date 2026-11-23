@@ -1,7 +1,5 @@
 import {
-  DEFAULT_SUMMARY,
   DEFAULT_TRANSCRIPT,
-  type SummaryPreferences,
   type TranscriptPreferences,
 } from './document-views';
 import { DEFAULT_READING, type ReadingPreferences } from './reading';
@@ -38,15 +36,12 @@ export interface Appearance {
   reading: ReadingPreferences;
   /** Ajustes só das transcrições com tempo (no mesmo nível de `reading`). */
   transcript: TranscriptPreferences;
-  /** Ajustes só dos resumos (no mesmo nível de `reading`). */
-  summary: SummaryPreferences;
 }
 
-/** Parte da aparência: `reading`, `transcript` e `summary` também podem vir parciais (só o que mudou). */
-export type AppearancePatch = Partial<Omit<Appearance, 'reading' | 'transcript' | 'summary'>> & {
+/** Parte da aparência: `reading` e `transcript` também podem vir parciais (só o que mudou). */
+export type AppearancePatch = Partial<Omit<Appearance, 'reading' | 'transcript'>> & {
   reading?: Partial<ReadingPreferences>;
   transcript?: Partial<TranscriptPreferences>;
-  summary?: Partial<SummaryPreferences>;
 };
 
 export const DEFAULT_APPEARANCE: Appearance = {
@@ -54,5 +49,4 @@ export const DEFAULT_APPEARANCE: Appearance = {
   accent: 'cyan',
   reading: DEFAULT_READING,
   transcript: DEFAULT_TRANSCRIPT,
-  summary: DEFAULT_SUMMARY,
 };

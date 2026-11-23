@@ -14,7 +14,6 @@ import {
 
 import { Strings } from '../strings';
 import { ReadingSettings } from './ReadingSettings';
-import { SummarySettings } from './SummarySettings';
 import { TranscriptSettings } from './TranscriptSettings';
 import { useErrorAlert } from '#hooks/use-error-alert';
 
@@ -75,7 +74,6 @@ export function AppearanceSection() {
 
       <ReadingSettings />
       <TranscriptSettings />
-      <SummarySettings />
 
       <div>
         <Button
