@@ -8,7 +8,6 @@ vi.mock("./api", () => ({
   getBooks: vi.fn().mockResolvedValue([]),
   getBook: vi.fn().mockResolvedValue({ id: "b1" }),
   readBook: vi.fn().mockResolvedValue({}),
-  searchBook: vi.fn().mockResolvedValue([]),
   createBook: vi.fn().mockResolvedValue({ id: "b1" }),
   updateBook: vi.fn().mockResolvedValue({ id: "b1" }),
   deleteBook: vi.fn().mockResolvedValue(undefined),
@@ -23,7 +22,6 @@ import {
   useAddBookChapter,
   useBook,
   useBookReading,
-  useBookSearch,
   useBooks,
   useCreateBook,
   useDeleteBook,
@@ -70,24 +68,6 @@ describe("books hooks", () => {
 
     await waitFor(() => expect(api.getBook).toHaveBeenCalledWith("b1"));
     await waitFor(() => expect(api.readBook).toHaveBeenCalledWith("b1"));
-  });
-
-  it("when the query is shorter than 2 characters, should not search", () => {
-    const { wrapper } = setup();
-
-    renderHook(() => useBookSearch("b1", " a "), { wrapper });
-
-    expect(api.searchBook).not.toHaveBeenCalled();
-  });
-
-  it("when the query has 2 or more characters, should search with it trimmed", async () => {
-    const { wrapper } = setup();
-
-    renderHook(() => useBookSearch("b1", "  docker "), { wrapper });
-
-    await waitFor(() =>
-      expect(api.searchBook).toHaveBeenCalledWith("b1", "docker"),
-    );
   });
 
   it.each([

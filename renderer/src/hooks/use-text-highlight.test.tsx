@@ -58,23 +58,79 @@ describe("useTextHighlight", () => {
     expect(hook.result.current.index).toBe(0);
   });
 
+  it("when the whole phrase exists, should highlight only the phrase", () => {
+    const { hook } = setup("casa da vida", "A casa da vida é boa. Cada casa tem vida.");
+
+    expect(hook.result.current.count).toBe(1);
+  });
+
+  it("when the phrase does not exist, should fall back to each word inside any word and skip connectors", () => {
+    const { hook } = setup("casa da vida", "A casa é boa. Cada dado tem vida. Encasar.");
+
+    // "casa", "vida" e o "casa" de "Encasar" (nem "da" em "Cada"/"dado")
+    expect(hook.result.current.count).toBe(3);
+  });
+
+  it("when the words are all long and not together, should still fall back to each word", () => {
+    const { hook } = setup("docker rede", "Docker aqui. A rede lá.");
+
+    // "Docker", "rede" e o "rede" do outro parágrafo
+    expect(hook.result.current.count).toBe(3);
+  });
+
+  it("when there are matches, should give a snippet with the text around each one", () => {
+    const { hook } = setup("rede");
+
+    expect(hook.result.current.snippets).toEqual([
+      { before: "Outro parágrafo sobre IMAGEM e ", match: "rede", after: "." },
+    ]);
+  });
+
+  it("when select is called, should go to that occurrence and scroll to it", () => {
+    const { hook } = setup("imagem");
+    scrolled.length = 0;
+
+    act(() => hook.result.current.select(1));
+
+    expect(hook.result.current.index).toBe(1);
+    expect(scrolled).toHaveLength(1);
+  });
+
+  it("when select is called with a missing occurrence, should do nothing", () => {
+    const { hook } = setup("imagem");
+
+    act(() => hook.result.current.select(9));
+
+    expect(hook.result.current.index).toBe(0);
+  });
+
   it("when the query has an accent, should match the text without it", () => {
     const { hook } = setup("conteiner");
 
     expect(hook.result.current.count).toBe(1);
   });
 
-  it("when a new query is typed, should scroll to the first occurrence", () => {
+  it("when a new query is typed, should not scroll by itself", () => {
     setup("imagem");
 
+    expect(scrolled).toHaveLength(0);
+  });
+
+  it("when next is called for the first time on a query, should show the first occurrence and scroll to it", () => {
+    const { hook } = setup("imagem");
+
+    act(() => hook.result.current.next());
+
+    expect(hook.result.current.index).toBe(0);
     expect(scrolled).toHaveLength(1);
     expect(scrolled[0].tagName).toBe("P");
   });
 
-  it("when next is called, should go to the following occurrence and scroll to it", () => {
+  it("when next is called again, should go to the following occurrence and scroll to it", () => {
     const { hook } = setup("imagem");
-    scrolled.length = 0;
 
+    act(() => hook.result.current.next());
+    scrolled.length = 0;
     act(() => hook.result.current.next());
 
     expect(hook.result.current.index).toBe(1);
@@ -86,13 +142,23 @@ describe("useTextHighlight", () => {
 
     act(() => hook.result.current.next());
     act(() => hook.result.current.next());
+    act(() => hook.result.current.next());
 
     expect(hook.result.current.index).toBe(0);
   });
 
-  it("when prev is called on the first occurrence, should wrap to the last", () => {
+  it("when prev is called for the first time on a query, should go to the last occurrence", () => {
     const { hook } = setup("imagem");
 
+    act(() => hook.result.current.prev());
+
+    expect(hook.result.current.index).toBe(1);
+  });
+
+  it("when prev is called on the first occurrence after navigating, should wrap to the last", () => {
+    const { hook } = setup("imagem");
+
+    act(() => hook.result.current.next());
     act(() => hook.result.current.prev());
 
     expect(hook.result.current.index).toBe(1);
@@ -112,6 +178,7 @@ describe("useTextHighlight", () => {
   it("when the query changes, should recount and go back to the first occurrence", () => {
     const { hook } = setup("imagem");
     act(() => hook.result.current.next());
+    act(() => hook.result.current.next());
 
     hook.rerender({ q: "rede", version: 0 });
 
@@ -129,6 +196,7 @@ describe("useTextHighlight", () => {
   it("when the text is redrawn with the same query, should keep the current occurrence", () => {
     const { hook } = setup("imagem");
     act(() => hook.result.current.next());
+    act(() => hook.result.current.next());
 
     hook.rerender({ q: "imagem", version: 1 });
 
@@ -139,6 +207,78 @@ describe("useTextHighlight", () => {
     const { result } = renderHook(() => useTextHighlight(null, "imagem"));
 
     expect(result.current.count).toBe(0);
+  });
+
+  describe("margin hexagon", () => {
+    const marker = () => document.querySelector<HTMLElement>(".find-marker");
+
+    function stubRect(top: number, height = 20) {
+      Range.prototype.getBoundingClientRect = () =>
+        ({ top, bottom: top + height, height }) as DOMRect;
+    }
+
+    afterEach(() => {
+      delete (Range.prototype as { getBoundingClientRect?: unknown })
+        .getBoundingClientRect;
+    });
+
+    it("when the text is on screen, should put the hexagon on the line of the current match", () => {
+      stubRect(100);
+
+      setup("imagem");
+
+      expect(marker()).not.toBeNull();
+      expect(marker()?.hidden).toBe(false);
+      expect(marker()?.style.transform).toContain("102px)");
+    });
+
+    it("when there is no match, should keep the hexagon hidden", () => {
+      stubRect(100);
+
+      setup("zzzz");
+
+      expect(marker()?.hidden).toBe(true);
+    });
+
+    it("when the match is out of the screen, should hide the hexagon", () => {
+      stubRect(-500);
+
+      setup("imagem");
+
+      expect(marker()?.hidden).toBe(true);
+    });
+
+    it("when the hook unmounts, should remove the hexagon", () => {
+      stubRect(100);
+
+      const { hook } = setup("imagem");
+
+      hook.unmount();
+
+      expect(marker()).toBeNull();
+    });
+
+    it("when the mark fades out, should fade the hexagon with it", () => {
+      stubRect(100);
+
+      const animate = vi.fn(() => ({ cancel: vi.fn() }) as unknown as Animation);
+      const original = HTMLElement.prototype.animate;
+
+      HTMLElement.prototype.animate = animate;
+
+      try {
+        const { hook } = setup("imagem");
+
+        act(() => hook.result.current.fadeOut(300));
+
+        expect(animate).toHaveBeenCalledWith(
+          { opacity: [1, 0] },
+          expect.objectContaining({ duration: 300 }),
+        );
+      } finally {
+        HTMLElement.prototype.animate = original;
+      }
+    });
   });
 
   describe("with the CSS Custom Highlight API", () => {

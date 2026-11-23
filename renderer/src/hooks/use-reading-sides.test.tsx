@@ -27,8 +27,18 @@ describe('useReadingSides', () => {
     const { result } = renderHook(() => useReadingSides(true), { wrapper });
 
     expect(result.current.followOrder).toBe('lg:order-1');
-    expect(result.current.optionsOrder).toBe('lg:order-3');
-    expect(result.current.columns).toBe('lg:grid-cols-[16rem_minmax(0,1fr)_16rem]');
+    expect(result.current.optionsOrder).toBe('lg:order-3 md:col-span-2 lg:col-span-1');
+    expect(result.current.columns).toBe(
+      'md:grid-cols-[14rem_minmax(0,1fr)] lg:grid-cols-[16rem_minmax(0,1fr)_16rem]',
+    );
+  });
+
+  it('when the window is narrow, should keep the follow column from the md breakpoint and drop the options below the text', () => {
+    withReading({});
+    const { result } = renderHook(() => useReadingSides(true), { wrapper });
+
+    expect(result.current.columns).toContain('md:grid-cols-[14rem_minmax(0,1fr)]');
+    expect(result.current.optionsOrder).toContain('md:col-span-2');
   });
 
   it('when the sides are swapped, should put options on the left and follow on the right', async () => {
@@ -37,7 +47,7 @@ describe('useReadingSides', () => {
 
     await waitFor(() => expect(result.current.swapped).toBe(true));
     expect(result.current.followOrder).toBe('lg:order-3');
-    expect(result.current.optionsOrder).toBe('lg:order-1');
+    expect(result.current.optionsOrder).toBe('lg:order-1 md:col-span-2 lg:col-span-1');
   });
 
   it('when there is no follow column, should keep a single side column for the options on the right', async () => {

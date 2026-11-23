@@ -60,7 +60,8 @@ describe('BookOutline', () => {
     const active = screen.getByRole('button', { name: '2. Redes' });
 
     expect(active).toHaveAttribute('aria-current', 'location');
-    expect(active).toHaveClass('bg-foreground/12', 'text-foreground', 'font-semibold');
+    expect(active).toHaveClass('text-foreground', 'font-semibold');
+    expect(active.className).not.toContain('bg-foreground');
     expect(screen.getByRole('button', { name: '1. Docker' })).not.toHaveAttribute('aria-current');
   });
 
@@ -88,7 +89,6 @@ describe('BookOutline', () => {
     expect(screen.getByRole('button', { name: /Docker/ })).toHaveClass(
       'font-semibold',
       'text-foreground',
-      'bg-foreground/12',
     );
   });
 });

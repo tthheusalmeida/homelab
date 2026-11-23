@@ -27,7 +27,6 @@ function setup(overrides: Partial<Fakes> = {}) {
     list: jest.fn().mockResolvedValue([]),
     get: jest.fn().mockResolvedValue(detail),
     read: jest.fn().mockResolvedValue({ book: { id: 'b1' }, modules: [] }),
-    search: jest.fn().mockResolvedValue([]),
     create: jest.fn().mockResolvedValue(detail),
     update: jest.fn().mockResolvedValue(detail),
     remove: jest.fn().mockResolvedValue(undefined),
@@ -77,11 +76,10 @@ describe('BookHandler: leitura', () => {
     expect(books.get).toHaveBeenCalledWith('b1');
   });
 
-  it('when the book does not exist, should answer NOT_FOUND for get, read and search', async () => {
+  it('when the book does not exist, should answer NOT_FOUND for get and read', async () => {
     const { ipc } = setup({
       get: jest.fn().mockRejectedValue(notFound()),
       read: jest.fn().mockRejectedValue(notFound()),
-      search: jest.fn().mockRejectedValue(notFound()),
     });
     const expected = {
       ok: false,
@@ -92,9 +90,6 @@ describe('BookHandler: leitura', () => {
     await expect(ipc.invoke(IpcChannels.library.books.read, { id: 'x' })).resolves.toEqual(
       expected,
     );
-    await expect(
-      ipc.invoke(IpcChannels.library.books.search, { id: 'x', q: 'a' }),
-    ).resolves.toEqual(expected);
   });
 
   it('when library:books:read is called, should answer the book with its chapter contents', async () => {
@@ -109,33 +104,6 @@ describe('BookHandler: leitura', () => {
       data: reading,
     });
     expect(books.read).toHaveBeenCalledWith('b1');
-  });
-
-  it('when library:books:search is called, should pass the id and the term and answer the hits', async () => {
-    const hits = [{ documentId: 'd1', chapterTitle: 'Cap', line: 3, snippet: '...termo...' }];
-    const { ipc, books } = setup({ search: jest.fn().mockResolvedValue(hits) });
-
-    await expect(
-      ipc.invoke(IpcChannels.library.books.search, { id: 'b1', q: 'termo' }),
-    ).resolves.toEqual({ ok: true, data: hits });
-    expect(books.search).toHaveBeenCalledWith('b1', 'termo');
-  });
-
-  it('when the search term is empty, should still call the service (it answers an empty list)', async () => {
-    const { ipc, books } = setup();
-
-    await expect(
-      ipc.invoke(IpcChannels.library.books.search, { id: 'b1', q: '' }),
-    ).resolves.toEqual({ ok: true, data: [] });
-    expect(books.search).toHaveBeenCalledWith('b1', '');
-  });
-
-  it('when the term is missing from the payload, should search with an empty term like the controller did', async () => {
-    const { ipc, books } = setup();
-
-    await ipc.invoke(IpcChannels.library.books.search, { id: 'b1' });
-
-    expect(books.search).toHaveBeenCalledWith('b1', '');
   });
 
   it('when the service throws something unexpected, should answer INTERNAL instead of rejecting', async () => {

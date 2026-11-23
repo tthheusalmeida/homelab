@@ -7,14 +7,13 @@ import { AppearanceProvider } from "#components/AppearanceProvider";
 import { APPEARANCE_CACHE_KEY } from "#lib/appearance";
 import { IpcChannels } from "#shared/channels";
 import { DEFAULT_APPEARANCE } from "#shared/contracts/appearance";
-import { DEFAULT_SUMMARY, DEFAULT_TRANSCRIPT } from "#shared/contracts/document-views";
+import { DEFAULT_TRANSCRIPT } from "#shared/contracts/document-views";
 import { DEFAULT_READING } from "#shared/contracts/reading";
 import { failure, mockApi, ok } from "#test/api-mock";
 
 import {
   useAppearance,
   useReadingPreferences,
-  useSummaryPreferences,
   useTranscriptPreferences,
 } from "./use-appearance";
 
@@ -87,7 +86,7 @@ describe("useAppearance", () => {
     const { result } = renderHook(() => useAppearance(), { wrapper });
 
     await waitFor(() => expect(document.documentElement.dataset.accent).toBe("cyan"));
-    expect(result.current.appearance).toEqual({ theme: "system", accent: "cyan", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY });
+    expect(result.current.appearance).toEqual({ theme: "system", accent: "cyan", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT });
     expect(document.documentElement).not.toHaveClass("dark");
   });
 
@@ -101,7 +100,7 @@ describe("useAppearance", () => {
     expect(JSON.parse(localStorage.getItem(APPEARANCE_CACHE_KEY)!)).toEqual({
       theme: "dark",
       accent: "violet",
-      reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY,
+      reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT
     });
   });
 
@@ -131,7 +130,7 @@ describe("useAppearance", () => {
 
     expect(document.documentElement.dataset.accent).toBe("rose");
     expect(invoke).toHaveBeenCalledWith(IpcChannels.appearance.update, { accent: "rose" });
-    expect(FakeChannel.posted).toEqual([{ theme: "system", accent: "rose", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY }]);
+    expect(FakeChannel.posted).toEqual([{ theme: "system", accent: "rose", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT }]);
   });
 
   it("when the save fails, should go back to the previous appearance and reject", async () => {
@@ -146,7 +145,7 @@ describe("useAppearance", () => {
       await expect(result.current.update({ accent: "orange" })).rejects.toThrow(/cor válida/);
     });
 
-    expect(result.current.appearance).toEqual({ theme: "light", accent: "blue", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY });
+    expect(result.current.appearance).toEqual({ theme: "light", accent: "blue", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT });
     expect(document.documentElement.dataset.accent).toBe("blue");
   });
 
@@ -159,7 +158,7 @@ describe("useAppearance", () => {
       FakeChannel.instances[0].onmessage?.({ data: { theme: "dark", accent: "emerald" } });
     });
 
-    expect(result.current.appearance).toEqual({ theme: "dark", accent: "emerald", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY });
+    expect(result.current.appearance).toEqual({ theme: "dark", accent: "emerald", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT });
     expect(document.documentElement).toHaveClass("dark");
   });
 
@@ -286,7 +285,7 @@ describe("useAppearance", () => {
           reading: { ...DEFAULT_READING, background: "amber" },
         }),
       [IpcChannels.appearance.update]: () =>
-        ok({ theme: "dark", accent: "rose", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY }),
+        ok({ theme: "dark", accent: "rose", reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT }),
     });
     const { result } = renderHook(() => useAppearance(), { wrapper });
     await waitFor(() => expect(result.current.appearance.reading.background).toBe("amber"));
@@ -301,7 +300,7 @@ describe("useAppearance", () => {
     expect(result.current.appearance).toEqual({
       theme: "dark",
       accent: "rose",
-      reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT, summary: DEFAULT_SUMMARY,
+      reading: DEFAULT_READING, transcript: DEFAULT_TRANSCRIPT
     });
   });
 });
@@ -319,7 +318,7 @@ describe("useReadingPreferences", () => {
   });
 });
 
-describe("transcript and summary preferences", () => {
+describe("transcript preferences", () => {
   beforeEach(() => {
     localStorage.clear();
   });
@@ -328,7 +327,6 @@ describe("transcript and summary preferences", () => {
     expect(renderHook(() => useTranscriptPreferences()).result.current).toEqual(
       DEFAULT_TRANSCRIPT,
     );
-    expect(renderHook(() => useSummaryPreferences()).result.current).toEqual(DEFAULT_SUMMARY);
   });
 
   it("when updating only one transcript field, should save just that field and keep the rest", async () => {
@@ -349,22 +347,4 @@ describe("transcript and summary preferences", () => {
     expect(result.current.appearance.transcript).toEqual({ preview: true, progress: false });
   });
 
-  it("when resetting the summary, should save the default summary and keep the transcript", async () => {
-    const invoke = mockApi({
-      [IpcChannels.appearance.get]: () =>
-        ok({ ...DEFAULT_APPEARANCE, summary: { outline: false } }),
-      [IpcChannels.appearance.update]: () => ok(DEFAULT_APPEARANCE),
-    });
-    const { result } = renderHook(() => useAppearance(), { wrapper });
-    await waitFor(() => expect(result.current.appearance.summary.outline).toBe(false));
-
-    await act(async () => {
-      await result.current.resetSummary();
-    });
-
-    expect(invoke).toHaveBeenCalledWith(IpcChannels.appearance.update, {
-      summary: DEFAULT_SUMMARY,
-    });
-    expect(result.current.appearance.transcript).toEqual(DEFAULT_TRANSCRIPT);
-  });
 });

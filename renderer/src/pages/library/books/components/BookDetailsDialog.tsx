@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 
 import { Badge } from "#ui/badge";
 import {
@@ -37,7 +37,8 @@ export function BookDetailsDialog({
   reading,
 }: BookDetailsDialogProps) {
   const { book } = reading;
-  const stats = bookStats(reading);
+  // Só conta as palavras quando o livro muda (o diálogo fica montado mesmo fechado).
+  const stats = useMemo(() => bookStats(reading), [reading]);
   let number = 0;
 
   return (

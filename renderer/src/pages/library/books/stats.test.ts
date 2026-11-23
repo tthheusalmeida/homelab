@@ -111,3 +111,13 @@ describe("minutesToRead", () => {
     expect(minutesToRead(words)).toBe(minutes);
   });
 });
+
+describe("countWords (whitespace kinds)", () => {
+  it("when the text has tabs, non-breaking spaces and Windows line breaks, should count only words", () => {
+    expect(countWords("um\tdois três\r\nquatro cinco")).toBe(5);
+  });
+
+  it("when the text is a single word, should be one", () => {
+    expect(countWords("palavra")).toBe(1);
+  });
+});

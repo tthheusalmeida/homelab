@@ -42,17 +42,15 @@ const detail = (type: string) => ({
   content: body,
 });
 
-const renderPage = (outline: boolean) => {
+const renderPage = () => {
   const api: AppearanceApi = {
-    appearance: { ...DEFAULT_APPEARANCE, summary: { outline } },
+    appearance: DEFAULT_APPEARANCE,
     update: vi.fn(),
     updateReading: vi.fn(),
     reset: vi.fn(),
     resetReading: vi.fn(),
     updateTranscript: vi.fn(),
     resetTranscript: vi.fn(),
-    updateSummary: vi.fn(),
-    resetSummary: vi.fn(),
   };
 
   return render(
@@ -66,27 +64,19 @@ const renderPage = (outline: boolean) => {
   );
 };
 
-describe('DocumentPage — summary outline preference', () => {
-  it('when a summary has the outline option on, should show the Sumário', () => {
+describe('DocumentPage — Sumário', () => {
+  it('when a summary has two or more titles, should always show the Sumário', () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
 
     expect(screen.getByRole('navigation', { name: 'Sumário' })).toBeInTheDocument();
   });
 
-  it('when a summary has the outline option off, should hide the Sumário', () => {
-    documentQuery.data = detail('summary');
-
-    renderPage(false);
-
-    expect(screen.queryByRole('navigation', { name: 'Sumário' })).not.toBeInTheDocument();
-  });
-
-  it('when the page is not a summary, should keep the Sumário even with the option off', () => {
+  it('when the page is not a summary, should show the Sumário too', () => {
     documentQuery.data = detail('article');
 
-    renderPage(false);
+    renderPage();
 
     expect(screen.getByRole('navigation', { name: 'Sumário' })).toBeInTheDocument();
   });
@@ -118,7 +108,7 @@ describe('DocumentPage — mind map view', () => {
   it('when the page is a summary, should offer Resumo and Mapa mental with the text selected', () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
 
     expect(screen.getByRole('button', { name: 'Resumo' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Mapa mental' })).toHaveAttribute(
@@ -131,7 +121,7 @@ describe('DocumentPage — mind map view', () => {
   it('when the user opens Mapa mental, should show the map of the summary instead of the text and hide the Sumário', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
 
     expect(screen.getByTestId('mind-map')).toHaveAttribute('data-title', 'Resumo de redes');
@@ -141,7 +131,7 @@ describe('DocumentPage — mind map view', () => {
   it('when the user goes back to Resumo, should show the text again', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
     await userEvent.click(screen.getByRole('button', { name: 'Resumo' }));
 
@@ -152,7 +142,7 @@ describe('DocumentPage — mind map view', () => {
   it('when the page is not a summary, should not offer the mind map', () => {
     documentQuery.data = detail('transcription');
 
-    renderPage(true);
+    renderPage();
 
     expect(screen.queryByRole('button', { name: 'Mapa mental' })).not.toBeInTheDocument();
   });
@@ -164,7 +154,7 @@ describe('DocumentPage — reading mode with the mind map', () => {
   it('when reading a summary with the text open, should offer Resumo and Mapa mental and keep the text', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
 
     expect(within(reading()).getByRole('button', { name: 'Resumo' })).toHaveAttribute(
@@ -178,7 +168,7 @@ describe('DocumentPage — reading mode with the mind map', () => {
   it('when the mind map is open and the user enters reading mode, should keep the mind map', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
     await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
 
@@ -195,7 +185,7 @@ describe('DocumentPage — reading mode with the mind map', () => {
   it('when the user switches inside reading mode, should swap between the text and the map', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
     await userEvent.click(within(reading()).getByRole('button', { name: 'Mapa mental' }));
 
@@ -210,7 +200,7 @@ describe('DocumentPage — reading mode with the mind map', () => {
   it('when the user leaves reading mode, should keep the form chosen there', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
     await userEvent.click(within(reading()).getByRole('button', { name: 'Mapa mental' }));
     await userEvent.click(screen.getByRole('button', { name: 'Sair do modo leitura' }));
@@ -222,7 +212,7 @@ describe('DocumentPage — reading mode with the mind map', () => {
   it('when reading a page that is not a summary, should not offer the mind map', async () => {
     documentQuery.data = detail('transcription');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
 
     expect(within(reading()).queryByRole('button', { name: 'Mapa mental' })).not.toBeInTheDocument();
@@ -236,7 +226,7 @@ describe('DocumentPage — mind map takes the whole area', () => {
   it('when the mind map is open on the page, should fill the content area with a bordered canvas', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
 
     const canvas = screen.getByTestId('mind-map').parentElement as HTMLElement;
@@ -248,7 +238,7 @@ describe('DocumentPage — mind map takes the whole area', () => {
   it('when the mind map is open on the page, should drop the reading side panel and the Sumário', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
 
     expect(sidebar()).toBeInTheDocument();
 
@@ -262,7 +252,7 @@ describe('DocumentPage — mind map takes the whole area', () => {
   it('when the mind map is open on the page, should keep Modo leitura and Sobre a página next to the tabs', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
 
     expect(screen.getByRole('button', { name: 'Resumo' })).toBeInTheDocument();
@@ -273,7 +263,7 @@ describe('DocumentPage — mind map takes the whole area', () => {
   it('when the user clicks Modo leitura from the page map, should open reading mode with the map', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
     await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
 
@@ -283,7 +273,7 @@ describe('DocumentPage — mind map takes the whole area', () => {
   it('when the user clicks Sobre a página from the page map, should open the about window', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
     await userEvent.click(screen.getByRole('button', { name: /Sobre a página/ }));
 
@@ -293,7 +283,7 @@ describe('DocumentPage — mind map takes the whole area', () => {
   it('when going back to the text on the page, should bring the side panel back', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
     await userEvent.click(screen.getByRole('button', { name: 'Resumo' }));
 
@@ -304,7 +294,7 @@ describe('DocumentPage — mind map takes the whole area', () => {
   it('when reading the mind map, should use the whole area with no side panels', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
     await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
 
@@ -316,7 +306,7 @@ describe('DocumentPage — mind map takes the whole area', () => {
   it('when reading the text, should keep the reading side panels', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
 
     expect(reading()).not.toHaveClass('overflow-hidden');
@@ -326,7 +316,7 @@ describe('DocumentPage — mind map takes the whole area', () => {
   it('when switching inside reading mode, should bring the side panels back only for the text', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
     await userEvent.click(within(reading()).getByRole('button', { name: 'Mapa mental' }));
 
@@ -346,7 +336,7 @@ describe('DocumentPage — Modo leitura and Sobre a página on the top row', () 
   it('when a summary is open on the text, should show the two actions as icons next to the tabs', () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
 
     const row = topRow();
 
@@ -361,7 +351,7 @@ describe('DocumentPage — Modo leitura and Sobre a página on the top row', () 
   it('when a summary is open on the text, should keep only the reading adjustments in the side panel', () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
 
     expect(sidebar()).toBeInTheDocument();
     expect(within(sidebar() as HTMLElement).queryByRole('button', { name: /Modo leitura/ })).toBeNull();
@@ -371,7 +361,7 @@ describe('DocumentPage — Modo leitura and Sobre a página on the top row', () 
   it('when a transcription is open, should show the same two icons on the Voltar row and no tabs', () => {
     documentQuery.data = detail('transcription');
 
-    renderPage(true);
+    renderPage();
 
     const back = screen.getByRole('button', { name: /Voltar/ }).parentElement as HTMLElement;
 
@@ -384,7 +374,7 @@ describe('DocumentPage — Modo leitura and Sobre a página on the top row', () 
   it('when an article is open, should show the same two icons on the Voltar row', () => {
     documentQuery.data = detail('article');
 
-    renderPage(true);
+    renderPage();
 
     const back = screen.getByRole('button', { name: /Voltar/ }).parentElement as HTMLElement;
 
@@ -395,7 +385,7 @@ describe('DocumentPage — Modo leitura and Sobre a página on the top row', () 
   it('when a summary is open, should not repeat the actions on the Voltar row', () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
 
     const back = screen.getByRole('button', { name: /Voltar/ }).parentElement as HTMLElement;
 
@@ -405,7 +395,7 @@ describe('DocumentPage — Modo leitura and Sobre a página on the top row', () 
   it('when the user clicks Modo leitura on a transcription, should open reading mode', async () => {
     documentQuery.data = detail('transcription');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
 
     expect(screen.getByRole('region', { name: 'Modo leitura' })).toBeInTheDocument();
@@ -414,7 +404,7 @@ describe('DocumentPage — Modo leitura and Sobre a página on the top row', () 
   it('when the user clicks Sobre a página on a transcription, should open the about window', async () => {
     documentQuery.data = detail('transcription');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Sobre a página' }));
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
@@ -423,7 +413,7 @@ describe('DocumentPage — Modo leitura and Sobre a página on the top row', () 
   it('when the mouse goes over the icons, should show tooltips with the actions', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.hover(screen.getByRole('button', { name: 'Modo leitura' }));
 
     expect(
@@ -434,7 +424,7 @@ describe('DocumentPage — Modo leitura and Sobre a página on the top row', () 
   it('when the mind map is open, should keep the same two icons next to the tabs', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
 
     expect(screen.getByRole('button', { name: 'Modo leitura' })).toHaveTextContent('');
@@ -446,7 +436,7 @@ describe('DocumentPage — infographic view', () => {
   it('when the page is a summary, should offer the Infográfico view next to Resumo and Mapa mental', () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
 
     expect(screen.getByRole('button', { name: 'Infográfico' })).toHaveAttribute(
       'aria-pressed',
@@ -458,7 +448,7 @@ describe('DocumentPage — infographic view', () => {
   it('when the user opens Infográfico, should show it instead of the text and hide the Sumário', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Infográfico' }));
 
     expect(screen.getByTestId('infographic')).toHaveAttribute('data-title', 'Resumo de redes');
@@ -468,7 +458,7 @@ describe('DocumentPage — infographic view', () => {
   it('when the user goes back to Resumo, should show the text again', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Infográfico' }));
     await userEvent.click(screen.getByRole('button', { name: 'Resumo' }));
 
@@ -479,7 +469,7 @@ describe('DocumentPage — infographic view', () => {
   it('when the user switches from the mind map to the infographic, should show only the infographic', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
     await userEvent.click(screen.getByRole('button', { name: 'Infográfico' }));
 
@@ -490,7 +480,7 @@ describe('DocumentPage — infographic view', () => {
   it('when the page is not a summary, should not offer the infographic', () => {
     documentQuery.data = detail('transcription');
 
-    renderPage(true);
+    renderPage();
 
     expect(screen.queryByRole('button', { name: 'Infográfico' })).not.toBeInTheDocument();
   });
@@ -498,7 +488,7 @@ describe('DocumentPage — infographic view', () => {
   it('when the infographic is open and the user enters reading mode, should keep the infographic', async () => {
     documentQuery.data = detail('summary');
 
-    renderPage(true);
+    renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Infográfico' }));
     await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
 

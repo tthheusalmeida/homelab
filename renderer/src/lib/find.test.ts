@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { findMatches, searchTerms } from "./find";
+import {
+  findMatches,
+  findMatchesIn,
+  prepareText,
+  searchPhrase,
+  searchTerms,
+} from "./find";
 
 describe("searchTerms", () => {
   it("when the query has several words, should split them", () => {
@@ -21,6 +27,20 @@ describe("searchTerms", () => {
 
   it("when the query is blank, should return nothing", () => {
     expect(searchTerms("   ")).toEqual([]);
+  });
+
+  it("when the query has short connectors, should drop them", () => {
+    expect(searchTerms("casa da vida")).toEqual(["casa", "vida"]);
+  });
+});
+
+describe("searchPhrase", () => {
+  it("when the query has accents, capitals and extra spaces, should fold and collapse it", () => {
+    expect(searchPhrase("  Casa   DA  Vida ")).toBe("casa da vida");
+  });
+
+  it("when the query has less than 2 letters, should return empty", () => {
+    expect(searchPhrase(" a ")).toBe("");
   });
 });
 
@@ -63,9 +83,44 @@ describe("findMatches", () => {
     expect(findMatches("aaaa", ["aa"])).toEqual([{ start: 0, end: 4 }]);
   });
 
+  it("when the phrase spans a line break or extra spaces, should match it as one", () => {
+    expect(findMatches("A Casa  da\nVida", ["casa da vida"])).toEqual([
+      { start: 2, end: 15 },
+    ]);
+  });
+
+  it("when the term is inside other words, should match it too", () => {
+    expect(findMatches("a casa, casamento e encasar", ["casa"])).toEqual([
+      { start: 2, end: 6 },
+      { start: 8, end: 12 },
+      { start: 22, end: 26 },
+    ]);
+  });
+
   it("when nothing matches or the input is empty, should return nothing", () => {
     expect(findMatches("texto", ["zzz"])).toEqual([]);
     expect(findMatches("", ["a"])).toEqual([]);
     expect(findMatches("texto", [])).toEqual([]);
+  });
+});
+
+describe("prepareText / findMatchesIn", () => {
+  it("when the same prepared text is searched with different terms, should find each with the original positions", () => {
+    const prepared = prepareText("Contêineres e  imagens\nde Rede");
+
+    expect(findMatchesIn(prepared, ["conteiner"])).toEqual([{ start: 0, end: 9 }]);
+    expect(findMatchesIn(prepared, ["e imagens de"])).toEqual([{ start: 12, end: 25 }]);
+    expect(findMatchesIn(prepared, ["rede"])).toEqual([{ start: 26, end: 30 }]);
+  });
+
+  it("when prepared text is searched, should give the same result as findMatches", () => {
+    const text = "A casa, a CASA e o casarão";
+
+    expect(findMatchesIn(prepareText(text), ["casa"])).toEqual(findMatches(text, ["casa"]));
+  });
+
+  it("when the text or the terms are empty, should find nothing", () => {
+    expect(findMatchesIn(prepareText(""), ["a"])).toEqual([]);
+    expect(findMatchesIn(prepareText("texto"), [])).toEqual([]);
   });
 });

@@ -245,8 +245,11 @@ describe("DocumentPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
 
-    expect(screen.queryByText("Editar página")).not.toBeInTheDocument();
-    expect(screen.getByText("Situação")).toBeInTheDocument();
+    // A janela do editor sai com uma transição: espera sumir em vez de contar com o tempo.
+    await waitFor(() =>
+      expect(screen.queryByText("Editar página")).not.toBeInTheDocument(),
+    );
+    expect(await screen.findByText("Situação")).toBeInTheDocument();
   });
 
   it("when the edit is saved, should return to the about window", async () => {
@@ -789,6 +792,66 @@ describe("DocumentPage — back to top", () => {
     expect(
       screen.getByRole("complementary", { name: "Informações da página" }),
     ).not.toContainElement(button);
+  });
+});
+
+describe("DocumentPage — Ctrl+F find", () => {
+  beforeEach(() => {
+    documentQuery.data = detail();
+    documentQuery.isLoading = false;
+    documentQuery.isError = false;
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => {
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it("when Ctrl+F is pressed, should open the search bar with the field focused", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.queryByLabelText("Pesquisar na página")).not.toBeInTheDocument();
+
+    await user.keyboard("{Control>}f{/Control}");
+
+    expect(screen.getByLabelText("Pesquisar na página")).toHaveFocus();
+  });
+
+  it("when a term from the text is typed, should count the occurrences", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.keyboard("{Control>}f{/Control}");
+    await user.type(screen.getByLabelText("Pesquisar na página"), "introdução");
+
+    expect(await screen.findByText("1 de 1")).toBeInTheDocument();
+  });
+
+  it("when searching, should list the occurrences with a snippet and go to the one clicked", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.keyboard("{Control>}f{/Control}");
+    await user.type(screen.getByLabelText("Pesquisar na página"), "introdução");
+
+    const list = await screen.findByRole("list", {
+      name: "Resultados da pesquisa",
+    });
+
+    await user.click(within(list).getByRole("button"));
+
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+  });
+
+  it("when Escape is pressed on the empty field, should close the bar", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.keyboard("{Control>}f{/Control}");
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByLabelText("Pesquisar na página")).not.toBeInTheDocument();
   });
 });
 

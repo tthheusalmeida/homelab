@@ -120,7 +120,6 @@ export const IpcChannels = {
       list: 'library:books:list',
       get: 'library:books:get',
       read: 'library:books:read',
-      search: 'library:books:search',
       create: 'library:books:create',
       update: 'library:books:update',
       delete: 'library:books:delete',

@@ -21,7 +21,7 @@ import {
   type ModuleInput,
 } from '../domain/book';
 import { DocumentStatusOptions } from '../domain/library.types';
-import { compareNatural, normalizeKey } from '../domain/naming';
+import { compareNatural } from '../domain/naming';
 import { BookStorage } from '../infrastructure/book-storage';
 import { LibraryIndex } from '../infrastructure/library-index';
 import { LibraryService } from './library.service';
@@ -71,20 +71,6 @@ export interface BookReading {
     chapters: (BookChapter & { content: string })[];
   }[];
 }
-
-export interface BookSearchHit {
-  documentId: string;
-  chapterTitle: string;
-  moduleId: string;
-  moduleTitle: string;
-  /** Linha (base 1) do trecho dentro do documento. */
-  line: number;
-  snippet: string;
-}
-
-const MAX_HITS_PER_CHAPTER = 3;
-const MAX_HITS = 50;
-const SNIPPET_RADIUS = 80;
 
 @Injectable()
 export class BookService {
@@ -347,58 +333,6 @@ export class BookService {
     return { book: meta, modules: result };
   }
 
-  /**
-   * Procura dentro do texto dos capítulos. Uma linha casa quando tem todas as
-   * palavras (sem diferenciar maiúscula nem acento). Devolve o capítulo, a
-   * linha e um trecho para o front rolar até o ponto.
-   */
-  async search(id: string, query: string): Promise<BookSearchHit[]> {
-    const words = normalizeKey(query ?? '')
-      .split(' ')
-      .filter((word) => word !== '');
-
-    if (words.length === 0) {
-      return [];
-    }
-
-    const reading = await this.read(id);
-    const hits: BookSearchHit[] = [];
-
-    for (const module of reading.modules) {
-      for (const chapter of module.chapters) {
-        let inChapter = 0;
-
-        for (const [index, line] of chapter.content.split(/\r?\n/).entries()) {
-          if (inChapter >= MAX_HITS_PER_CHAPTER) {
-            break;
-          }
-
-          const found = findSnippet(line, words);
-
-          if (found === null) {
-            continue;
-          }
-
-          hits.push({
-            documentId: chapter.documentId,
-            chapterTitle: chapter.title,
-            moduleId: module.id,
-            moduleTitle: module.title,
-            line: index + 1,
-            snippet: found,
-          });
-          inChapter += 1;
-
-          if (hits.length >= MAX_HITS) {
-            return hits;
-          }
-        }
-      }
-    }
-
-    return hits;
-  }
-
   private async load(id: string): Promise<Book> {
     const book = await this.storage.find(id);
 
@@ -457,25 +391,4 @@ export class BookService {
       throw error;
     }
   }
-}
-
-/** Trecho de uma linha ao redor da primeira palavra, se ela tiver todas. */
-function findSnippet(line: string, words: string[]): string | null {
-  const plain = line
-    .replace(/^#{1,6}\s+/, '')
-    .replace(/[*`_>|]/g, '')
-    .trim();
-  const normalized = normalizeKey(plain);
-
-  if (!words.every((word) => normalized.includes(word))) {
-    return null;
-  }
-
-  // normalizeKey pode encurtar o texto (acentos decompostos); a posição só é
-  // usada como referência aproximada para o recorte.
-  const at = Math.max(0, normalized.indexOf(words[0]));
-  const start = Math.max(0, at - SNIPPET_RADIUS);
-  const end = Math.min(plain.length, at + SNIPPET_RADIUS);
-
-  return `${start > 0 ? '…' : ''}${plain.slice(start, end).trim()}${end < plain.length ? '…' : ''}`;
 }

@@ -74,11 +74,10 @@ export class SettingsStore {
       // Só as chaves conhecidas: valores antigos (pastas, Whisper) que sobraram no arquivo são ignorados.
       paths: { libraryDir: patch.paths?.libraryDir ?? base.paths.libraryDir },
       appearance: {
-        ...base.appearance,
-        ...patch.appearance,
+        theme: patch.appearance?.theme ?? base.appearance.theme,
+        accent: patch.appearance?.accent ?? base.appearance.accent,
         reading: { ...base.appearance.reading, ...patch.appearance?.reading },
         transcript: { ...base.appearance.transcript, ...patch.appearance?.transcript },
-        summary: { ...base.appearance.summary, ...patch.appearance?.summary },
       },
       updates: { autoCheck: patch.updates?.autoCheck ?? base.updates.autoCheck },
       support: {

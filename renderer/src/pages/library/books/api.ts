@@ -2,7 +2,6 @@ import type {
   BookDetail,
   BookPosition,
   BookReading,
-  BookSearchHit,
   BookSummary,
   CreateBookInput,
   ModuleDraft,
@@ -27,10 +26,6 @@ export function getBook(id: string): Promise<BookDetail> {
 
 export function readBook(id: string): Promise<BookReading> {
   return ipc.invoke(IpcChannels.library.books.read, { id });
-}
-
-export function searchBook(id: string, q: string): Promise<BookSearchHit[]> {
-  return ipc.invoke(IpcChannels.library.books.search, { id, q });
 }
 
 export function createBook(input: CreateBookInput): Promise<BookDetail> {

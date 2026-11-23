@@ -47,8 +47,6 @@ const withPreferences = (preview: boolean, children: React.ReactNode, progress =
     resetReading: vi.fn(),
     updateTranscript: vi.fn(),
     resetTranscript: vi.fn(),
-    updateSummary: vi.fn(),
-    resetSummary: vi.fn(),
   };
 
   return <AppearanceContext.Provider value={api}>{children}</AppearanceContext.Provider>;

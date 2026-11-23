@@ -21,7 +21,7 @@ interface OutlineNavProps {
 /**
  * Lista de títulos clicáveis (sumário). A hierarquia é visível: título em negrito e cor cheia,
  * subtítulo recuado e médio, sub-subtítulo menor, leve e esmaecido. O item que está sendo lido
- * aparece em destaque (fundo e negrito, sem borda colorida; ver `OUTLINE_ACTIVE`) e com `aria-current`.
+ * aparece em destaque (negrito, cor cheia e o hexágono em destaque; sem fundo nem borda colorida; ver `OUTLINE_ACTIVE`) e com `aria-current`.
  */
 export function OutlineNav({ items, activeId, onSelect, ariaLabel, className }: OutlineNavProps) {
   return (
@@ -70,11 +70,11 @@ export function OutlineNav({ items, activeId, onSelect, ariaLabel, className }: 
 }
 
 /**
- * Item em leitura ou clicado: fundo derivado da cor do texto, texto em cor cheia e negrito, sem
- * borda colorida. Só usa `foreground`, então contrasta com qualquer fundo (tema ou as
+ * Item em leitura ou clicado: texto em cor cheia e negrito (o hexágono ao lado é que marca o lugar),
+ * sem fundo e sem borda colorida. Só usa `foreground`, então contrasta com qualquer fundo (tema ou as
  * cores escolhidas na leitura), o que a cor de destaque sozinha não garante.
  */
-export const OUTLINE_ACTIVE = "bg-foreground/12 font-semibold text-foreground";
+export const OUTLINE_ACTIVE = "font-semibold text-foreground";
 
 /** Peso, tamanho e cor por nível: do título (forte) ao subtítulo (leve e esmaecido). */
 const levelStyle: Record<number, string> = {

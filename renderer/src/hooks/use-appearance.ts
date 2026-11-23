@@ -22,9 +22,7 @@ import {
   type AppearancePatch,
 } from "#shared/contracts/appearance";
 import {
-  DEFAULT_SUMMARY,
   DEFAULT_TRANSCRIPT,
-  type SummaryPreferences,
   type TranscriptPreferences,
 } from "#shared/contracts/document-views";
 import {
@@ -43,9 +41,6 @@ export interface AppearanceApi {
   /** Muda só parte dos ajustes das transcrições. */
   updateTranscript(patch: Partial<TranscriptPreferences>): Promise<void>;
   resetTranscript(): Promise<void>;
-  /** Muda só parte dos ajustes dos resumos. */
-  updateSummary(patch: Partial<SummaryPreferences>): Promise<void>;
-  resetSummary(): Promise<void>;
 }
 
 export const AppearanceContext = createContext<AppearanceApi | null>(null);
@@ -138,7 +133,6 @@ export function useAppearanceState(): AppearanceApi {
         ...patch,
         reading: { ...previous.reading, ...patch.reading },
         transcript: { ...previous.transcript, ...patch.transcript },
-        summary: { ...previous.summary, ...patch.summary },
       };
 
       adopt(next);
@@ -183,16 +177,6 @@ export function useAppearanceState(): AppearanceApi {
     [update],
   );
 
-  const updateSummary = useCallback(
-    (patch: Partial<SummaryPreferences>) => update({ summary: patch }),
-    [update],
-  );
-
-  const resetSummary = useCallback(
-    () => update({ summary: DEFAULT_SUMMARY }),
-    [update],
-  );
-
   return {
     appearance,
     update,
@@ -201,8 +185,6 @@ export function useAppearanceState(): AppearanceApi {
     resetReading,
     updateTranscript,
     resetTranscript,
-    updateSummary,
-    resetSummary,
   };
 }
 
@@ -228,9 +210,6 @@ export function useTranscriptPreferences(): TranscriptPreferences {
 }
 
 /** Ajustes dos resumos (padrão fora de um `AppearanceProvider`). */
-export function useSummaryPreferences(): SummaryPreferences {
-  return useContext(AppearanceContext)?.appearance.summary ?? DEFAULT_SUMMARY;
-}
 
 export function useAppearance(): AppearanceApi {
   const api = useContext(AppearanceContext);

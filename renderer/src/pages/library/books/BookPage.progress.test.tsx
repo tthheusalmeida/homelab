@@ -9,7 +9,6 @@ const reading = {
   isLoading: false,
   isError: false,
 };
-const search = { data: undefined as unknown, isFetching: false };
 const setRead = { mutate: vi.fn(), isPending: false, isError: false };
 const savePosition = { mutate: vi.fn(), isPending: false, isError: false };
 const idle = { mutate: vi.fn(), isPending: false, isError: false };
@@ -18,7 +17,6 @@ const reset = { mutate: vi.fn(), isPending: false, isError: false };
 vi.mock("./hooks", () => ({
   useBookReading: () => reading,
   useBook: () => ({ data: undefined }),
-  useBookSearch: () => search,
   useDeleteBook: () => idle,
   useSetChapterRead: () => setRead,
   useResetBookProgress: () => reset,
@@ -98,7 +96,6 @@ describe("BookPage — progress, continue, find, export", () => {
     reading.data = readingData();
     reading.isLoading = false;
     reading.isError = false;
-    search.data = undefined;
     setRead.mutate.mockReset();
     savePosition.mutate.mockReset();
     reset.mutate.mockReset();
@@ -726,20 +723,20 @@ describe("BookPage — progress, continue, find, export", () => {
   });
 
   describe("find in the book", () => {
-    it("when Ctrl+K is pressed, should focus the search field", async () => {
+    it("when Ctrl+F is pressed, should open the floating search with the field focused", async () => {
       const user = userEvent.setup();
       renderPage();
 
-      await user.keyboard("{Control>}k{/Control}");
+      await user.keyboard("{Control>}f{/Control}");
 
       expect(screen.getByLabelText("Pesquisar no livro")).toHaveFocus();
     });
 
-    it("when Cmd+K is pressed, should also focus the search field", async () => {
+    it("when Cmd+F is pressed, should also open the floating search", async () => {
       const user = userEvent.setup();
       renderPage();
 
-      await user.keyboard("{Meta>}k{/Meta}");
+      await user.keyboard("{Meta>}f{/Meta}");
 
       expect(screen.getByLabelText("Pesquisar no livro")).toHaveFocus();
     });
@@ -762,10 +759,12 @@ describe("BookPage — progress, continue, find, export", () => {
       const user = userEvent.setup();
       renderPage();
 
+      await user.keyboard("{Control>}f{/Control}");
       await user.type(screen.getByLabelText("Pesquisar no livro"), "imagem");
 
       expect(await screen.findByText("1 de 3")).toBeInTheDocument();
 
+      await user.keyboard("{Enter}");
       await user.keyboard("{Enter}");
 
       expect(await screen.findByText("2 de 3")).toBeInTheDocument();
@@ -773,7 +772,7 @@ describe("BookPage — progress, continue, find, export", () => {
       delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
     });
 
-    it("when in reading mode, should keep the search in the top bar and Ctrl+K should focus it", async () => {
+    it("when in reading mode, should open the floating search above the reading area", async () => {
       const user = userEvent.setup();
       renderPage();
       await user.click(screen.getByRole("button", { name: /Modo leitura/ }));
@@ -781,18 +780,22 @@ describe("BookPage — progress, continue, find, export", () => {
       const region = screen.getByRole("region", { name: "Modo leitura" });
 
       expect(
-        within(region).getByLabelText("Pesquisar no livro"),
-      ).toBeInTheDocument();
+        within(region).queryByLabelText("Pesquisar no livro"),
+      ).not.toBeInTheDocument();
 
-      await user.keyboard("{Control>}k{/Control}");
+      await user.keyboard("{Control>}f{/Control}");
 
-      expect(within(region).getByLabelText("Pesquisar no livro")).toHaveFocus();
+      const floating = screen.getByLabelText("Pesquisar no livro");
+
+      expect(floating).toHaveFocus();
+      expect(region).not.toContainElement(floating);
     });
 
     it("when the search is cleared, should drop the counter", async () => {
       const user = userEvent.setup();
       renderPage();
 
+      await user.keyboard("{Control>}f{/Control}");
       await user.type(screen.getByLabelText("Pesquisar no livro"), "docker");
       await screen.findByText(/de \d+/);
       await user.type(screen.getByLabelText("Pesquisar no livro"), "{Escape}");
@@ -858,7 +861,6 @@ describe("BookPage — back to top", () => {
     reading.data = readingData();
     reading.isLoading = false;
     reading.isError = false;
-    search.data = undefined;
     document.documentElement.scrollTo = vi.fn() as never;
   });
 
@@ -905,7 +907,7 @@ describe("BookPage — back to top", () => {
     });
   });
 
-  it("when the button is shown, should keep the progress and search in the side panel and the summary in the left column", () => {
+  it("when the button is shown, should keep the progress in the side panel and the summary in the left column", () => {
     renderPage();
 
     scrollDocument(900);
@@ -923,7 +925,6 @@ describe("BookPage — back to top", () => {
         screen.getByRole("complementary", { name: "Onde você está" }),
       ).getByRole("navigation", { name: "Sumário do livro" }),
     ).toBeInTheDocument();
-    expect(panel.getByLabelText("Pesquisar no livro")).toBeInTheDocument();
   });
 
   it("when in reading mode, should also offer the button in the text column", async () => {

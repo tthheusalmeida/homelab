@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ArrowRight, Check } from "lucide-react";
 
 import { Button } from "#ui/button";
@@ -24,7 +25,7 @@ interface BookContentProps {
  * direto no fundo (`ReadingSection`), com filetes sutis entre capítulos e módulos e a marcação de
  * lido discreta. Fonte, tamanho e cores vêm do `ReadingSurface` ao redor.
  */
-export function BookContent({
+function BookContentView({
   modules,
   readIds = [],
   onToggleRead,
@@ -120,3 +121,6 @@ export function BookContent({
     </div>
   );
 }
+
+/** Memoizado: digitar na busca não deve redesenhar o livro inteiro. */
+export const BookContent = memo(BookContentView);

@@ -102,7 +102,6 @@ describe('createHandlers', () => {
             list: jest.fn(),
             get: jest.fn(),
             read: jest.fn(),
-            search: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
             remove: jest.fn(),

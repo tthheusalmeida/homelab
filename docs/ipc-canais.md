@@ -32,7 +32,7 @@ Evento `updates:changed` (main → renderer): o `UpdateStatus` a cada mudança (
 | `settings:update` | `{ libraryDir? }` | `{ value, restartRequired }`; pasta inválida → `VALIDATION` (a tela usa `settings:move-library`) |
 | `settings:inspect-library` | `{ path }` | `{ path, exists, empty, fileCount }` (o que há na pasta candidata) |
 | `settings:move-library` | `{ to, mode: move|use, deleteOrigin? }` | `{ libraryDir, filesCopied, bytesCopied, originRemoved, originRemoveError?, restartRequired }`; progresso em `library-move:progress`; falha de cópia → `PERSIST_FAILED` (nada troca) |
-| `appearance:get` | — | `{ theme: system|light|dark, accent: cyan|blue|indigo|violet|emerald|rose|orange, reading: { font, fontSize, zoom, background, backgroundShade, text, textShade, separator, separatorShade, pinSidebar, swapSides }, transcript: { preview, progress }, summary: { outline } }` (`reading`, `transcript` e `summary`: ver `identidade.md`; `appearance:update` aceita cada um parcial) |
+| `appearance:get` | — | `{ theme: system|light|dark, accent: cyan|blue|indigo|violet|emerald|rose|orange, reading: { font, fontSize, zoom, background, backgroundShade, text, textShade, separator, separatorShade, pinSidebar, swapSides }, transcript: { preview, progress } }` (`reading` e `transcript`: ver `identidade.md`; `appearance:update` aceita cada um parcial) |
 | `appearance:update` | parte da aparência (`Partial`; `reading` também pode vir parcial, só o que mudou) | a aparência completa; tema, cor, fonte, tamanho (8 a 32, de 2 em 2), zoom (70 a 200, de 10 em 10), cor (fundo, texto ou separadores), intensidade (50 a 950) ou painel lateral e inverter lados (booleanos) de leitura inválidos → `VALIDATION`; não pede reinício |
 | `support:get` | — | `{ starPromptHidden: boolean }`: `true` quando a pessoa já estrelou ou dispensou o convite (`apoio.md`) |
 | `support:update` | `{ starPromptHidden?: boolean }` | o valor salvo; fora do tipo → `VALIDATION` |
@@ -127,7 +127,6 @@ A pasta da biblioteca não gera `NOT_CONFIGURED`: ela é obrigatória nas Config
 | `library:books:list` | `GET library/books` | `{ documentId? }` | resumos dos livros (capa, progresso, `moduleCount`; com `documentId`, cada um traz `containsDocument`) | 7a (feito) |
 | `library:books:get` | `GET library/books/:id` | `{ id }` | livro com módulos e capítulos (`available` é `false` se o documento saiu da biblioteca) e `readDocumentIds` | 7a (feito) |
 | `library:books:read` | `GET library/books/:id/read` | `{ id }` | livro + conteúdo dos capítulos disponíveis (os indisponíveis ficam de fora) | 7a (feito) |
-| `library:books:search` | `GET library/books/:id/search` | `{ id, q }` | até 50 trechos (`documentId`, `chapterTitle`, `moduleId`, `moduleTitle`, `line`, `snippet`), no máximo 3 por capítulo | 7a (feito) |
 | `library:books:create` | `POST library/books` | `{ title, kind?, description?, subtitle?, coverColor?, coverImageUrl? }` | livro (`BookDetail`) | 7b (feito) |
 | `library:books:update` | `PATCH library/books/:id` | `{ id, title?, kind?, description?, subtitle?, coverColor?, coverImageUrl? }` (só o informado muda) | livro | 7b (feito) |
 | `library:books:delete` | `DELETE library/books/:id` | `{ id }` | nada (apaga o arquivo do livro; os documentos ficam) | 7b (feito) |

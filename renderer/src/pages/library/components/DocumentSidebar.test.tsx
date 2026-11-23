@@ -178,7 +178,6 @@ describe("DocumentSidebar — reading", () => {
     );
     expect(screen.getByRole("button", { name: "Detalhes" })).toHaveClass(
       "text-foreground",
-      "bg-foreground/12",
     );
     expect(
       screen.getByRole("button", { name: "Introdução" }),

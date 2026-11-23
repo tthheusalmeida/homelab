@@ -1,8 +1,16 @@
 # Atalhos, paleta de comandos e notificações
 
+## Zoom da janela
+`Ctrl +` (a tecla do `=`, sem Shift), `Ctrl -` e `Ctrl 0` mudam o zoom da janela inteira. O menu padrão do Electron só reconhecia `Ctrl Shift =` para aumentar, então em teclados com o `+` na tecla do `=` o aumento não funcionava; o main (`before-input-event`, `isZoomInShortcut` em `shortcuts.ts`) cuida do `Ctrl =` e o menu segue com os demais.
+
 ## Paleta de comandos (Ctrl K)
 - `Ctrl+K` (ou `Cmd+K`) em qualquer tela, o botão **Buscar** do cabeçalho, ou `/` fora de campos de texto. Código: `components/CommandPalette.tsx`.
 - Lista todas as telas do menu (filtra sem diferenciar acento e caixa) e, com 2 letras ou mais, busca **páginas da biblioteca** pelo texto (`library:documents:list`, até 6 resultados). Setas movem, Enter abre, Esc fecha.
+
+## Buscar no texto (Ctrl F)
+- `Ctrl+F` (ou `Cmd+F`) abre **um só campo de busca**, flutuante, centralizado no topo (colado na borda de cima) e acima do modo leitura, no **livro** e nas **páginas da biblioteca** (transcrição, resumo e demais). Não há campo fixo no painel. A barra traz a **lista de ocorrências** com trecho (até 100; clicar vai até a ocorrência, também no modo leitura); no livro também (a mesma lista, no `FindBar`). Não vale no mapa mental nem no infográfico. Digitar não rola a tela: ela só rola ao clicar num trecho ou com Enter (o primeiro Enter vai à primeira ocorrência, Shift+Enter à última). Esc limpa o texto; com o campo vazio, fecha a barra. Clicar fora dela também fecha. Clicar em um trecho da lista fecha a barra, rola até a ocorrência e deixa só ela marcada; a contagem de 1 s para sumir só começa **quando a rolagem chega lá** (`lib/scroll-settle.ts`: espera o scroll parar), para resumos longos não perderem a marca no caminho; a marca esmaece (opacidade) nos últimos 300 ms: a variável `--find-alpha` (registrada em `global.css`) é animada só no elemento da ocorrência, porque o destaque do navegador não aceita transição. Visual (identidade Colmeia): as ocorrências levam sublinhado pontilhado na cor de destaque; a atual, com o mesmo fundo das outras, sublinhado sólido e um brilho de mel (`text-shadow`), e **um hexágono entra da esquerda para a direita na margem, na linha dela, e fica indo e voltando até o trecho ser escolhido ou a busca fechar** (`.find-marker`: um só elemento fixo, movido por `transform` a cada quadro de rolagem, sem tocar no texto, e que esmaece junto com a marca); a barra também mostra um hexágono pulsando ao lado de "3 de 12".
+- Código único: `hooks/use-find.ts` (estado, Ctrl+F e destaque) + `components/FindBar.tsx` (campo, "3 de 12" e setas). Para ligar em outra tela: `const find = useFind(container, versão)` e `<FindBar {...find.barProps} results={find.results} onClose={find.close} />`.
+- Como casa: a **frase inteira** primeiro ("casa da vida", ignorando acento, caixa e quebra de linha); se não existe, cada palavra em **qualquer pedaço de palavra** ("casa" acha "casamento" e "encasar"), sem conectores de até 2 letras quando há palavras maiores (`lib/find.ts`, `shared/search-words.ts`). Enter vai para a próxima, Shift+Enter para a anterior.
 
 ## Atalhos "G e uma letra" (estilo terminal)
 Pressione `G` e, em até 1,2 s, a letra da tela. Só valem fora de campos de digitação e sem Ctrl/Alt/Cmd. Definidos em `lib/shortcuts.ts` (`GO_SHORTCUTS`) e aplicados por `hooks/use-app-shortcuts.ts` no `AppLayout`.
@@ -23,4 +31,4 @@ Pressione `G` e, em até 1,2 s, a letra da tela. Só valem fora de campos de dig
 Quando um job termina (concluído ou com falha) e **nenhuma janela do app está em foco**, o main mostra uma notificação do sistema operacional (`main/system-notifier.ts`, ligada ao `EventBackAlerts`). Clicar nela traz a janela principal para a frente. Com o app em foco só aparece o aviso na tela. Job **cancelado** pelo usuário não notifica.
 
 ## Testes
-`lib/shortcuts.test.ts`, `hooks/use-app-shortcuts.test.tsx`, `components/CommandPalette.test.tsx` (renderer) e `main/system-notifier.spec.ts` + `main/event-back-alerts.spec.ts` (main).
+`lib/shortcuts.test.ts`, `lib/find.test.ts`, `hooks/use-find.test.tsx`, `components/FindBar.test.tsx`, `hooks/use-app-shortcuts.test.tsx`, `components/CommandPalette.test.tsx` (renderer) e `main/system-notifier.spec.ts` + `main/event-back-alerts.spec.ts` (main).

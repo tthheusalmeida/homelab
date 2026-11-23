@@ -7,6 +7,8 @@ import { InboxStrings } from "#lib/inbox-text";
 import { Button } from "#ui/button";
 
 import { BackToTopButton } from "#components/BackToTopButton";
+import { FindBar } from "#components/FindBar";
+import { useFind } from "#hooks/use-find";
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { OptionToggle, type ToggleOption } from "#components/OptionToggle";
 import { DocumentBody } from "#components/DocumentBody";
@@ -14,7 +16,7 @@ import { ReadingMode } from "#components/ReadingMode";
 import { ReadingSection } from "#components/ReadingSection";
 import { ReadingSurface } from "#components/ReadingSurface";
 import { cn } from "#lib/utils";
-import { useReadingPreferences, useSummaryPreferences } from "#hooks/use-appearance";
+import { useReadingPreferences } from "#hooks/use-appearance";
 import { useCtrlWheelZoom } from "#hooks/use-ctrl-wheel-zoom";
 import { stepZoom } from "#lib/reading";
 import { useActiveSection } from "#hooks/use-active-section";
@@ -84,11 +86,6 @@ export function DocumentPage() {
     [data],
   );
 
-  // Resumos podem esconder o sumário do painel (Configurações > Aparência > Resumo).
-  const summary = useSummaryPreferences();
-  const sidebarHeadings =
-    data?.meta.type === "summary" && !summary.outline ? [] : headings;
-
   // Coluna da esquerda: a barra de trechos (transcrição com tempo) ou o Sumário, se houver.
   const mindMapOpen = view === "mindmap" && data?.meta.type === "summary";
   const infographicOpen = view === "infographic" && data?.meta.type === "summary";
@@ -96,7 +93,7 @@ export function DocumentPage() {
   const alternateView = mindMapOpen || infographicOpen;
   const hasLeftColumn =
     !alternateView &&
-    (Boolean(excerpts) || sidebarHeadings.length >= OUTLINE_MIN_HEADINGS);
+    (Boolean(excerpts) || headings.length >= OUTLINE_MIN_HEADINGS);
   const sides = useReadingSides(hasLeftColumn);
 
   // Ctrl + roda do mouse muda o zoom da leitura (o mesmo do painel "Leitura"). Mapa mental e infográfico
@@ -110,6 +107,17 @@ export function DocumentPage() {
 
   // Título em leitura agora (destacado no sumário).
   const activeId = useActiveSection(headings.map((heading) => heading.id));
+
+  // Ctrl+F: busca no texto da página (só onde há texto: não vale no mapa mental nem no infográfico).
+  const find = useFind(container, data?.content);
+  const findBar =
+    find.open && !alternateView ? (
+      <FindBar
+        {...find.barProps}
+        results={find.results}
+        onClose={find.close}
+      />
+    ) : undefined;
 
   if (isLoading) {
     return (
@@ -151,9 +159,12 @@ export function DocumentPage() {
     });
   }
 
-  // As janelas da página (Sobre, Editar, Remover, Excluir, Adicionar ao livro) valem também no modo leitura.
+  // As janelas da página (Sobre, Editar, Remover, Excluir, Adicionar ao livro) e a busca flutuante
+  // (Ctrl+F) valem também no modo leitura.
   const dialogs = (
     <>
+      {findBar}
+
       <DocumentAboutDialog
         open={modal === "about"}
         onOpenChange={(open) => setModal(open ? "about" : null)}
@@ -269,7 +280,7 @@ export function DocumentPage() {
               <div ref={setRailSlot} />
             ) : (
               hasLeftColumn && (
-                <DocumentOutline headings={sidebarHeadings} activeId={activeId} />
+                <DocumentOutline headings={headings} activeId={activeId} />
               )
             )
           }
@@ -278,7 +289,7 @@ export function DocumentPage() {
               <DocumentSidebar
                 embedded
                 hideOutline
-                headings={sidebarHeadings}
+                headings={headings}
                 activeId={activeId}
                 onOpenAbout={() => setModal("about")}
               />
@@ -348,18 +359,18 @@ export function DocumentPage() {
           {excerpts ? (
             <div
               ref={setRailSlot}
-              className={cn("hidden lg:block", sides.followOrder)}
+              className={cn("hidden md:block", sides.followOrder)}
             />
           ) : (
             hasLeftColumn && (
               <aside
                 aria-label="Onde você está"
                 className={cn(
-                  "hidden lg:sticky lg:top-4 lg:block lg:self-start",
+                  "hidden md:sticky md:top-4 md:block md:self-start",
                   sides.followOrder,
                 )}
               >
-                <DocumentOutline headings={sidebarHeadings} activeId={activeId} />
+                <DocumentOutline headings={headings} activeId={activeId} />
               </aside>
             )
           )}
@@ -377,7 +388,7 @@ export function DocumentPage() {
 
           <div className={cn("min-w-0", sides.optionsOrder)}>
             <DocumentSidebar
-              headings={sidebarHeadings}
+              headings={headings}
               hideOutline
               activeId={activeId}
             />

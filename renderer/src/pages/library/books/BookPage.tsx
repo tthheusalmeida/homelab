@@ -28,14 +28,13 @@ import { ReadingSurface } from "#components/ReadingSurface";
 import { useActiveSection } from "#hooks/use-active-section";
 import { useReadingSides } from "#hooks/use-reading-sides";
 import { cn } from "#lib/utils";
-import { useDebouncedValue } from "#hooks/use-debounced-value";
-import { useTextHighlight } from "#hooks/use-text-highlight";
+import { useFind } from "#hooks/use-find";
+import { FindBar } from "#components/FindBar";
 
 import { BookCompletedDialog } from "./components/BookCompletedDialog";
 import { BookContent } from "./components/BookContent";
 import { BookCover } from "./components/BookCover";
 import { BookDetailsDialog } from "./components/BookDetailsDialog";
-import { BookFindBar } from "./components/BookFindBar";
 import { BookFormDialog } from "./components/BookFormDialog";
 import { BookOrganizerDialog } from "./components/BookOrganizerDialog";
 import { BookPrintView } from "./components/BookPrintView";
@@ -43,7 +42,6 @@ import { BookOutlineCard, BookSidebar } from "./components/BookSidebar";
 import {
   useBook,
   useBookReading,
-  useBookSearch,
   useDeleteBook,
   useResetBookProgress,
   useSaveBookPosition,
@@ -53,10 +51,8 @@ import {
   chapterElementId,
   goToElement,
   headingElementId,
-  hitTargetId,
 } from "./reader";
 import { bookStats } from "./stats";
-import type { BookSearchHit } from "./types";
 import { useSnackbar } from "#components/Snackbar";
 import { PageLoading, PageError } from "#components/PageState";
 
@@ -80,21 +76,17 @@ export function BookPage() {
   const { mutate: persistPosition } = useSaveBookPosition();
 
   const [modal, setModal] = useState<Modal>(null);
-  const [search, setSearch] = useState("");
   const [reader, setReader] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   const [container, setContainer] = useState<HTMLElement | null>(null);
 
-  const findInput = useRef<HTMLInputElement>(null);
   const userScrolled = useRef(false);
   const lastSaved = useRef<string | undefined>(undefined);
   const seededPosition = useRef(false);
   const continued = useRef(false);
 
-  const query = useDebouncedValue(search);
-  const results = useBookSearch(bookId, query);
-  const find = useTextHighlight(container, query, reading.data);
+  const find = useFind(container, reading.data);
 
   const contents = useMemo(() => {
     const map = new Map<string, string>();
@@ -133,10 +125,55 @@ export function BookPage() {
     return { positionIds: ids, owner: owners };
   }, [reading.data]);
 
+  // Contar as palavras do livro todo é caro: só refaz quando o texto muda, não a cada seção
+  // ativa nova durante a rolagem.
+  const stats = useMemo(
+    () => (reading.data ? bookStats(reading.data) : null),
+    [reading.data],
+  );
+
   const activeElementId = useActiveSection(positionIds);
   const activeChapterId = activeElementId
     ? owner.get(activeElementId)
     : undefined;
+
+  // Estáveis de propósito: o texto do livro é memoizado e não deve ser redesenhado a
+  // cada tecla digitada na busca.
+  const goToChapter = useCallback(
+    (documentId: string) => goToElement(chapterElementId(documentId)),
+    [],
+  );
+
+  const bookRef = useRef(reading.data?.book);
+  bookRef.current = reading.data?.book;
+
+  const { mutate: mutateRead } = setRead;
+  const { error: showError } = snackbar;
+
+  const handleToggleRead = useCallback(
+    (documentId: string, read: boolean) => {
+      const current = bookRef.current;
+
+      if (!current) {
+        return;
+      }
+
+      const wasCompleted = current.completedAt !== null;
+
+      mutateRead(
+        { id: current.id, documentId, read },
+        {
+          onSuccess: (updated) => {
+            if (updated.completedAt && !wasCompleted) {
+              setCelebrate(true);
+            }
+          },
+          onError: (error) => showError(error.message),
+        },
+      );
+    },
+    [mutateRead, showError],
+  );
 
   const continueReading = useCallback(() => {
     const position = reading.data?.book.lastPosition;
@@ -151,21 +188,6 @@ export function BookPage() {
         : chapterElementId(position.documentId),
     );
   }, [reading.data]);
-
-  // Ctrl+K leva para a busca do livro (Enter vai para a próxima ocorrência).
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        findInput.current?.focus();
-        findInput.current?.select();
-      }
-    };
-
-    document.addEventListener("keydown", onKey);
-
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
 
   // Só guarda a posição depois que o leitor rolou a página de verdade (para a
   // abertura não sobrescrever o "onde parei" com o começo do livro).
@@ -247,27 +269,10 @@ export function BookPage() {
   }
 
   const { book, modules } = reading.data;
-  const stats = bookStats(reading.data);
-  const totalChapters = stats.chapters;
+  const totalChapters = stats?.chapters ?? 0;
   const readIds = book.readDocumentIds;
   const readCount = readIds.filter((id) => contents.has(id)).length;
   const completed = book.completedAt !== null;
-
-  function handleToggleRead(documentId: string, read: boolean) {
-    const wasCompleted = completed;
-
-    setRead.mutate(
-      { id: book.id, documentId, read },
-      {
-        onSuccess: (updated) => {
-          if (updated.completedAt && !wasCompleted) {
-            setCelebrate(true);
-          }
-        },
-        onError: (error) => snackbar.error(error.message),
-      },
-    );
-  }
 
   function handleReset() {
     resetProgress.mutate(book.id, {
@@ -276,10 +281,6 @@ export function BookPage() {
         snackbar.success("Progresso de leitura zerado");
       },
     });
-  }
-
-  function handleHit(hit: BookSearchHit) {
-    goToElement(hitTargetId(hit, contents.get(hit.documentId) ?? ""));
   }
 
   function handleDelete() {
@@ -291,30 +292,29 @@ export function BookPage() {
     });
   }
 
-  const goToChapter = (documentId: string) =>
-    goToElement(chapterElementId(documentId));
-
-  const findBar = (
-    <BookFindBar
-      value={search}
-      onChange={setSearch}
-      count={find.count}
-      index={find.index}
-      onNext={find.next}
-      onPrev={find.prev}
-      inputRef={findInput}
+  // Ctrl+F: a busca flutuante sobre o texto, com a lista de ocorrências.
+  const floatingFind = find.open && (
+    <FindBar
+      label="Pesquisar no livro"
+      {...find.barProps}
+      results={find.results}
+      onClose={find.close}
     />
   );
 
   const celebration = (
-    <BookCompletedDialog
-      open={celebrate}
-      onOpenChange={setCelebrate}
-      title={book.title}
-      chapters={stats.chapters}
-      words={stats.words}
-      minutes={stats.minutes}
-    />
+    <>
+      {floatingFind}
+
+      <BookCompletedDialog
+        open={celebrate}
+        onOpenChange={setCelebrate}
+        title={book.title}
+        chapters={stats?.chapters ?? 0}
+        words={stats?.words ?? 0}
+        minutes={stats?.minutes ?? 0}
+      />
+    </>
   );
 
   if (reader && totalChapters > 0) {
@@ -323,7 +323,6 @@ export function BookPage() {
         <ReadingMode
           title={book.title}
           onExit={() => setReader(false)}
-          actions={findBar}
           follow={
             <BookOutlineCard
               modules={modules}
@@ -342,11 +341,7 @@ export function BookPage() {
               readIds={readIds}
               readCount={readCount}
               completedAt={book.completedAt}
-              query={search}
-              hits={results.data}
-              isSearching={results.isFetching}
               onSelectChapter={goToChapter}
-              onSelectHit={handleHit}
               onToggleRead={handleToggleRead}
             />
           }
@@ -470,7 +465,7 @@ export function BookPage() {
           <aside
             aria-label="Onde você está"
             className={cn(
-              "hidden lg:sticky lg:top-4 lg:block lg:self-start",
+              "hidden md:sticky md:top-4 md:block md:self-start",
               sides.followOrder,
             )}
           >
@@ -509,12 +504,7 @@ export function BookPage() {
               readIds={readIds}
               readCount={readCount}
               completedAt={book.completedAt}
-              query={search}
-              findBar={findBar}
-              hits={results.data}
-              isSearching={results.isFetching}
               onSelectChapter={goToChapter}
-              onSelectHit={handleHit}
               onToggleRead={handleToggleRead}
             />
           </div>

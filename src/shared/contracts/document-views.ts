@@ -12,14 +12,7 @@ export interface TranscriptPreferences {
   progress: boolean;
 }
 
-/** Resumos. */
-export interface SummaryPreferences {
-  /** Mostra o sumário dos títulos à esquerda do texto, na página (quando há 2 títulos ou mais). */
-  outline: boolean;
-}
-
 export const DEFAULT_TRANSCRIPT: TranscriptPreferences = { preview: true, progress: true };
-export const DEFAULT_SUMMARY: SummaryPreferences = { outline: true };
 
 const asBoolean = (value: unknown, fallback: boolean): boolean | null =>
   value === undefined ? fallback : typeof value === 'boolean' ? value : null;
@@ -36,16 +29,4 @@ export function parseTranscript(value: unknown): TranscriptPreferences | null {
   const progress = asBoolean(candidate.progress, DEFAULT_TRANSCRIPT.progress);
 
   return preview === null || progress === null ? null : { preview, progress };
-}
-
-export function parseSummary(value: unknown): SummaryPreferences | null {
-  const candidate = value as Partial<SummaryPreferences> | null;
-
-  if (typeof candidate !== 'object' || candidate === null) {
-    return null;
-  }
-
-  const outline = asBoolean(candidate.outline, DEFAULT_SUMMARY.outline);
-
-  return outline === null ? null : { outline };
 }
