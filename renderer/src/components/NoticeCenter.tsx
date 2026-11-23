@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { CircleAlert, Info, TriangleAlert, X, type LucideIcon } from "lucide-react";
 
 import { IpcChannels } from "#shared/channels";
@@ -30,12 +30,14 @@ const Texts = {
  * Central de avisos do app: falhas e situações importantes (job que falhou, processos interrompidos,
  * falha ao gravar em disco, arquivo recuperado da cópia...) aparecem aqui, em qualquer tela. Busca os
  * que nasceram antes de a tela existir e escuta os novos (`app:notice`). Um aviso com o mesmo id
- * substitui o anterior; avisos que levam à tela em que o usuário já está também aparecem (o aviso de job aparece até na tela de tarefas).
+ * substitui o anterior. Aviso que leva à tela em que o usuário já está (o de job, com "Ver tarefas",
+ * dentro de Em andamento) não aparece: o resultado já está à vista, no próprio job.
  */
 export function NoticeCenter() {
   const [notices, setNotices] = useState<AppNotice[]>([]);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
   const dismiss = (id: string) => {
@@ -45,6 +47,10 @@ export function NoticeCenter() {
   };
 
   const show = (notice: AppNotice) => {
+    if (notice.link?.path === pathname) {
+      return;
+    }
+
     clearTimeout(timers.current.get(notice.id));
     setNotices((current) => [...current.filter((item) => item.id !== notice.id), notice]);
 

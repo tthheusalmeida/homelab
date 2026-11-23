@@ -125,29 +125,33 @@ describe("NoticeCenter", () => {
     expect(screen.queryByText("Resumo de vídeo falhou")).not.toBeInTheDocument();
   });
 
-  it("when the user is already on the screen the notice points to, should still show it (jobs finish while looking at the tasks)", async () => {
+  it("when the user is already on the screen the notice points to, should not show it (the job is right there)", async () => {
     setup([], "/jobs/track");
     await waitFor(() => expect(listenerCount(IpcEvents.notice)).toBe(1));
 
     act(() => emitEvent(IpcEvents.notice, { ...jobFailed, id: "job:9" }));
+    act(() => emitEvent(IpcEvents.notice, { ...done, link: { label: "Ver tarefas", path: "/jobs/track" } }));
 
-    expect(await screen.findByText("Resumo de vídeo falhou")).toBeVisible();
-    expect(screen.getByRole("alert")).toBeVisible();
+    expect(screen.queryByText("Resumo de vídeo falhou")).not.toBeInTheDocument();
+    expect(screen.queryByText("Transcrição de vídeo concluído")).not.toBeInTheDocument();
   });
 
-  it("when a job finishes with success on the tasks screen, should show the info notice and then let it fade", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+  it("when the user is on another screen, should show the job notice with the link", async () => {
+    setup([], "/library");
+    await waitFor(() => expect(listenerCount(IpcEvents.notice)).toBe(1));
+
+    act(() => emitEvent(IpcEvents.notice, { ...jobFailed, id: "job:9" }));
+
+    expect(await screen.findByRole("button", { name: "Ver tarefas" })).toBeVisible();
+  });
+
+  it("when a notice without a link arrives on the tasks screen, should still show it", async () => {
     setup([], "/jobs/track");
-    await vi.waitFor(() => expect(listenerCount(IpcEvents.notice)).toBe(1));
+    await waitFor(() => expect(listenerCount(IpcEvents.notice)).toBe(1));
 
-    act(() => emitEvent(IpcEvents.notice, { ...done, link: { label: "Ver tarefas", path: "/jobs/track" } }));
-    expect(screen.getByText("Transcrição de vídeo concluído")).toBeVisible();
+    act(() => emitEvent(IpcEvents.notice, { id: "persist", level: "error", title: "Não foi possível gravar" }));
 
-    act(() => {
-      vi.advanceTimersByTime(INFO_NOTICE_MS + 100);
-    });
-
-    expect(screen.queryByText("Transcrição de vídeo concluído")).not.toBeInTheDocument();
+    expect(await screen.findByText("Não foi possível gravar")).toBeVisible();
   });
 
   it("when an info notice is shown, should disappear by itself after a while", async () => {

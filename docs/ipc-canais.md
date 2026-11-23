@@ -217,7 +217,7 @@ Enviados com `webContents.send` a todas as janelas; a ponte (`window.api.on(even
 | `backup:progress` | `{ phase: preparing|running|verifying|done, processed, total, currentFile? }` | criar e restaurar backup |
 | `pdf:progress` | o mesmo (`processed` e `total` em páginas) | ler o texto de um PDF |
 | `library-move:progress` | o mesmo | mover a biblioteca |
-| `app:notice` | `{ id, level: info|warning|error, title, message?, detail?, link? }` | job terminou ou falhou, falha ao gravar em disco |
+| `app:notice` | `{ id, level: info|warning|error, title, message?, detail?, link? }` | job terminou ou falhou, falha ao gravar em disco (aviso com `link` para a tela em que o usuário já está não é mostrado: dentro de Em andamento, o resultado já está no job) |
 
 ## Regras
 - Um endpoint HTTP = um canal. `:id` e query viram campos do payload.

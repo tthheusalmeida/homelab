@@ -197,6 +197,16 @@ describe('JobPipeline', () => {
     expect(container.querySelector('svg.lucide-circle-alert')).toBeInTheDocument();
   });
 
+  it('when the running step has no measure, should show a determinate bar at 0%, never a partial indeterminate one', () => {
+    render(<JobPipeline job={makeJob({ progress: undefined })} />);
+
+    const bar = screen.getByRole('progressbar', { name: 'Em andamento: Converter áudio' });
+
+    expect(bar).toHaveAttribute('aria-valuenow', '0');
+    expect(bar.firstElementChild).toHaveStyle({ width: '0%' });
+    expect(bar.firstElementChild).not.toHaveClass('animate-pulse');
+  });
+
   it('when the job failed, should show the error inside the failed step', () => {
     render(
       <JobPipeline

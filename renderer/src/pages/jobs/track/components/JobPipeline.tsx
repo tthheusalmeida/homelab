@@ -191,7 +191,8 @@ export function JobPipeline({ job }: JobPipelineProps) {
                               : job.progress.done - 1
                             : 0
                         }
-                        total={job.progress?.total ?? 0}
+                        // sempre determinada: sem medida a barra fica em 0, nunca num "um terço" que parece já ter andado
+                        total={job.progress?.total ?? 100}
                         label={TrackStrings.stepProgress(row.label)}
                         className="h-1"
                       />

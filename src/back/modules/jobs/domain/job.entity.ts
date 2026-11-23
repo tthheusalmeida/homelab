@@ -309,7 +309,8 @@ export class Job {
     const step = this.findStep(name);
 
     this._note = undefined;
-    this._progress = undefined;
+    // toda etapa começa em 0%: sem medida real, fica em 0 e some ao concluir (nunca um valor inventado)
+    this._progress = { done: 0, total: 100, unit: 'percent' };
     step.status = JobStatus.RUNNING;
     this._onChange?.();
   }

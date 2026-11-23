@@ -156,11 +156,30 @@ describe('Job: porcentagem da etapa', () => {
     expect(job.progress).toEqual({ done: 2, total: 5 });
   });
 
-  it('when the next step starts, should clear the percent of the previous one', () => {
+  it('when the next step starts, should start it at 0% instead of keeping the previous percent', () => {
     const job = new Job('video-to-summary');
 
     job.setPercent(80);
     job.startStep('convert-to-audio');
+
+    expect(job.progress).toEqual({ done: 0, total: 100, unit: 'percent' });
+  });
+
+  it('when a step without a measure completes, should drop its progress', () => {
+    const job = new Job('video-to-summary');
+
+    job.startStep('delete-video');
+    job.completeStep('delete-video');
+
+    expect(job.progress).toBeUndefined();
+  });
+
+  it('when a step fails, should drop its progress', () => {
+    const job = new Job('video-to-summary');
+
+    job.startStep('transcribe');
+    job.setPercent(30);
+    job.failStep('transcribe');
 
     expect(job.progress).toBeUndefined();
   });
