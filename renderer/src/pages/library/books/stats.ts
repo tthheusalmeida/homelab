@@ -13,8 +13,39 @@ export interface BookStats {
   wordsByChapter: Map<string, number>;
 }
 
+/** Mesmos espaços do `\s` das expressões regulares (inclui quebras de linha e espaços Unicode). */
+function isSpace(code: number): boolean {
+  return (
+    code === 32 ||
+    (code >= 9 && code <= 13) ||
+    code === 160 ||
+    code === 5760 ||
+    (code >= 8192 && code <= 8202) ||
+    code === 8232 ||
+    code === 8233 ||
+    code === 8239 ||
+    code === 8287 ||
+    code === 12288 ||
+    code === 65279
+  );
+}
+
+/** Conta as palavras sem montar uma lista delas (roda no livro inteiro, então tem de ser leve). */
 export function countWords(text: string): number {
-  return text.split(/\s+/).filter(Boolean).length;
+  let words = 0;
+  let inWord = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const space = isSpace(text.charCodeAt(index));
+
+    if (!space && !inWord) {
+      words += 1;
+    }
+
+    inWord = !space;
+  }
+
+  return words;
 }
 
 /** Minutos de leitura estimados para essa quantidade de palavras (mínimo 1 se houver texto). */

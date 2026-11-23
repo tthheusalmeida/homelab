@@ -30,3 +30,8 @@ O gráfico de barras da tela de Consumo é o `BarChart` (`renderer/src/component
 
 ## Busca no texto (Ctrl+F) sem refazer o trabalho caro
 Tirar acento e caixa de cada letra do livro é o passo caro da busca. `prepareText` (`lib/find.ts`) faz isso **uma vez por trecho de texto** e o `use-text-highlight` guarda o resultado num `WeakMap` por nó; cada consulta nova é só `indexOf` (1 milhão de letras: ~110 ms na primeira busca, ~1 ms nas seguintes). A conversão de cada letra também fica em cache. Além disso, a página do livro não se redesenha a cada tecla (`BookContent` memoizado com callbacks estáveis), a busca só começa com 2+ letras e o destaque é pintado pelo navegador (CSS Custom Highlight API), sem mexer no HTML.
+
+## Rolagem de livros grandes
+Medido no app real (Chromium, livro simulado de 60 capítulos, ~36 mil nós no DOM): o que travava a rolagem era `bookStats` (conta as palavras do livro inteiro) rodando a **cada render** da página, e cada troca de seção ativa durante a rolagem re-renderiza a página. Agora é `useMemo` (só refaz quando o texto muda), no `BookPage` e no `BookDetailsDialog`, e `countWords` não monta mais a lista de palavras. Pico de frame na rolagem em desenvolvimento: 145 ms → 57 ms.
+
+Testado e **descartado**: `content-visibility: auto` nos blocos do texto. Deixou a rolagem pior (frames médios de 9 ms para 19 ms) e quase não mudou o tempo de abrir o livro, que é dominado pelo JavaScript de montar o DOM. Montar só o que está na tela (janelamento por capítulo) reduziria o DOM, mas mexe na busca (Ctrl+F lê o DOM), nas âncoras e no "ir até o item", então só vale se a rolagem continuar pesada depois desta correção.

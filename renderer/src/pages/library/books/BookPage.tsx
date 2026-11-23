@@ -125,6 +125,13 @@ export function BookPage() {
     return { positionIds: ids, owner: owners };
   }, [reading.data]);
 
+  // Contar as palavras do livro todo é caro: só refaz quando o texto muda, não a cada seção
+  // ativa nova durante a rolagem.
+  const stats = useMemo(
+    () => (reading.data ? bookStats(reading.data) : null),
+    [reading.data],
+  );
+
   const activeElementId = useActiveSection(positionIds);
   const activeChapterId = activeElementId
     ? owner.get(activeElementId)
@@ -262,8 +269,7 @@ export function BookPage() {
   }
 
   const { book, modules } = reading.data;
-  const stats = bookStats(reading.data);
-  const totalChapters = stats.chapters;
+  const totalChapters = stats?.chapters ?? 0;
   const readIds = book.readDocumentIds;
   const readCount = readIds.filter((id) => contents.has(id)).length;
   const completed = book.completedAt !== null;
@@ -304,9 +310,9 @@ export function BookPage() {
         open={celebrate}
         onOpenChange={setCelebrate}
         title={book.title}
-        chapters={stats.chapters}
-        words={stats.words}
-        minutes={stats.minutes}
+        chapters={stats?.chapters ?? 0}
+        words={stats?.words ?? 0}
+        minutes={stats?.minutes ?? 0}
       />
     </>
   );
