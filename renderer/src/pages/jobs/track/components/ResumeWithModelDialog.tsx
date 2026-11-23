@@ -94,7 +94,8 @@ export function ResumeWithModelDialog({
 }: ResumeWithModelDialogProps) {
   return (
     <Dialog open={job !== null} onOpenChange={onOpenChange}>
-      <DialogContent>
+      {/* Mais larga que o padrão: serviço, modelo e Pensar lado a lado não cabem em 28rem. */}
+      <DialogContent className="sm:max-w-xl">
         {job && (
           <ResumeForm
             job={job}

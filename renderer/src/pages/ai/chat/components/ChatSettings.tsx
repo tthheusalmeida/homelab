@@ -42,7 +42,7 @@ export function ChatSettings({
   const showThinking = !modelId || isLoadingThinking || thinkingOptions.length > 0;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <OptionSelect
         value={providerId}
         options={providers}
