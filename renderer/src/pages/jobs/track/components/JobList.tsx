@@ -33,10 +33,6 @@ interface JobRowProps {
   onGrantAccess: (job: Job) => void;
 }
 
-/**
- * Uma linha da lista. A consulta devolve o mesmo objeto para o job que não mudou, então só a linha
- * cujo job (ou seleção) mudou é redesenhada a cada segundo.
- */
 const JobRow = memo(function JobRow({
   job,
   index,

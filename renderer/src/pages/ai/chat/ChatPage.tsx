@@ -73,7 +73,6 @@ export function ChatPage() {
   const history = chat?.messages ?? NO_MESSAGES;
   const showPending = pending !== null && history.length === pending.baseCount;
   const pendingContent = showPending ? pending.content : null;
-  // Mesma lista entre as teclas do campo: a conversa (e o Markdown dela) não é redesenhada à toa.
   const messages = useMemo<AiMessage[]>(
     () =>
       pendingContent === null

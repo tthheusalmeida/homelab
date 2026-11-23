@@ -35,7 +35,6 @@ export function InstallAssistant() {
     (current) => current.hardware.recommendation.componentIds,
   );
 
-  // Guarda que o download chegou a rodar; ajustar durante o render evita um segundo desenho.
   if (status?.running && !wasRunning) {
     setWasRunning(true);
   }

@@ -29,7 +29,6 @@ export function hasNewCompletion(previous: Set<string> | null, current: Set<stri
  * a tela.
  */
 export function useRefreshLibraryOnJobDone(): void {
-  // Só os ids dos concluídos: o progresso de cada segundo não acorda este gancho.
   const { data } = useJobsSelect(completedIdList);
   const queryClient = useQueryClient();
   const seen = useRef<Set<string> | null>(null);

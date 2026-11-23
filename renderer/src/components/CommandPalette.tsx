@@ -70,7 +70,6 @@ export function CommandPalette({
   const searching = debounced.length >= PALETTE_MIN_QUERY;
   const documents = useDocuments({ q: debounced, sort: "recent" }, { enabled: open && searching });
 
-  // Ao fechar, limpa a busca (ajuste durante o render, sem segundo desenho).
   if (!open && (query !== "" || selected !== 0)) {
     setQuery("");
     setSelected(0);
@@ -144,7 +143,6 @@ export function CommandPalette({
             aria-label={Texts.placeholder}
             value={query}
             onChange={(event) => {
-              // Texto novo: a lista muda, e a seleção volta ao primeiro item no mesmo desenho.
               setQuery(event.target.value);
               setSelected(0);
             }}

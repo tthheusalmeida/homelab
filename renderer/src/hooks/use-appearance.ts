@@ -72,7 +72,6 @@ export function useAppearanceState(): AppearanceApi {
   const current = useRef(appearance);
   const channel = useRef<BroadcastChannel | null>(null);
 
-  // Valor igual ao que já está na tela (ex.: o main devolve o mesmo ao voltar o foco) não redesenha o app.
   const adopt = useCallback((next: Appearance) => {
     if (JSON.stringify(next) === JSON.stringify(current.current)) {
       return;
@@ -183,7 +182,6 @@ export function useAppearanceState(): AppearanceApi {
     [update],
   );
 
-  // Identidade estável: quem só consome o contexto não é redesenhado sem a aparência ter mudado.
   return useMemo(
     () => ({
       appearance,

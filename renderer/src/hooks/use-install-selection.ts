@@ -17,7 +17,6 @@ export function useInstallSelection(
   const snackbar = useSnackbar();
   const [selected, setSelected] = useState<ReadonlySet<string> | null>(null);
 
-  // `initial` só vale na primeira leitura do status (ajuste durante o render, sem segundo desenho).
   if (status && selected === null) {
     setSelected(new Set(initial(status)));
   }
