@@ -33,7 +33,7 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!ai.providerId || !ai.modelId || !ai.thinkingId) {
+    if (!ai.providerId || !ai.modelId || !ai.thinkingReady) {
       return;
     }
 
@@ -81,7 +81,7 @@ export function VideoToSummaryForm({ onCreated }: VideoToSummaryFormProps) {
 
       <VideoJobFooter
         linkCount={links.urls.length}
-        canSubmit={links.canSubmit && !!ai.providerId && !!ai.modelId && !!ai.thinkingId && !locked}
+        canSubmit={links.canSubmit && !!ai.providerId && !!ai.modelId && ai.thinkingReady && !locked}
         isPending={createJob.isPending}
         isError={createJob.isError}
       />

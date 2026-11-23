@@ -78,7 +78,7 @@ const succeed = () =>
 async function chooseModel(user: ReturnType<typeof userEvent.setup>) {
   await user.selectOptions(screen.getByLabelText("Provedor"), "gemini");
   await user.selectOptions(screen.getByLabelText("Modelo"), "m1");
-  await user.selectOptions(screen.getByLabelText("Thinking"), "off");
+  await user.selectOptions(screen.getByLabelText("Pensar"), "off");
 }
 
 describe("job forms — after the job is created", () => {

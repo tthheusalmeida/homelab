@@ -26,7 +26,7 @@ export interface AiChatRequest {
   chatId: string;
   providerId: string;
   modelId: string;
-  thinking: string;
+  thinking?: string;
   message: string;
 }
 

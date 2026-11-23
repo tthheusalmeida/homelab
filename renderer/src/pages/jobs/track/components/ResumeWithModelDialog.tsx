@@ -17,7 +17,7 @@ import { TrackStrings } from '../strings';
 export interface ResumeModel {
   providerId: AiProviderId;
   modelId: string;
-  thinking: string;
+  thinking?: string;
 }
 
 interface ResumeWithModelDialogProps {
@@ -40,7 +40,7 @@ function ResumeForm({
   onConfirm: (job: Job, model: ResumeModel) => void;
 }) {
   const ai = useAiSelection();
-  const ready = !!ai.providerId && !!ai.modelId && !!ai.thinkingId;
+  const ready = !!ai.providerId && !!ai.modelId && ai.thinkingReady;
 
   return (
     <>
@@ -65,7 +65,7 @@ function ResumeForm({
           disabled={!ready || isPending}
           loading={isPending}
           onClick={() => {
-            if (ai.providerId && ai.modelId && ai.thinkingId) {
+            if (ai.providerId && ai.modelId && ai.thinkingReady) {
               onConfirm(job, {
                 providerId: ai.providerId as AiProviderId,
                 modelId: ai.modelId,

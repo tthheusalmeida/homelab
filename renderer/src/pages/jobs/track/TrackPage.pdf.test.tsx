@@ -129,7 +129,7 @@ describe('TrackPage — resumo de PDF', () => {
 
     await user.selectOptions(screen.getByLabelText('Provedor'), 'ollama');
     await user.selectOptions(screen.getByLabelText('Modelo'), 'qwen');
-    await user.selectOptions(screen.getByLabelText('Thinking'), 'off');
+    await user.selectOptions(screen.getByLabelText('Pensar'), 'off');
     await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
     await waitFor(() =>

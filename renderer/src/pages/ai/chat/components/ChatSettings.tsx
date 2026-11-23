@@ -38,6 +38,9 @@ export function ChatSettings({
   isLoadingThinking,
   disabled,
 }: ChatSettingsProps) {
+  // Modelo sem opção de pensar não mostra o seletor (não há o que escolher).
+  const showThinking = !modelId || isLoadingThinking || thinkingOptions.length > 0;
+
   return (
     <div className="flex items-center gap-2">
       <OptionSelect
@@ -62,16 +65,18 @@ export function ChatSettings({
         onValueChange={onModelChange}
       />
 
-      <OptionSelect
-        value={thinkingId}
-        options={thinkingOptions}
-        placeholder="Thinking"
-        label="Thinking"
-        triggerWidth="w-32"
-        contentWidth="w-40"
-        disabled={!modelId || isLoadingThinking || disabled}
-        onValueChange={onThinkingChange}
-      />
+      {showThinking && (
+        <OptionSelect
+          value={thinkingId}
+          options={thinkingOptions}
+          placeholder="Pensar"
+          label="Pensar"
+          triggerWidth="w-32"
+          contentWidth="w-40"
+          disabled={!modelId || isLoadingThinking || disabled}
+          onValueChange={onThinkingChange}
+        />
+      )}
     </div>
   );
 }

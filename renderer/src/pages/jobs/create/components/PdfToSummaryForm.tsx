@@ -44,7 +44,7 @@ export function PdfToSummaryForm({ onCreated }: PdfToSummaryFormProps) {
   const [sent, setSent] = useState(false);
 
   const locked = create.isPending || sent;
-  const ready = !!inspection && !!ai.providerId && !!ai.modelId && !!ai.thinkingId && !locked;
+  const ready = !!inspection && !!ai.providerId && !!ai.modelId && ai.thinkingReady && !locked;
 
   useErrorAlert(read.isError && (read.error.message || 'Não foi possível ler o PDF.'));
 
@@ -61,7 +61,7 @@ export function PdfToSummaryForm({ onCreated }: PdfToSummaryFormProps) {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!ready || !inspection || !ai.providerId || !ai.modelId || !ai.thinkingId) {
+    if (!ready || !inspection || !ai.providerId || !ai.modelId) {
       return;
     }
 
@@ -129,7 +129,7 @@ export function PdfToSummaryForm({ onCreated }: PdfToSummaryFormProps) {
             disabled={locked}
           />
 
-          <Callout tone={ai.providerId === 'gemini' ? 'warning' : 'info'} role="note">
+          <Callout tone={ai.providerId === 'gemini' || ai.providerId === 'anthropic' ? 'warning' : 'info'} role="note">
             {PdfStrings.sendsTo(ai.providerId)}
           </Callout>
 

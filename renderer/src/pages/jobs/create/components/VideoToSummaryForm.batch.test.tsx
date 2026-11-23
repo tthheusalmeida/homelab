@@ -61,7 +61,7 @@ const input = () => screen.getByLabelText("Links dos vídeos");
 async function chooseModel(user: ReturnType<typeof userEvent.setup>) {
   await user.selectOptions(screen.getByLabelText("Provedor"), "gemini");
   await user.selectOptions(screen.getByLabelText("Modelo"), "m1");
-  await user.selectOptions(screen.getByLabelText("Thinking"), "off");
+  await user.selectOptions(screen.getByLabelText("Pensar"), "off");
 }
 
 async function paste(user: ReturnType<typeof userEvent.setup>, text: string) {

@@ -117,7 +117,7 @@ export function ChatPage() {
   }
 
   async function submit(content: string) {
-    if (!activeProviderId || !activeModelId || !activeThinkingId) {
+    if (!activeProviderId || !activeModelId || !ai.thinkingReady) {
       return;
     }
 
@@ -171,7 +171,7 @@ export function ChatPage() {
       return;
     }
 
-    if (!activeProviderId || !activeModelId || !activeThinkingId) {
+    if (!activeProviderId || !activeModelId || !ai.thinkingReady) {
       return;
     }
 
@@ -213,7 +213,7 @@ export function ChatPage() {
     Boolean(message.trim()) &&
     Boolean(activeProviderId) &&
     Boolean(activeModelId) &&
-    Boolean(activeThinkingId) &&
+    ai.thinkingReady &&
     !isLoading &&
     !isSending;
 
