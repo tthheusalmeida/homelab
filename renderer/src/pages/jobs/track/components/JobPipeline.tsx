@@ -179,31 +179,33 @@ export function JobPipeline({ job }: JobPipelineProps) {
                   </span>
                 </div>
 
-                {/* Espaço fixo para o andamento, a tentativa da IA ou o erro: a mensagem entra sem empurrar as etapas de baixo. */}
-                <div data-slot="step-detail" className="flex min-h-9 flex-col gap-1">
-                  {running && (
-                    <ProgressBar
-                      value={
-                        job.progress
-                          ? job.progress.unit === 'percent'
-                            ? job.progress.done
-                            : job.progress.done - 1
-                          : 0
-                      }
-                      total={job.progress?.total ?? 0}
-                      label={TrackStrings.stepProgress(row.label)}
-                      className="h-1"
-                    />
-                  )}
+                {/* Espaço fixo para o andamento, a tentativa da IA ou o erro: a mensagem entra sem empurrar as etapas de baixo. Etapa concluída não tem mais o que mostrar e fica compacta. */}
+                {row.status !== JobStatusOptions.COMPLETED && (
+                  <div data-slot="step-detail" className="flex min-h-9 flex-col gap-1">
+                    {running && (
+                      <ProgressBar
+                        value={
+                          job.progress
+                            ? job.progress.unit === 'percent'
+                              ? job.progress.done
+                              : job.progress.done - 1
+                            : 0
+                        }
+                        total={job.progress?.total ?? 0}
+                        label={TrackStrings.stepProgress(row.label)}
+                        className="h-1"
+                      />
+                    )}
 
-                  {running && job.note && (
-                    <p title={job.note} className="text-[11px] break-words text-amber-500">
-                      {job.note}
-                    </p>
-                  )}
+                    {running && job.note && (
+                      <p title={job.note} className="text-[11px] break-words text-amber-500">
+                        {job.note}
+                      </p>
+                    )}
 
-                  {showError && <StepError message={job.error ?? ''} />}
-                </div>
+                    {showError && <StepError message={job.error ?? ''} />}
+                  </div>
+                )}
               </div>
             </li>
           );

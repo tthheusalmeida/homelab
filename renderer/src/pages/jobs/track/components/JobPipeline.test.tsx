@@ -168,8 +168,17 @@ describe('JobPipeline', () => {
     const { container } = render(<JobPipeline job={makeJob()} />);
     const slots = container.querySelectorAll('[data-slot="step-detail"]');
 
-    expect(slots).toHaveLength(3);
+    // a etapa concluída (a primeira) não reserva espaço; a em andamento e a que aguarda, sim
+    expect(slots).toHaveLength(2);
     slots.forEach((slot) => expect(slot).toHaveClass('min-h-9'));
+  });
+
+  it('when a step is completed, should not keep the detail space', () => {
+    render(<JobPipeline job={makeJob()} />);
+
+    const [completed] = screen.getAllByRole('listitem');
+
+    expect(completed.querySelector('[data-slot="step-detail"]')).toBeNull();
   });
 
   it('when a step has an error, should show a red message with an icon, not an alert box', () => {
