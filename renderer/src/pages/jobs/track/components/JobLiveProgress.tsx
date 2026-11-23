@@ -5,11 +5,12 @@ import { JobStatusOptions, type Job } from "../../types/job.types";
 import { TrackStrings } from "../strings";
 
 interface JobLiveProgressProps {
-  job: Pick<Job, "status" | "steps" | "startedAt" | "cancelRequested" | "note">;
+  job: Pick<Job, "status" | "steps" | "startedAt" | "cancelRequested">;
 }
 
 /**
- * Linha ao vivo de um job ativo: etapa atual (n/total), nome da etapa e tempo decorrido.
+ * Linha ao vivo de um job ativo: etapa atual (n/total), nome da etapa e tempo decorrido. Andamento,
+ * tentativas da IA e erros ficam na etapa correspondente do pipeline, não aqui.
  * Job na fila mostra só "na fila". Não aparece para jobs que já terminaram.
  */
 export function JobLiveProgress({ job }: JobLiveProgressProps) {
@@ -39,12 +40,6 @@ export function JobLiveProgress({ job }: JobLiveProgressProps) {
       {elapsed !== null && <span>{formatDuration(Math.floor(elapsed / 1000) * 1000)}</span>}
 
       {job.cancelRequested && <span className="text-amber-500">{TrackStrings.cancelling}</span>}
-
-      {job.note && (
-        <span role="status" className="basis-full text-amber-500">
-          {job.note}
-        </span>
-      )}
     </p>
   );
 }

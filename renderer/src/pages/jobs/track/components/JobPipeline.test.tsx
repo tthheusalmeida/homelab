@@ -85,6 +85,89 @@ describe('JobPipeline', () => {
     ).toHaveAttribute('aria-valuenow', '10');
   });
 
+  it('when the AI is retrying, should show the attempt inside the running step only', () => {
+    render(
+      <JobPipeline
+        job={makeJob({ note: 'Tentando de novo (tentativa 2 de 3): serviço sobrecarregado' })}
+      />,
+    );
+
+    const rows = screen.getAllByRole('listitem');
+
+    expect(within(rows[1]).getByRole('status')).toHaveTextContent('tentativa 2 de 3');
+    expect(within(rows[0]).queryByRole('status')).not.toBeInTheDocument();
+    expect(within(rows[2]).queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('when the retry was solved and the note is gone, should not show the attempt anymore', () => {
+    const { rerender } = render(
+      <JobPipeline job={makeJob({ note: 'Tentando de novo (tentativa 2 de 3): erro' })} />,
+    );
+
+    rerender(<JobPipeline job={makeJob({ note: undefined })} />);
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('when a step failed, should show the error inside that step and not again at the end', () => {
+    render(
+      <JobPipeline
+        job={makeJob({
+          status: 'failed',
+          error: 'Limite de uso da IA.',
+          steps: [
+            { name: 'download', label: 'Baixar vídeo', status: 'completed' },
+            { name: 'audio', label: 'Converter áudio', status: 'failed' },
+            { name: 'transcribe', label: 'Transcrever', status: 'pending' },
+          ],
+        })}
+      />,
+    );
+
+    const rows = screen.getAllByRole('listitem');
+
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(within(rows[1]).getByRole('alert')).toHaveTextContent('Limite de uso da IA.');
+  });
+
+  it('when the job failed without a failed step, should keep the error at the end', () => {
+    render(
+      <JobPipeline
+        job={makeJob({
+          status: 'failed',
+          error: 'Cancelado pelo usuário.',
+          steps: [{ name: 'download', label: 'Baixar vídeo', status: 'pending' }],
+        })}
+      />,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Cancelado pelo usuário.');
+    expect(within(screen.getAllByRole('listitem')[0]).queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('when the job was resumed and has no error, should show no alert in any step', () => {
+    render(
+      <JobPipeline
+        job={makeJob({
+          status: 'running',
+          error: undefined,
+          steps: [
+            { name: 'download', label: 'Baixar vídeo', status: 'completed' },
+            { name: 'audio', label: 'Converter áudio', status: 'running' },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('when rendering the steps, should reserve a minimum height for each one', () => {
+    render(<JobPipeline job={makeJob()} />);
+
+    screen.getAllByRole('listitem').forEach((row) => expect(row).toHaveClass('min-h-12'));
+  });
+
   it('when the job failed, should show the error as an alert', () => {
     render(
       <JobPipeline

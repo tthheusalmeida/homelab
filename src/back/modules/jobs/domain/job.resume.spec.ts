@@ -146,6 +146,16 @@ describe('Job: porcentagem da etapa', () => {
     expect(job.progress?.done).toBe(0);
   });
 
+  it('when a part advances, should drop the retry note of the previous part', () => {
+    const job = new Job('pdf-to-summary');
+
+    job.setNote('Tentando de novo (tentativa 2 de 3): erro');
+    job.setProgress(2, 5);
+
+    expect(job.note).toBeUndefined();
+    expect(job.progress).toEqual({ done: 2, total: 5 });
+  });
+
   it('when the next step starts, should clear the percent of the previous one', () => {
     const job = new Job('video-to-summary');
 

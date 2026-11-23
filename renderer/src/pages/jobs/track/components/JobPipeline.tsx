@@ -108,6 +108,8 @@ interface JobPipelineProps {
  */
 export function JobPipeline({ job }: JobPipelineProps) {
   const rows = pipelineRows(job);
+  // O erro aparece na etapa em que ocorreu; sem etapa com falha (cancelado na fila, por exemplo), fica no fim.
+  const failedKey = rows.findLast((row) => row.status === JobStatusOptions.FAILED)?.key;
   const done = rows.filter((row) => row.status === JobStatusOptions.COMPLETED).length;
   const started = job.startedAt ? new Date(job.startedAt).getTime() : null;
   const finished = job.completedAt ? new Date(job.completedAt).getTime() : null;
@@ -124,12 +126,13 @@ export function JobPipeline({ job }: JobPipelineProps) {
       <ol aria-label={TrackStrings.pipeline} className="flex flex-col">
         {rows.map((row, index) => {
           const running = row.status === JobStatusOptions.RUNNING;
+          const showError = Boolean(job.error) && row.key === failedKey;
 
           return (
             <li
               key={row.key}
               data-status={row.status}
-              className="relative flex gap-3 pb-3 last:pb-0"
+              className="relative flex min-h-12 gap-3 pb-3 last:pb-0"
             >
               {index < rows.length - 1 && (
                 <span
@@ -165,6 +168,21 @@ export function JobPipeline({ job }: JobPipelineProps) {
                   </span>
                 </div>
 
+                {running && job.note && (
+                  <p role="status" className="text-[11px] break-words text-amber-500">
+                    {job.note}
+                  </p>
+                )}
+
+                {showError && (
+                  <p
+                    role="alert"
+                    className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs break-words text-destructive"
+                  >
+                    {job.error}
+                  </p>
+                )}
+
                 {running && (
                   <ProgressBar
                     value={
@@ -185,7 +203,7 @@ export function JobPipeline({ job }: JobPipelineProps) {
         })}
       </ol>
 
-      {job.error && (
+      {job.error && !failedKey && (
         <p
           role="alert"
           className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs break-words text-destructive"

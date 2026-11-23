@@ -147,6 +147,8 @@ export class Job {
   }
 
   setProgress(done: number, total: number): void {
+    // avanço de parte: a tentativa da IA da parte anterior já foi superada
+    this._note = undefined;
     this._progress = { done, total };
   }
 
