@@ -36,6 +36,7 @@ Estado: app instalável e em uso (versão `0.1.x`). Todas as fases da migração
 | `docs/prompts.md` | Prompts personalizáveis: instruções editáveis (versões nomeadas) separadas do contrato fixo (limites, formato, segurança), onde ficam, canais e limites do texto |
 | `docs/leitura-de-pdf.md` | Criar página a partir de um PDF: leitura só do texto, limites, avisos, divisão em partes, IA por parte, progresso em disco e retomada |
 | `docs/persistencia.md` | Jobs e chats em disco, pasta-raiz única para backup, exclusão de jobs, seção de Chats |
+| `docs/adicionar-provider.md` | Como adicionar um provider de IA na nuvem (cinco passos, o que o compilador e os testes cobram, peças comuns para reaproveitar) |
 | `docs/regras-de-negocio.md` | Onde ficam as regras que **não mudam** (`docs/regras/back`, `docs/regras/front`) |
 
 Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/regras/back/` e `docs/regras/front/` (ver `docs/regras-de-negocio.md`). Leia a regra antes de mexer em `src/back`.
@@ -69,6 +70,14 @@ Regras de negócio (biblioteca, jobs, IA, vídeo) estão documentadas em `docs/r
 - `e2e/` + `playwright.config.ts` — smoke E2E do Electron real
 - `electron-builder.yml`, `build/` (ícone), `scripts/build-icons.mjs` — empacotamento
 - `docs/` — documentação
+
+## Princípios de código (OBRIGATÓRIO)
+Uma feature deve **estender** o que já existe, não espalhar edições. Se entregar algo exige mexer em muitos arquivos parecidos, o desenho está errado: melhore-o na mesma entrega.
+- **Extrair antes de copiar:** antes de duplicar um arquivo ou bloco parecido (um provider, um handler, um formulário), procure a peça comum e extraia-a; o novo só traz o que é específico dele. Duplicação que já existe e a feature toca vira refatoração na mesma entrega (commit `refactor:` separado do `feat:`).
+- **SOLID e clean code:** uma responsabilidade por classe e arquivo (SRP); abrir para extensão sem editar o que funciona (OCP: provider, handler e perfil novos entram por **registro**, não por `if`/`switch` por nome); depender de interfaces injetadas, não de classes concretas (DIP, ex.: `AIService` recebe `AIProvider[]`); nomes que dizem a intenção, funções curtas, sem número ou string mágicos.
+- **Registro único e tipado:** uma lista de ids (`as const`) é a fonte da verdade e `Record<Id, ...>` obriga cada id a ter a sua entrada: esquecer um passo **não compila**. Nada de mapas por nome espalhados pelas telas.
+- **Poucos arquivos por feature:** meta de um provider, tela ou canal novo é tocar só o arquivo novo, uma linha de registro e os testes. Ao implementar, conte os arquivos alterados; se passar disso sem motivo, pare e refatore.
+- **Refatore ao longo do tempo:** deixe o código melhor do que encontrou, em passos pequenos e com a suíte verde, sem mudar comportamento (testes existentes passam sem edição). Mudança de estrutura e de comportamento ficam em commits diferentes.
 
 ## Convenções
 - Textos de interface e mensagens de erro em **português**; código e commits em inglês.

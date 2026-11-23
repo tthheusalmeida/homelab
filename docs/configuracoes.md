@@ -77,7 +77,7 @@ Ao salvar um caminho novo o app olha a pasta: **vazia ou nova** oferece "Mover a
 
 ## Providers
 ### Externos (`providers:external:*`)
-- Hoje: **Gemini** e **Anthropic** (Claude). Novas fontes entram registrando outra definição (`ExternalProviderDefinition`). A chave da Anthropic fica no `SecretStore` (`anthropic.apiKey`), chega ao back por `BackConfig.anthropicApiKey` (lida uma vez, na inicialização; reiniciar para valer) e o teste faz `models.list`. Sem chave, o provider responde `NOT_CONFIGURED`, como o Gemini.
+- Hoje: **Gemini** e **Anthropic** (Claude). Novas fontes entram por registro, em cinco passos (ver `adicionar-provider.md`). A chave da Anthropic fica no `SecretStore` (`anthropic.apiKey`), chega ao back por `BackConfig.anthropicApiKey` (lida uma vez, na inicialização; reiniciar para valer) e o teste faz `models.list`. Sem chave, o provider responde `NOT_CONFIGURED`, como o Gemini.
 - `list`, `get` (estado e chave mascarada), `save` (chave não vazia), `test` (chave candidata ou a salva; mesma checagem do health: `models.list`).
 - O teste devolve `{ ok, message }`; falhas nunca viram exceção. A mensagem do Gemini é extraída do JSON da SDK.
 - **Peças comuns aos providers de IA na nuvem** (`src/back/modules/ai/providers/shared`; Gemini e Anthropic só fornecem o que é da SDK deles, um novo provider faz o mesmo):
