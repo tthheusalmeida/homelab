@@ -5,13 +5,6 @@ export const JobStatusOptions: Record<string, string> = {
   FAILED: "failed",
 } as const;
 
-export const JobStepStateOptions: Record<string, string> = {
-  PENDING: "pending",
-  ACTIVE: "active",
-  COMPLETED: "completed",
-  FAILED: "failed",
-} as const;
-
 export const JobNameOptions = {
   VIDEO_TO_TRANSCRIPT: "video-to-transcript",
   VIDEO_TO_SUMMARY: "video-to-summary",

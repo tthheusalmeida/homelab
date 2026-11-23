@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { useSnackbar } from '#components/Snackbar';
 import { useInstallComponents } from '#hooks/use-components';
@@ -17,13 +17,9 @@ export function useInstallSelection(
   const snackbar = useSnackbar();
   const [selected, setSelected] = useState<ReadonlySet<string> | null>(null);
 
-  useEffect(() => {
-    if (status && selected === null) {
-      setSelected(new Set(initial(status)));
-    }
-    // `initial` só vale na primeira leitura do status.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, selected]);
+  if (status && selected === null) {
+    setSelected(new Set(initial(status)));
+  }
 
   const chosen = selected ?? new Set<string>();
   const bytes = status ? pendingBytes(status.components, chosen) : 0;

@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 import type { AiMessage } from "../types/chat";
 import { HexDot } from "#components/Hex";
 import { MarkdownMessage } from "#components/MarkdownMessage";
@@ -10,9 +12,9 @@ interface ChatMessageProps {
 /**
  * Mensagem em estilo terminal: uma linha mono com quem fala (`você@homelab`, `assistente`) e o
  * texto numa caixa de borda fina. A do usuário vem à direita, na cor de destaque; a do assistente
- * ocupa a largura toda.
+ * ocupa a largura toda. Memoizado: o Markdown de uma resposta longa não é refeito a cada tecla do campo.
  */
-export function ChatMessage({ message }: ChatMessageProps) {
+export const ChatMessage = memo(function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
 
   return (
@@ -40,4 +42,4 @@ export function ChatMessage({ message }: ChatMessageProps) {
       </div>
     </div>
   );
-}
+});

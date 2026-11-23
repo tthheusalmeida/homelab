@@ -12,6 +12,15 @@ Regra: **otimizar sem tirar o que deixa o app gostoso de usar**. Transições, f
 - **Catálogo de peças do infográfico** (`PieceCatalog` + `LazyRender`): com 416 peças, o desenho de cada cartão só é montado quando ele chega perto da tela (e fica montado depois). A lista, a contagem e a busca usam os dados, então nada muda para quem busca. Os **desenhos** das peças (~130 KB) também saem do arquivo principal: viram um arquivo à parte (`infographic-pieces-*.js`), baixado quando a primeira peça aparece; o arquivo principal ficou em ~437 KB. A busca usa um índice montado uma vez. Nos testes, `renderer/src/test/setup.ts` troca o `IntersectionObserver` por um que não dispara (tudo "fora da tela"), mantendo as listas leves.
 - **Relógio do cabeçalho** (`ClockAndTime`): os formatadores de data e hora são criados uma vez (antes, a cada segundo) e a linha da data só é refeita quando o dia muda.
 
+- **Menos redesenhos (re-render) nas telas que mudam toda hora:**
+  - **Contadores sem acordar a tela** (`useJobsSelect`): o contador da barra lateral e o aviso de "job concluído" usam `select` na mesma consulta de jobs, então só redesenham quando o número ou os ids concluídos mudam, não a cada resposta com progresso novo (a barra lateral não é mais redesenhada todo segundo com um job rodando).
+  - **Lista de tarefas por linha** (`JobList`): cada job é uma linha memoizada e os callbacks têm identidade fixa (`useStableCallback`); com 1 job andando, só a linha dele é refeita.
+  - **Aparência** (`useAppearanceState`): o valor do contexto é memoizado e voltar o foco à janela, quando o salvo é igual ao da tela, não redesenha o app inteiro nem regrava o cache.
+  - **Conversa** (`ChatPage`): a lista de mensagens e cada `ChatMessage` são memoizadas, então digitar no campo não refaz o Markdown das respostas.
+  - **Biblioteca** (`DocumentCard` memoizado): digitar na busca não redesenha todos os cartões.
+  - **Sem segundo desenho por efeito**: estado derivado que antes era ajustado num `useEffect` (paleta de comandos, assistente de instalação, seleção de componentes) agora é ajustado durante o render, no mesmo desenho.
+  - Regra para código novo: componente de lista que recebe callbacks e rerenderiza por polling ou digitação vai em `memo` com `useStableCallback`; contador ou aviso lido de uma consulta que muda toda hora usa `select`.
+
 ## Como medir de novo
 - Tamanho da abertura: `npx vite build --config vite.renderer.main.config.mts` e olhar `main-*.js` (hoje ~440 KB; antes 1,4 MB).
 - Se o arquivo principal voltar a crescer muito, alguma tela foi importada direto no `router.tsx` em vez de entrar em `loaders`.

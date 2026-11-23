@@ -14,10 +14,21 @@ export function jobsRefetchInterval(jobs: Job[] | undefined): number {
   return !jobs || jobs.some(isActiveJob) ? ACTIVE_JOBS_POLL_MS : IDLE_JOBS_POLL_MS;
 }
 
+const jobsQuery = {
+  queryKey: ["jobs"],
+  queryFn: fetchJobs,
+  refetchInterval: (query: { state: { data: Job[] | undefined } }) =>
+    jobsRefetchInterval(query.state.data),
+};
+
 export function useJobs() {
-  return useQuery({
-    queryKey: ["jobs"],
-    queryFn: fetchJobs,
-    refetchInterval: (query) => jobsRefetchInterval(query.state.data),
-  });
+  return useQuery(jobsQuery);
+}
+
+/**
+ * Mesma consulta (e o mesmo polling) da lista, mas o componente só é redesenhado quando o valor
+ * escolhido muda, não a cada resposta com progresso novo. Use para contadores e avisos.
+ */
+export function useJobsSelect<T>(select: (jobs: Job[]) => T) {
+  return useQuery({ ...jobsQuery, select });
 }

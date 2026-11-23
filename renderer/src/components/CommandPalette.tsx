@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { FileText, Search, type LucideIcon } from "lucide-react";
 
@@ -70,12 +70,10 @@ export function CommandPalette({
   const searching = debounced.length >= PALETTE_MIN_QUERY;
   const documents = useDocuments({ q: debounced, sort: "recent" }, { enabled: open && searching });
 
-  useEffect(() => {
-    if (!open) {
-      setQuery("");
-      setSelected(0);
-    }
-  }, [open]);
+  if (!open && (query !== "" || selected !== 0)) {
+    setQuery("");
+    setSelected(0);
+  }
 
   const items = useMemo<PaletteItem[]>(() => {
     const text = normalize(query.trim());
@@ -96,7 +94,6 @@ export function CommandPalette({
     return [...screens, ...pages];
   }, [query, searching, documents.data]);
 
-  useEffect(() => setSelected(0), [query]);
 
   const choose = (item: PaletteItem | undefined) => {
     if (!item) {
@@ -145,7 +142,10 @@ export function CommandPalette({
             aria-controls="command-palette-list"
             aria-label={Texts.placeholder}
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setSelected(0);
+            }}
             onKeyDown={onKeyDown}
             placeholder={Texts.placeholder}
             className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"

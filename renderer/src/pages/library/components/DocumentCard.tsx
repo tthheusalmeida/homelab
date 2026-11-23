@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 
 import { Link } from "react-router";
 
@@ -43,7 +43,8 @@ function DocumentDate({ document }: { document: DocumentSummary }) {
   );
 }
 
-export function DocumentCard({
+/** Memoizado: digitar na busca da biblioteca não redesenha as dezenas de cartões da lista. */
+export const DocumentCard = memo(function DocumentCard({
   document,
   actions,
   variant = "card",
@@ -169,4 +170,4 @@ export function DocumentCard({
       </CardContent>
     </Card>
   );
-}
+});

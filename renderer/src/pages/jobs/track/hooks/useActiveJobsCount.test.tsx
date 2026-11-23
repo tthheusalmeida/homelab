@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { IpcChannels } from "#shared/channels";
 import { failure, mockApi, ok } from "#test/api-mock";
@@ -44,5 +45,32 @@ describe("useActiveJobsCount", () => {
 
     await waitFor(() => expect(invoke).toHaveBeenCalled());
     expect(result.current).toBe(0);
+  });
+
+  it("when only the progress of a running job changes, should not render again", async () => {
+    const running = (progress: number) => ({ ...job("1", "running"), progress });
+    let current = running(10);
+
+    mockApi({ [IpcChannels.jobs.list]: () => ok([current]) });
+
+    let renders = 0;
+    const { result } = renderHook(
+      () => {
+        renders += 1;
+
+        return { count: useActiveJobsCount(), client: useQueryClient() };
+      },
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.count).toBe(1));
+    const before = renders;
+
+    current = running(60);
+    await act(async () => {
+      await result.current.client.refetchQueries({ queryKey: ["jobs"] });
+    });
+
+    expect(renders).toBe(before);
   });
 });

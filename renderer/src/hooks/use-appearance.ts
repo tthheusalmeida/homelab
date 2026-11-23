@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -72,6 +73,10 @@ export function useAppearanceState(): AppearanceApi {
   const channel = useRef<BroadcastChannel | null>(null);
 
   const adopt = useCallback((next: Appearance) => {
+    if (JSON.stringify(next) === JSON.stringify(current.current)) {
+      return;
+    }
+
     current.current = next;
     setAppearance(next);
     writeCachedAppearance(next);
@@ -177,15 +182,18 @@ export function useAppearanceState(): AppearanceApi {
     [update],
   );
 
-  return {
-    appearance,
-    update,
-    updateReading,
-    reset,
-    resetReading,
-    updateTranscript,
-    resetTranscript,
-  };
+  return useMemo(
+    () => ({
+      appearance,
+      update,
+      updateReading,
+      reset,
+      resetReading,
+      updateTranscript,
+      resetTranscript,
+    }),
+    [appearance, update, updateReading, reset, resetReading, updateTranscript, resetTranscript],
+  );
 }
 
 /**
