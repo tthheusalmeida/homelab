@@ -604,7 +604,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 40;
+  z-index: 60; /* acima do modo leitura (z-50) e abaixo da barra de busca (z-70) */
   width: 14px;
   height: 16px;
   pointer-events: none;
