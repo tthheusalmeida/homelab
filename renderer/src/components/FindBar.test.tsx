@@ -101,6 +101,23 @@ describe("FindBar", () => {
     expect(screen.getByText("3 de 12")).toBeInTheDocument();
   });
 
+  it("when there are matches, should show the pulsing hexagon beside the counter", () => {
+    setup({ value: "docker", count: 12, index: 2 });
+
+    expect(screen.getByText("3 de 12").querySelector("span")).toHaveClass(
+      "bg-primary",
+      "animate-pulse",
+    );
+  });
+
+  it("when nothing matches, should not show the hexagon", () => {
+    setup({ value: "zzz", count: 0, index: -1 });
+
+    expect(
+      screen.getByText("Nenhuma ocorrência").querySelector("span"),
+    ).toBeNull();
+  });
+
   it("when nothing matches, should say so and disable the arrows", () => {
     setup({ value: "zzz", count: 0, index: -1 });
 

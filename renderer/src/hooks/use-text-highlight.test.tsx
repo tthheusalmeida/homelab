@@ -209,6 +209,78 @@ describe("useTextHighlight", () => {
     expect(result.current.count).toBe(0);
   });
 
+  describe("margin hexagon", () => {
+    const marker = () => document.querySelector<HTMLElement>(".find-marker");
+
+    function stubRect(top: number, height = 20) {
+      Range.prototype.getBoundingClientRect = () =>
+        ({ top, bottom: top + height, height }) as DOMRect;
+    }
+
+    afterEach(() => {
+      delete (Range.prototype as { getBoundingClientRect?: unknown })
+        .getBoundingClientRect;
+    });
+
+    it("when the text is on screen, should put the hexagon on the line of the current match", () => {
+      stubRect(100);
+
+      setup("imagem");
+
+      expect(marker()).not.toBeNull();
+      expect(marker()?.hidden).toBe(false);
+      expect(marker()?.style.transform).toContain("102px)");
+    });
+
+    it("when there is no match, should keep the hexagon hidden", () => {
+      stubRect(100);
+
+      setup("zzzz");
+
+      expect(marker()?.hidden).toBe(true);
+    });
+
+    it("when the match is out of the screen, should hide the hexagon", () => {
+      stubRect(-500);
+
+      setup("imagem");
+
+      expect(marker()?.hidden).toBe(true);
+    });
+
+    it("when the hook unmounts, should remove the hexagon", () => {
+      stubRect(100);
+
+      const { hook } = setup("imagem");
+
+      hook.unmount();
+
+      expect(marker()).toBeNull();
+    });
+
+    it("when the mark fades out, should fade the hexagon with it", () => {
+      stubRect(100);
+
+      const animate = vi.fn(() => ({ cancel: vi.fn() }) as unknown as Animation);
+      const original = HTMLElement.prototype.animate;
+
+      HTMLElement.prototype.animate = animate;
+
+      try {
+        const { hook } = setup("imagem");
+
+        act(() => hook.result.current.fadeOut(300));
+
+        expect(animate).toHaveBeenCalledWith(
+          { opacity: [1, 0] },
+          expect.objectContaining({ duration: 300 }),
+        );
+      } finally {
+        HTMLElement.prototype.animate = original;
+      }
+    });
+  });
+
   describe("with the CSS Custom Highlight API", () => {
     it("when supported, should paint every match and the current one, and clear them on unmount", () => {
       const store = new Map<string, unknown>();

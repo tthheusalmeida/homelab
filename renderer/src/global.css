@@ -580,19 +580,51 @@
 ::highlight(find-match) {
   background-color: color-mix(in oklab, var(--primary) 22%, transparent);
   color: inherit;
-  text-decoration: underline;
+  text-decoration: underline dotted;
   text-decoration-color: var(--primary);
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
 }
 
 ::highlight(find-current) {
-  background-color: color-mix(in oklab, var(--primary) calc(55% * var(--find-alpha)), transparent);
+  background-color: color-mix(in oklab, var(--primary) calc(22% * var(--find-alpha)), transparent);
   color: inherit;
   text-decoration: underline;
   text-decoration-color: color-mix(in oklab, var(--primary) calc(100% * var(--find-alpha)), transparent);
   text-decoration-thickness: 3px;
   text-underline-offset: 3px;
+  /* Brilho de mel: some junto com o fade (`--find-alpha`). */
+  text-shadow:
+    0 0 10px color-mix(in oklab, var(--primary) calc(45% * var(--find-alpha)), transparent),
+    0 0 2px color-mix(in oklab, var(--primary) calc(60% * var(--find-alpha)), transparent);
+}
+
+/* Hexágono na margem, na linha da ocorrência atual (um só elemento, movido pelo use-text-highlight). */
+.find-marker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  width: 14px;
+  height: 16px;
+  pointer-events: none;
+  background: var(--primary);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  animation: find-marker-pulse 1.6s ease-in-out infinite;
+}
+
+.find-marker[hidden] {
+  display: none;
+}
+
+@keyframes find-marker-pulse {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 0.8;
+  }
 }
 
 /* Exportar livro em PDF: a versão de impressão só aparece ao imprimir. */

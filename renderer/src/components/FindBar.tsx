@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 
+import { HexDot } from "#components/Hex";
 import { Button } from "#ui/button";
 import { Input } from "#ui/input";
 import type { FoundSnippet } from "#hooks/use-text-highlight";
@@ -113,8 +114,10 @@ export function FindBar({
         {searching && (
           <span
             aria-live="polite"
-            className="whitespace-nowrap text-xs text-muted-foreground"
+            className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground"
           >
+            {count > 0 && <HexDot pulse className="bg-primary" />}
+
             {count === 0 ? "Nenhuma ocorrência" : `${index + 1} de ${count}`}
           </span>
         )}

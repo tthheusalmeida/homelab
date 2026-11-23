@@ -11,6 +11,11 @@ import {
 const MATCH = "find-match";
 const CURRENT = "find-current";
 
+/** Hexágono da margem (14 x 16 px): afastamento do texto, folga da borda da janela e meia altura. */
+const MARKER_GAP = 22;
+const MARKER_EDGE = 4;
+const MARKER_HALF = 8;
+
 /** A CSS Custom Highlight API existe? (navegadores recentes; o jsdom não tem) */
 function highlightsSupported() {
   return (
@@ -184,6 +189,60 @@ export function useTextHighlight(
     paint(MATCH, onlyCurrent ? [] : rangesRef.current);
   }, [onlyCurrent]);
 
+  // Hexágono na margem, na linha da ocorrência atual: um elemento só, fora do texto do livro.
+  const markerRef = useRef<HTMLSpanElement | null>(null);
+  const markerFadeRef = useRef<Animation | null>(null);
+
+  useEffect(() => {
+    if (!container) {
+      return;
+    }
+
+    const marker = document.createElement("span");
+
+    marker.className = "find-marker";
+    marker.setAttribute("aria-hidden", "true");
+    marker.hidden = true;
+    document.body.appendChild(marker);
+    markerRef.current = marker;
+
+    return () => {
+      marker.remove();
+      markerRef.current = null;
+    };
+  }, [container]);
+
+  const placeMarker = useCallback(() => {
+    const marker = markerRef.current;
+    const range = currentRef.current;
+
+    if (!marker) {
+      return;
+    }
+
+    const rect = range?.getBoundingClientRect?.();
+
+    if (
+      !container ||
+      !rect ||
+      rect.height === 0 ||
+      rect.bottom < 0 ||
+      rect.top > window.innerHeight
+    ) {
+      marker.hidden = true;
+
+      return;
+    }
+
+    const left = Math.max(
+      MARKER_EDGE,
+      container.getBoundingClientRect().left - MARKER_GAP,
+    );
+
+    marker.style.transform = `translate(${left}px, ${rect.top + rect.height / 2 - MARKER_HALF}px)`;
+    marker.hidden = false;
+  }, [container]);
+
   useEffect(() => {
     const range = rangesRef.current[index];
 
@@ -192,18 +251,43 @@ export function useTextHighlight(
 
     if (!range) {
       revealedFor.current = "";
+      markerFadeRef.current?.cancel();
+      markerFadeRef.current = null;
     } else if (revealedFor.current !== termsKey) {
       // Consulta nova: a tela não rola sozinha; só ao navegar (Enter) ou clicar num trecho.
       revealedFor.current = termsKey;
       visited.current = false;
     }
 
-    return () => paint(CURRENT, []);
-  }, [index, termsKey, count]);
+    placeMarker();
+
+    if (!range) {
+      return () => paint(CURRENT, []);
+    }
+
+    // Acompanha a rolagem (inclusive a suave até o trecho), no máximo uma vez por quadro.
+    let frame = 0;
+    const follow = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(placeMarker);
+    };
+
+    window.addEventListener("scroll", follow, { capture: true, passive: true });
+    window.addEventListener("resize", follow);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", follow, { capture: true });
+      window.removeEventListener("resize", follow);
+      paint(CURRENT, []);
+    };
+  }, [index, termsKey, count, placeMarker]);
 
   const unfade = useCallback(() => {
     fadeRef.current?.cancel();
     fadeRef.current = null;
+    markerFadeRef.current?.cancel();
+    markerFadeRef.current = null;
   }, []);
 
   /**
@@ -228,6 +312,13 @@ export function useTextHighlight(
         { "--find-alpha": [1, 0] } as PropertyIndexedKeyframes,
         { duration: ms, easing: "ease-out", fill: "forwards" },
       );
+
+      // O hexágono da margem não está dentro do elemento: esmaece junto, pela própria opacidade.
+      markerFadeRef.current =
+        markerRef.current?.animate?.(
+          { opacity: [1, 0] },
+          { duration: ms, easing: "ease-out", fill: "forwards" },
+        ) ?? null;
     },
     [unfade],
   );
