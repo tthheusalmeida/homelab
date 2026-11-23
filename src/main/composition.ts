@@ -3,6 +3,10 @@ import * as path from 'node:path';
 import type { EventPublisher } from '../ipc/event-publisher';
 
 import { ExternalProvidersService } from '../providers/external-providers.service';
+import {
+  type AnthropicKeyChecker,
+  createAnthropicDefinition,
+} from '../providers/anthropic.definition';
 import { createGeminiDefinition, type GeminiKeyChecker } from '../providers/gemini.definition';
 import {
   createFfmpegDefinition,
@@ -49,6 +53,7 @@ export interface CompositionOptions {
   runForOutput: (file: string, args: string[]) => Promise<string>;
   totalMemoryMb: () => number;
   checkGeminiKey: GeminiKeyChecker;
+  checkAnthropicKey: AnthropicKeyChecker;
   /** Envia eventos (progresso, avisos) às janelas abertas. */
   events: EventPublisher;
   /** Entrada e saída do Whisper: executar o programa e ler/apagar o `.txt` gerado. */
@@ -137,7 +142,10 @@ export function createServices(options: CompositionOptions) {
     components,
     settingsService: new SettingsService(settings),
     externalProviders: new ExternalProvidersService(
-      [createGeminiDefinition(options.checkGeminiKey)],
+      [
+        createGeminiDefinition(options.checkGeminiKey),
+        createAnthropicDefinition(options.checkAnthropicKey),
+      ],
       secrets,
     ),
     localProviders: new LocalProvidersService(

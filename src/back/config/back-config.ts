@@ -49,4 +49,7 @@ export abstract class BackConfig {
 
   /** Chave do Gemini; `null` quando não configurada (o provider responde `NOT_CONFIGURED`). */
   abstract readonly geminiApiKey: string | null;
+
+  /** Chave da Anthropic; vazia ou `null` quando não configurada (o provider responde `NOT_CONFIGURED`). */
+  readonly anthropicApiKey?: string | null;
 }

@@ -28,7 +28,9 @@ export const PdfStrings = {
       ? 'O texto do PDF será processado no Ollama, no seu computador.'
       : providerId === 'gemini'
         ? 'O texto do PDF será enviado ao Gemini, um serviço externo. Não envie documentos que não possam sair do seu computador.'
-        : 'Escolha o serviço de IA: o texto do PDF será enviado a ele.',
+        : providerId === 'anthropic'
+          ? 'O texto do PDF será enviado à Anthropic, um serviço externo. Não envie documentos que não possam sair do seu computador.'
+          : 'Escolha o serviço de IA: o texto do PDF será enviado a ele.',
   resumeHint:
     'O progresso fica salvo em disco. Se o app fechar, o limite de uso acabar ou o computador desligar, use “Tentar de novo” em Acompanhar para continuar de onde parou, até com outro modelo.',
 

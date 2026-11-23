@@ -19,7 +19,7 @@ export interface SecretCipher {
   decrypt(encrypted: string): Promise<DecryptedSecret>;
 }
 
-export type SecretKey = 'gemini.apiKey' | 'platform.cookies';
+export type SecretKey = 'gemini.apiKey' | 'anthropic.apiKey' | 'platform.cookies';
 
 type SecretFile = Partial<Record<SecretKey, string>>;
 

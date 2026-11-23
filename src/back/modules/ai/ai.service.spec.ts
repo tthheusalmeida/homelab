@@ -2,8 +2,9 @@ import { AIService } from './ai.service';
 import type { AIProvider } from './ai.model';
 import type { OllamaProvider } from './providers/ollama/ollama.provider';
 import type { GeminiProvider } from './providers/gemini/gemini.provider';
+import type { AnthropicProvider } from './providers/anthropic/anthropic.provider';
 
-const makeProvider = (name: 'ollama' | 'gemini'): jest.Mocked<AIProvider> => ({
+const makeProvider = (name: 'ollama' | 'gemini' | 'anthropic'): jest.Mocked<AIProvider> => ({
   name,
   health: jest.fn(),
   chat: jest.fn(),
@@ -14,21 +15,25 @@ const makeProvider = (name: 'ollama' | 'gemini'): jest.Mocked<AIProvider> => ({
 describe('AIService', () => {
   let ollama: jest.Mocked<AIProvider>;
   let gemini: jest.Mocked<AIProvider>;
+  let anthropic: jest.Mocked<AIProvider>;
   let service: AIService;
 
   beforeEach(() => {
     ollama = makeProvider('ollama');
     gemini = makeProvider('gemini');
+    anthropic = makeProvider('anthropic');
     service = new AIService(
       ollama as unknown as OllamaProvider,
       gemini as unknown as GeminiProvider,
+      anthropic as unknown as AnthropicProvider,
     );
   });
 
-  it('when listing providers, should return ollama and gemini with labels', () => {
+  it('when listing providers, should return ollama, gemini and anthropic with labels', () => {
     expect(service.providersList()).toEqual([
       { id: 'ollama', label: 'Ollama' },
       { id: 'gemini', label: 'Gemini' },
+      { id: 'anthropic', label: 'Anthropic' },
     ]);
   });
 
@@ -44,13 +49,19 @@ describe('AIService', () => {
       status: 'error',
     });
 
+    anthropic.health.mockResolvedValue({
+      service: 'anthropic',
+      description: 'd',
+      status: 'ok',
+    });
+
     const result = await service.health();
 
-    expect(result.map((r) => r.service)).toEqual(['ollama', 'gemini']);
+    expect(result.map((r) => r.service)).toEqual(['ollama', 'gemini', 'anthropic']);
   });
 
   describe('models', () => {
-    const model = (name: string, provider: 'ollama' | 'gemini') => ({
+    const model = (name: string, provider: 'ollama' | 'gemini' | 'anthropic') => ({
       name,
       provider,
       model: name,
@@ -80,10 +91,11 @@ describe('AIService', () => {
     it('when models are requested without provider, should merge models of all providers', async () => {
       ollama.models.mockResolvedValue([model('a', 'ollama')]);
       gemini.models.mockResolvedValue([model('b', 'gemini')]);
+      anthropic.models.mockResolvedValue([model('c', 'anthropic')]);
 
       const result = await service.models();
 
-      expect(result.map((m) => m.name)).toEqual(['a', 'b']);
+      expect(result.map((m) => m.name)).toEqual(['a', 'b', 'c']);
     });
 
     it('when the provider is invalid, should reject', async () => {

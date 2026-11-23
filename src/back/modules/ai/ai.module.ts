@@ -8,6 +8,7 @@ import { PromptService } from './prompts/prompt.service';
 import { PromptStore } from './prompts/prompt.store';
 import { OllamaProvider } from './providers/ollama/ollama.provider';
 import { GeminiProvider } from './providers/gemini/gemini.provider';
+import { AnthropicProvider } from './providers/anthropic/anthropic.provider';
 
 /**
  * Providers de IA e uso. É o único módulo que declara `AIService`, `AiUsageService` e os providers:
@@ -22,6 +23,7 @@ import { GeminiProvider } from './providers/gemini/gemini.provider';
     PromptService,
     OllamaProvider,
     GeminiProvider,
+    AnthropicProvider,
   ],
   exports: [AIService, AiUsageService, PromptStore, PromptService],
 })

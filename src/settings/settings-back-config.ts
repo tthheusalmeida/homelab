@@ -19,6 +19,7 @@ export class SettingsBackConfig extends BackConfig {
     /** Caminho do ffmpeg, ou quem o resolve a cada uso (assim um ffmpeg recém-instalado vale sem reiniciar). */
     private readonly ffmpeg?: string | (() => string),
     readonly platformTools?: PlatformTools,
+    readonly anthropicApiKey?: string | null,
   ) {
     super();
   }

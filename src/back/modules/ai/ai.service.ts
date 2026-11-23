@@ -10,6 +10,7 @@ import type {
 
 import { OllamaProvider } from './providers/ollama/ollama.provider';
 import { GeminiProvider } from './providers/gemini/gemini.provider';
+import { AnthropicProvider } from './providers/anthropic/anthropic.provider';
 
 import { AiChatDto } from './dto/ai-chat.dto';
 
@@ -19,10 +20,15 @@ import { HealthCheck } from '../health/health.model';
 export class AIService {
   private readonly providers: Map<AIProviderName, AIProvider>;
 
-  constructor(ollamaProvider: OllamaProvider, geminiProvider: GeminiProvider) {
+  constructor(
+    ollamaProvider: OllamaProvider,
+    geminiProvider: GeminiProvider,
+    anthropicProvider: AnthropicProvider,
+  ) {
     this.providers = new Map<AIProviderName, AIProvider>([
       ['ollama', ollamaProvider],
       ['gemini', geminiProvider],
+      ['anthropic', anthropicProvider],
     ]);
   }
 
@@ -30,6 +36,7 @@ export class AIService {
     const providerNames: Record<AIProviderName, string> = {
       ollama: 'Ollama',
       gemini: 'Gemini',
+      anthropic: 'Anthropic',
     };
 
     return Array.from(this.providers.keys()).map((id) => ({

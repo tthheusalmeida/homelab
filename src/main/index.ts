@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
+import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenAI } from '@google/genai';
 import {
   app,
@@ -338,6 +339,9 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     checkGeminiKey: async (apiKey) => {
       await new GoogleGenAI({ apiKey }).models.list();
     },
+    checkAnthropicKey: async (apiKey) => {
+      await new Anthropic({ apiKey, maxRetries: 0 }).models.list({ limit: 1 });
+    },
   });
   // Vídeos que exigem login: o usuário entra uma vez numa janela do app, os logins ficam cifrados e vão ao yt-dlp em arquivo temporário.
   const cookieVault = new CookieVault(services.secrets, () => Date.now());
@@ -431,6 +435,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
             async (file, args) => (await run(file, args, { timeout: 5000 })).stdout,
           ),
       },
+      await services.secrets.get('anthropic.apiKey'),
     ),
     whisper: services.whisper,
     alerts: new EventBackAlerts(events, systemNotifier),

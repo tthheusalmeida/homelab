@@ -6,7 +6,7 @@ export interface ProviderTestResult {
 }
 
 /** Providers externos (IAs na nuvem). A chave nunca volta em claro: só mascarada. */
-export type ExternalProviderId = 'gemini';
+export type ExternalProviderId = 'gemini' | 'anthropic';
 
 export interface ExternalProviderInfo {
   id: ExternalProviderId;

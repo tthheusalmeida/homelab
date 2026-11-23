@@ -1,4 +1,4 @@
-export type AiProviderId = 'ollama' | 'gemini';
+export type AiProviderId = 'ollama' | 'gemini' | 'anthropic';
 
 export interface AiProviderEntry {
   id: AiProviderId;

@@ -75,7 +75,7 @@ O **HomeLab** é um app desktop (Windows e Linux) para quem aprende e pesquisa c
 
 ### IA à sua escolha
 
-- 🤖 **Gemini** (com a sua chave, guardada cifrada) ou **Ollama** local.
+- 🤖 **Gemini** ou **Anthropic (Claude)** (com a sua chave, guardada cifrada) ou **Ollama** local; se o modelo escolhido estiver sobrecarregado, o app troca sozinho para o mais barato.
 - ✍️ **Prompts seus:** mude o jeito de a IA trabalhar, guarde versões com nome (por exemplo, uma para revisão e outra para prova) e escolha qual usar. Há exemplos prontos para começar (por exemplo, "Para prova"), o padrão do app fica sempre à mão e o formato da resposta não quebra.
 - 💬 **Várias conversas** salvas, com aviso quando o contexto fica grande.
 - 📊 **Consumo:** acompanhe requisições e custo da IA.
@@ -109,8 +109,8 @@ O **HomeLab** é um app desktop (Windows e Linux) para quem aprende e pesquisa c
 ## Privacidade e seus dados
 
 - A transcrição acontece **no seu computador**; o áudio não vai para a nuvem.
-- Só o **texto** vai para a IA que você configurou (Gemini ou Ollama local).
-- A chave do Gemini fica **cifrada** pelo sistema e não entra no backup.
+- Só o **texto** vai para a IA que você configurou (Gemini, Anthropic ou Ollama local).
+- As chaves do Gemini e da Anthropic ficam **cifradas** pelo sistema e não entra no backup.
 - Páginas, livros, conversas e histórico ficam numa **pasta única** de fácil backup, em formatos abertos (Markdown e JSON).
 - Não existe servidor do HomeLab nem conta: o app não abre portas.
 

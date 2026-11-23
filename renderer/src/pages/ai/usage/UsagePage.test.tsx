@@ -43,6 +43,25 @@ describe("UsagePage", () => {
     );
   });
 
+  it("when loaded, should also link to the usage and billing panels of Anthropic", () => {
+    render(<UsagePage />);
+
+    expect(screen.getByRole("link", { name: /Consumo no painel da Anthropic/ })).toHaveAttribute(
+      "href",
+      "https://platform.claude.com/usage",
+    );
+    expect(screen.getByRole("link", { name: /Faturamento na Anthropic/ })).toHaveAttribute(
+      "href",
+      "https://platform.claude.com/settings/billing",
+    );
+  });
+
+  it("when loaded, should offer a filter button for Anthropic", () => {
+    render(<UsagePage />);
+
+    expect(screen.getByRole("button", { name: "Anthropic" })).toBeInTheDocument();
+  });
+
   it("when loaded, should title the page as Consumo", () => {
     render(<UsagePage />);
 

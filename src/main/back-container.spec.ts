@@ -96,7 +96,7 @@ describe('BackContainer', () => {
         .get<AIService>(AIService)
         .providersList()
         .map((p) => p.id),
-    ).toEqual(['ollama', 'gemini']);
+    ).toEqual(['ollama', 'gemini', 'anthropic']);
   });
 
   it('when the library service starts, should read the folders from the injected config', () => {

@@ -69,6 +69,14 @@ export function UsagePage() {
             >
               Gemini
             </Button>
+
+            <Button
+              variant={provider === "anthropic" ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setProvider("anthropic")}
+            >
+              Anthropic
+            </Button>
           </div>
         }
       />
@@ -83,7 +91,7 @@ export function UsagePage() {
           </p>
 
           <p className="text-muted-foreground">
-            Isto não é a fatura. O Gemini não informa gasto nem cota restante pela chave de API;
+            Isto não é a fatura. O Gemini e a Anthropic não informam gasto nem cota restante pela chave de API;
             para o valor real da conta, consulte o painel do provedor:
           </p>
 
@@ -94,6 +102,14 @@ export function UsagePage() {
 
             <ExternalLink href={PROVIDER_CONSOLES.gemini.billingUrl}>
               Faturamento no Google Cloud
+            </ExternalLink>
+
+            <ExternalLink href={PROVIDER_CONSOLES.anthropic.usageUrl}>
+              Consumo no painel da Anthropic
+            </ExternalLink>
+
+            <ExternalLink href={PROVIDER_CONSOLES.anthropic.billingUrl}>
+              Faturamento na Anthropic
             </ExternalLink>
           </div>
         </CardContent>

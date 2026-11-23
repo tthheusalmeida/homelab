@@ -15,4 +15,9 @@ export const PROVIDER_CONSOLES: Record<string, ProviderConsole> = {
     usageUrl: "https://aistudio.google.com/usage",
     billingUrl: "https://console.cloud.google.com/billing",
   },
+  anthropic: {
+    label: "Anthropic",
+    usageUrl: "https://platform.claude.com/usage",
+    billingUrl: "https://platform.claude.com/settings/billing",
+  },
 };

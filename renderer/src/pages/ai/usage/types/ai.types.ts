@@ -1,1 +1,1 @@
-export type AIProviderName = "ollama" | "gemini";
+export type AIProviderName = "ollama" | "gemini" | "anthropic";

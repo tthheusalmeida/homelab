@@ -32,6 +32,7 @@ describe('createServices', () => {
       fetchFn: () => Promise.resolve({ ok: true, status: 200 }),
       ffmpegVersion: () => Promise.resolve('ffmpeg version 7'),
       checkGeminiKey: () => Promise.resolve(),
+      checkAnthropicKey: () => Promise.resolve(),
       downloadFetch: () => Promise.reject(new Error('sem rede nos testes')),
       runForOutput: () => Promise.reject(new Error('sem programas nos testes')),
       totalMemoryMb: () => 16384,
@@ -89,10 +90,13 @@ describe('createServices', () => {
     );
   });
 
-  it('when listing the providers, should expose gemini as external and the transcription and audio tools before ollama as local', async () => {
+  it('when listing the providers, should expose gemini and anthropic as external and the transcription and audio tools before ollama as local', async () => {
     const services = create();
 
-    expect((await services.externalProviders.list()).map((p) => p.id)).toEqual(['gemini']);
+    expect((await services.externalProviders.list()).map((p) => p.id)).toEqual([
+      'gemini',
+      'anthropic',
+    ]);
     expect(services.localProviders.list().map((p) => p.id)).toEqual([
       'whisper',
       'ffmpeg',

@@ -1,6 +1,6 @@
 import { HealthCheck } from '../health/health.model';
 
-export type AIProviderName = 'ollama' | 'gemini';
+export type AIProviderName = 'ollama' | 'gemini' | 'anthropic';
 
 export interface AIThinkingOption {
   id: string;
