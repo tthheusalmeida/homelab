@@ -164,21 +164,66 @@ describe('JobPipeline', () => {
     expect(screen.queryByText(/Falhou|erro/i)).not.toBeInTheDocument();
   });
 
-  it('when rendering the steps, should reserve the same detail space in every step so messages do not push the rest', () => {
+  it('when rendering the steps, should open the detail space only in the running step', () => {
     const { container } = render(<JobPipeline job={makeJob()} />);
     const slots = container.querySelectorAll('[data-slot="step-detail"]');
 
-    // a etapa concluída (a primeira) não reserva espaço; a em andamento e a que aguarda, sim
-    expect(slots).toHaveLength(2);
-    slots.forEach((slot) => expect(slot).toHaveClass('min-h-9'));
+    expect(slots).toHaveLength(1);
+    expect(slots[0]).toHaveClass('min-h-9');
+    expect(within(screen.getAllByRole('listitem')[1]).getByRole('progressbar')).toBeInTheDocument();
   });
 
-  it('when a step is completed, should not keep the detail space', () => {
+  it('when a step is pending or completed, should keep its detail space collapsed', () => {
     render(<JobPipeline job={makeJob()} />);
 
-    const [completed] = screen.getAllByRole('listitem');
+    const [completed, , pending] = screen.getAllByRole('listitem');
 
     expect(completed.querySelector('[data-slot="step-detail"]')).toBeNull();
+    expect(pending.querySelector('[data-slot="step-detail"]')).toBeNull();
+  });
+
+  it('when a step fails, should open the detail space in that step for the error', () => {
+    const { container } = render(
+      <JobPipeline
+        job={makeJob({
+          status: 'failed',
+          error: 'Sem internet.',
+          steps: [
+            { name: 'download', label: 'Baixar vídeo', status: 'completed' },
+            { name: 'audio', label: 'Converter áudio', status: 'failed' },
+            { name: 'transcribe', label: 'Transcrever', status: 'pending' },
+          ],
+        })}
+      />,
+    );
+
+    expect(container.querySelectorAll('[data-slot="step-detail"]')).toHaveLength(1);
+    expect(
+      within(screen.getAllByRole('listitem')[1]).getByText('Sem internet.'),
+    ).toBeInTheDocument();
+  });
+
+  it('when the running step completes, should close its detail space with the height transition', () => {
+    const { container, rerender } = render(<JobPipeline job={makeJob()} />);
+
+    expect(container.querySelector('[data-slot="collapsible-content"]')).toHaveClass(
+      'data-open:animate-collapse-down',
+      'data-closed:animate-collapse-up',
+    );
+
+    rerender(
+      <JobPipeline
+        job={makeJob({
+          steps: [
+            { name: 'download', label: 'Baixar vídeo', status: 'completed' },
+            { name: 'audio', label: 'Converter áudio', status: 'completed' },
+            { name: 'transcribe', label: 'Transcrever', status: 'pending' },
+          ],
+        })}
+      />,
+    );
+
+    expect(container.querySelector('[data-slot="step-detail"]')).toBeNull();
   });
 
   it('when a step has an error, should show a red message with an icon, not an alert box', () => {
