@@ -1,3 +1,4 @@
+import { type ApiKeyChecker, createApiKeyDefinition } from './api-key-definition';
 import type { ExternalProviderDefinition } from './external-providers.service';
 
 export const GeminiMessages = {
@@ -6,7 +7,7 @@ export const GeminiMessages = {
 } as const;
 
 /** Verifica a chave listando os modelos (mesma checagem do health do back). */
-export type GeminiKeyChecker = (apiKey: string) => Promise<void>;
+export type GeminiKeyChecker = ApiKeyChecker;
 
 /**
  * A SDK do Gemini devolve o corpo do erro como JSON dentro da mensagem
@@ -29,18 +30,13 @@ export function readableGeminiError(error: unknown): string {
 }
 
 export function createGeminiDefinition(checkKey: GeminiKeyChecker): ExternalProviderDefinition {
-  return {
+  return createApiKeyDefinition({
     id: 'gemini',
     label: 'Gemini',
     secretKey: 'gemini.apiKey',
-    async test(apiKey) {
-      try {
-        await checkKey(apiKey);
-      } catch (error) {
-        return { ok: false, message: GeminiMessages.failed(readableGeminiError(error)) };
-      }
-
-      return { ok: true, message: GeminiMessages.ok };
-    },
-  };
+    checkKey,
+    okMessage: GeminiMessages.ok,
+    failedMessage: GeminiMessages.failed,
+    readError: readableGeminiError,
+  });
 }

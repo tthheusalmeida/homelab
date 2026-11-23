@@ -1,3 +1,5 @@
+import { classifyByStatus, type ErrorInfo } from '../shared/status-error-classifier';
+
 /** Quantas vezes o app tenta falar com o Gemini antes de desistir (contando a primeira). */
 export const GEMINI_MAX_ATTEMPTS = 3;
 
@@ -23,31 +25,7 @@ export class GeminiEmptyResponseError extends Error {
   }
 }
 
-export interface GeminiErrorInfo {
-  /** Vale tentar de novo: o erro costuma ser passageiro. */
-  retryable: boolean;
-  /** Motivo em português para mostrar ao usuário. */
-  message: string;
-}
-
-const NETWORK_PATTERN =
-  /fetch failed|network|ECONN|ENOTFOUND|ETIMEDOUT|EAI_AGAIN|socket|timed? ?out/i;
-
-function statusOf(error: unknown): number | undefined {
-  const status = (error as { status?: unknown } | null)?.status;
-
-  return typeof status === 'number' ? status : undefined;
-}
-
-function textOf(error: unknown): string {
-  if (!(error instanceof Error)) {
-    return String(error);
-  }
-
-  const cause = error.cause instanceof Error ? ` ${error.cause.message}` : '';
-
-  return `${error.message}${cause}`;
-}
+export type GeminiErrorInfo = ErrorInfo;
 
 /** Diz se o erro do Gemini é passageiro e qual mensagem mostrar. */
 export function classifyGeminiError(error: unknown): GeminiErrorInfo {
@@ -55,31 +33,5 @@ export function classifyGeminiError(error: unknown): GeminiErrorInfo {
     return { retryable: true, message: GeminiErrorMessages.emptyResponse };
   }
 
-  const status = statusOf(error);
-
-  if (status === 429) {
-    return { retryable: true, message: GeminiErrorMessages.rateLimit };
-  }
-
-  if (status !== undefined && status >= 500) {
-    return { retryable: true, message: GeminiErrorMessages.overloaded };
-  }
-
-  if (status === 401 || status === 403) {
-    return { retryable: false, message: GeminiErrorMessages.auth };
-  }
-
-  if (status === 404) {
-    return { retryable: false, message: GeminiErrorMessages.modelNotFound };
-  }
-
-  if (status === 400) {
-    return { retryable: false, message: GeminiErrorMessages.badRequest };
-  }
-
-  if (status === undefined && NETWORK_PATTERN.test(textOf(error))) {
-    return { retryable: true, message: GeminiErrorMessages.network };
-  }
-
-  return { retryable: false, message: GeminiErrorMessages.unknown };
+  return classifyByStatus(error, GeminiErrorMessages);
 }

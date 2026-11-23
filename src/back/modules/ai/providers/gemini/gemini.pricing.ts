@@ -1,7 +1,6 @@
-export interface GeminiModelPricing {
-  inputPerMillionTokens: number;
-  outputPerMillionTokens: number;
-}
+import { type ModelPrice, ModelCatalog } from '../shared/model-catalog';
+
+export type GeminiModelPricing = ModelPrice;
 
 /**
  * Modelos de texto do Gemini com o preço de hoje (faixa padrão, prompt até 200 mil tokens).
@@ -21,18 +20,15 @@ export const pricing = new Map<string, GeminiModelPricing>([
   ['gemini-4-neon', { inputPerMillionTokens: 3, outputPerMillionTokens: 15 }],
 ]);
 
-function totalCost(price: GeminiModelPricing): number {
-  return price.inputPerMillionTokens + price.outputPerMillionTokens;
-}
+/** Catálogo do Gemini: lista, custo e ordem dos modelos (regras comuns em `ModelCatalog`). */
+export const geminiCatalog = ModelCatalog.flat(pricing);
 
 /** Modelos cadastrados do mais barato ao mais caro (entrada + saída por milhão de tokens). */
 export function modelsByCost(): string[] {
-  return [...pricing.entries()]
-    .sort(([nameA, a], [nameB, b]) => totalCost(a) - totalCost(b) || nameA.localeCompare(nameB))
-    .map(([name]) => name);
+  return geminiCatalog.byCost();
 }
 
 /** Modelo cadastrado com o menor custo (entrada + saída por milhão de tokens). */
 export function cheapestModel(): string {
-  return modelsByCost()[0] ?? '';
+  return geminiCatalog.cheapest();
 }

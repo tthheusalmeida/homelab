@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { type GenerateContentResponse, GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 import type { AIChatRequest, AIProvider, AIProviderModel, AIThinkingOption } from '../../ai.model';
 
@@ -10,7 +10,8 @@ import { IpcError, IpcErrorCode } from '../../../../../shared/errors';
 import { BackConfig } from '../../../../config/back-config';
 import { AiUsageService } from '../../usage/ai-usage.service';
 
-import { defaultSleep, raceAbort, withRetry } from '../../../../utils/retry';
+import { defaultSleep } from '../../../../utils/retry';
+import { type ChatAnswer, type ChatBackend, runResilientChat } from '../shared/resilient-chat';
 
 import {
   classifyGeminiError,
@@ -18,15 +19,18 @@ import {
   GEMINI_RETRY_DELAYS_MS,
   GeminiEmptyResponseError,
 } from './gemini-errors';
-import { cheapestModel, modelsByCost, pricing } from './gemini.pricing';
+import { geminiCatalog } from './gemini.pricing';
 
 export const GEMINI_NOT_CONFIGURED =
   'Chave da API do Gemini não configurada. Abra Configurações e informe a chave.';
 
 @Injectable()
-export class GeminiProvider implements AIProvider {
+export class GeminiProvider implements AIProvider, ChatBackend {
   private readonly ai: GoogleGenAI | null;
   readonly name = 'gemini' as const;
+  readonly catalog = geminiCatalog;
+  readonly maxAttempts = GEMINI_MAX_ATTEMPTS;
+  readonly retryDelaysMs = GEMINI_RETRY_DELAYS_MS;
 
   /** Espera entre tentativas (os testes trocam por uma que não espera). */
   sleep: (ms: number) => Promise<void> = defaultSleep;
@@ -49,193 +53,67 @@ export class GeminiProvider implements AIProvider {
     return this.ai;
   }
 
-  private normalizeModel(model: string): string {
+  normalizeModel(model: string): string {
     return model.startsWith('models/') ? model.replace(/^models\//, '') : model;
   }
 
-  private calculateCost(model: string, inputTokens: number, outputTokens: number): number {
-    const modelPricing = pricing.get(model);
-
-    if (!modelPricing) {
-      return 0;
-    }
-
-    return (
-      (inputTokens / 1_000_000) * modelPricing.inputPerMillionTokens +
-      (outputTokens / 1_000_000) * modelPricing.outputPerMillionTokens
-    );
+  ensureReady(): void {
+    this.client();
   }
 
+  classify = classifyGeminiError;
+
   async health(): Promise<HealthCheck> {
+    const base = { service: 'gemini', description: 'Google Gemini API' };
+
     if (!this.ai) {
-      return {
-        service: 'gemini',
-        description: 'Google Gemini API',
-        status: HealthStatusOptions.ERROR,
-      };
+      return { ...base, status: HealthStatusOptions.ERROR };
     }
 
     try {
       await this.ai.models.list();
 
-      return {
-        service: 'gemini',
-        description: 'Google Gemini API',
-        status: HealthStatusOptions.OK,
-      };
+      return { ...base, status: HealthStatusOptions.OK };
     } catch {
-      return {
-        service: 'gemini',
-        description: 'Google Gemini API',
-        status: HealthStatusOptions.ERROR,
-      };
+      return { ...base, status: HealthStatusOptions.ERROR };
     }
   }
 
-  /**
-   * Pede a resposta ao modelo escolhido. Se ele continuar fora do ar depois das tentativas
-   * (sobrecarga, limite, rede), troca uma vez para o modelo mais barato e avisa quem chamou.
-   */
-  private async generateWithFallback(
-    ai: GoogleGenAI,
-    model: string,
-    request: AIChatRequest,
-  ): Promise<{ response: GenerateContentResponse; usedModel: string }> {
-    try {
-      return { response: await this.generate(ai, model, request), usedModel: model };
-    } catch (error) {
-      const fallbackModel = cheapestModel();
-      const { retryable, message } = classifyGeminiError(error);
+  /** Uma tentativa ao Gemini (as repetições e a troca de modelo são de `runResilientChat`). */
+  async attempt(model: string, request: AIChatRequest): Promise<ChatAnswer> {
+    const result = await this.client().models.generateContent({
+      model,
+      contents: request.messages
+        ? request.messages.map((turn) => ({
+            role: turn.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: turn.content }],
+          }))
+        : request.message,
+      // Modo JSON: a resposta já vem como JSON puro, sem cerca de código nem texto em volta.
+      ...(request.json || request.signal
+        ? {
+            config: {
+              ...(request.json ? { responseMimeType: 'application/json' } : {}),
+              ...(request.signal ? { abortSignal: request.signal } : {}),
+            },
+          }
+        : {}),
+    });
 
-      // só troca entre modelos conhecidos, por erro passageiro e se o usuário não cancelou
-      if (!retryable || request.signal?.aborted || !pricing.has(model) || model === fallbackModel) {
-        throw error;
-      }
-
-      request.onRetry?.({
-        attempt: 1,
-        maxAttempts: GEMINI_MAX_ATTEMPTS,
-        delayMs: 0,
-        reason: message,
-        fallback: true,
-      });
-
-      return {
-        response: await this.generate(ai, fallbackModel, request),
-        usedModel: fallbackModel,
-      };
+    if (!result.text) {
+      throw new GeminiEmptyResponseError();
     }
+
+    return {
+      text: result.text,
+      inputTokens: result.usageMetadata?.promptTokenCount ?? 0,
+      outputTokens: result.usageMetadata?.candidatesTokenCount ?? 0,
+      totalTokens: result.usageMetadata?.totalTokenCount,
+    };
   }
 
-  private generate(
-    ai: GoogleGenAI,
-    model: string,
-    request: AIChatRequest,
-  ): Promise<GenerateContentResponse> {
-    // Erro passageiro (limite de uso, servidor ocupado, rede, resposta vazia) repete sozinho,
-    // até `GEMINI_MAX_ATTEMPTS` vezes, e avisa quem chamou antes de cada nova tentativa.
-    return withRetry(
-      async () => {
-        const result = await ai.models.generateContent({
-          model,
-          contents: request.messages
-            ? request.messages.map((turn) => ({
-                role: turn.role === 'assistant' ? 'model' : 'user',
-                parts: [{ text: turn.content }],
-              }))
-            : request.message,
-          // Modo JSON: a resposta já vem como JSON puro, sem cerca de código nem texto em volta.
-          ...(request.json || request.signal
-            ? {
-                config: {
-                  ...(request.json ? { responseMimeType: 'application/json' } : {}),
-                  ...(request.signal ? { abortSignal: request.signal } : {}),
-                },
-              }
-            : {}),
-        });
-
-        if (!result.text) {
-          throw new GeminiEmptyResponseError();
-        }
-
-        return result;
-      },
-      {
-        maxAttempts: GEMINI_MAX_ATTEMPTS,
-        delaysMs: GEMINI_RETRY_DELAYS_MS,
-        // cancelado: não repete nem espera a próxima tentativa
-        isRetryable: (error) => !request.signal?.aborted && classifyGeminiError(error).retryable,
-        sleep: (ms) =>
-          request.signal ? raceAbort(this.sleep(ms), request.signal) : this.sleep(ms),
-        onRetry: ({ attempt, maxAttempts, delayMs, error }) =>
-          request.onRetry?.({
-            attempt,
-            maxAttempts,
-            delayMs,
-            reason: classifyGeminiError(error).message,
-          }),
-      },
-    );
-  }
-
-  async chat(request: AIChatRequest): Promise<string> {
-    const model = this.normalizeModel(request.model);
-    const startedAt = Date.now();
-    let ai: GoogleGenAI;
-
-    try {
-      ai = this.client();
-    } catch (error) {
-      // sem chave (ou cliente indisponível): a falha também aparece em Consumo
-      this.usageService.recordFailure({
-        provider: 'gemini',
-        model,
-        latencyMs: Date.now() - startedAt,
-        error: error instanceof Error ? error.message : 'Falha ao preparar o provedor.',
-      });
-
-      throw error;
-    }
-
-    try {
-      const { response, usedModel } = await this.generateWithFallback(ai, model, request);
-
-      const latencyMs = Date.now() - startedAt;
-
-      const inputTokens = response.usageMetadata?.promptTokenCount ?? 0;
-      const outputTokens = response.usageMetadata?.candidatesTokenCount ?? 0;
-      const totalTokens = response.usageMetadata?.totalTokenCount ?? inputTokens + outputTokens;
-
-      const estimatedCost = this.calculateCost(usedModel, inputTokens, outputTokens);
-
-      this.usageService.record({
-        provider: 'gemini',
-        model: usedModel,
-        operation: 'chat',
-        inputTokens,
-        outputTokens,
-        totalTokens,
-        estimatedCost,
-        latencyMs,
-        success: true,
-      });
-
-      return response.text as string;
-    } catch (error) {
-      // O motivo real (limite de uso, servidor ocupado, chave recusada...) vai na mensagem, também
-      // guardada em Consumo; o erro original fica em `cause`.
-      const { message } = classifyGeminiError(error);
-
-      this.usageService.recordFailure({
-        provider: 'gemini',
-        model,
-        latencyMs: Date.now() - startedAt,
-        error: message,
-      });
-
-      throw new Error(message, { cause: error });
-    }
+  chat(request: AIChatRequest): Promise<string> {
+    return runResilientChat(this, this.usageService, request);
   }
 
   async models(): Promise<AIProviderModel[]> {
@@ -253,7 +131,7 @@ export class GeminiProvider implements AIProvider {
 
         const modelName = this.normalizeModel(geminiModel.name ?? '');
 
-        if (!pricing.has(modelName)) {
+        if (!this.catalog.has(modelName)) {
           continue;
         }
 
@@ -274,9 +152,7 @@ export class GeminiProvider implements AIProvider {
         });
       }
 
-      const order = modelsByCost();
-
-      return result.sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name));
+      return result.sort((a, b) => this.catalog.rank(a.name) - this.catalog.rank(b.name));
     } catch (error) {
       throw new Error('A requisição para listar modelos do Gemini falhou.', {
         cause: error,
