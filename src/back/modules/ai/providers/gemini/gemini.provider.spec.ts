@@ -26,7 +26,9 @@ describe('GeminiProvider', () => {
   const sleep = jest.fn().mockResolvedValue(undefined);
 
   const build = (geminiApiKey: string | null = 'test-key') => {
-    const provider = new GeminiProvider(usage, { geminiApiKey } as BackConfig);
+    const provider = new GeminiProvider(usage, {
+      apiKeyFor: () => geminiApiKey,
+    } as unknown as BackConfig);
 
     provider.sleep = sleep;
 

@@ -36,7 +36,9 @@ describe('AnthropicProvider', () => {
   const sleep = jest.fn().mockResolvedValue(undefined);
 
   const build = (anthropicApiKey: string | null = 'test-key') => {
-    const provider = new AnthropicProvider(usage, { anthropicApiKey } as BackConfig);
+    const provider = new AnthropicProvider(usage, {
+      apiKeyFor: () => anthropicApiKey,
+    } as unknown as BackConfig);
 
     provider.sleep = sleep;
 

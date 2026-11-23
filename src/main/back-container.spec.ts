@@ -33,7 +33,7 @@ describe('BackContainer', () => {
     videoTempDir: path.join(root, 'tv'),
     audioTempDir: path.join(root, 'ta'),
     ollamaUrl: 'http://127.0.0.1:1',
-    geminiApiKey: null,
+    apiKeyFor: () => null,
     usageFile: null,
     jobsFile: null,
     chatsFile: null,

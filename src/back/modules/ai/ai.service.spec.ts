@@ -1,11 +1,9 @@
 import { AIService } from './ai.service';
 import type { AIProvider } from './ai.model';
-import type { OllamaProvider } from './providers/ollama/ollama.provider';
-import type { GeminiProvider } from './providers/gemini/gemini.provider';
-import type { AnthropicProvider } from './providers/anthropic/anthropic.provider';
 
 const makeProvider = (name: 'ollama' | 'gemini' | 'anthropic'): jest.Mocked<AIProvider> => ({
   name,
+  label: name.charAt(0).toUpperCase() + name.slice(1),
   health: jest.fn(),
   chat: jest.fn(),
   models: jest.fn(),
@@ -22,11 +20,17 @@ describe('AIService', () => {
     ollama = makeProvider('ollama');
     gemini = makeProvider('gemini');
     anthropic = makeProvider('anthropic');
-    service = new AIService(
-      ollama as unknown as OllamaProvider,
-      gemini as unknown as GeminiProvider,
-      anthropic as unknown as AnthropicProvider,
-    );
+    service = new AIService([ollama, gemini, anthropic]);
+  });
+
+  it('when a provider is in the list, should be reachable with no change to the service', async () => {
+    const extra = makeProvider('anthropic');
+    extra.models.mockResolvedValue([]);
+
+    await expect(new AIService([extra]).models('anthropic')).resolves.toEqual([]);
+    expect(new AIService([extra]).providersList()).toEqual([
+      { id: 'anthropic', label: 'Anthropic' },
+    ]);
   });
 
   it('when listing providers, should return ollama, gemini and anthropic with labels', () => {

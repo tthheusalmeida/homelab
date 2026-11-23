@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import type {
   AIProvider,
@@ -8,9 +8,7 @@ import type {
   AIThinkingOption,
 } from './ai.model';
 
-import { OllamaProvider } from './providers/ollama/ollama.provider';
-import { GeminiProvider } from './providers/gemini/gemini.provider';
-import { AnthropicProvider } from './providers/anthropic/anthropic.provider';
+import { AI_PROVIDERS } from './ai-providers.token';
 
 import { AiChatDto } from './dto/ai-chat.dto';
 
@@ -20,29 +18,12 @@ import { HealthCheck } from '../health/health.model';
 export class AIService {
   private readonly providers: Map<AIProviderName, AIProvider>;
 
-  constructor(
-    ollamaProvider: OllamaProvider,
-    geminiProvider: GeminiProvider,
-    anthropicProvider: AnthropicProvider,
-  ) {
-    this.providers = new Map<AIProviderName, AIProvider>([
-      ['ollama', ollamaProvider],
-      ['gemini', geminiProvider],
-      ['anthropic', anthropicProvider],
-    ]);
+  constructor(@Inject(AI_PROVIDERS) providers: AIProvider[]) {
+    this.providers = new Map(providers.map((provider) => [provider.name, provider]));
   }
 
   providersList(): AIProviderInfo[] {
-    const providerNames: Record<AIProviderName, string> = {
-      ollama: 'Ollama',
-      gemini: 'Gemini',
-      anthropic: 'Anthropic',
-    };
-
-    return Array.from(this.providers.keys()).map((id) => ({
-      id,
-      label: providerNames[id],
-    }));
+    return Array.from(this.providers.values()).map(({ name, label }) => ({ id: name, label }));
   }
 
   async health(): Promise<HealthCheck[]> {

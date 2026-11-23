@@ -1,6 +1,7 @@
+import type { AiProviderId } from '../../../shared/contracts/ai';
 import { HealthCheck } from '../health/health.model';
 
-export type AIProviderName = 'ollama' | 'gemini' | 'anthropic';
+export type AIProviderName = AiProviderId;
 
 export interface AIThinkingOption {
   id: string;
@@ -69,6 +70,8 @@ export interface AIChatRequest {
 
 export interface AIProvider {
   readonly name: AIProviderName;
+  /** Nome mostrado ao usuário (ex.: "Gemini"). */
+  readonly label: string;
 
   health(): Promise<HealthCheck>;
 

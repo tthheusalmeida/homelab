@@ -28,6 +28,7 @@ export const GEMINI_NOT_CONFIGURED =
 export class GeminiProvider implements AIProvider, ChatBackend {
   private readonly ai: GoogleGenAI | null;
   readonly name = 'gemini' as const;
+  readonly label = 'Gemini';
   readonly catalog = geminiCatalog;
   readonly maxAttempts = GEMINI_MAX_ATTEMPTS;
   readonly retryDelaysMs = GEMINI_RETRY_DELAYS_MS;
@@ -39,7 +40,7 @@ export class GeminiProvider implements AIProvider, ChatBackend {
     private readonly usageService: AiUsageService,
     config: BackConfig,
   ) {
-    const apiKey = config.geminiApiKey;
+    const apiKey = config.apiKeyFor('gemini');
 
     this.ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
   }

@@ -1,3 +1,5 @@
+import { GoogleGenAI } from '@google/genai';
+
 import { type ApiKeyChecker, createApiKeyDefinition } from './api-key-definition';
 import type { ExternalProviderDefinition } from './external-providers.service';
 
@@ -29,7 +31,14 @@ export function readableGeminiError(error: unknown): string {
   return raw;
 }
 
-export function createGeminiDefinition(checkKey: GeminiKeyChecker): ExternalProviderDefinition {
+/** Teste padrão: lista os modelos com a SDK do Google. */
+const checkGeminiKeyWithSdk: GeminiKeyChecker = async (apiKey) => {
+  await new GoogleGenAI({ apiKey }).models.list();
+};
+
+export function createGeminiDefinition(
+  checkKey: GeminiKeyChecker = checkGeminiKeyWithSdk,
+): ExternalProviderDefinition {
   return createApiKeyDefinition({
     id: 'gemini',
     label: 'Gemini',

@@ -2,6 +2,8 @@ import { BackConfig } from '../back/config/back-config';
 
 import type { PlatformTools } from '../back/modules/video/platform-downloader';
 
+import type { ExternalProviderId } from '../shared/contracts/providers';
+import type { ApiKeys } from './api-keys';
 import type { AppPaths } from './app-paths';
 import type { SettingsStore } from './settings-store';
 
@@ -15,13 +17,17 @@ export class SettingsBackConfig extends BackConfig {
   constructor(
     private readonly settings: SettingsStore,
     private readonly appPaths: AppPaths,
-    readonly geminiApiKey: string | null,
+    /** Chaves de API dos providers externos, lidas uma vez na inicialização. */
+    private readonly apiKeys: ApiKeys,
     /** Caminho do ffmpeg, ou quem o resolve a cada uso (assim um ffmpeg recém-instalado vale sem reiniciar). */
     private readonly ffmpeg?: string | (() => string),
     readonly platformTools?: PlatformTools,
-    readonly anthropicApiKey?: string | null,
   ) {
     super();
+  }
+
+  apiKeyFor(provider: ExternalProviderId): string | null {
+    return this.apiKeys[provider] ?? null;
   }
 
   ffmpegPath(): string | undefined {

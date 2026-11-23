@@ -35,6 +35,7 @@ const JSON_ONLY_INSTRUCTION =
 export class AnthropicProvider implements AIProvider, ChatBackend {
   private readonly ai: Anthropic | null;
   readonly name = 'anthropic' as const;
+  readonly label = 'Anthropic';
   readonly catalog = anthropicCatalog;
   readonly maxAttempts = ANTHROPIC_MAX_ATTEMPTS;
   readonly retryDelaysMs = ANTHROPIC_RETRY_DELAYS_MS;
@@ -46,7 +47,7 @@ export class AnthropicProvider implements AIProvider, ChatBackend {
     private readonly usageService: AiUsageService,
     config: BackConfig,
   ) {
-    const apiKey = config.anthropicApiKey;
+    const apiKey = config.apiKeyFor('anthropic');
 
     // as tentativas são do app (com aviso ao job), não da SDK
     this.ai = apiKey ? new Anthropic({ apiKey, maxRetries: 0 }) : null;

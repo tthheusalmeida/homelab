@@ -1,3 +1,4 @@
+import type { ExternalProviderId } from '../../shared/contracts/providers';
 import type { PlatformTools } from '../modules/video/platform-downloader';
 
 /**
@@ -47,9 +48,6 @@ export abstract class BackConfig {
   /** Arquivo dos prompts personalizados; sem valor, ficam só em memória (testes). */
   abstract readonly promptsFile: string | null;
 
-  /** Chave do Gemini; `null` quando não configurada (o provider responde `NOT_CONFIGURED`). */
-  abstract readonly geminiApiKey: string | null;
-
-  /** Chave da Anthropic; vazia ou `null` quando não configurada (o provider responde `NOT_CONFIGURED`). */
-  readonly anthropicApiKey?: string | null;
+  /** Chave de API de um provider externo; `null` quando não configurada (o provider responde `NOT_CONFIGURED`). */
+  abstract apiKeyFor(provider: ExternalProviderId): string | null;
 }

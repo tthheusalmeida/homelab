@@ -1,4 +1,8 @@
-export type AiProviderId = 'ollama' | 'gemini' | 'anthropic';
+import { EXTERNAL_PROVIDER_IDS } from './providers';
+
+/** Todos os providers de IA: o local (Ollama) e os externos (`EXTERNAL_PROVIDER_IDS`). */
+export const AI_PROVIDER_IDS = ['ollama', ...EXTERNAL_PROVIDER_IDS] as const;
+export type AiProviderId = (typeof AI_PROVIDER_IDS)[number];
 
 export interface AiProviderEntry {
   id: AiProviderId;
