@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 
 import type { ChatSummary } from "#shared/contracts/chat";
@@ -30,6 +30,8 @@ import { useSnackbar } from "#components/Snackbar";
 
 /** Parâmetro da URL com o chat aberto; sem ele, é um chat novo (que só é salvo ao enviar). */
 const CHAT_PARAM = "c";
+
+const NO_MESSAGES: AiMessage[] = [];
 
 const newChatId = () => crypto.randomUUID();
 
@@ -68,11 +70,17 @@ export function ChatPage() {
   const activeModelId = ai.modelId;
   const activeThinkingId = ai.thinkingId;
 
-  const history = chat?.messages ?? [];
+  const history = chat?.messages ?? NO_MESSAGES;
   const showPending = pending !== null && history.length === pending.baseCount;
-  const messages: AiMessage[] = showPending
-    ? [...history, { id: "pending", role: "user", content: pending.content }]
-    : history;
+  const pendingContent = showPending ? pending.content : null;
+  // Mesma lista entre as teclas do campo: a conversa (e o Markdown dela) não é redesenhada à toa.
+  const messages = useMemo<AiMessage[]>(
+    () =>
+      pendingContent === null
+        ? history
+        : [...history, { id: "pending", role: "user", content: pendingContent }],
+    [history, pendingContent],
+  );
 
   const modelLimit = modelContextLimit(ai.activeModel);
   const contextHint =

@@ -1,10 +1,13 @@
+import type { Job } from "../../types/job.types";
 import { isActiveJob } from "../active";
 
-import { useJobs } from "./useJobs";
+import { useJobsSelect } from "./useJobs";
+
+const countActive = (jobs: Job[]) => jobs.filter(isActiveJob).length;
 
 /** Quantos jobs estão na fila ou rodando agora (o contador da barra lateral). Compartilha a consulta da tela de tarefas. */
 export function useActiveJobsCount(): number {
-  const { data } = useJobs();
+  const { data } = useJobsSelect(countActive);
 
-  return data?.filter(isActiveJob).length ?? 0;
+  return data ?? 0;
 }

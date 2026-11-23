@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 
 import type { AiMessage, ChatStatus } from "../types/chat";
 
@@ -13,7 +13,7 @@ interface ChatMessageListProps {
   error?: string | null;
 }
 
-export function ChatMessageList({
+export const ChatMessageList = memo(function ChatMessageList({
   messages,
   status = "idle",
   error = null,
@@ -56,4 +56,4 @@ export function ChatMessageList({
       </div>
     </div>
   );
-}
+});

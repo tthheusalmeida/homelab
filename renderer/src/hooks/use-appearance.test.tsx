@@ -347,4 +347,29 @@ describe("transcript preferences", () => {
     expect(result.current.appearance.transcript).toEqual({ preview: true, progress: false });
   });
 
+
+  it("when the window regains focus and the saved appearance is the same, should not render again", async () => {
+    mockApi({ [IpcChannels.appearance.get]: () => ok(DEFAULT_APPEARANCE) });
+    let renders = 0;
+    const { result } = renderHook(
+      () => {
+        renders += 1;
+
+        return useAppearance();
+      },
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.appearance).toEqual(DEFAULT_APPEARANCE));
+    await act(async () => undefined);
+    const before = renders;
+    const api = result.current;
+
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+    });
+
+    expect(renders).toBe(before);
+    expect(result.current).toBe(api);
+  });
 });

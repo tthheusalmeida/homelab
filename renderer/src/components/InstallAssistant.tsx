@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ComponentChecklist } from '#components/ComponentChecklist';
 import { HardwareCard } from '#components/HardwareCard';
 import { HexLoader, Logo } from '#components/Hex';
@@ -35,11 +35,10 @@ export function InstallAssistant() {
     (current) => current.hardware.recommendation.componentIds,
   );
 
-  useEffect(() => {
-    if (status?.running) {
-      setWasRunning(true);
-    }
-  }, [status?.running]);
+  // Guarda que o download chegou a rodar; ajustar durante o render evita um segundo desenho.
+  if (status?.running && !wasRunning) {
+    setWasRunning(true);
+  }
 
   if (!status) {
     return null;

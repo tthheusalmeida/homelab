@@ -1,6 +1,6 @@
 # Testes (front)
 
-- Framework: Vitest + jsdom + Testing Library (`@testing-library/react`, `jest-dom`, `user-event`). Config no bloco `test` de `vite.config.ts`.
+- Framework: Vitest + jsdom + Testing Library (`@testing-library/react`, `jest-dom`, `user-event`). Config em `vitest.renderer.config.mts`.
 - Setup global (`src/test/setup.ts`): matchers do jest-dom, limpeza automática e polyfills de jsdom (`ResizeObserver`, `matchMedia`, `scrollIntoView`, `getAnimations`) exigidos pelos componentes base-ui.
 - Helpers (`src/test/utils.tsx`): `createWrapper()` (QueryClient sem retry) e `renderWithQuery(ui)`.
 - Rodar: `npm test` (tudo), `npx vitest run caminho/arquivo.test.tsx` (um), `npm run test:watch`.

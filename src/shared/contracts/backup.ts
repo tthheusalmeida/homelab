@@ -25,14 +25,6 @@ export const BACKUP_ITEM_IDS: readonly BackupItemId[] = [
 /** O que **não** entra no backup (a tela avisa antes de criar). */
 export type BackupExclusionId = 'secrets' | 'temp' | 'ai-binaries' | 'preferences' | 'library-path';
 
-export const BACKUP_EXCLUSIONS: readonly BackupExclusionId[] = [
-  'secrets',
-  'temp',
-  'ai-binaries',
-  'preferences',
-  'library-path',
-];
-
 /** `files`: arquivos de uma pasta (biblioteca, entrada); `records`: registros de uma coleção (jobs, chats...). */
 export type BackupItemKind = 'files' | 'records';
 

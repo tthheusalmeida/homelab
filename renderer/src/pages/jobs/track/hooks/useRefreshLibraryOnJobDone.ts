@@ -4,12 +4,14 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { LIBRARY_KEY } from "../../../library/hooks/useLibrary";
 import type { Job } from "../../types/job.types";
-import { useJobs } from "./useJobs";
+import { useJobsSelect } from "./useJobs";
 
 /** Ids dos jobs que terminaram com sucesso. */
 export function completedJobIds(jobs: Job[]): Set<string> {
   return new Set(jobs.filter((job) => job.status === "completed").map((job) => job.id));
 }
+
+const completedIdList = (jobs: Job[]) => [...completedJobIds(jobs)].sort();
 
 /** Algum job terminou desde a última olhada (a primeira olhada só marca o que já existia). */
 export function hasNewCompletion(previous: Set<string> | null, current: Set<string>): boolean {
@@ -27,7 +29,8 @@ export function hasNewCompletion(previous: Set<string> | null, current: Set<stri
  * a tela.
  */
 export function useRefreshLibraryOnJobDone(): void {
-  const { data } = useJobs();
+  // Só os ids dos concluídos: o progresso de cada segundo não acorda este gancho.
+  const { data } = useJobsSelect(completedIdList);
   const queryClient = useQueryClient();
   const seen = useRef<Set<string> | null>(null);
 
@@ -36,7 +39,7 @@ export function useRefreshLibraryOnJobDone(): void {
       return;
     }
 
-    const completed = completedJobIds(data);
+    const completed = new Set(data);
 
     if (hasNewCompletion(seen.current, completed)) {
       void queryClient.invalidateQueries({ queryKey: LIBRARY_KEY });

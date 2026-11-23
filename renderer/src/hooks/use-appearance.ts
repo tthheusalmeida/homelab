@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -71,7 +72,12 @@ export function useAppearanceState(): AppearanceApi {
   const current = useRef(appearance);
   const channel = useRef<BroadcastChannel | null>(null);
 
+  // Valor igual ao que já está na tela (ex.: o main devolve o mesmo ao voltar o foco) não redesenha o app.
   const adopt = useCallback((next: Appearance) => {
+    if (JSON.stringify(next) === JSON.stringify(current.current)) {
+      return;
+    }
+
     current.current = next;
     setAppearance(next);
     writeCachedAppearance(next);
@@ -177,15 +183,19 @@ export function useAppearanceState(): AppearanceApi {
     [update],
   );
 
-  return {
-    appearance,
-    update,
-    updateReading,
-    reset,
-    resetReading,
-    updateTranscript,
-    resetTranscript,
-  };
+  // Identidade estável: quem só consome o contexto não é redesenhado sem a aparência ter mudado.
+  return useMemo(
+    () => ({
+      appearance,
+      update,
+      updateReading,
+      reset,
+      resetReading,
+      updateTranscript,
+      resetTranscript,
+    }),
+    [appearance, update, updateReading, reset, resetReading, updateTranscript, resetTranscript],
+  );
 }
 
 /**
