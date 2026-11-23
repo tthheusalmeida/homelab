@@ -46,6 +46,8 @@ export interface AIRetryInfo {
   delayMs: number;
   /** Motivo da falha, em português. */
   reason: string;
+  /** A tentativa vai usar outro modelo (o mais barato), porque o escolhido não respondeu. */
+  fallback?: boolean;
 }
 
 export interface AIChatRequest {

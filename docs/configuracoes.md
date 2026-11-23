@@ -79,6 +79,8 @@ Ao salvar um caminho novo o app olha a pasta: **vazia ou nova** oferece "Mover a
 - Hoje: Gemini. Novas fontes entram registrando outra definição (`ExternalProviderDefinition`).
 - `list`, `get` (estado e chave mascarada), `save` (chave não vazia), `test` (chave candidata ou a salva; mesma checagem do health: `models.list`).
 - O teste devolve `{ ok, message }`; falhas nunca viram exceção. A mensagem do Gemini é extraída do JSON da SDK.
+- **Modelos do Gemini:** só os de texto cadastrados em `gemini.pricing.ts` (com o preço da faixa padrão) aparecem, **ordenados do mais barato ao mais caro** (entrada + saída por milhão de tokens). Para incluir um modelo novo, cadastre o ID e o preço lá.
+- **Troca automática para o mais barato:** se o modelo escolhido continua indisponível (sobrecarga, limite de uso ou rede) depois das 3 tentativas, o app tenta **uma vez** o modelo mais barato (com as mesmas 3 tentativas). O job mostra "Trocando para o modelo mais barato: <motivo>", e o Consumo registra o modelo que de fato respondeu. Não troca se o erro não é passageiro (chave recusada, pedido recusado), se o usuário cancelou ou se o escolhido já é o mais barato.
 
 ### Locais (`providers:local:*`)
 - Whisper: **só teste** (os valores são fixos: pasta `resources/bin/<plataforma>`, executável e modelo `ggml-large-v3-turbo.bin` na mesma pasta). O teste verifica a existência do executável e do modelo, com a mesma regra que a transcrição usa, e as mensagens mandam instalar a transcrição ou um modelo em Configurações > Componentes, sem citar ferramenta nem caminho.

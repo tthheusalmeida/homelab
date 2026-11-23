@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { GoogleGenAI } from '@google/genai';
+import { type GenerateContentResponse, GoogleGenAI } from '@google/genai';
 
 import type { AIChatRequest, AIProvider, AIProviderModel, AIThinkingOption } from '../../ai.model';
 
@@ -18,7 +18,7 @@ import {
   GEMINI_RETRY_DELAYS_MS,
   GeminiEmptyResponseError,
 } from './gemini-errors';
-import { pricing } from './gemini.pricing';
+import { cheapestModel, modelsByCost, pricing } from './gemini.pricing';
 
 export const GEMINI_NOT_CONFIGURED =
   'Chave da API do Gemini não configurada. Abra Configurações e informe a chave.';
@@ -92,6 +92,93 @@ export class GeminiProvider implements AIProvider {
     }
   }
 
+  /**
+   * Pede a resposta ao modelo escolhido. Se ele continuar fora do ar depois das tentativas
+   * (sobrecarga, limite, rede), troca uma vez para o modelo mais barato e avisa quem chamou.
+   */
+  private async generateWithFallback(
+    ai: GoogleGenAI,
+    model: string,
+    request: AIChatRequest,
+  ): Promise<{ response: GenerateContentResponse; usedModel: string }> {
+    try {
+      return { response: await this.generate(ai, model, request), usedModel: model };
+    } catch (error) {
+      const fallbackModel = cheapestModel();
+      const { retryable, message } = classifyGeminiError(error);
+
+      // só troca entre modelos conhecidos, por erro passageiro e se o usuário não cancelou
+      if (!retryable || request.signal?.aborted || !pricing.has(model) || model === fallbackModel) {
+        throw error;
+      }
+
+      request.onRetry?.({
+        attempt: 1,
+        maxAttempts: GEMINI_MAX_ATTEMPTS,
+        delayMs: 0,
+        reason: message,
+        fallback: true,
+      });
+
+      return {
+        response: await this.generate(ai, fallbackModel, request),
+        usedModel: fallbackModel,
+      };
+    }
+  }
+
+  private generate(
+    ai: GoogleGenAI,
+    model: string,
+    request: AIChatRequest,
+  ): Promise<GenerateContentResponse> {
+    // Erro passageiro (limite de uso, servidor ocupado, rede, resposta vazia) repete sozinho,
+    // até `GEMINI_MAX_ATTEMPTS` vezes, e avisa quem chamou antes de cada nova tentativa.
+    return withRetry(
+      async () => {
+        const result = await ai.models.generateContent({
+          model,
+          contents: request.messages
+            ? request.messages.map((turn) => ({
+                role: turn.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: turn.content }],
+              }))
+            : request.message,
+          // Modo JSON: a resposta já vem como JSON puro, sem cerca de código nem texto em volta.
+          ...(request.json || request.signal
+            ? {
+                config: {
+                  ...(request.json ? { responseMimeType: 'application/json' } : {}),
+                  ...(request.signal ? { abortSignal: request.signal } : {}),
+                },
+              }
+            : {}),
+        });
+
+        if (!result.text) {
+          throw new GeminiEmptyResponseError();
+        }
+
+        return result;
+      },
+      {
+        maxAttempts: GEMINI_MAX_ATTEMPTS,
+        delaysMs: GEMINI_RETRY_DELAYS_MS,
+        // cancelado: não repete nem espera a próxima tentativa
+        isRetryable: (error) => !request.signal?.aborted && classifyGeminiError(error).retryable,
+        sleep: (ms) =>
+          request.signal ? raceAbort(this.sleep(ms), request.signal) : this.sleep(ms),
+        onRetry: ({ attempt, maxAttempts, delayMs, error }) =>
+          request.onRetry?.({
+            attempt,
+            maxAttempts,
+            delayMs,
+            reason: classifyGeminiError(error).message,
+          }),
+      },
+    );
+  }
+
   async chat(request: AIChatRequest): Promise<string> {
     const model = this.normalizeModel(request.model);
     const startedAt = Date.now();
@@ -112,51 +199,7 @@ export class GeminiProvider implements AIProvider {
     }
 
     try {
-      // Erro passageiro (limite de uso, servidor ocupado, rede, resposta vazia) repete sozinho,
-      // até `GEMINI_MAX_ATTEMPTS` vezes, e avisa quem chamou antes de cada nova tentativa.
-      const response = await withRetry(
-        async () => {
-          const result = await ai.models.generateContent({
-            model,
-            contents: request.messages
-              ? request.messages.map((turn) => ({
-                  role: turn.role === 'assistant' ? 'model' : 'user',
-                  parts: [{ text: turn.content }],
-                }))
-              : request.message,
-            // Modo JSON: a resposta já vem como JSON puro, sem cerca de código nem texto em volta.
-            ...(request.json || request.signal
-              ? {
-                  config: {
-                    ...(request.json ? { responseMimeType: 'application/json' } : {}),
-                    ...(request.signal ? { abortSignal: request.signal } : {}),
-                  },
-                }
-              : {}),
-          });
-
-          if (!result.text) {
-            throw new GeminiEmptyResponseError();
-          }
-
-          return result;
-        },
-        {
-          maxAttempts: GEMINI_MAX_ATTEMPTS,
-          delaysMs: GEMINI_RETRY_DELAYS_MS,
-          // cancelado: não repete nem espera a próxima tentativa
-          isRetryable: (error) => !request.signal?.aborted && classifyGeminiError(error).retryable,
-          sleep: (ms) =>
-            request.signal ? raceAbort(this.sleep(ms), request.signal) : this.sleep(ms),
-          onRetry: ({ attempt, maxAttempts, delayMs, error }) =>
-            request.onRetry?.({
-              attempt,
-              maxAttempts,
-              delayMs,
-              reason: classifyGeminiError(error).message,
-            }),
-        },
-      );
+      const { response, usedModel } = await this.generateWithFallback(ai, model, request);
 
       const latencyMs = Date.now() - startedAt;
 
@@ -164,11 +207,11 @@ export class GeminiProvider implements AIProvider {
       const outputTokens = response.usageMetadata?.candidatesTokenCount ?? 0;
       const totalTokens = response.usageMetadata?.totalTokenCount ?? inputTokens + outputTokens;
 
-      const estimatedCost = this.calculateCost(model, inputTokens, outputTokens);
+      const estimatedCost = this.calculateCost(usedModel, inputTokens, outputTokens);
 
       this.usageService.record({
         provider: 'gemini',
-        model,
+        model: usedModel,
         operation: 'chat',
         inputTokens,
         outputTokens,
@@ -231,7 +274,9 @@ export class GeminiProvider implements AIProvider {
         });
       }
 
-      return result.sort((a, b) => a.name.localeCompare(b.name));
+      const order = modelsByCost();
+
+      return result.sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name));
     } catch (error) {
       throw new Error('A requisição para listar modelos do Gemini falhou.', {
         cause: error,
