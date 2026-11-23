@@ -1,7 +1,4 @@
-import {
-  DEFAULT_TRANSCRIPT,
-  parseTranscript,
-} from './document-views';
+import { DEFAULT_TRANSCRIPT, parseTranscript } from './document-views';
 
 describe('parseTranscript', () => {
   it('when the defaults are used, should show the preview and the progress bar', () => {

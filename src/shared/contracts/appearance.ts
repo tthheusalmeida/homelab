@@ -1,7 +1,4 @@
-import {
-  DEFAULT_TRANSCRIPT,
-  type TranscriptPreferences,
-} from './document-views';
+import { DEFAULT_TRANSCRIPT, type TranscriptPreferences } from './document-views';
 import { DEFAULT_READING, type ReadingPreferences } from './reading';
 
 /** Modos de tema: `system` acompanha o tema do sistema operacional. */

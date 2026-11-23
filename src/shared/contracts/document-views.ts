@@ -30,4 +30,3 @@ export function parseTranscript(value: unknown): TranscriptPreferences | null {
 
   return preview === null || progress === null ? null : { preview, progress };
 }
-
