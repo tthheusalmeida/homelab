@@ -1,3 +1,4 @@
+import type { ExternalProviderId } from '../shared/contracts/providers';
 import { IpcError, IpcErrorCode } from '../shared/errors';
 
 import type { JsonFile } from '../storage/json-file';
@@ -19,7 +20,13 @@ export interface SecretCipher {
   decrypt(encrypted: string): Promise<DecryptedSecret>;
 }
 
-export type SecretKey = 'gemini.apiKey' | 'platform.cookies';
+/** Chave de API de cada provider externo (`<id>.apiKey`) e os logins de plataformas de vídeo. */
+export type SecretKey = `${ExternalProviderId}.apiKey` | 'platform.cookies';
+
+/** Nome do segredo que guarda a chave de API do provider. */
+export function apiKeySecret(provider: ExternalProviderId): SecretKey {
+  return `${provider}.apiKey`;
+}
 
 type SecretFile = Partial<Record<SecretKey, string>>;
 

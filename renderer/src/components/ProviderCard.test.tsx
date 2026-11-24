@@ -30,6 +30,20 @@ describe('ProviderCard', () => {
     expect(screen.queryByRole('button', { name: 'Salvar' })).not.toBeInTheDocument();
   });
 
+  it('when an icon is given, should show it in the header, even collapsed', () => {
+    renderCard({ icon: <span data-testid="logo" /> });
+
+    expect(screen.getByRole('button', { name: /^Whisper/ })).toContainElement(
+      screen.getByTestId('logo'),
+    );
+  });
+
+  it('when no icon is given, should show only the text header', () => {
+    renderCard();
+
+    expect(screen.queryByTestId('logo')).not.toBeInTheDocument();
+  });
+
   it('when the header is clicked, should open the content and the footer actions', async () => {
     const user = userEvent.setup();
     renderCard();

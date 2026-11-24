@@ -1,4 +1,5 @@
 import type { Appearance, AppearancePatch } from '../shared/contracts/appearance';
+import type { AiPreference } from '../shared/contracts/ai';
 import type { SaveResult, SettingsPaths, SupportSettings } from '../shared/contracts/settings';
 
 import type { SettingsStore } from './settings-store';
@@ -24,6 +25,11 @@ export class SettingsService {
   /** Tema, cor e leitura valem na hora, sem reiniciar. */
   updateAppearance(patch: AppearancePatch): Appearance {
     return this.store.update({ appearance: patch }).settings.appearance;
+  }
+
+  /** Guarda a IA padrão (`null` volta ao automático); vale na hora, sem reiniciar. */
+  updateAiDefault(preference: AiPreference | null): AiPreference | null {
+    return this.store.update({ ai: { default: preference } }).settings.ai.default;
   }
 
   getSupport(): SupportSettings {

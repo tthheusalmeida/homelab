@@ -49,6 +49,35 @@ describe('SettingsStore', () => {
     expect(store.update({ paths: { libraryDir: path.resolve('/a') } }).changed).toBe(false);
   });
 
+  it('when the AI default is saved, should survive a reload', () => {
+    const store = create();
+
+    store.update({ ai: { default: { providerId: 'anthropic', modelId: 'claude-haiku-5-5' } } });
+
+    expect(create().get().ai.default).toEqual({
+      providerId: 'anthropic',
+      modelId: 'claude-haiku-5-5',
+    });
+  });
+
+  it('when the AI default is cleared with null, should go back to automatic', () => {
+    const store = create();
+    store.update({ ai: { default: { providerId: 'gemini', modelId: null } } });
+
+    store.update({ ai: { default: null } });
+
+    expect(create().get().ai.default).toBeNull();
+  });
+
+  it('when another section is updated, should keep the AI default', () => {
+    const store = create();
+    store.update({ ai: { default: { providerId: 'gemini', modelId: null } } });
+
+    store.update({ local: { ollama: { url: 'http://outro:1234' } } });
+
+    expect(store.get().ai.default).toEqual({ providerId: 'gemini', modelId: null });
+  });
+
   it('when updating only one section, should keep the others untouched', () => {
     const store = create();
 

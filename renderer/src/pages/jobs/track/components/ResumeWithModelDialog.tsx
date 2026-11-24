@@ -6,6 +6,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogSections,
   DialogTitle,
 } from '#ui/dialog';
 
@@ -17,7 +18,7 @@ import { TrackStrings } from '../strings';
 export interface ResumeModel {
   providerId: AiProviderId;
   modelId: string;
-  thinking: string;
+  thinking?: string;
 }
 
 interface ResumeWithModelDialogProps {
@@ -40,10 +41,12 @@ function ResumeForm({
   onConfirm: (job: Job, model: ResumeModel) => void;
 }) {
   const ai = useAiSelection();
-  const ready = !!ai.providerId && !!ai.modelId && !!ai.thinkingId;
+  const ready = !!ai.providerId && !!ai.modelId && ai.thinkingReady;
 
+  // O conteúdo vive neste componente, então monta as três faixas à mão (`DialogSections`): sem isso o
+  // cabeçalho e o rodapé cairiam no miolo e ganhariam o padding dele em dobro (texto e botões desalinhados).
   return (
-    <>
+    <DialogSections>
       <DialogHeader>
         <DialogTitle>{TrackStrings.changeModel.title}</DialogTitle>
 
@@ -65,7 +68,7 @@ function ResumeForm({
           disabled={!ready || isPending}
           loading={isPending}
           onClick={() => {
-            if (ai.providerId && ai.modelId && ai.thinkingId) {
+            if (ai.providerId && ai.modelId && ai.thinkingReady) {
               onConfirm(job, {
                 providerId: ai.providerId as AiProviderId,
                 modelId: ai.modelId,
@@ -77,7 +80,7 @@ function ResumeForm({
           {TrackStrings.changeModel.confirm}
         </Button>
       </DialogFooter>
-    </>
+    </DialogSections>
   );
 }
 
@@ -94,7 +97,8 @@ export function ResumeWithModelDialog({
 }: ResumeWithModelDialogProps) {
   return (
     <Dialog open={job !== null} onOpenChange={onOpenChange}>
-      <DialogContent>
+      {/* Mais larga que o padrão: serviço, modelo e Pensar lado a lado não cabem em 28rem. */}
+      <DialogContent bare className="sm:max-w-xl">
         {job && (
           <ResumeForm
             job={job}

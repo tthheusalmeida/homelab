@@ -77,6 +77,30 @@ describe('ResumeWithModelDialog', () => {
     ).toBeInTheDocument();
   });
 
+  // Trava o alinhamento: cabeçalho e rodapé são faixas próprias do diálogo e só o miolo tem o padding
+  // dele. Embrulhados no miolo, ganhavam o padding em dobro (texto e botões desalinhados dos campos).
+  it('when open, should keep the header and the footer as their own bands, outside the padded body', () => {
+    render(<ResumeWithModelDialog job={job} onOpenChange={vi.fn()} onConfirm={vi.fn()} />);
+
+    const dialog = screen.getByRole('dialog');
+    const body = dialog.querySelector('[data-slot="dialog-body"]');
+    const title = screen.getByText('Continuar com outro modelo');
+    const confirm = screen.getByRole('button', { name: 'Continuar' });
+
+    expect(body).not.toBeNull();
+    expect(body).not.toContainElement(title);
+    expect(body).not.toContainElement(confirm);
+    expect(body).toContainElement(screen.getByLabelText('Provedor'));
+    expect(dialog.querySelector('[data-slot="dialog-header"]')).toContainElement(title);
+    expect(dialog.querySelector('[data-slot="dialog-footer"]')).toContainElement(confirm);
+  });
+
+  it('when open, should be wide enough for the three selectors', () => {
+    render(<ResumeWithModelDialog job={job} onOpenChange={vi.fn()} onConfirm={vi.fn()} />);
+
+    expect(screen.getByRole('dialog')).toHaveClass('sm:max-w-xl');
+  });
+
   it('when no model was chosen, should keep the confirm button disabled', () => {
     render(<ResumeWithModelDialog job={job} onOpenChange={vi.fn()} onConfirm={vi.fn()} />);
 
@@ -90,7 +114,7 @@ describe('ResumeWithModelDialog', () => {
 
     await user.selectOptions(screen.getByLabelText('Provedor'), 'ollama');
     await user.selectOptions(screen.getByLabelText('Modelo'), 'qwen');
-    await user.selectOptions(screen.getByLabelText('Thinking'), 'off');
+    await user.selectOptions(screen.getByLabelText('Pensar'), 'off');
     await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
     expect(onConfirm).toHaveBeenCalledWith(job, {

@@ -4,7 +4,7 @@ import type { AIProviderName, AIRetryInfo } from '../../ai/ai.model';
 import { AIService } from '../../ai/ai.service';
 import { buildClassificationPrompt } from '../../ai/prompts/library-classification.prompt';
 import { PromptService } from '../../ai/prompts/prompt.service';
-import { cheapestModel } from '../../ai/providers/gemini/gemini.pricing';
+import { DefaultAiService } from '../../ai/default-ai.service';
 
 import type { CategoryNode } from '../domain/categories';
 import { MAX_CATEGORY_DEPTH } from '../domain/library.types';
@@ -45,19 +45,19 @@ export class LibraryClassifier {
   constructor(
     private readonly library: LibraryService,
     private readonly ai: AIService,
+    private readonly defaultAi: DefaultAiService,
     // Sem ele (testes), vale sempre o prompt padrão.
     @Optional() private readonly prompts?: PromptService,
   ) {}
 
-  /** Pede ao Gemini uma sugestão de título, categoria e tags para o documento. */
+  /** Pede à IA em uso (padrão ou troca da sessão) uma sugestão de título, categoria e tags. */
   async suggest(id: string, modelId?: string): Promise<ClassificationSuggestion> {
     const { meta, content } = await this.library.get(id);
 
     return this.classify({
       title: meta.title,
       content,
-      providerId: 'gemini',
-      modelId: modelId?.trim() || cheapestModel(),
+      ...this.defaultAi.resolve({ modelId }),
     });
   }
 

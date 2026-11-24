@@ -13,6 +13,7 @@ export interface DefaultSettingsOptions {
 export function createDefaultSettings({ libraryDir }: DefaultSettingsOptions): SettingsData {
   return {
     paths: { libraryDir },
+    ai: { default: null },
     appearance: structuredClone(DEFAULT_APPEARANCE),
     updates: { autoCheck: true },
     support: { starPromptHidden: false },

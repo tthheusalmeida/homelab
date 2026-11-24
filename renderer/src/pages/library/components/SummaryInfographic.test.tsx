@@ -122,6 +122,14 @@ beforeEach(() => {
 });
 
 describe('SummaryInfographic', () => {
+  it('when the toolbar shows the structure selector, should be as tall as the buttons beside it (32px)', () => {
+    renderTab();
+
+    const bar = screen.getByRole('toolbar', { name: 'Controles do infográfico' });
+
+    expect(within(bar).getByRole('combobox')).toHaveAttribute('data-size', 'sm');
+  });
+
   it('when the infographic is loading, should show the loading state', () => {
     saved.state = { isPending: true, data: null };
 
@@ -180,17 +188,6 @@ describe('SummaryInfographic', () => {
     expect(generate.mutate).toHaveBeenCalledWith({ id: currentId, layout: undefined });
   });
 
-  it('when there is a single section, should say "1 seção"', () => {
-    saved.state = {
-      isPending: false,
-      data: { ...infographic, sections: [infographic.sections[0]] },
-    };
-
-    renderTab();
-
-    expect(screen.getByText('1 seção')).toBeInTheDocument();
-  });
-
   it('when the user chooses a model and generates, should send that layout', async () => {
     burnAutoRequest();
     renderTab();
@@ -211,7 +208,7 @@ describe('SummaryInfographic', () => {
     expect(screen.queryByText('Este resumo ainda não tem infográfico')).not.toBeInTheDocument();
   });
 
-  it('when there is an infographic, should draw the whole story (every section and the closing) with the number of sections', () => {
+  it('when there is an infographic, should start right at the content, with no header row of its own', () => {
     saved.state = { isPending: false, data: infographic };
 
     renderTab();
@@ -219,7 +216,8 @@ describe('SummaryInfographic', () => {
     expect(screen.getByText('Primeiro passo')).toBeInTheDocument();
     expect(screen.getByText('Marco B')).toBeInTheDocument();
     expect(screen.getByText('Lembre disto')).toBeInTheDocument();
-    expect(screen.getByText('2 seções')).toBeInTheDocument();
+    // a contagem de seções fica na linha de cima da página (`InfographicMeta`), não aqui dentro
+    expect(screen.queryByText('2 seções')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Gerar de novo/ })).toBeInTheDocument();
   });
 
@@ -290,7 +288,10 @@ describe('SummaryInfographic', () => {
       await chooseDownload('PNG');
 
       await waitFor(() =>
-        expect(snackbar.success).toHaveBeenCalledWith('Imagem do infográfico salva.', expect.objectContaining({ label: 'Ver' })),
+        expect(snackbar.success).toHaveBeenCalledWith(
+          'Imagem do infográfico salva.',
+          expect.objectContaining({ label: 'Ver' }),
+        ),
       );
       expect(capture).toHaveBeenCalledWith(expect.any(HTMLElement), false);
       expect(saveImage.mutateAsync).toHaveBeenCalledWith({
@@ -306,7 +307,10 @@ describe('SummaryInfographic', () => {
       await chooseDownload('PDF');
 
       await waitFor(() =>
-        expect(snackbar.success).toHaveBeenCalledWith('PDF do infográfico salvo.', expect.objectContaining({ label: 'Ver' })),
+        expect(snackbar.success).toHaveBeenCalledWith(
+          'PDF do infográfico salvo.',
+          expect.objectContaining({ label: 'Ver' }),
+        ),
       );
       expect(capturePdf).toHaveBeenCalledWith(expect.any(HTMLElement));
       expect(saveImage.mutateAsync).toHaveBeenCalledWith({
@@ -322,7 +326,10 @@ describe('SummaryInfographic', () => {
       await chooseDownload('SVG');
 
       await waitFor(() =>
-        expect(snackbar.success).toHaveBeenCalledWith('Imagem do infográfico salva.', expect.objectContaining({ label: 'Ver' })),
+        expect(snackbar.success).toHaveBeenCalledWith(
+          'Imagem do infográfico salva.',
+          expect.objectContaining({ label: 'Ver' }),
+        ),
       );
       expect(captureSvg).toHaveBeenCalledWith(expect.any(HTMLElement), false);
       expect(saveImage.mutateAsync).toHaveBeenCalledWith({
@@ -658,22 +665,6 @@ describe('SummaryInfographic edit', { timeout: 20_000 }, () => {
     expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeEnabled();
   });
 
-  it('when the infographic was edited, should say so', () => {
-    saved.state = { isPending: false, data: { ...infographic, edited: true } };
-
-    renderTab();
-
-    expect(screen.getByText('Editado')).toBeInTheDocument();
-  });
-
-  it('when the infographic was not edited, should not say so', () => {
-    saved.state = { isPending: false, data: infographic };
-
-    renderTab();
-
-    expect(screen.queryByText('Editado')).not.toBeInTheDocument();
-  });
-
   it('when generating again an edited infographic, should ask before losing the edits', async () => {
     saved.state = { isPending: false, data: { ...infographic, edited: true } };
     burnAutoRequest();
@@ -720,11 +711,11 @@ describe('SummaryInfographic edit', { timeout: 20_000 }, () => {
 });
 
 describe('SummaryInfographic text edit', { timeout: 20_000 }, () => {
-  const startEditing = async () =>
-    userEvent.click(screen.getByRole('button', { name: 'Editar' }));
+  const startEditing = async () => userEvent.click(screen.getByRole('button', { name: 'Editar' }));
   const textButton = (text: string) =>
-    Array.from(document.querySelectorAll<HTMLElement>('[data-slot="editable-text"]'))
-      .find((element) => element.textContent === text) as HTMLElement;
+    Array.from(document.querySelectorAll<HTMLElement>('[data-slot="editable-text"]')).find(
+      (element) => element.textContent === text,
+    ) as HTMLElement;
   const dialog = () => within(screen.getByRole('dialog'));
   const gone = () => waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
@@ -849,7 +840,9 @@ describe('SummaryInfographic zoom', () => {
 
     const { container } = renderTab();
 
-    expect(container.querySelector<HTMLElement>('[style*="max-width"]')?.style.maxWidth).toBe('50rem');
+    expect(container.querySelector<HTMLElement>('[style*="max-width"]')?.style.maxWidth).toBe(
+      '50rem',
+    );
     expect(container.querySelector('[style*="zoom"]')).not.toBeInTheDocument();
   });
 
@@ -859,7 +852,9 @@ describe('SummaryInfographic zoom', () => {
 
     const { container } = renderTab();
 
-    expect(container.querySelector<HTMLElement>('[style*="max-width"]')?.style.maxWidth).toBe('75rem');
+    expect(container.querySelector<HTMLElement>('[style*="max-width"]')?.style.maxWidth).toBe(
+      '75rem',
+    );
     expect(container.querySelector<HTMLElement>('[style*="zoom"]')?.style.zoom).toBe('1.5');
   });
 
@@ -915,28 +910,30 @@ describe('SummaryInfographic zoom', () => {
     const { container } = renderTab();
     const column = container.querySelector<HTMLElement>('[style*="max-width"]')!;
 
-    expect(column).not.toContainElement(screen.getByRole('toolbar', { name: 'Controles do infográfico' }));
+    expect(column).not.toContainElement(
+      screen.getByRole('toolbar', { name: 'Controles do infográfico' }),
+    );
   });
 });
 
-describe("SummaryInfographic floating toolbar", () => {
-  it("when there is an infographic, should keep the model select and Gerar de novo inside the floating toolbar", () => {
+describe('SummaryInfographic floating toolbar', () => {
+  it('when there is an infographic, should keep the model select and Gerar de novo inside the floating toolbar', () => {
     saved.state = { isPending: false, data: infographic };
 
     renderTab();
 
-    const bar = screen.getByRole("toolbar", { name: "Controles do infográfico" });
+    const bar = screen.getByRole('toolbar', { name: 'Controles do infográfico' });
 
-    expect(within(bar).getByRole("combobox")).toBeInTheDocument();
-    expect(within(bar).getByRole("button", { name: /Gerar de novo/ })).toBeInTheDocument();
+    expect(within(bar).getByRole('combobox')).toBeInTheDocument();
+    expect(within(bar).getByRole('button', { name: /Gerar de novo/ })).toBeInTheDocument();
   });
 
-  it("when there is no infographic yet, should show only the model select in the toolbar", () => {
+  it('when there is no infographic yet, should show only the model select in the toolbar', () => {
     renderTab();
 
-    const bar = screen.getByRole("toolbar", { name: "Controles do infográfico" });
+    const bar = screen.getByRole('toolbar', { name: 'Controles do infográfico' });
 
-    expect(within(bar).getByRole("combobox")).toBeInTheDocument();
-    expect(within(bar).queryByRole("button", { name: "Aumentar o zoom" })).not.toBeInTheDocument();
+    expect(within(bar).getByRole('combobox')).toBeInTheDocument();
+    expect(within(bar).queryByRole('button', { name: 'Aumentar o zoom' })).not.toBeInTheDocument();
   });
 });

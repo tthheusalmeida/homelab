@@ -3,12 +3,13 @@ import { useState } from 'react';
 import { Badge } from '#ui/badge';
 import { ExternalLink } from '#components/ExternalLink';
 import { SettingsGroup } from '#components/SettingsGroup';
-import { PROVIDER_CONSOLES } from '#lib/provider-consoles';
+import { profileOf } from '#lib/ai-providers';
 import { SetupGuide } from '#components/SetupGuide';
 
 import type { ExternalProviderInfo } from '#shared/contracts/providers';
 import { Field } from '../components/Field';
 import { ProviderCard } from '#components/ProviderCard';
+import { ProviderLogo } from '#components/ProviderLogo';
 import { useSnackbar } from '#components/Snackbar';
 import {
   ProviderActions,
@@ -18,7 +19,7 @@ import {
   testResultOf,
 } from '../components/ProviderParts';
 import { useExternalProviders, useSaveExternalProvider, useTestExternalProvider } from '../hooks';
-import { EXTERNAL_PROVIDER_GUIDES, EXTERNAL_PROVIDER_HINTS, Strings } from '../strings';
+import { Strings } from '../strings';
 
 interface SectionProps {
   onSaved: (restartRequired: boolean) => void;
@@ -57,7 +58,8 @@ function ExternalProviderCard({
   const test = useTestExternalProvider();
   const snackbar = useSnackbar();
 
-  const guide = EXTERNAL_PROVIDER_GUIDES[provider.id];
+  const profile = profileOf(provider.id);
+  const guide = profile?.keyGuide;
   const typedKey = apiKey.trim();
   const canTest = provider.configured || typedKey.length > 0;
 
@@ -71,8 +73,9 @@ function ExternalProviderCard({
     <ProviderCard
       index={index}
       defaultOpen={!provider.configured}
-      title={provider.label}
-      description={EXTERNAL_PROVIDER_HINTS[provider.id] ?? ''}
+      icon={<ProviderLogo provider={provider.id} label={profile?.company ?? provider.label} />}
+      title={profile?.company ?? provider.label}
+      description={profile?.hint ?? ''}
       badge={
         <Badge variant={provider.configured ? 'secondary' : 'outline'}>
           {provider.configured ? 'Configurada' : 'Não configurada'}
@@ -126,11 +129,11 @@ function ExternalProviderCard({
         onChange={change}
       />
 
-      {provider.configured && PROVIDER_CONSOLES[provider.id] && (
+      {provider.configured && profile?.console && (
         <p className="text-sm text-muted-foreground">
           O gasto real da conta só aparece no painel do provedor:{' '}
-          <ExternalLink href={PROVIDER_CONSOLES[provider.id].usageUrl}>
-            ver consumo no {PROVIDER_CONSOLES[provider.id].label}
+          <ExternalLink href={profile.console.usageUrl}>
+            ver consumo no {profile.name}
           </ExternalLink>
           . O app também registra o consumo na tela Consumo.
         </p>

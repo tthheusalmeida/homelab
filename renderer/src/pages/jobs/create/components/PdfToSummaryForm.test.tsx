@@ -12,6 +12,7 @@ const readState = {
   error: null as Error | null,
   progress: null as { done: number; total: number } | null,
 };
+const thinkingState = { options: [{ id: 'off', label: 'Desativado' }] };
 const createMutate = vi.fn();
 const createState = { isPending: false, isError: false, error: null as Error | null };
 
@@ -28,7 +29,7 @@ vi.mock('../../../ai/chat/hooks/useAiModels', () => ({
   useAiModels: () => ({ data: [{ id: 'm1', label: 'Modelo 1' }], isLoading: false }),
 }));
 vi.mock('../../../ai/chat/hooks/useAiThinking', () => ({
-  useAiThinking: () => ({ data: [{ id: 'off', label: 'Desativado' }], isLoading: false }),
+  useAiThinking: () => ({ data: thinkingState.options, isLoading: false }),
 }));
 vi.mock('../../../library/hooks/useLibrary', () => ({
   useCategories: () => ({ data: [] }),
@@ -94,7 +95,7 @@ const readReturns = (result: PdfInspection | null) =>
 async function chooseModel(user: ReturnType<typeof userEvent.setup>) {
   await user.selectOptions(screen.getByLabelText('Provedor'), 'gemini');
   await user.selectOptions(screen.getByLabelText('Modelo'), 'm1');
-  await user.selectOptions(screen.getByLabelText('Thinking'), 'off');
+  await user.selectOptions(screen.getByLabelText('Pensar'), 'off');
 }
 
 describe('PdfToSummaryForm', () => {
@@ -102,6 +103,7 @@ describe('PdfToSummaryForm', () => {
     readMutate.mockReset();
     cancelRead.mockReset();
     createMutate.mockReset();
+    thinkingState.options = [{ id: 'off', label: 'Desativado' }];
     Object.assign(readState, { isPending: false, isError: false, error: null, progress: null });
     Object.assign(createState, { isPending: false, isError: false, error: null });
   });
@@ -217,6 +219,25 @@ describe('PdfToSummaryForm', () => {
       detail: 'detailed',
       title: 'Redes de computadores',
     });
+  });
+
+  it('when the model has no thinking options, should hide the selector and still allow creating', async () => {
+    thinkingState.options = [];
+    readReturns(inspection);
+    const user = userEvent.setup();
+    render(<PdfToSummaryForm />);
+
+    await user.click(screen.getByRole('button', { name: 'Escolher PDF' }));
+    await user.selectOptions(screen.getByLabelText('Provedor'), 'gemini');
+    await user.selectOptions(screen.getByLabelText('Modelo'), 'm1');
+
+    expect(screen.queryByLabelText('Pensar')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Criar resumo do PDF' }));
+
+    expect(createMutate).toHaveBeenCalledTimes(1);
+    expect(createMutate.mock.calls[0][0]).toMatchObject({ providerId: 'gemini', modelId: 'm1' });
+    expect(createMutate.mock.calls[0][0].thinking).toBeUndefined();
   });
 
   it('when the title is empty, should send no title so the file name is used', async () => {

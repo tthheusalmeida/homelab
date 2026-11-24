@@ -4,14 +4,14 @@ import { renderWithSnackbar as render } from "#test/utils";
 import userEvent from "@testing-library/user-event";
 
 const suggestState = { mutate: vi.fn(), isPending: false, isError: false };
-const modelsState: { data?: { id: string; label: string }[] } = {};
 
 vi.mock("../hooks/useLibrary", () => ({
   useSuggestClassification: () => suggestState,
 }));
 
-vi.mock("../../ai/chat/hooks/useAiModels", () => ({
-  useAiModels: () => modelsState,
+// O chip da IA em uso tem testes próprios; aqui só interessa que a sugestão o mostra.
+vi.mock("#components/AiInUse", () => ({
+  AiInUse: () => <span data-testid="ai-in-use">IA em uso</span>,
 }));
 
 import { SuggestionPanel } from "./SuggestionPanel";
@@ -42,24 +42,23 @@ describe("SuggestionPanel", () => {
     suggestState.mutate.mockReset();
     suggestState.isPending = false;
     suggestState.isError = false;
-    modelsState.data = [{ id: "gemini-3.5-flash", label: "Gemini 3.5 Flash" }];
   });
 
-  it("when clicked with the default model, should ask for a suggestion without a model id", async () => {
+  it("when clicked, should ask for a suggestion with no model (the AI in use decides)", async () => {
     const { user } = setup();
 
     await user.click(screen.getByRole("button", { name: "Sugerir com IA" }));
 
     expect(suggestState.mutate).toHaveBeenCalledWith(
-      { id: "id1", modelId: undefined },
+      { id: "id1" },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
   });
 
-  it("when the default model is shown, should label it as the cheapest", () => {
+  it("when shown, should say which AI is in use and let the user switch it", () => {
     setup();
 
-    expect(screen.getByText("Mais barato (automático)")).toBeInTheDocument();
+    expect(screen.getByTestId("ai-in-use")).toBeInTheDocument();
   });
 
   it("when the suggestion arrives, should hand it over and say which model was used", async () => {
@@ -97,12 +96,5 @@ describe("SuggestionPanel", () => {
     setup(true);
 
     expect(screen.getByRole("button", { name: "Sugerir com IA" })).toBeDisabled();
-  });
-
-  it("when the models are still loading, should still offer the automatic option", () => {
-    modelsState.data = undefined;
-    setup();
-
-    expect(screen.getByText("Mais barato (automático)")).toBeInTheDocument();
   });
 });

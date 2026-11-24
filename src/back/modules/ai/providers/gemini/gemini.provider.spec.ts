@@ -11,6 +11,7 @@ jest.mock('@google/genai', () => ({
 import { IpcError } from '../../../../../shared/errors';
 import type { BackConfig } from '../../../../config/back-config';
 import { GEMINI_NOT_CONFIGURED, GeminiProvider } from './gemini.provider';
+import { cheapestModel, geminiCatalog } from './gemini.pricing';
 import { AiUsageService } from '../../usage/ai-usage.service';
 
 async function* asyncList<T>(items: T[]) {
@@ -25,7 +26,9 @@ describe('GeminiProvider', () => {
   const sleep = jest.fn().mockResolvedValue(undefined);
 
   const build = (geminiApiKey: string | null = 'test-key') => {
-    const provider = new GeminiProvider(usage, { geminiApiKey } as BackConfig);
+    const provider = new GeminiProvider(usage, {
+      apiKeyFor: () => geminiApiKey,
+    } as unknown as BackConfig);
 
     provider.sleep = sleep;
 
@@ -281,6 +284,78 @@ describe('GeminiProvider', () => {
       });
     });
 
+    describe('fallback to the cheapest model', () => {
+      const chosen = 'gemini-4-neon';
+
+      it('when a priced model stays overloaded, should switch to the cheapest one, warn and record it', async () => {
+        generateContent
+          .mockRejectedValueOnce(apiError(503))
+          .mockRejectedValueOnce(apiError(503))
+          .mockRejectedValueOnce(apiError(503))
+          .mockResolvedValueOnce({ text: 'resp' });
+        const onRetry = jest.fn();
+
+        await expect(build().chat({ message: 'a', model: chosen, onRetry })).resolves.toBe('resp');
+
+        expect(generateContent).toHaveBeenCalledTimes(4);
+        expect(generateContent.mock.calls[3][0].model).toBe(cheapestModel());
+        expect(onRetry).toHaveBeenCalledWith(
+          expect.objectContaining({
+            fallback: true,
+            reason: 'O Gemini está sobrecarregado ou indisponível no momento.',
+          }),
+        );
+        expect(usage.getUsage().recentRequests[0].model).toBe(cheapestModel());
+      });
+
+      it('when the cheapest model is already the chosen one, should not switch', async () => {
+        generateContent.mockRejectedValue(apiError(503));
+
+        await expect(build().chat({ message: 'a', model: cheapestModel() })).rejects.toThrow(
+          'sobrecarregado',
+        );
+
+        expect(generateContent).toHaveBeenCalledTimes(3);
+      });
+
+      it('when the error is not passing (key refused), should not switch', async () => {
+        generateContent.mockRejectedValue(apiError(401));
+
+        await expect(build().chat({ message: 'a', model: chosen })).rejects.toThrow(
+          'recusou a chave',
+        );
+
+        expect(generateContent).toHaveBeenCalledTimes(1);
+      });
+
+      it('when the cheapest model also fails, should explain the failure and record one failure', async () => {
+        generateContent.mockRejectedValue(apiError(503));
+
+        await expect(build().chat({ message: 'a', model: chosen })).rejects.toThrow(
+          'sobrecarregado',
+        );
+
+        expect(generateContent).toHaveBeenCalledTimes(6);
+        expect(usage.getUsage().recentRequests).toHaveLength(1);
+      });
+
+      it('when the user cancelled, should not switch', async () => {
+        const controller = new AbortController();
+
+        generateContent.mockImplementation(() => {
+          controller.abort();
+
+          return Promise.reject(apiError(503));
+        });
+
+        await expect(
+          build().chat({ message: 'a', model: chosen, signal: controller.signal }),
+        ).rejects.toThrow();
+
+        expect(generateContent).toHaveBeenCalledTimes(1);
+      });
+    });
+
     it.each([
       [401, 'recusou a chave'],
       [403, 'recusou a chave'],
@@ -315,8 +390,14 @@ describe('GeminiProvider', () => {
     });
   });
 
+  describe('cheapestModel', () => {
+    it('when asked, should answer the cheapest model of its catalog', () => {
+      expect(build().cheapestModel()).toBe(geminiCatalog.cheapest());
+    });
+  });
+
   describe('models', () => {
-    it('when models are listed, should keep only priced models, normalized and sorted', async () => {
+    it('when models are listed, should keep only priced models, normalized and ordered by cost', async () => {
       list.mockResolvedValue(
         asyncList([
           {
@@ -326,13 +407,20 @@ describe('GeminiProvider', () => {
           },
           { name: 'models/nao-cadastrado' },
           { name: 'models/gemini-3.1-flash-lite' },
+          { name: 'models/gemini-4-neon' },
+          { name: 'models/gemini-3.6-flash' },
         ]),
       );
 
       const result = await build().models();
 
-      expect(result.map((m) => m.name)).toEqual(['gemini-3.1-flash-lite', 'gemini-3.5-flash']);
-      expect(result[1]).toMatchObject({
+      expect(result.map((m) => m.name)).toEqual([
+        'gemini-3.1-flash-lite',
+        'gemini-3.6-flash',
+        'gemini-3.5-flash',
+        'gemini-4-neon',
+      ]);
+      expect(result[2]).toMatchObject({
         provider: 'gemini',
         details: { context_length: 1000 },
         capabilities: ['generateContent'],

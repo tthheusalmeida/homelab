@@ -82,6 +82,20 @@ describe('DocumentPage — Sumário', () => {
   });
 });
 
+// O chip da IA em uso tem testes próprios; aqui só interessa onde a página o coloca.
+vi.mock('#components/AiInUse', () => ({
+  AiInUse: () => <span data-testid="ai-in-use">IA em uso</span>,
+}));
+
+// A contagem de seções tem testes próprios; aqui só interessa onde a página a coloca.
+vi.mock('./components/InfographicMeta', () => ({
+  InfographicMeta: ({ documentId }: { documentId: string }) => (
+    <span data-testid="infographic-meta" data-id={documentId}>
+      2 seções
+    </span>
+  ),
+}));
+
 vi.mock('./components/SummaryInfographic', () => ({
   SummaryInfographic: ({ documentId, title }: { documentId: string; title: string }) => (
     <div data-testid="infographic" data-title={title} data-id={documentId} />
@@ -215,7 +229,9 @@ describe('DocumentPage — reading mode with the mind map', () => {
     renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
 
-    expect(within(reading()).queryByRole('button', { name: 'Mapa mental' })).not.toBeInTheDocument();
+    expect(
+      within(reading()).queryByRole('button', { name: 'Mapa mental' }),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -331,7 +347,7 @@ describe('DocumentPage — mind map takes the whole area', () => {
 describe('DocumentPage — Modo leitura and Sobre a página on the top row', () => {
   const sidebar = () => screen.queryByRole('complementary', { name: 'Informações da página' });
   const topRow = () =>
-    screen.getByRole('button', { name: 'Resumo' }).parentElement?.parentElement as HTMLElement;
+    screen.getByRole('button', { name: 'Resumo' }).closest('.justify-between') as HTMLElement;
 
   it('when a summary is open on the text, should show the two actions as icons next to the tabs', () => {
     documentQuery.data = detail('summary');
@@ -354,8 +370,12 @@ describe('DocumentPage — Modo leitura and Sobre a página on the top row', () 
     renderPage();
 
     expect(sidebar()).toBeInTheDocument();
-    expect(within(sidebar() as HTMLElement).queryByRole('button', { name: /Modo leitura/ })).toBeNull();
-    expect(within(sidebar() as HTMLElement).queryByRole('button', { name: /Sobre a página/ })).toBeNull();
+    expect(
+      within(sidebar() as HTMLElement).queryByRole('button', { name: /Modo leitura/ }),
+    ).toBeNull();
+    expect(
+      within(sidebar() as HTMLElement).queryByRole('button', { name: /Sobre a página/ }),
+    ).toBeNull();
   });
 
   it('when a transcription is open, should show the same two icons on the Voltar row and no tabs', () => {
@@ -368,7 +388,9 @@ describe('DocumentPage — Modo leitura and Sobre a página on the top row', () 
     expect(within(back).getByRole('button', { name: 'Modo leitura' })).toHaveTextContent('');
     expect(within(back).getByRole('button', { name: 'Sobre a página' })).toHaveTextContent('');
     expect(screen.queryByRole('button', { name: 'Mapa mental' })).not.toBeInTheDocument();
-    expect(within(sidebar() as HTMLElement).queryByRole('button', { name: /Modo leitura/ })).toBeNull();
+    expect(
+      within(sidebar() as HTMLElement).queryByRole('button', { name: /Modo leitura/ }),
+    ).toBeNull();
   });
 
   it('when an article is open, should show the same two icons on the Voltar row', () => {
@@ -494,10 +516,166 @@ describe('DocumentPage — infographic view', () => {
 
     const reading = screen.getByRole('region', { name: 'Modo leitura' });
 
-    expect(within(reading).getByTestId('infographic')).toHaveAttribute('data-id', expect.any(String));
+    expect(within(reading).getByTestId('infographic')).toHaveAttribute(
+      'data-id',
+      expect.any(String),
+    );
     expect(within(reading).getByRole('button', { name: 'Infográfico' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+  });
+});
+
+describe('DocumentPage AI in use badge', () => {
+  const reading = () => screen.getByRole('region', { name: 'Modo leitura' });
+  const toggleOf = (scope: HTMLElement) =>
+    within(scope).getByRole('button', { name: 'Resumo' }).parentElement as HTMLElement;
+
+  it('when the text (Resumo) is open, should not show the AI badge (no AI runs there)', () => {
+    documentQuery.data = detail('summary');
+
+    renderPage();
+
+    expect(screen.queryByTestId('ai-in-use')).not.toBeInTheDocument();
+  });
+
+  it('when the mind map is open, should show the AI badge right next to the view selector', async () => {
+    documentQuery.data = detail('summary');
+    renderPage();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
+
+    const badge = screen.getByTestId('ai-in-use');
+    const toggle = toggleOf(document.body);
+
+    expect(badge.parentElement).toBe(toggle.parentElement);
+    expect(toggle.nextElementSibling).toBe(badge);
+  });
+
+  it('when the infographic is open, should show the AI badge in the very same place as in the mind map', async () => {
+    documentQuery.data = detail('summary');
+    renderPage();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
+    const inMindMap = screen.getByTestId('ai-in-use').parentElement?.className;
+
+    await userEvent.click(screen.getByRole('button', { name: 'Infográfico' }));
+    const badge = screen.getByTestId('ai-in-use');
+
+    expect(badge.parentElement?.className).toBe(inMindMap);
+    expect(toggleOf(document.body).nextElementSibling).toBe(badge);
+  });
+
+  it('when the badge is shown, should not sit over the mind map or the infographic', async () => {
+    documentQuery.data = detail('summary');
+    renderPage();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
+
+    expect(screen.getByTestId('mind-map')).not.toContainElement(screen.getByTestId('ai-in-use'));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Infográfico' }));
+
+    expect(screen.getByTestId('infographic')).not.toContainElement(screen.getByTestId('ai-in-use'));
+  });
+
+  it('when reading with the mind map open, should show the badge next to the selector in the reading bar', async () => {
+    documentQuery.data = detail('summary');
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
+
+    const badge = within(reading()).getByTestId('ai-in-use');
+
+    expect(badge.parentElement).toBe(reading().querySelector('.reading-chrome'));
+    expect(reading().querySelector('.reading-chrome')).toContainElement(toggleOf(reading()));
+  });
+
+  it('when reading with the infographic open, should show the badge in the same place as with the mind map', async () => {
+    documentQuery.data = detail('summary');
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
+    await userEvent.click(within(reading()).getByRole('button', { name: 'Mapa mental' }));
+    const withMap = within(reading()).getByTestId('ai-in-use').parentElement;
+
+    await userEvent.click(within(reading()).getByRole('button', { name: 'Infográfico' }));
+
+    expect(within(reading()).getByTestId('ai-in-use').parentElement).toBe(withMap);
+  });
+
+  it('when reading with the text open, should not show the badge', async () => {
+    documentQuery.data = detail('summary');
+    renderPage();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
+
+    expect(within(reading()).queryByTestId('ai-in-use')).not.toBeInTheDocument();
+  });
+});
+
+describe('DocumentPage infographic meta (sections and Editado)', () => {
+  const reading = () => screen.getByRole('region', { name: 'Modo leitura' });
+
+  it('when the text or the mind map is open, should not show the infographic details', async () => {
+    documentQuery.data = detail('summary');
+    renderPage();
+
+    expect(screen.queryByTestId('infographic-meta')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
+
+    expect(screen.queryByTestId('infographic-meta')).not.toBeInTheDocument();
+  });
+
+  it('when the infographic is open, should show the details in the top row, right before the page actions', async () => {
+    documentQuery.data = detail('summary');
+    renderPage();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Infográfico' }));
+
+    const meta = screen.getByTestId('infographic-meta');
+    const actions = screen.getByRole('button', { name: 'Modo leitura' });
+    const row = screen
+      .getByRole('button', { name: 'Resumo' })
+      .closest('.justify-between') as HTMLElement;
+
+    expect(meta).toHaveAttribute('data-id', 'id1');
+    expect(row).toContainElement(meta);
+    expect(row).toContainElement(actions);
+    expect(meta.parentElement).toBe(actions.closest('.justify-between > div:last-child'));
+  });
+
+  it('when the infographic is open, should not draw the details inside the infographic', async () => {
+    documentQuery.data = detail('summary');
+    renderPage();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Infográfico' }));
+
+    expect(screen.getByTestId('infographic')).not.toContainElement(
+      screen.getByTestId('infographic-meta'),
+    );
+  });
+
+  it('when reading with the infographic open, should show the details in the reading bar', async () => {
+    documentQuery.data = detail('summary');
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Infográfico' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
+
+    const meta = within(reading()).getByTestId('infographic-meta');
+
+    expect(meta.closest('.reading-chrome')).toContainElement(
+      within(reading()).getByRole('button', { name: 'Sair do modo leitura' }),
+    );
+  });
+
+  it('when reading with the mind map open, should not show the infographic details', async () => {
+    documentQuery.data = detail('summary');
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Mapa mental' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Modo leitura' }));
+
+    expect(within(reading()).queryByTestId('infographic-meta')).not.toBeInTheDocument();
   });
 });

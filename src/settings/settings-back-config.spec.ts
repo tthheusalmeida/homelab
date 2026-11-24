@@ -22,7 +22,7 @@ describe('SettingsBackConfig', () => {
 
   it('when the ffmpeg path is a function, should call it on every read', () => {
     let path = '/a/ffmpeg';
-    const config = new SettingsBackConfig(store, appPaths, null, () => path);
+    const config = new SettingsBackConfig(store, appPaths, {}, () => path);
 
     expect(config.ffmpegPath()).toBe('/a/ffmpeg');
 
@@ -32,11 +32,11 @@ describe('SettingsBackConfig', () => {
   });
 
   it('when created, should be a BackConfig so the back services can receive it', () => {
-    expect(new SettingsBackConfig(store, appPaths, null)).toBeInstanceOf(BackConfig);
+    expect(new SettingsBackConfig(store, appPaths, {})).toBeInstanceOf(BackConfig);
   });
 
   it('when reading the folders and the Ollama url, should answer the library from the settings and the other folders from the fixed paths', () => {
-    const config = new SettingsBackConfig(store, appPaths, null);
+    const config = new SettingsBackConfig(store, appPaths, {});
     const settings = store.get();
 
     expect(config.libraryDir).toBe(settings.paths.libraryDir);
@@ -47,13 +47,13 @@ describe('SettingsBackConfig', () => {
   });
 
   it('when an ffmpeg path is given, should expose it to the back', () => {
-    const config = new SettingsBackConfig(store, appPaths, null, 'C:/bin/ffmpeg.exe');
+    const config = new SettingsBackConfig(store, appPaths, {}, 'C:/bin/ffmpeg.exe');
 
     expect(config.ffmpegPath()).toBe('C:/bin/ffmpeg.exe');
   });
 
   it('when the settings change, should answer the new values on the next read', () => {
-    const config = new SettingsBackConfig(store, appPaths, null);
+    const config = new SettingsBackConfig(store, appPaths, {});
     const outra = path.resolve('/outra/biblioteca');
 
     store.update({ paths: { libraryDir: outra } });
@@ -62,11 +62,23 @@ describe('SettingsBackConfig', () => {
   });
 
   it('when there is a Gemini key, should expose it; without one, should expose null', () => {
-    expect(new SettingsBackConfig(store, appPaths, 'AIza-chave').geminiApiKey).toBe('AIza-chave');
-    expect(new SettingsBackConfig(store, appPaths, null).geminiApiKey).toBeNull();
+    expect(
+      new SettingsBackConfig(store, appPaths, { gemini: 'AIza-chave' }).apiKeyFor('gemini'),
+    ).toBe('AIza-chave');
+    expect(new SettingsBackConfig(store, appPaths, {}).apiKeyFor('gemini')).toBeNull();
+  });
+
+  it('when the AI default is saved in Settings, should expose it live; otherwise null', () => {
+    const config = new SettingsBackConfig(store, appPaths, {});
+
+    expect(config.defaultAi()).toBeNull();
+
+    store.update({ ai: { default: { providerId: 'anthropic', modelId: null } } });
+
+    expect(config.defaultAi()).toEqual({ providerId: 'anthropic', modelId: null });
   });
 
   it('when asked for the usage file, should answer the one under data/ of the root', () => {
-    expect(new SettingsBackConfig(store, appPaths, null).usageFile).toBe(appPaths.usageFile);
+    expect(new SettingsBackConfig(store, appPaths, {}).usageFile).toBe(appPaths.usageFile);
   });
 });

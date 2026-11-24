@@ -7,6 +7,7 @@ const providers = [{ id: "p1", label: "P1" }, { id: "p2", label: "P2" }];
 const modelsOf: Record<string, { id: string; label: string }[]> = {
   p1: [{ id: "m1", label: "M1" }, { id: "m2", label: "M2" }],
   p2: [{ id: "m3", label: "M3" }],
+  p3: [{ id: "m4", label: "M4 (sem pensar)" }],
 };
 const thinkingOf: Record<string, { id: string; label: string }[]> = {
   m1: [{ id: "t1", label: "T1" }],
@@ -32,6 +33,41 @@ vi.mock("./useAiThinking", () => ({
 
 describe("useAiSelection", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it("when the model offers thinking and none is chosen, should not be ready", () => {
+    const { result } = renderHook(() => useAiSelection());
+
+    act(() => result.current.onProviderChange("p1"));
+    act(() => result.current.onModelChange("m1"));
+
+    expect(result.current.thinkingReady).toBe(false);
+  });
+
+  it("when the model offers thinking and one is chosen, should be ready", () => {
+    const { result } = renderHook(() => useAiSelection());
+
+    act(() => result.current.onProviderChange("p1"));
+    act(() => result.current.onModelChange("m1"));
+    act(() => result.current.onThinkingChange("t1"));
+
+    expect(result.current.thinkingReady).toBe(true);
+  });
+
+  it("when the model has no thinking options, should be ready without choosing", () => {
+    const { result } = renderHook(() => useAiSelection());
+
+    act(() => result.current.onProviderChange("p3"));
+    act(() => result.current.onModelChange("m4"));
+
+    expect(result.current.thinkingOptions).toEqual([]);
+    expect(result.current.thinkingReady).toBe(true);
+  });
+
+  it("when no model is chosen, should not be ready", () => {
+    const { result } = renderHook(() => useAiSelection());
+
+    expect(result.current.thinkingReady).toBe(false);
+  });
 
   it("when nothing is chosen and pickFirst is off, should leave the three empty", () => {
     const { result } = renderHook(() => useAiSelection());

@@ -5,7 +5,6 @@ import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
-import { GoogleGenAI } from '@google/genai';
 import {
   app,
   BrowserWindow,
@@ -58,6 +57,9 @@ import { buildStartupNotices } from './startup-notices';
 import { LegacyMigration, type MigrationPlan } from './legacy-migration';
 import { choiceFromButton, describeMigration, MigrationPromptText } from './migration-prompt';
 import { needsInitialSetup } from './first-run';
+import { EXTERNAL_PROVIDER_IDS } from '../shared/contracts/providers';
+import { readApiKeys } from '../settings/api-keys';
+import { apiKeySecret } from '../settings/secret-store';
 import { resolveFrontTarget, type FrontTarget } from './front-target';
 import { LocalStateGuard } from './local-state-guard';
 import { classifyNavigation } from './navigation-guard';
@@ -335,9 +337,6 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       readText: (file) => fs.promises.readFile(file, 'utf8'),
       remove: (file) => fs.promises.unlink(file),
     },
-    checkGeminiKey: async (apiKey) => {
-      await new GoogleGenAI({ apiKey }).models.list();
-    },
   });
   // Vídeos que exigem login: o usuário entra uma vez numa janela do app, os logins ficam cifrados e vão ao yt-dlp em arquivo temporário.
   const cookieVault = new CookieVault(services.secrets, () => Date.now());
@@ -405,7 +404,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     config: new SettingsBackConfig(
       services.settings,
       services.appPaths,
-      await services.secrets.get('gemini.apiKey'),
+      await readApiKeys(services.secrets),
       ffmpegPath,
       {
         ytDlpPath: () =>
@@ -563,8 +562,10 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     }),
   );
 
-  // Primeira execução sem chave do Gemini: leva o usuário direto às Configurações (IAs externas).
-  return { needsSetup: needsInitialSetup(firstRun, services.secrets.has('gemini.apiKey')) };
+  // Primeira execução sem nenhuma chave de IA: leva o usuário direto às Configurações (IAs externas).
+  const hasAnyKey = EXTERNAL_PROVIDER_IDS.some((id) => services.secrets.has(apiKeySecret(id)));
+
+  return { needsSetup: needsInitialSetup(firstRun, hasAnyKey) };
 }
 
 async function bootstrap(): Promise<void> {

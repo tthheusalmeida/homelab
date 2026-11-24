@@ -26,6 +26,8 @@ interface ReadingModeProps {
   canvas?: boolean;
   /** Controles na barra de cima (ex.: busca no texto). */
   actions?: ReactNode;
+  /** Algo que fica logo ao lado das ações, sem a largura limitada delas (ex.: a IA em uso). */
+  actionsExtra?: ReactNode;
   /** O texto a ler. */
   children: ReactNode;
   onExit: () => void;
@@ -45,6 +47,7 @@ export function ReadingMode({
   follow,
   options,
   actions,
+  actionsExtra,
   canvas = false,
   children,
   onExit,
@@ -82,6 +85,8 @@ export function ReadingMode({
         <p className="min-w-0 flex-1 truncate text-sm font-medium">{title}</p>
 
         {actions && <div className="w-full max-w-sm">{actions}</div>}
+
+        {actionsExtra}
 
         <Button variant="outline" size="sm" onClick={onExit}>
           <X /> Sair do modo leitura
@@ -139,11 +144,7 @@ export function ReadingMode({
           </div>
 
           {follow && (
-            <ReadingSidePanel
-              side={followSide}
-              label="Acompanhamento da leitura"
-              width="w-[19rem]"
-            >
+            <ReadingSidePanel side={followSide} label="Acompanhamento da leitura" width="w-[19rem]">
               {follow}
             </ReadingSidePanel>
           )}

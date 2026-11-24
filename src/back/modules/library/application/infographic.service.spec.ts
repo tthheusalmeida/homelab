@@ -1,3 +1,4 @@
+import { createTestDefaultAi } from '../../../testing/default-ai.testing';
 import {
   BadGatewayException,
   BadRequestException,
@@ -86,6 +87,7 @@ describe('InfographicService', () => {
       library as unknown as LibraryService,
       ai as unknown as AIService,
       store,
+      createTestDefaultAi(),
     );
   });
 
@@ -142,6 +144,7 @@ describe('InfographicService', () => {
         library as unknown as LibraryService,
         ai as unknown as AIService,
         store,
+        createTestDefaultAi(),
         { instructionsFor: jest.fn().mockReturnValue('Infográfico bem-humorado.') } as never,
       );
 

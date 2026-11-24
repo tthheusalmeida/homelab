@@ -1,3 +1,4 @@
+import type { AiPreference } from './ai';
 import type { Appearance, AppearancePatch } from './appearance';
 
 /**
@@ -32,8 +33,15 @@ export interface SupportSettings {
   starPromptHidden: boolean;
 }
 
+/** IA usada no mapa mental, no infográfico e na sugestão de título (`docs/ia-padrao.md`). */
+export interface AiSettings {
+  /** IA padrão; `null` = automática (o modelo mais barato do primeiro serviço configurado). */
+  default: AiPreference | null;
+}
+
 export interface SettingsData {
   paths: SettingsPaths;
+  ai: AiSettings;
   appearance: Appearance;
   updates: UpdatesSettings;
   support: SupportSettings;
@@ -44,6 +52,7 @@ export interface SettingsData {
 
 export type SettingsPatch = {
   paths?: Partial<SettingsPaths>;
+  ai?: Partial<AiSettings>;
   appearance?: AppearancePatch;
   updates?: Partial<UpdatesSettings>;
   support?: Partial<SupportSettings>;

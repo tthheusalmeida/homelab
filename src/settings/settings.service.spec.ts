@@ -56,6 +56,16 @@ describe('SettingsService', () => {
     expect(service.getSupport().starPromptHidden).toBe(true);
   });
 
+  it('when the AI default is saved, should answer it and keep it; null goes back to automatic', () => {
+    const service = create();
+
+    expect(service.updateAiDefault({ providerId: 'anthropic', modelId: null })).toEqual({
+      providerId: 'anthropic',
+      modelId: null,
+    });
+    expect(service.updateAiDefault(null)).toBeNull();
+  });
+
   it('when the appearance changes, should answer the new value and keep the rest', () => {
     const service = create();
 

@@ -162,6 +162,7 @@ export type SectionId =
   | 'paths'
   | 'appearance'
   | 'infographic'
+  | 'ai'
   | 'external'
   | 'local'
   | 'prompts'
@@ -182,7 +183,7 @@ export interface SectionInfo {
 /** Grupos do menu das Configurações, na mesma ordem e com o mesmo comportamento da barra do app. */
 export const SECTION_GROUPS: ReadonlyArray<{ label: string; ids: readonly SectionId[] }> = [
   { label: 'Geral', ids: ['appearance', 'paths', 'infographic'] },
-  { label: 'IA', ids: ['external', 'local', 'prompts'] },
+  { label: 'IA', ids: ['ai', 'external', 'local', 'prompts'] },
   { label: 'Sistema', ids: ['components', 'access', 'backup', 'updates'] },
 ];
 
@@ -206,9 +207,15 @@ export const SECTIONS: ReadonlyArray<SectionInfo> = [
       'Galeria dos modelos e das peças que a IA usa para montar o infográfico de um resumo.',
   },
   {
+    id: 'ai',
+    label: 'IA padrão',
+    description:
+      'Qual IA faz a sugestão de título, o mapa mental e o infográfico. Dá para trocar só por um tempo, na hora, quando o serviço estiver sobrecarregado.',
+  },
+  {
     id: 'external',
     label: 'IAs externas',
-    description: 'Serviços de inteligência artificial na nuvem, como o Gemini.',
+    description: 'Serviços de inteligência artificial na nuvem, como o Gemini e a Anthropic.',
   },
   {
     id: 'local',
@@ -258,38 +265,6 @@ export const PATH_FIELDS = [
 /** Rótulos dos campos de configuração dos providers locais. */
 export const LOCAL_FIELD_LABELS: Record<string, string> = {
   url: 'Endereço (URL)',
-};
-
-/** Passo a passo de cada serviço externo; aparece até a chave ser salva. Novo serviço = nova entrada aqui. */
-export const EXTERNAL_PROVIDER_GUIDES: Record<
-  string,
-  {
-    title: string;
-    steps: ReadonlyArray<{ text: string; link?: { href: string; label: string } }>;
-    note?: string;
-  }
-> = {
-  gemini: {
-    title: 'Como criar a chave do Gemini',
-    steps: [
-      {
-        text: 'Abra o Google AI Studio e entre com a sua conta Google.',
-        link: { href: 'https://aistudio.google.com/apikey', label: 'Abrir o AI Studio' },
-      },
-      { text: 'Clique em "Criar chave de API" (Create API key).' },
-      {
-        text: 'Escolha um projeto do Google Cloud ou deixe o AI Studio criar um novo, e confirme.',
-      },
-      { text: 'Copie a chave gerada (ela começa com "AIza").' },
-      { text: 'Cole a chave no campo "Chave da API" abaixo e clique em "Testar" para conferir.' },
-      { text: 'Clique em "Salvar" e reinicie o HomeLab para a chave passar a valer.' },
-    ],
-    note: 'O uso gratuito tem limites por minuto e por dia. Para ir além, ative o faturamento no Google Cloud. Quem tem a chave usa a sua cota: não compartilhe.',
-  },
-};
-
-export const EXTERNAL_PROVIDER_HINTS: Record<string, string> = {
-  gemini: 'Modelos de IA do Google, na nuvem.',
 };
 
 export const LOCAL_PROVIDER_HINTS: Record<string, string> = {

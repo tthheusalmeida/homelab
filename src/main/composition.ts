@@ -3,7 +3,9 @@ import * as path from 'node:path';
 import type { EventPublisher } from '../ipc/event-publisher';
 
 import { ExternalProvidersService } from '../providers/external-providers.service';
-import { createGeminiDefinition, type GeminiKeyChecker } from '../providers/gemini.definition';
+import type { ApiKeyChecker } from '../providers/api-key-definition';
+import { createExternalDefinitions } from '../providers/external-definitions';
+import type { ExternalProviderId } from '../shared/contracts/providers';
 import {
   createFfmpegDefinition,
   createOllamaDefinition,
@@ -48,7 +50,8 @@ export interface CompositionOptions {
   /** Executa um programa e devolve a saída (detecção da placa de vídeo). */
   runForOutput: (file: string, args: string[]) => Promise<string>;
   totalMemoryMb: () => number;
-  checkGeminiKey: GeminiKeyChecker;
+  /** Troca o teste de chave de um provider externo (só nos testes; o padrão usa a SDK dele). */
+  keyCheckers?: Partial<Record<ExternalProviderId, ApiKeyChecker>>;
   /** Envia eventos (progresso, avisos) às janelas abertas. */
   events: EventPublisher;
   /** Entrada e saída do Whisper: executar o programa e ler/apagar o `.txt` gerado. */
@@ -137,7 +140,7 @@ export function createServices(options: CompositionOptions) {
     components,
     settingsService: new SettingsService(settings),
     externalProviders: new ExternalProvidersService(
-      [createGeminiDefinition(options.checkGeminiKey)],
+      createExternalDefinitions(options.keyCheckers),
       secrets,
     ),
     localProviders: new LocalProvidersService(

@@ -45,6 +45,9 @@ export const IpcChannels = {
     models: 'ai:models',
     thinking: 'ai:thinking',
     usage: 'ai:usage',
+    selection: 'ai:selection',
+    session: 'ai:session',
+    defaultUpdate: 'ai:default-update',
   },
   backup: {
     preview: 'backup:preview',

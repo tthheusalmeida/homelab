@@ -39,14 +39,23 @@ export function useAiSelection({ last, pickFirst = false }: AiSelectionOptions =
     (pickFirst ? thinkingQuery.data?.[0]?.id : undefined);
 
   const models = modelsQuery.data ?? [];
+  const thinkingOptions = thinkingQuery.data ?? [];
+
+  // Modelo sem opção de pensar (ex.: Claude): não há o que escolher, então não bloqueia o envio.
+  const thinkingReady =
+    Boolean(modelId) &&
+    !thinkingQuery.isLoading &&
+    (thinkingOptions.length === 0 || Boolean(thinkingId));
 
   return {
     providerId,
     modelId,
     thinkingId,
+    /** Pensar está resolvido: escolhido, ou o modelo não oferece a opção. */
+    thinkingReady,
     providers: providersQuery.data ?? [],
     models,
-    thinkingOptions: thinkingQuery.data ?? [],
+    thinkingOptions,
     activeModel: models.find((model) => model.id === modelId),
     isLoadingProviders: providersQuery.isLoading,
     isLoadingModels: modelsQuery.isLoading,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 import { useAiUsage } from "./hooks/useAiUsage";
 import type { AIProviderName } from "./types/ai.types";
@@ -11,7 +11,7 @@ import { ProviderUsage } from "./components/ProviderUsage";
 import { ModelUsage } from "./components/ModelUsage";
 import { RecentRequests } from "./components/RecentRequests";
 import { ExternalLink } from "#components/ExternalLink";
-import { PROVIDER_CONSOLES } from "#lib/provider-consoles";
+import { AI_PROVIDER_LIST, AI_PROVIDERS_WITH_CONSOLE } from "#lib/ai-providers";
 import { PageHeader } from "#components/PageHeader";
 import { PageLoading, PageError } from "#components/PageState";
 import { Card, CardContent } from "../../../ui/card";
@@ -54,21 +54,16 @@ export function UsagePage() {
               Todos
             </Button>
 
-            <Button
-              variant={provider === "ollama" ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => setProvider("ollama")}
-            >
-              Ollama
-            </Button>
-
-            <Button
-              variant={provider === "gemini" ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => setProvider("gemini")}
-            >
-              Gemini
-            </Button>
+            {AI_PROVIDER_LIST.map((profile) => (
+              <Button
+                key={profile.id}
+                variant={provider === profile.id ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setProvider(profile.id)}
+              >
+                {profile.name}
+              </Button>
+            ))}
           </div>
         }
       />
@@ -83,18 +78,18 @@ export function UsagePage() {
           </p>
 
           <p className="text-muted-foreground">
-            Isto não é a fatura. O Gemini não informa gasto nem cota restante pela chave de API;
-            para o valor real da conta, consulte o painel do provedor:
+            Isto não é a fatura. Os serviços de IA na nuvem não informam gasto nem cota restante pela
+            chave de API; para o valor real da conta, consulte o painel do provedor:
           </p>
 
           <div className="flex flex-wrap gap-x-5 gap-y-1">
-            <ExternalLink href={PROVIDER_CONSOLES.gemini.usageUrl}>
-              Consumo no Google AI Studio
-            </ExternalLink>
+            {AI_PROVIDERS_WITH_CONSOLE.map(({ id, console: links }) => (
+              <Fragment key={id}>
+                <ExternalLink href={links!.usageUrl}>{links!.usageLabel}</ExternalLink>
 
-            <ExternalLink href={PROVIDER_CONSOLES.gemini.billingUrl}>
-              Faturamento no Google Cloud
-            </ExternalLink>
+                <ExternalLink href={links!.billingUrl}>{links!.billingLabel}</ExternalLink>
+              </Fragment>
+            ))}
           </div>
         </CardContent>
       </Card>

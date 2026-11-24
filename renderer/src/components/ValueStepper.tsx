@@ -18,8 +18,9 @@ interface ValueStepperProps {
 }
 
 /**
- * Rótulo, botão de diminuir, valor e botão de aumentar, em uma linha compacta (ajustes de leitura
- * no painel lateral e nas Configurações). Os botões desligam nos limites.
+ * Rótulo, botão de diminuir, valor e botão de aumentar, em uma linha (ajustes de leitura no painel
+ * lateral e nas Configurações). Os botões têm o tamanho padrão dos botões de ícone (`icon-sm`, 32 px).
+ * Eles desligam nos limites.
  */
 export function ValueStepper({
   label,
@@ -42,7 +43,7 @@ export function ValueStepper({
         <Button
           type="button"
           variant="outline"
-          size="icon-xs"
+          size="icon-sm"
           aria-label={decreaseLabel}
           disabled={!canDecrease}
           onClick={onDecrease}
@@ -57,7 +58,7 @@ export function ValueStepper({
         <Button
           type="button"
           variant="outline"
-          size="icon-xs"
+          size="icon-sm"
           aria-label={increaseLabel}
           disabled={!canIncrease}
           onClick={onIncrease}

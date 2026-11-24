@@ -30,6 +30,34 @@ describe('validateSettings', () => {
     expectValidation((s) => (s.paths.libraryDir = 'relativa/pasta'), /caminho completo/);
   });
 
+  it('when the AI default is automatic (none), should accept', () => {
+    const settings = testDefaults();
+
+    expect(settings.ai.default).toBeNull();
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
+  it('when the AI default names a known service with or without a model, should accept', () => {
+    const settings = testDefaults();
+
+    settings.ai.default = { providerId: 'anthropic', modelId: null };
+    expect(() => validateSettings(settings)).not.toThrow();
+
+    settings.ai.default = { providerId: 'gemini', modelId: 'gemini-3.1-flash-lite' };
+    expect(() => validateSettings(settings)).not.toThrow();
+  });
+
+  it('when the AI default names an unknown service, should reject', () => {
+    expectValidation(
+      (s) => (s.ai.default = { providerId: 'xyz' as 'gemini', modelId: null }),
+      /IA padrão/,
+    );
+  });
+
+  it('when the AI default has a blank model, should reject', () => {
+    expectValidation((s) => (s.ai.default = { providerId: 'gemini', modelId: '  ' }), /IA padrão/);
+  });
+
   it('when the ollama url is not a valid http(s) address, should reject', () => {
     expectValidation((s) => (s.local.ollama.url = 'localhost:11434'), /URL do Ollama/);
     expectValidation((s) => (s.local.ollama.url = 'ftp://x'), /URL do Ollama/);

@@ -71,6 +71,9 @@ Evento `updates:changed` (main → renderer): o `UpdateStatus` a cada mudança (
 | `ai:models` | `GET ai/providers/:providerId/models` | `{ providerId }` | modelos (`id`, `label`, `name`, `provider`, `details`, `capabilities`, `thinking?`) |
 | `ai:thinking` | `GET ai/thinking` | `{ providerId, modelId }` | `[{ id, label }]` |
 | `ai:usage` | `GET ai/usage` | `{ provider? }` | `{ summary, byProvider, byModel, timeline, recentRequests }` |
+| `ai:selection` | (novo) | — | `{ configured, session, effective: { providerId, modelId, source } }`: a IA em uso (padrão salvo, troca da sessão e o que vale agora; ver `ia-padrao.md`) |
+| `ai:session` | (novo) | `{ preference: { providerId, modelId | null } | null }` | o mesmo estado; troca a IA só nesta sessão (`null` volta ao padrão) |
+| `ai:default-update` | (novo) | `{ preference: { providerId, modelId | null } | null }` | a preferência guardada em `settings.json` (`null` = automática); vale sem reiniciar |
 
 Erros: Gemini sem chave → `NOT_CONFIGURED` (mensagem manda abrir Configurações); provider desconhecido ou Ollama fora do ar em `ai:models` → `INTERNAL`, com a mesma mensagem em português do back (hoje é HTTP 500).
 

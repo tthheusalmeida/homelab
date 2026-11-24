@@ -19,7 +19,7 @@ export interface CreateVideoToSummaryParams extends DocumentHints {
   url: string;
   providerId: string;
   modelId: string;
-  thinking: string;
+  thinking?: string;
   detail: SummaryDetail;
 }
 

@@ -3,7 +3,11 @@ import type { IpcChannel, IpcChannels } from '../channels';
 import type {
   AiModelEntry,
   AiModelsRequest,
+  AiDefaultRequest,
+  AiPreference,
   AiProviderEntry,
+  AiSelectionState,
+  AiSessionRequest,
   AiThinkingEntry,
   AiThinkingRequest,
   AiUsageReport,
@@ -175,6 +179,9 @@ export interface IpcContracts {
   [IpcChannels.ai.models]: { request: AiModelsRequest; response: AiModelEntry[] };
   [IpcChannels.ai.thinking]: { request: AiThinkingRequest; response: AiThinkingEntry[] };
   [IpcChannels.ai.usage]: { request: AiUsageRequestFilter; response: AiUsageReport };
+  [IpcChannels.ai.selection]: { request: void; response: AiSelectionState };
+  [IpcChannels.ai.session]: { request: AiSessionRequest; response: AiSelectionState };
+  [IpcChannels.ai.defaultUpdate]: { request: AiDefaultRequest; response: AiPreference | null };
 
   /** Avisos criados enquanto o app abria (entregues uma vez só). Os seguintes chegam pelo evento `app:notice`. */
   [IpcChannels.notices.pending]: { request: void; response: AppNotice[] };

@@ -2,7 +2,9 @@ import { IpcChannels } from '../../shared/channels';
 import type {
   AiModelEntry,
   AiProviderEntry,
+  AiPreference,
   AiProviderId,
+  AiSelectionState,
   AiThinkingEntry,
   AiUsageReport,
 } from '../../shared/contracts/ai';
@@ -20,11 +22,18 @@ export interface AiUsageSource {
   getUsage(provider?: AiProviderId): AiUsageReport;
 }
 
-/** Canais `ai:*` (providers, modelos, thinking e uso), só leitura. */
+/** Porta do `DefaultAiService` do back: qual IA vale para mapa mental, infográfico e sugestão. */
+export interface AiSelectionPort {
+  state(): AiSelectionState;
+  setSession(preference: AiPreference | null): AiSelectionState;
+}
+
+/** Canais `ai:*`: providers, modelos, thinking e uso (leitura) e a IA em uso (padrão e troca da sessão). */
 export class AiHandler extends IpcHandler {
   constructor(
     private readonly catalog: AiCatalog,
     private readonly usage: AiUsageSource,
+    private readonly selection: AiSelectionPort,
   ) {
     super();
   }
@@ -37,6 +46,8 @@ export class AiHandler extends IpcHandler {
         this.catalog.thinking(providerId, modelId),
       ),
       this.route(IpcChannels.ai.usage, ({ provider }) => this.usage.getUsage(provider)),
+      this.route(IpcChannels.ai.selection, () => this.selection.state()),
+      this.route(IpcChannels.ai.session, ({ preference }) => this.selection.setSession(preference)),
     ];
   }
 }

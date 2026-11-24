@@ -74,6 +74,7 @@ function parseOllamaModelsResponse(data: unknown): AIProviderModel[] {
 @Injectable()
 export class OllamaProvider implements AIProvider {
   readonly name = 'ollama' as const;
+  readonly label = 'Ollama';
   private readonly baseUrl: string;
   /** Limite de contexto de cada modelo (0 = desconhecido), consultado uma vez por modelo. */
   private readonly contextLimits = new Map<string, number>();

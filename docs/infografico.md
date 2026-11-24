@@ -2,6 +2,8 @@
 
 Todo resumo da biblioteca pode ter um **infográfico**: uma versão visual do conteúdo, gerada pela IA a partir do resumo, que **conta uma história** explicando o assunto (e não é um bloco único). Ele fica na aba **Infográfico** da página do resumo (`/library/:id`), ao lado de **Resumo** e **Mapa mental**. Só páginas do tipo **Resumo** têm a aba.
 
+- **Seções e "Editado":** ficam na linha de cima da página, **logo antes dos ícones de Modo leitura e Sobre a página** (e, no modo leitura, na barra de cima, ao lado de "Sair do modo leitura"), no componente `InfographicMeta`; não há mais uma linha própria dentro do infográfico, então ele começa no mesmo ponto do Resumo e do Mapa mental.
+
 ## Como funciona (resumo)
 1. **Como no mapa mental:** na **primeira vez que a aba abre** e o resumo ainda **não tem** infográfico, a IA já gera um (uma vez por resumo por sessão; se falhar, reabrir a aba não gasta de novo e quem decide tentar é o botão). Se **já existe** um, ele aparece na hora e a IA só roda de novo quando a pessoa clica em **Gerar de novo**.
 2. A IA faz o papel de **orquestradora** e planeja a **história**: uma **capa** (assunto, título, promessa, abertura com a definição ou o gancho e a peça do tema), de **4 a 6 seções** em ordem lógica (o que é, como funciona, partes, comparações, cuidados...), cada uma no **modelo** que melhor mostra a sua parte (entre 10; seções vizinhas usam modelos diferentes) e um **fechamento** ("Para lembrar"). Ela escreve os **textos** com o que o resumo diz e escolhe, para cada espaço, uma **peça** do banco de peças (um objeto desenhado em colmeia).

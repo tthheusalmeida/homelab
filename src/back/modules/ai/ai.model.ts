@@ -1,6 +1,7 @@
+import type { AiProviderId } from '../../../shared/contracts/ai';
 import { HealthCheck } from '../health/health.model';
 
-export type AIProviderName = 'ollama' | 'gemini';
+export type AIProviderName = AiProviderId;
 
 export interface AIThinkingOption {
   id: string;
@@ -46,6 +47,8 @@ export interface AIRetryInfo {
   delayMs: number;
   /** Motivo da falha, em português. */
   reason: string;
+  /** A tentativa vai usar outro modelo (o mais barato), porque o escolhido não respondeu. */
+  fallback?: boolean;
 }
 
 export interface AIChatRequest {
@@ -67,6 +70,10 @@ export interface AIChatRequest {
 
 export interface AIProvider {
   readonly name: AIProviderName;
+  /** Nome mostrado ao usuário (ex.: "Gemini"). */
+  readonly label: string;
+  /** Modelo mais barato do catálogo do provider; `undefined` quando ele não tem catálogo de preços (Ollama). */
+  cheapestModel?(): string | undefined;
 
   health(): Promise<HealthCheck>;
 

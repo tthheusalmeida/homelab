@@ -9,6 +9,7 @@ import { Button } from "#ui/button";
 import { BackToTopButton } from "#components/BackToTopButton";
 import { FindBar } from "#components/FindBar";
 import { useFind } from "#hooks/use-find";
+import { AiInUse } from "#components/AiInUse";
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { OptionToggle, type ToggleOption } from "#components/OptionToggle";
 import { DocumentBody } from "#components/DocumentBody";
@@ -31,6 +32,7 @@ import { DocumentActions } from "./components/DocumentActions";
 import { DocumentAboutDialog } from "./components/DocumentAboutDialog";
 import { DocumentOutline, OUTLINE_MIN_HEADINGS } from "./components/DocumentOutline";
 import { DocumentSidebar } from "./components/DocumentSidebar";
+import { InfographicMeta } from "./components/InfographicMeta";
 import { SummaryInfographic } from "./components/SummaryInfographic";
 import { SummaryMindMap } from "./components/SummaryMindMap";
 import { EditDocumentDialog } from "./components/EditDocumentDialog";
@@ -234,6 +236,14 @@ export function DocumentPage() {
       />
     ) : undefined;
 
+  // A IA em uso (mapa mental e infográfico): sempre ao lado do seletor acima, na página e no modo
+  // leitura, então fica no mesmo lugar nas duas telas e não cobre nada do conteúdo.
+  const aiInUse = alternateView ? <AiInUse collapsible /> : undefined;
+
+  // Seções e "Editado" do infográfico: junto das ações (e na barra do modo leitura), não dentro dele,
+  // para o infográfico começar no mesmo ponto do Resumo e do Mapa mental.
+  const infographicMeta = infographicOpen ? <InfographicMeta documentId={meta.id} /> : undefined;
+
   // O mapa mental ocupa toda a área (na página e no modo leitura), com os controles numa barra embaixo.
   const mindMap = (
     <SummaryMindMap
@@ -271,6 +281,13 @@ export function DocumentPage() {
         <ReadingMode
           title={meta.title}
           actions={viewToggle}
+          actionsExtra={
+            <>
+              {aiInUse}
+
+              {infographicMeta}
+            </>
+          }
           // Mapa mental: tela cheia, sem sumário nem opções (elas são ajustes de leitura de texto,
           // e mexer nelas ao alternar entre Resumo e Mapa mental seria mudar a leitura sem querer).
           canvas={alternateView}
@@ -340,9 +357,17 @@ export function DocumentPage() {
 
       {viewToggle && (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          {viewToggle}
+          <div className="flex flex-wrap items-center gap-2">
+            {viewToggle}
 
-          {actions}
+            {aiInUse}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {infographicMeta}
+
+            {actions}
+          </div>
         </div>
       )}
 

@@ -14,11 +14,12 @@ import {
   isInfographicLayoutId,
   type InfographicLayoutId,
 } from '../../../../shared/infographic-layouts';
+import type { AiChoice } from '../../../../shared/contracts/ai';
 import { AIService } from '../../ai/ai.service';
 import { buildInfographicPrompt } from '../../ai/prompts/infographic.prompt';
 import { PromptService } from '../../ai/prompts/prompt.service';
 import { INVALID_ANSWER_RETRY_HINT, MAX_ANSWER_ATTEMPTS } from '../../ai/prompts/retry-hint';
-import { cheapestModel } from '../../ai/providers/gemini/gemini.pricing';
+import { DefaultAiService } from '../../ai/default-ai.service';
 
 import { DocumentTypeOptions } from '../domain/library.types';
 import {
@@ -51,6 +52,7 @@ export class InfographicService {
     private readonly library: LibraryService,
     private readonly ai: AIService,
     private readonly store: InfographicStore,
+    private readonly defaultAi: DefaultAiService,
     // Sem ele (testes), vale sempre o prompt padrão.
     @Optional() private readonly prompts?: PromptService,
   ) {}
@@ -153,7 +155,7 @@ export class InfographicService {
       throw new BadRequestException('O infográfico só existe para resumos.');
     }
 
-    const model = options.modelId?.trim() || cheapestModel();
+    const choice = this.defaultAi.resolve({ modelId: options.modelId });
 
     const prompt = buildInfographicPrompt(
       {
@@ -163,11 +165,11 @@ export class InfographicService {
       },
       this.prompts?.instructionsFor('infographic'),
     );
-    const parsed = await this.askUntilReadable(prompt, model, options.layout, meta.title);
+    const parsed = await this.askUntilReadable(prompt, choice, options.layout, meta.title);
 
     const stored: StoredInfographic = {
       contentHash: hashContent(content),
-      model,
+      model: choice.modelId,
       createdAt: new Date().toISOString(),
       ...parsed,
     };
@@ -184,7 +186,7 @@ export class InfographicService {
    */
   private async askUntilReadable(
     prompt: string,
-    model: string,
+    choice: AiChoice,
     layout: InfographicLayoutId | undefined,
     pageTitle: string,
   ): Promise<ParsedInfographic> {
@@ -194,8 +196,8 @@ export class InfographicService {
       try {
         answer = await this.ai.chat({
           message: attempt === 1 ? prompt : `${prompt}\n\n${INVALID_ANSWER_RETRY_HINT}`,
-          modelId: model,
-          providerId: 'gemini',
+          modelId: choice.modelId,
+          providerId: choice.providerId,
           json: true,
         });
       } catch (error) {

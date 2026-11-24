@@ -4,7 +4,7 @@ import type { LocalProvidersService } from '../../providers/local-providers.serv
 import type { SettingsService } from '../../settings/settings.service';
 import type { IpcHandler } from '../ipc-handler';
 
-import { AiHandler, type AiCatalog, type AiUsageSource } from './ai.handler';
+import { AiHandler, type AiCatalog, type AiSelectionPort, type AiUsageSource } from './ai.handler';
 import { AppHandler, type AppInfo } from './app.handler';
 import { BackupHandler, type BackupPort } from './backup.handler';
 import { ComponentsHandler, type ComponentsPort } from './components.handler';
@@ -42,6 +42,7 @@ export interface BackReaders {
   healthAi: HealthCheckSource;
   ai: AiCatalog;
   aiUsage: AiUsageSource;
+  aiSelection: AiSelectionPort;
   chat: ChatSource;
   library: LibraryReader & LibraryWriter;
   libraryClassifier: LibraryClassifierPort;
@@ -89,7 +90,7 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
     new ExternalProvidersHandler(deps.externalProviders),
     new LocalProvidersHandler(deps.localProviders),
     new HealthHandler(deps.back.healthSystem, deps.back.healthAi),
-    new AiHandler(deps.back.ai, deps.back.aiUsage),
+    new AiHandler(deps.back.ai, deps.back.aiUsage, deps.back.aiSelection),
     new ChatHandler(deps.back.chat),
     new LibraryHandler(deps.back.library, deps.back.libraryClassifier),
     new MindMapHandler(deps.back.mindMaps, deps.mindMapImages),

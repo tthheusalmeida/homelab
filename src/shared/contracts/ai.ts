@@ -1,4 +1,43 @@
-export type AiProviderId = 'ollama' | 'gemini';
+import { EXTERNAL_PROVIDER_IDS } from './providers';
+
+/** Todos os providers de IA: o local (Ollama) e os externos (`EXTERNAL_PROVIDER_IDS`). */
+export const AI_PROVIDER_IDS = ['ollama', ...EXTERNAL_PROVIDER_IDS] as const;
+export type AiProviderId = (typeof AI_PROVIDER_IDS)[number];
+
+/** A IA que vale para uma tarefa: provider e modelo já definidos. */
+export interface AiChoice {
+  providerId: AiProviderId;
+  modelId: string;
+}
+
+/** Preferência guardada (padrão ou troca da sessão); `modelId` nulo = o mais barato do provider. */
+export interface AiPreference {
+  providerId: AiProviderId;
+  modelId: string | null;
+}
+
+/** De onde vem a IA em uso: troca desta sessão, padrão salvo ou automática (a mais barata). */
+export type AiChoiceSource = 'session' | 'default' | 'auto';
+
+/** Estado da IA usada em mapa mental, infográfico e sugestão de título (canal `ai:selection`). */
+export interface AiSelectionState {
+  /** Padrão salvo em Configurações; `null` = automático. */
+  configured: AiPreference | null;
+  /** Troca temporária, só até fechar o app; `null` = nenhuma. */
+  session: AiPreference | null;
+  /** O que vale agora. */
+  effective: AiChoice & { source: AiChoiceSource };
+}
+
+/** Define a IA padrão em Configurações (guardada em disco); `null` volta ao automático. */
+export interface AiDefaultRequest {
+  preference: AiPreference | null;
+}
+
+/** Troca a IA só nesta sessão do app; `null` volta ao padrão. */
+export interface AiSessionRequest {
+  preference: AiPreference | null;
+}
 
 export interface AiProviderEntry {
   id: AiProviderId;

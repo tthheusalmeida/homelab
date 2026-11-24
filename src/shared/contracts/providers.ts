@@ -5,8 +5,12 @@ export interface ProviderTestResult {
   message: string;
 }
 
-/** Providers externos (IAs na nuvem). A chave nunca volta em claro: só mascarada. */
-export type ExternalProviderId = 'gemini';
+/**
+ * Providers externos (IAs na nuvem). A chave nunca volta em claro: só mascarada.
+ * Esta lista é a fonte única dos ids: um provider novo começa aqui e o compilador aponta o resto.
+ */
+export const EXTERNAL_PROVIDER_IDS = ['gemini', 'anthropic'] as const;
+export type ExternalProviderId = (typeof EXTERNAL_PROVIDER_IDS)[number];
 
 export interface ExternalProviderInfo {
   id: ExternalProviderId;

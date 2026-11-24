@@ -4,14 +4,11 @@ import { Sparkles } from "lucide-react";
 
 import { Button } from "#ui/button";
 
-import { OptionSelect } from "#components/OptionSelect";
+import { AiInUse } from "#components/AiInUse";
 
-import { useAiModels } from "../../ai/chat/hooks/useAiModels";
 import { useSuggestClassification } from "../hooks/useLibrary";
 import type { ClassificationSuggestion } from "../types/library.types";
 import { useErrorAlert } from "#hooks/use-error-alert";
-
-const AUTO_MODEL = "auto";
 
 interface SuggestionPanelProps {
   documentId: string;
@@ -20,30 +17,20 @@ interface SuggestionPanelProps {
   disabled?: boolean;
 }
 
-/** Pede ao Gemini um título, categoria e tags para o documento. */
+/** Pede à IA em uso (padrão ou trocada na sessão) um título, categoria e tags para o documento. */
 export function SuggestionPanel({
   documentId,
   onSuggestion,
   disabled,
 }: SuggestionPanelProps) {
-  const [modelId, setModelId] = useState(AUTO_MODEL);
   const [usedModel, setUsedModel] = useState<string | null>(null);
 
-  const models = useAiModels("gemini");
   const suggest = useSuggestClassification();
   useErrorAlert(suggest.isError && "Não foi possível obter a sugestão. Tente novamente.");
 
-  const options = [
-    { id: AUTO_MODEL, label: "Mais barato (automático)" },
-    ...(models.data ?? []).map((model) => ({
-      id: model.id,
-      label: model.label,
-    })),
-  ];
-
   function handleSuggest() {
     suggest.mutate(
-      { id: documentId, modelId: modelId === AUTO_MODEL ? undefined : modelId },
+      { id: documentId },
       {
         onSuccess: (suggestion) => {
           setUsedModel(suggestion.model);
@@ -71,16 +58,7 @@ export function SuggestionPanel({
           Sugerir com IA
         </Button>
 
-        <OptionSelect
-          value={modelId}
-          options={options}
-          placeholder="Modelo"
-          label="Modelo do Gemini"
-          triggerWidth="w-56"
-          contentWidth="w-64"
-          disabled={disabled || suggest.isPending}
-          onValueChange={(value) => setModelId(value ?? AUTO_MODEL)}
-        />
+        <AiInUse />
       </div>
 
       <p className="text-xs text-muted-foreground">

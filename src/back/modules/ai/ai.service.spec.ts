@@ -1,10 +1,9 @@
 import { AIService } from './ai.service';
 import type { AIProvider } from './ai.model';
-import type { OllamaProvider } from './providers/ollama/ollama.provider';
-import type { GeminiProvider } from './providers/gemini/gemini.provider';
 
-const makeProvider = (name: 'ollama' | 'gemini'): jest.Mocked<AIProvider> => ({
+const makeProvider = (name: 'ollama' | 'gemini' | 'anthropic'): jest.Mocked<AIProvider> => ({
   name,
+  label: name.charAt(0).toUpperCase() + name.slice(1),
   health: jest.fn(),
   chat: jest.fn(),
   models: jest.fn(),
@@ -14,22 +13,42 @@ const makeProvider = (name: 'ollama' | 'gemini'): jest.Mocked<AIProvider> => ({
 describe('AIService', () => {
   let ollama: jest.Mocked<AIProvider>;
   let gemini: jest.Mocked<AIProvider>;
+  let anthropic: jest.Mocked<AIProvider>;
   let service: AIService;
 
   beforeEach(() => {
     ollama = makeProvider('ollama');
     gemini = makeProvider('gemini');
-    service = new AIService(
-      ollama as unknown as OllamaProvider,
-      gemini as unknown as GeminiProvider,
-    );
+    anthropic = makeProvider('anthropic');
+    service = new AIService([ollama, gemini, anthropic]);
   });
 
-  it('when listing providers, should return ollama and gemini with labels', () => {
+  it('when a provider is in the list, should be reachable with no change to the service', async () => {
+    const extra = makeProvider('anthropic');
+    extra.models.mockResolvedValue([]);
+
+    await expect(new AIService([extra]).models('anthropic')).resolves.toEqual([]);
+    expect(new AIService([extra]).providersList()).toEqual([
+      { id: 'anthropic', label: 'Anthropic' },
+    ]);
+  });
+
+  it('when listing providers, should return ollama, gemini and anthropic with labels', () => {
     expect(service.providersList()).toEqual([
       { id: 'ollama', label: 'Ollama' },
       { id: 'gemini', label: 'Gemini' },
+      { id: 'anthropic', label: 'Anthropic' },
     ]);
+  });
+
+  it('when asking for the cheapest model, should delegate to the provider that has a catalog', () => {
+    gemini.cheapestModel = jest.fn().mockReturnValue('gemini-barato');
+
+    expect(service.cheapestModel('gemini')).toBe('gemini-barato');
+  });
+
+  it('when the provider has no price catalog (Ollama), should answer undefined', () => {
+    expect(service.cheapestModel('ollama')).toBeUndefined();
   });
 
   it('when checking health, should aggregate every provider health', async () => {
@@ -44,13 +63,19 @@ describe('AIService', () => {
       status: 'error',
     });
 
+    anthropic.health.mockResolvedValue({
+      service: 'anthropic',
+      description: 'd',
+      status: 'ok',
+    });
+
     const result = await service.health();
 
-    expect(result.map((r) => r.service)).toEqual(['ollama', 'gemini']);
+    expect(result.map((r) => r.service)).toEqual(['ollama', 'gemini', 'anthropic']);
   });
 
   describe('models', () => {
-    const model = (name: string, provider: 'ollama' | 'gemini') => ({
+    const model = (name: string, provider: 'ollama' | 'gemini' | 'anthropic') => ({
       name,
       provider,
       model: name,
@@ -80,10 +105,11 @@ describe('AIService', () => {
     it('when models are requested without provider, should merge models of all providers', async () => {
       ollama.models.mockResolvedValue([model('a', 'ollama')]);
       gemini.models.mockResolvedValue([model('b', 'gemini')]);
+      anthropic.models.mockResolvedValue([model('c', 'anthropic')]);
 
       const result = await service.models();
 
-      expect(result.map((m) => m.name)).toEqual(['a', 'b']);
+      expect(result.map((m) => m.name)).toEqual(['a', 'b', 'c']);
     });
 
     it('when the provider is invalid, should reject', async () => {

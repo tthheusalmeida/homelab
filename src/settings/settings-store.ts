@@ -73,6 +73,8 @@ export class SettingsStore {
     return {
       // Só as chaves conhecidas: valores antigos (pastas, Whisper) que sobraram no arquivo são ignorados.
       paths: { libraryDir: patch.paths?.libraryDir ?? base.paths.libraryDir },
+      // `null` limpa o padrão (volta ao automático); ausente mantém o que havia.
+      ai: { default: patch.ai?.default !== undefined ? patch.ai.default : base.ai.default },
       appearance: {
         theme: patch.appearance?.theme ?? base.appearance.theme,
         accent: patch.appearance?.accent ?? base.appearance.accent,
