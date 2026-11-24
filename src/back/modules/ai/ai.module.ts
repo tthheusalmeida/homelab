@@ -12,9 +12,10 @@ import type { AIProvider } from './ai.model';
 import { OllamaProvider } from './providers/ollama/ollama.provider';
 import { GeminiProvider } from './providers/gemini/gemini.provider';
 import { AnthropicProvider } from './providers/anthropic/anthropic.provider';
+import { GroqProvider } from './providers/groq/groq.provider';
 
 /** Providers de IA do app. Um provider novo entra só aqui (e no `EXTERNAL_PROVIDER_IDS`, se for externo). */
-const PROVIDER_CLASSES = [OllamaProvider, GeminiProvider, AnthropicProvider];
+const PROVIDER_CLASSES = [OllamaProvider, GeminiProvider, AnthropicProvider, GroqProvider];
 
 /**
  * Providers de IA e uso. É o único módulo que declara `AIService`, `AiUsageService` e os providers:
