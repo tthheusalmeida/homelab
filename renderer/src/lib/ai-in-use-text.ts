@@ -10,6 +10,8 @@ export const AiInUseStrings = {
     auto: 'Automática',
   } satisfies Record<AiChoiceSource, string>,
   switchButton: 'Trocar',
+  hide: 'Ocultar a IA em uso',
+  show: 'Mostrar a IA em uso',
   switchLabel: 'Trocar a IA nesta sessão',
   dialog: {
     title: 'Usar outra IA nesta sessão',
@@ -31,6 +33,8 @@ export const AiInUseStrings = {
     save: 'Salvar',
     saved: 'IA padrão salva.',
     current: 'IA em uso agora',
+    sessionNote:
+      'Há uma troca só desta sessão em uso. Ao salvar a IA padrão, ela é desfeita e a nova passa a valer agora.',
   },
   failed: 'Não foi possível trocar a IA.',
 } as const;

@@ -4,8 +4,10 @@ import { ArrowLeftRight } from 'lucide-react';
 
 import { useAiInUse, useSwitchSessionAi } from '#hooks/use-ai-in-use';
 import { useErrorAlert } from '#hooks/use-error-alert';
+import { usePersistedFlag } from '#hooks/use-persisted-flag';
 import { AiInUseStrings, formatAiChoice } from '#lib/ai-in-use-text';
 import { profileOf } from '#lib/ai-providers';
+import { cn } from '#lib/utils';
 import type { AiPreference } from '#shared/contracts/ai';
 import { Badge } from '#ui/badge';
 import { Button } from '#ui/button';
@@ -19,15 +21,29 @@ import {
 } from '#ui/dialog';
 
 import { AiPicker, isAiPreferenceComplete } from './AiPicker';
+import { IconButton } from './IconButton';
 import { ProviderLogo } from './ProviderLogo';
+
+/** Lembra se o chip flutuante está aberto (começa fechado, só o ícone, para não cobrir o conteúdo). */
+export const AI_IN_USE_EXPANDED_KEY = 'homelab.ai-in-use-expanded';
+
+interface AiInUseProps {
+  /**
+   * Chip que flutua sobre o conteúdo: começa fechado, só o ícone (do tamanho dos outros ícones do
+   * app), e clicar nele abre e fecha; a escolha fica lembrada. Sem isto, é sempre o chip inteiro,
+   * na linha.
+   */
+  collapsible?: boolean;
+}
 
 /**
  * Mostra qual IA está em uso na sugestão de título, no mapa mental e no infográfico (a padrão, a
  * automática ou a trocada nesta sessão) e deixa trocar na hora, só até fechar o app. Quando o
  * serviço está sobrecarregado, é aqui que se troca e se tenta de novo.
  */
-export function AiInUse() {
+export function AiInUse({ collapsible = false }: AiInUseProps) {
   const { data } = useAiInUse();
+  const [expanded, setExpanded] = usePersistedFlag(AI_IN_USE_EXPANDED_KEY, false);
   const switchSession = useSwitchSessionAi();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<AiPreference | null>(null);
@@ -38,8 +54,8 @@ export function AiInUse() {
   }
 
   const { effective, session } = data;
-  const profile = profileOf(effective.providerId);
-  const serviceName = profile?.name ?? effective.providerId;
+  const serviceName = profileOf(effective.providerId)?.name ?? effective.providerId;
+  const choice = formatAiChoice(serviceName, effective.modelId);
 
   const openDialog = () => {
     setDraft({ providerId: effective.providerId, modelId: session?.modelId ?? null });
@@ -49,19 +65,11 @@ export function AiInUse() {
   const apply = (preference: AiPreference | null) =>
     switchSession.mutate(preference, { onSuccess: () => setOpen(false) });
 
-  return (
-    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-      <ProviderLogo
-        provider={effective.providerId}
-        label={serviceName}
-        className="size-5 rounded-md text-[10px]"
-      />
-
+  const details = (
+    <>
       <span>
         <span className="sr-only">{AiInUseStrings.label}: </span>
-        <span className="font-medium text-foreground">
-          {formatAiChoice(serviceName, effective.modelId)}
-        </span>
+        <span className="font-medium text-foreground">{choice}</span>
       </span>
 
       <Badge variant={effective.source === 'session' ? 'default' : 'outline'}>
@@ -79,48 +87,108 @@ export function AiInUse() {
         <ArrowLeftRight />
         {AiInUseStrings.switchButton}
       </Button>
+    </>
+  );
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{AiInUseStrings.dialog.title}</DialogTitle>
+  const dialog = (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>{AiInUseStrings.dialog.title}</DialogTitle>
 
-            <DialogDescription>{AiInUseStrings.dialog.description}</DialogDescription>
-          </DialogHeader>
+          <DialogDescription>{AiInUseStrings.dialog.description}</DialogDescription>
+        </DialogHeader>
 
-          <AiPicker value={draft} onChange={setDraft} disabled={switchSession.isPending} />
+        <AiPicker value={draft} onChange={setDraft} disabled={switchSession.isPending} />
 
-          <p className="text-sm text-muted-foreground">{AiInUseStrings.scope}</p>
+        <p className="text-sm text-muted-foreground">{AiInUseStrings.scope}</p>
 
-          <DialogFooter>
-            {session && (
-              <Button
-                variant="outline"
-                disabled={switchSession.isPending}
-                onClick={() => apply(null)}
-              >
-                {AiInUseStrings.dialog.backToDefault}
-              </Button>
-            )}
-
+        <DialogFooter>
+          {session && (
             <Button
               variant="outline"
               disabled={switchSession.isPending}
-              onClick={() => setOpen(false)}
+              onClick={() => apply(null)}
             >
-              {AiInUseStrings.dialog.cancel}
+              {AiInUseStrings.dialog.backToDefault}
             </Button>
+          )}
 
-            <Button
-              disabled={!draft || !isAiPreferenceComplete(draft) || switchSession.isPending}
-              loading={switchSession.isPending}
-              onClick={() => apply(draft)}
-            >
-              {AiInUseStrings.dialog.confirm}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+          <Button
+            variant="outline"
+            disabled={switchSession.isPending}
+            onClick={() => setOpen(false)}
+          >
+            {AiInUseStrings.dialog.cancel}
+          </Button>
+
+          <Button
+            disabled={!draft || !isAiPreferenceComplete(draft) || switchSession.isPending}
+            loading={switchSession.isPending}
+            onClick={() => apply(draft)}
+          >
+            {AiInUseStrings.dialog.confirm}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  // Inline (sugestão de título): o chip inteiro, na linha, sem abrir nem fechar.
+  if (!collapsible) {
+    return (
+      <>
+        <div className="flex flex-wrap items-center gap-2 p-2 text-xs text-muted-foreground">
+          <ProviderLogo
+            provider={effective.providerId}
+            label={serviceName}
+            className="size-5 rounded-md text-[10px]"
+          />
+
+          {details}
+        </div>
+
+        {dialog}
+      </>
+    );
+  }
+
+  // Flutuante: uma pílula de altura fixa. O ícone é o botão (o mesmo `IconButton` dos controles do
+  // mapa e do infográfico) e o conteúdo abre para a direita, dentro da mesma pílula; clicar no ícone
+  // fecha. A altura não muda: só a largura.
+  return (
+    <>
+      <div className="flex w-fit items-center rounded-lg border bg-card text-xs text-muted-foreground shadow-sm">
+        <IconButton
+          label={expanded ? AiInUseStrings.hide : `${AiInUseStrings.show}: ${choice}`}
+          aria-expanded={expanded}
+          tooltipSide="bottom"
+          variant="ghost"
+          onClick={() => setExpanded(!expanded)}
+        >
+          <ProviderLogo
+            provider={effective.providerId}
+            label={serviceName}
+            className="size-4 rounded-sm border-0 bg-transparent text-[10px]"
+          />
+        </IconButton>
+
+        <div
+          // 0fr -> 1fr anima a largura sem mexer na altura; fechado, o conteúdo sai do teclado e do leitor de tela.
+          className={cn(
+            'grid transition-[grid-template-columns] duration-200 ease-out',
+            expanded ? 'grid-cols-[1fr]' : 'grid-cols-[0fr]',
+          )}
+          aria-hidden={!expanded}
+          inert={!expanded}
+        >
+          <div className="overflow-hidden">
+            <div className="flex items-center gap-2 pr-2 pl-1 whitespace-nowrap">{details}</div>
+          </div>
+        </div>
+      </div>
+
+      {dialog}
+    </>
   );
 }

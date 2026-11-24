@@ -289,7 +289,7 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
       <MindMapView
         map={map}
         notice={notice}
-        aiInUse={<AiInUse />}
+        aiInUse={<AiInUse collapsible />}
         toolbar={toolbar}
         edit={draft ? { draft, onChange: changeDraft } : undefined}
         overlay={

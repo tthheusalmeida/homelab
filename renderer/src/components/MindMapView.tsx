@@ -780,7 +780,7 @@ export function MindMapView({
 
         {aiInUse && (
           <div
-            className="absolute top-3 left-3 z-10 max-w-[calc(100%-1.5rem)] rounded-md bg-background/80 px-2 py-1 backdrop-blur-sm"
+            className="absolute top-0 left-0 z-10 max-w-full"
             onPointerDown={(event) => event.stopPropagation()}
           >
             {aiInUse}

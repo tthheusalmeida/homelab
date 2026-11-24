@@ -132,6 +132,17 @@ describe('SummaryInfographic', () => {
     expect(screen.getByTestId('ai-in-use')).toBeInTheDocument();
   });
 
+  it('when the tab is shown, should put the AI badge in the top-left corner, like the mind map, not in the header row', () => {
+    renderTab();
+
+    const corner = screen.getByTestId('ai-in-use').closest('.sticky');
+
+    expect(corner).toHaveClass('top-0', 'h-0');
+    // rente à borda: sem margem nem padding de posição
+    expect(corner?.firstElementChild?.className).not.toMatch(/\b(m|ml|mt|p)-/);
+    expect(corner?.nextElementSibling?.textContent).not.toContain('IA em uso');
+  });
+
   it('when the infographic is loading, should show the loading state', () => {
     saved.state = { isPending: true, data: null };
 

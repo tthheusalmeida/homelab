@@ -302,12 +302,15 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
 
   return (
     <div className={cn('w-full', className)} aria-live="polite">
+      {/* No canto superior esquerdo, rente à borda (como no mapa mental): uma faixa sem altura que acompanha a rolagem e não empurra o conteúdo. */}
+      <div className="pointer-events-none sticky top-0 z-10 h-0">
+        <div className="pointer-events-auto w-fit">
+          <AiInUse collapsible />
+        </div>
+      </div>
+
       <div className="mx-auto w-full space-y-4" style={{ maxWidth: `${50 * zoom}rem` }}>
       <div className="flex flex-wrap items-center justify-end gap-3">
-        <div className="mr-auto">
-          <AiInUse />
-        </div>
-
         {data && !editing && (
           <div className="flex items-center gap-2">
             {data.edited && (

@@ -25,7 +25,9 @@ Serviço local (Ollama) não tem catálogo de preços, então exige um modelo es
 ## Na interface
 - **Configurações > IA padrão:** escolhe o serviço e o modelo (ou "Automática") e salva. Mostra a IA em uso agora e de onde ela vem.
 - **Chip "IA em uso"** na sugestão de título (Biblioteca), no mapa mental (canto superior esquerdo) e no infográfico (cabeçalho). **Trocar** abre um diálogo: escolhe outro serviço e modelo, **Usar nesta sessão**; **Voltar ao padrão** aparece quando há troca. O texto avisa que vale só até fechar o app.
+- **Chip flutuante (mapa mental e infográfico):** uma pílula de **altura fixa** no **canto superior esquerdo, rente à borda e sem margem** (alinhada com o "Resumo" acima), no mesmo lugar nas duas telas (no infográfico é uma faixa sem altura que acompanha a rolagem). Começa **fechada, só o ícone** do serviço, no tamanho dos outros ícones do app (o `IconButton` padrão; o nome e o modelo aparecem no tooltip). **Clicar no ícone abre o conteúdo para a direita, dentro da mesma pílula** (anima só a largura; a altura não muda) e clicar de novo fecha; a escolha fica lembrada (`localStorage`, `homelab.ai-in-use-expanded`). Tem destaque, mas com a borda cinza dos outros controles: fundo de cartão e sombra. Fechado, o conteúdo fica fora do teclado e dos leitores de tela. Na sugestão de título o chip é sempre inteiro, na linha, com 8px de padding nos quatro lados.
 - A troca vale para as três tarefas ao mesmo tempo e não mexe no que está salvo em Configurações.
+- **Salvar a IA padrão desfaz a troca da sessão:** a troca vence o padrão, então, sem isso, a "IA em uso agora" continuaria a mesma depois de salvar. Por isso a seção avisa quando há uma troca ativa e, ao salvar, o app limpa a troca (`ai:session` com `null`) e mostra a IA nova na hora.
 - Falha de uma geração continua aparecendo no alerta do rodapé com **Tentar de novo**: depois de trocar a IA, basta tentar de novo.
 
 ## Resultado e consumo
