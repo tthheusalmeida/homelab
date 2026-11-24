@@ -61,14 +61,28 @@ describe('use-ai-in-use', () => {
     expect(invoke).toHaveBeenCalledWith(IpcChannels.ai.session, { preference: null });
   });
 
-  it('when saving the default, should send it and read the AI in use again', async () => {
+  it('when saving the default, should send it, clear the session switch and show the new AI in use', async () => {
     let configured: AiSelectionState['configured'] = null;
+    let session: AiSelectionState['session'] = { providerId: 'gemini', modelId: null };
+    const current = (): AiSelectionState =>
+      state({
+        configured,
+        session,
+        effective: session
+          ? { providerId: 'gemini', modelId: 'gemini-barato', source: 'session' }
+          : { providerId: 'anthropic', modelId: 'claude-x', source: 'default' },
+      });
     const invoke = mockApi({
-      [IpcChannels.ai.selection]: () => ok(state({ configured })),
+      [IpcChannels.ai.selection]: () => ok(current()),
       [IpcChannels.ai.defaultUpdate]: (payload) => {
         configured = (payload as { preference: AiSelectionState['configured'] }).preference;
 
         return ok(configured);
+      },
+      [IpcChannels.ai.session]: () => {
+        session = null;
+
+        return ok(current());
       },
     });
     const { result } = renderHook(() => ({ read: useAiInUse(), write: useSaveAiDefault() }), {
@@ -83,11 +97,14 @@ describe('use-ai-in-use', () => {
     expect(invoke).toHaveBeenCalledWith(IpcChannels.ai.defaultUpdate, {
       preference: { providerId: 'anthropic', modelId: 'claude-x' },
     });
+    expect(invoke).toHaveBeenCalledWith(IpcChannels.ai.session, { preference: null });
     await waitFor(() =>
-      expect(result.current.read.data?.configured).toEqual({
+      expect(result.current.read.data?.effective).toEqual({
         providerId: 'anthropic',
         modelId: 'claude-x',
+        source: 'default',
       }),
     );
+    expect(result.current.read.data?.session).toBeNull();
   });
 });

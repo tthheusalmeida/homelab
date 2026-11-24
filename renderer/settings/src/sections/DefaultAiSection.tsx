@@ -44,6 +44,10 @@ export function DefaultAiSection() {
       <SettingsPanel>
         <AiPicker value={value} onChange={setDraft} allowAuto disabled={save.isPending} />
 
+        {data.session && (
+          <p className="text-sm text-muted-foreground">{AiInUseStrings.settings.sessionNote}</p>
+        )}
+
         {value === null && (
           <p className="text-sm text-muted-foreground">{AiInUseStrings.settings.autoHint}</p>
         )}

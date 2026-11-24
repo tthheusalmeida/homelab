@@ -25,13 +25,19 @@ export function useSwitchSessionAi() {
   });
 }
 
-/** Guarda a IA padrão em Configurações; `null` volta ao automático. */
+/**
+ * Guarda a IA padrão em Configurações; `null` volta ao automático. Escolher a IA padrão vale agora:
+ * uma troca só desta sessão, se houver, é desfeita (senão ela continuaria vencendo o padrão novo).
+ */
 export function useSaveAiDefault() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (preference: AiPreference | null) =>
-      ipc.invoke(IpcChannels.ai.defaultUpdate, { preference }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: AiInUseQueryKey }),
+    mutationFn: async (preference: AiPreference | null): Promise<AiSelectionState> => {
+      await ipc.invoke(IpcChannels.ai.defaultUpdate, { preference });
+
+      return ipc.invoke(IpcChannels.ai.session, { preference: null });
+    },
+    onSuccess: (state) => queryClient.setQueryData(AiInUseQueryKey, state),
   });
 }

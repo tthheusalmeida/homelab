@@ -52,6 +52,11 @@ describe('DefaultAiSection', () => {
     current = state();
     invoke = mockApi({
       [IpcChannels.ai.selection]: () => ok(current),
+      [IpcChannels.ai.session]: () => {
+        current = { ...current, session: null };
+
+        return ok(current);
+      },
       [IpcChannels.ai.defaultUpdate]: (payload) => {
         const { preference } = payload as { preference: AiSelectionState['configured'] };
 
@@ -79,6 +84,38 @@ describe('DefaultAiSection', () => {
     renderWithProviders(<DefaultAiSection />);
 
     expect(await screen.findByText(/usa o modelo mais barato do primeiro serviço/)).toBeVisible();
+  });
+
+  it('when a session switch is active, should warn that saving undoes it', async () => {
+    current = state({
+      session: { providerId: 'gemini', modelId: null },
+      effective: { providerId: 'gemini', modelId: 'gemini-barato', source: 'session' },
+    });
+    renderWithProviders(<DefaultAiSection />);
+
+    expect(await screen.findByText(/troca só desta sessão em uso/)).toBeVisible();
+  });
+
+  it('when there is no session switch, should not show that warning', async () => {
+    renderWithProviders(<DefaultAiSection />);
+    await screen.findByText('Gemini · gemini-barato');
+
+    expect(screen.queryByText(/troca só desta sessão em uso/)).not.toBeInTheDocument();
+  });
+
+  it('when the default is saved over a session switch, should show the new AI in use now', async () => {
+    current = state({
+      session: { providerId: 'gemini', modelId: null },
+      effective: { providerId: 'gemini', modelId: 'gemini-barato', source: 'session' },
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<DefaultAiSection />);
+    await user.click(await screen.findByRole('button', { name: 'escolher anthropic' }));
+
+    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    expect(await screen.findByText('Anthropic · claude-barato')).toBeInTheDocument();
+    expect(screen.queryByText(/troca só desta sessão em uso/)).not.toBeInTheDocument();
   });
 
   it('when nothing was changed, should keep Save disabled', async () => {
