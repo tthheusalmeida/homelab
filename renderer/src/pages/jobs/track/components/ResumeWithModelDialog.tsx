@@ -6,6 +6,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogSections,
   DialogTitle,
 } from '#ui/dialog';
 
@@ -42,8 +43,10 @@ function ResumeForm({
   const ai = useAiSelection();
   const ready = !!ai.providerId && !!ai.modelId && ai.thinkingReady;
 
+  // O conteúdo vive neste componente, então monta as três faixas à mão (`DialogSections`): sem isso o
+  // cabeçalho e o rodapé cairiam no miolo e ganhariam o padding dele em dobro (texto e botões desalinhados).
   return (
-    <>
+    <DialogSections>
       <DialogHeader>
         <DialogTitle>{TrackStrings.changeModel.title}</DialogTitle>
 
@@ -77,7 +80,7 @@ function ResumeForm({
           {TrackStrings.changeModel.confirm}
         </Button>
       </DialogFooter>
-    </>
+    </DialogSections>
   );
 }
 
@@ -95,7 +98,7 @@ export function ResumeWithModelDialog({
   return (
     <Dialog open={job !== null} onOpenChange={onOpenChange}>
       {/* Mais larga que o padrão: serviço, modelo e Pensar lado a lado não cabem em 28rem. */}
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent bare className="sm:max-w-xl">
         {job && (
           <ResumeForm
             job={job}
