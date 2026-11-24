@@ -24,6 +24,11 @@ interface OptionSelectProps {
   contentWidth?: string;
 
   disabled?: boolean;
+  /**
+   * Altura do botão do seletor: `default` (36 px) ou `sm` (32 px, a mesma dos botões `sm` e dos
+   * botões de ícone). Use `sm` quando ele fica numa linha ou barra com botões, para não ficar mais alto.
+   */
+  size?: "sm" | "default";
   /** Uma escolha diferente do padrão está valendo (um filtro aplicado): o botão ganha a cor de destaque. */
   active?: boolean;
   onValueChange: (value: string | null) => void;
@@ -37,6 +42,7 @@ export function OptionSelect({
   triggerWidth = "w-32",
   contentWidth = "w-48",
   disabled,
+  size = "default",
   active = false,
   onValueChange,
 }: OptionSelectProps) {
@@ -49,6 +55,7 @@ export function OptionSelect({
       disabled={disabled}
     >
       <SelectTrigger
+        size={size}
         data-active={active ? "true" : undefined}
         className={cn(
           "h-8 border-0 bg-muted/50 shadow-none",
