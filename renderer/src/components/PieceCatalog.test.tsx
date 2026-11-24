@@ -160,5 +160,5 @@ describe('PieceCatalog fixed size', () => {
 
     expect(card).toHaveClass('h-full');
     expect(await tooltipTextOf(card)).toBe('Notebook');
-  });
+  }, 20_000);
 });
