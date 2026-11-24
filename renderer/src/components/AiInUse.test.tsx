@@ -158,6 +158,12 @@ describe('AiInUse', () => {
       expect(screen.queryByRole('button', { name: 'Ocultar' })).not.toBeInTheDocument();
     });
 
+    it('when shown inline, should fade in too', () => {
+      const { container } = render(<AiInUse />);
+
+      expect(container.firstElementChild).toHaveClass('animate-enter-fade');
+    });
+
     it('when rendered, should keep 8px of padding on every side', () => {
       const { container } = render(<AiInUse />);
 
@@ -188,7 +194,8 @@ describe('AiInUse', () => {
     it('when closed, should use the standard small icon button', () => {
       const { container } = render(<AiInUse collapsible />);
 
-      expect(iconButton()).toHaveClass('size-8');
+      // 30px dentro da pílula de 32px com a borda de 1px: o ícone continua do tamanho dos outros
+      expect(iconButton()).toHaveClass('size-[1.875rem]');
       expect(container.querySelector('[data-provider-logo]')).toHaveClass('size-4');
     });
 
@@ -226,6 +233,18 @@ describe('AiInUse', () => {
       expect(details(container)).toHaveClass('grid-cols-[0fr]');
     });
 
+    it('when it appears, should fade in (opacity only) instead of showing up out of nowhere', () => {
+      const { container } = render(<AiInUse collapsible />);
+
+      expect(pill(container)).toHaveClass('animate-enter-fade');
+    });
+
+    it('when shown, should be 32px tall, the same height as the Resumo | Mapa mental | Infográfico selector', () => {
+      const { container } = render(<AiInUse collapsible />);
+
+      expect(pill(container)).toHaveClass('h-8');
+    });
+
     it('when opening and closing, should keep the same box so the height never changes', async () => {
       const user = userEvent.setup();
       const { container } = render(<AiInUse collapsible />);
@@ -234,7 +253,12 @@ describe('AiInUse', () => {
       await user.click(iconButton());
 
       expect(pill(container).className).toBe(closed);
-      expect(pill(container).className).not.toMatch(/p-d|py-|h-d/);
+      // sem padding que possa mudar a caixa ao abrir
+      expect(
+        pill(container)
+          .className.split(' ')
+          .some((name) => /^p[xy]?-/.test(name)),
+      ).toBe(false);
     });
 
     it('when open, should still let the user switch the AI', async () => {

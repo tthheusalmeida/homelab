@@ -74,8 +74,6 @@ interface MindMapViewProps {
   toolbar?: ReactNode;
   /** Aviso sobre o mapa (ex.: erro da IA), flutuando no topo da área. */
   notice?: ReactNode;
-  /** Selo no canto superior esquerdo (ex.: qual IA gera o mapa e como trocá-la). */
-  aiInUse?: ReactNode;
   /** Cobre a área do mapa, no centro (ex.: a colmeia carregando enquanto a IA gera). */
   overlay?: ReactNode;
   /**
@@ -196,7 +194,6 @@ export function MindMapView({
   map,
   toolbar,
   notice,
-  aiInUse,
   overlay,
   onDownloadImage,
   onDownloadError,
@@ -777,15 +774,6 @@ export function MindMapView({
             </div>
           )}
         </div>
-
-        {aiInUse && (
-          <div
-            className="absolute top-0 left-0 z-10 max-w-full"
-            onPointerDown={(event) => event.stopPropagation()}
-          >
-            {aiInUse}
-          </div>
-        )}
 
         {notice && (
           <div

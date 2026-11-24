@@ -20,7 +20,6 @@ import { cn } from '#lib/utils';
 import { Callout } from '#components/Callout';
 import { DeleteGeneratedDialog } from './DeleteGeneratedDialog';
 import { DiscardEditsDialog, RegenerateEditedDialog } from './GeneratedEditDialogs';
-import { AiInUse } from '#components/AiInUse';
 import { GenerateButton } from '#components/GenerateButton';
 import { HexLoader } from '#components/Hex';
 import { IconButton } from '#components/IconButton';
@@ -289,7 +288,6 @@ export function SummaryMindMap({ documentId, title, content, className }: Summar
       <MindMapView
         map={map}
         notice={notice}
-        aiInUse={<AiInUse collapsible />}
         toolbar={toolbar}
         edit={draft ? { draft, onChange: changeDraft } : undefined}
         overlay={

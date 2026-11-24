@@ -34,7 +34,6 @@ import { useCtrlWheelZoom } from '#hooks/use-ctrl-wheel-zoom';
 import { useStoredState } from '#hooks/use-stored-state';
 import { Callout } from '#components/Callout';
 import { EmptyState } from '#components/EmptyState';
-import { AiInUse } from '#components/AiInUse';
 import { GenerateButton } from '#components/GenerateButton';
 import { HexLoader } from '#components/Hex';
 import { IconButton } from '#components/IconButton';
@@ -302,30 +301,7 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
 
   return (
     <div className={cn('w-full', className)} aria-live="polite">
-      {/* No canto superior esquerdo, rente à borda (como no mapa mental): uma faixa sem altura que acompanha a rolagem e não empurra o conteúdo. */}
-      <div className="pointer-events-none sticky top-0 z-10 h-0">
-        <div className="pointer-events-auto w-fit">
-          <AiInUse collapsible />
-        </div>
-      </div>
-
       <div className="mx-auto w-full space-y-4" style={{ maxWidth: `${50 * zoom}rem` }}>
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        {data && !editing && (
-          <div className="flex items-center gap-2">
-            {data.edited && (
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[11px] text-brand-text">
-                Editado
-              </span>
-            )}
-
-            <span className="font-mono text-xs text-muted-foreground">
-              {data.sections.length === 1 ? '1 seção' : `${data.sections.length} seções`}
-            </span>
-          </div>
-        )}
-      </div>
-
       {notice}
 
       {data ? (
@@ -368,6 +344,7 @@ export function SummaryInfographic({ documentId, title, className }: SummaryInfo
               value={choice}
               options={LAYOUT_OPTIONS}
               placeholder="Modelo"
+              size="sm"
               triggerWidth="w-44"
               contentWidth="w-56"
               disabled={pending}

@@ -138,7 +138,7 @@ export function AiInUse({ collapsible = false }: AiInUseProps) {
   if (!collapsible) {
     return (
       <>
-        <div className="flex flex-wrap items-center gap-2 p-2 text-xs text-muted-foreground">
+        <div className="flex animate-enter-fade flex-wrap items-center gap-2 p-2 text-xs text-muted-foreground">
           <ProviderLogo
             provider={effective.providerId}
             label={serviceName}
@@ -155,15 +155,17 @@ export function AiInUse({ collapsible = false }: AiInUseProps) {
 
   // Flutuante: uma pílula de altura fixa. O ícone é o botão (o mesmo `IconButton` dos controles do
   // mapa e do infográfico) e o conteúdo abre para a direita, dentro da mesma pílula; clicar no ícone
-  // fecha. A altura não muda: só a largura.
+  // fecha. A altura não muda (32px, a do seletor ao lado, para a linha e o conteúdo não pularem): só a largura.
   return (
     <>
-      <div className="flex w-fit items-center rounded-lg border bg-card text-xs text-muted-foreground shadow-sm">
+      <div className="flex h-8 w-fit animate-enter-fade items-center rounded-lg border bg-card text-xs text-muted-foreground shadow-sm">
         <IconButton
           label={expanded ? AiInUseStrings.hide : `${AiInUseStrings.show}: ${choice}`}
           aria-expanded={expanded}
           tooltipSide="bottom"
           variant="ghost"
+          // 30px + a borda de 1px de cada lado = 32px: a altura dos botões `sm` do seletor ao lado
+          className="size-[1.875rem]"
           onClick={() => setExpanded(!expanded)}
         >
           <ProviderLogo

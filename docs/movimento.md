@@ -10,7 +10,7 @@ Tudo que entra ou sai da tela se move de forma suave; nada aparece "de repente".
 | Classe | Efeito |
 |---|---|
 | `animate-enter` | sobe 14 px e aparece (padrão para blocos, cards e itens de lista) |
-| `animate-enter-fade` | só aparece (mensagens de erro, indicadores) |
+| `animate-enter-fade` | só aparece (mensagens de erro, indicadores, a IA em uso e a contagem de seções do infográfico) |
 | `animate-enter-scale` | cresce de 96% a 100% |
 | `animate-enter-left` | entra pela esquerda |
 | `animate-enter-right` | entra pela direita (painel lateral do modo leitura) |
