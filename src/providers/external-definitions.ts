@@ -4,6 +4,7 @@ import { type ApiKeyChecker } from './api-key-definition';
 import { createAnthropicDefinition } from './anthropic.definition';
 import type { ExternalProviderDefinition } from './external-providers.service';
 import { createGeminiDefinition } from './gemini.definition';
+import { createGroqDefinition } from './groq.definition';
 
 /**
  * Fábrica da definição de cada provider externo. Como é um `Record` por id, o compilador exige uma
@@ -15,6 +16,7 @@ const FACTORIES: Record<
 > = {
   gemini: createGeminiDefinition,
   anthropic: createAnthropicDefinition,
+  groq: createGroqDefinition,
 };
 
 /**

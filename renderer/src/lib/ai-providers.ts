@@ -2,6 +2,7 @@ import { AI_PROVIDER_IDS, type AiProviderId } from '#shared/contracts/ai';
 
 import { anthropicProfile } from './ai-providers/anthropic';
 import { geminiProfile } from './ai-providers/gemini';
+import { groqProfile } from './ai-providers/groq';
 import { ollamaProfile } from './ai-providers/ollama';
 import type { AiProviderProfile } from './ai-providers/types';
 
@@ -15,6 +16,7 @@ export const AI_PROVIDER_PROFILES: Record<AiProviderId, AiProviderProfile> = {
   ollama: ollamaProfile,
   gemini: geminiProfile,
   anthropic: anthropicProfile,
+  groq: groqProfile,
 };
 
 /** Perfis na ordem de `AI_PROVIDER_IDS` (a ordem dos botões e das listas). */

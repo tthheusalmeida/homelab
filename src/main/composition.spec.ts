@@ -89,12 +89,13 @@ describe('createServices', () => {
     );
   });
 
-  it('when listing the providers, should expose gemini and anthropic as external and the transcription and audio tools before ollama as local', async () => {
+  it('when listing the providers, should expose gemini, anthropic and groq as external and the transcription and audio tools before ollama as local', async () => {
     const services = create();
 
     expect((await services.externalProviders.list()).map((p) => p.id)).toEqual([
       'gemini',
       'anthropic',
+      'groq',
     ]);
     expect(services.localProviders.list().map((p) => p.id)).toEqual([
       'whisper',
