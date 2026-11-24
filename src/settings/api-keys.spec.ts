@@ -16,6 +16,10 @@ describe('readApiKeys', () => {
   it('when only some providers have a key, should map each id to its own key or null', async () => {
     const get = jest.fn(async (key: string) => (key === 'anthropic.apiKey' ? 'sk-ant-1' : null));
 
-    await expect(readApiKeys({ get })).resolves.toEqual({ gemini: null, anthropic: 'sk-ant-1' });
+    await expect(readApiKeys({ get })).resolves.toEqual({
+      gemini: null,
+      anthropic: 'sk-ant-1',
+      groq: null,
+    });
   });
 });
