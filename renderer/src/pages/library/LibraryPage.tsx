@@ -1,7 +1,7 @@
-import { useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 
 import { Link, useLocation, useNavigate } from "react-router";
-import { Inbox, SearchX, Library as LibraryIcon } from "lucide-react";
+import { Inbox, SearchX, Library as LibraryIcon, Undo2 } from "lucide-react";
 
 import { InboxStrings } from "#lib/inbox-text";
 import { Button, buttonVariants } from "#ui/button";
@@ -21,8 +21,11 @@ import {
 } from "./components/CategoryEditDialog";
 import { CategoryTree, type TreePage } from "./components/CategoryTree";
 import { DocumentCard } from "./components/DocumentCard";
+import { DraggableItem } from "./components/DraggableItem";
 import { TagFilter } from "./components/TagFilter";
 import { ViewToggle, viewModes, type ViewMode } from "./components/ViewToggle";
+import { useCustomOrder } from "./hooks/useCustomOrder";
+import { applyCustomOrder, moveInOrder } from "./customOrder";
 import {
   useCategories,
   useDocuments,
@@ -88,6 +91,12 @@ export function LibraryPage() {
     "grid",
     viewModes,
   );
+
+  // Ordem personalizada (arrastar): vale até a pessoa voltar à ordem automática ou escolher um "Ordenar por".
+  const [customOrder, setCustomOrder] = useCustomOrder("library:order");
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  // Prévia da ordem enquanto arrasta: as páginas trocam de lugar na hora e só valem ao soltar.
+  const [draft, setDraft] = useState<string[] | null>(null);
 
   const q = useDebouncedValue(search);
 
@@ -180,6 +189,43 @@ export function LibraryPage() {
     }
   }
   const tagList = useTags();
+
+  const automatic = useMemo(
+    () =>
+      customOrder && documents.data
+        ? applyCustomOrder(documents.data, customOrder)
+        : (documents.data ?? []),
+    [documents.data, customOrder],
+  );
+  const shown = useMemo(
+    () => (draft ? applyCustomOrder(automatic, draft) : automatic),
+    [automatic, draft],
+  );
+
+  function hoverOn(targetId: string) {
+    if (draggingId && draggingId !== targetId) {
+      setDraft(
+        moveInOrder(
+          shown.map((item) => item.id),
+          [],
+          draggingId,
+          targetId,
+        ),
+      );
+    }
+  }
+
+  function finishDrag(commit: boolean) {
+    if (commit && draft) {
+      setCustomOrder([
+        ...draft,
+        ...(customOrder ?? []).filter((id) => !draft.includes(id)),
+      ]);
+    }
+
+    setDraft(null);
+    setDraggingId(null);
+  }
 
   // Só a categoria escolhida filtra: se ela está sem páginas, a tela explica em vez de dizer "nenhum resultado".
   const onlyCategory =
@@ -302,8 +348,21 @@ export function LibraryPage() {
             label="Ordenar por"
             triggerWidth="w-40"
             contentWidth="w-44"
-            onValueChange={(value) => setSort((value as SortOption) ?? "title")}
+            onValueChange={(value) => {
+              setSort((value as SortOption) ?? "title");
+              setCustomOrder(null);
+            }}
           />
+
+          {customOrder && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCustomOrder(null)}
+            >
+              <Undo2 /> Voltar à ordem automática
+            </Button>
+          )}
 
           {hasFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -461,14 +520,19 @@ export function LibraryPage() {
                       : "space-y-3"
                 }
               >
-                {documents.data.map((document, index) => (
-                  <div
+                {shown.map((document, index) => (
+                  <DraggableItem
                     key={document.id}
-                    className="animate-enter [&>*]:h-full"
-                    style={{ "--i": index } as CSSProperties}
+                    id={document.id}
+                    index={index}
+                    draggingId={draggingId}
+                    onDragStart={setDraggingId}
+                    onHover={hoverOn}
+                    onDrop={() => finishDrag(true)}
+                    onDragEnd={() => finishDrag(false)}
                   >
                     <DocumentCard document={document} variant={view} />
-                  </div>
+                  </DraggableItem>
                 ))}
               </div>
             </>
