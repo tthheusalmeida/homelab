@@ -38,6 +38,9 @@ import { useRefreshLibraryOnJobDone } from '../pages/jobs/track/hooks/useRefresh
 import { useInboxCount } from '../pages/library/hooks/useLibrary';
 import { SETTINGS_PATH } from '#lib/settings-route';
 
+/** Maior número que o contador hexagonal do menu mostra (3 dígitos cabem sem empurrar o layout). */
+const BADGE_MAX = 999;
+
 /** Tela dos jobs: o item do menu mostra quantos estão em andamento. */
 const JOBS_URL = '/jobs/track';
 /** Classificação (rota `/library/inbox`): o item do menu mostra quantas páginas aguardam decisão. */
@@ -139,7 +142,7 @@ export function AppSidebar() {
                         aria-label={badge.label}
                         className="bg-primary text-primary-foreground peer-hover/menu-button:text-primary-foreground peer-data-active/menu-button:text-primary-foreground"
                       >
-                        {badge.count}
+                        {Math.min(badge.count, BADGE_MAX)}
                       </SidebarMenuBadge>
                     )}
                   </SidebarMenuItem>
