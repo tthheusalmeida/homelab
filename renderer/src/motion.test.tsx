@@ -154,14 +154,32 @@ describe("small state changes", () => {
     expect(screen.getByText("química").closest("li")).toHaveClass("animate-enter-scale");
   });
 
-  it("when a pipeline step is completed, should pop its check and ease the marker colors", () => {
+  it("when a pipeline step is completed with the pipeline on screen, should pop its check and ease the marker colors", () => {
+    const job = {
+      id: "j",
+      name: "x",
+      label: "x",
+      status: "running",
+      createdAt: "",
+      completedAt: "",
+      steps: [{ name: "a", label: "Baixar", status: "running" }],
+    };
+    const { container, rerender } = render(<JobPipeline job={job} />);
+
+    rerender(<JobPipeline job={{ ...job, steps: [{ name: "a", label: "Baixar", status: "completed" }] }} />);
+
+    expect(container.querySelector("[data-state=done] svg.animate-enter-scale")).not.toBeNull();
+    expect(container.querySelector("[data-status=completed] [class*=transition-colors]")).not.toBeNull();
+  });
+
+  it("when a pipeline appears with a step already completed, should not animate it again", () => {
     const { container } = render(
       <JobPipeline
         job={{
           id: "j",
           name: "x",
           label: "x",
-          status: "running",
+          status: "completed",
           createdAt: "",
           completedAt: "",
           steps: [{ name: "a", label: "Baixar", status: "completed" }],
@@ -169,8 +187,8 @@ describe("small state changes", () => {
       />,
     );
 
-    expect(container.querySelector("svg")).toHaveClass("animate-enter-scale");
-    expect(container.querySelector("[data-status=completed] [class*=transition-colors]")).not.toBeNull();
+    expect(container.querySelector("[data-state=done]")).toHaveAttribute("data-static", "true");
+    expect(container.querySelector("[data-state=done] svg.animate-enter-scale")).toBeNull();
   });
 
   it("when a job is running, should show the hexagon loader instead of a spinner", () => {

@@ -149,3 +149,64 @@ export function HoneycombBackdrop({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export type HexStepState = 'pending' | 'running' | 'done' | 'failed';
+
+const STEP_POINTS = '37,2 71,21.5 71,62.5 37,82 3,62.5 3,21.5';
+
+/**
+ * Marcador de uma etapa, em hexágono. Pendente: só o contorno. Em andamento: respira na cor de
+ * destaque. Concluída: a borda se desenha, o preenchimento salta e um anel se espalha (e o ✓ entra).
+ * Com falha: na cor de erro, com ✕. As animações vivem em `global.css` (`.hs-*`); o estado vem de
+ * `data-state`.
+ */
+export function HexStepMarker({
+  state,
+  animate = true,
+  className,
+}: {
+  state: HexStepState;
+  /** `false` para uma etapa que já estava concluída ao aparecer: pronta e parada, sem desenhar de novo. */
+  animate?: boolean;
+  className?: string;
+}) {
+  return (
+    <span
+      data-state={state}
+      data-static={!animate}
+      aria-hidden="true"
+      className={cn('relative inline-flex shrink-0 items-center justify-center', className)}
+    >
+      <svg viewBox="0 0 74 84" className="size-full overflow-visible">
+        <polygon className="hs-ring" points={STEP_POINTS} />
+        <polygon className="hs-fill" points={STEP_POINTS} />
+        <polygon className="hs-border" pathLength="100" points={STEP_POINTS} />
+      </svg>
+
+      {state === 'done' && (
+        <svg
+          viewBox="0 0 24 24"
+          className={cn(
+            'absolute size-1/2 fill-none stroke-background stroke-[4] [stroke-linecap:round] [stroke-linejoin:round]',
+            animate &&
+              'animate-enter-scale [animation-delay:0.4s] [animation-fill-mode:backwards]',
+          )}
+        >
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      )}
+
+      {state === 'failed' && (
+        <svg
+          viewBox="0 0 24 24"
+          className={cn(
+            'absolute size-1/2 fill-none stroke-background stroke-[4] [stroke-linecap:round]',
+            animate && 'animate-enter-scale',
+          )}
+        >
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      )}
+    </span>
+  );
+}

@@ -1,10 +1,10 @@
-import { Check, CircleAlert, X } from 'lucide-react';
+import { useRef } from 'react';
+import { CircleAlert } from 'lucide-react';
 
-import { HexDot } from '#components/Hex';
+import { HexStepMarker, type HexStepState } from '#components/Hex';
 import { ProgressBar } from '#components/ProgressBar';
 import { formatDateTime, formatDuration } from '#lib/format';
 import { cn } from '#lib/utils';
-import { Collapsible, CollapsibleContent } from '#ui/collapsible';
 
 import { type Job, type JobStatus, JobStatusOptions } from '../../types/job.types';
 import { TrackStrings } from '../strings';
@@ -60,33 +60,47 @@ export function pipelineRows(job: Pick<Job, 'status' | 'steps'>): PipelineRow[] 
   ];
 }
 
-const MARKER: Record<string, string> = {
-  [JobStatusOptions.COMPLETED]: 'bg-emerald-500',
-  [JobStatusOptions.RUNNING]: 'bg-primary',
-  [JobStatusOptions.FAILED]: 'bg-destructive',
-  [JobStatusOptions.PENDING]: 'bg-muted-foreground/40',
+const MARKER_STATE: Record<string, HexStepState> = {
+  [JobStatusOptions.COMPLETED]: "done",
+  [JobStatusOptions.RUNNING]: "running",
+  [JobStatusOptions.FAILED]: "failed",
+  [JobStatusOptions.PENDING]: "pending",
 };
 
-function Marker({ status }: { status: JobStatus }) {
-  return (
-    <span className="relative flex size-5 shrink-0 items-center justify-center">
-      <HexDot
-        pulse={status === JobStatusOptions.RUNNING}
-        className={cn('size-3.5 transition-colors duration-300', MARKER[status])}
-      />
+/**
+ * Quanto da etapa já foi feito, de 0 a 100: concluída = 100; em andamento = a fração que ela informa
+ * (sem medida, 0 até terminar: nunca um palpite); aguardando ou com falha = 0.
+ */
+export function stepFill(status: JobStatus, progress: Job["progress"]): number {
+  if (status === JobStatusOptions.COMPLETED) {
+    return 100;
+  }
 
-      {status === JobStatusOptions.COMPLETED && (
-        <Check
-          aria-hidden
-          className="absolute size-2 animate-enter-scale stroke-[4] text-background"
-        />
-      )}
+  if (status !== JobStatusOptions.RUNNING || !progress || !(progress.total > 0)) {
+    return 0;
+  }
 
-      {status === JobStatusOptions.FAILED && (
-        <X aria-hidden className="absolute size-2 animate-enter-scale stroke-[4] text-background" />
-      )}
-    </span>
-  );
+  const finished = progress.unit === "percent" ? progress.done : progress.done - 1;
+
+  return Math.round(Math.min(1, Math.max(0, finished / progress.total)) * 100);
+}
+
+/**
+ * Estado sob o nome da etapa. Em andamento com medida: só o valor atual (`30%`, ou a parte); sem
+ * medida: "em andamento". Concluída não diz nada: o ✓ do marcador já diz.
+ */
+export function stepStatusText(status: JobStatus, progress: Job['progress']): string {
+  if (status === JobStatusOptions.COMPLETED) {
+    return '';
+  }
+
+  if (status === JobStatusOptions.RUNNING && progress) {
+    return progress.unit === 'percent'
+      ? TrackStrings.stepPercent(progress.done)
+      : TrackStrings.stepPart(progress.done, progress.total);
+  }
+
+  return TrackStrings.stepStates[status] ?? status;
 }
 
 /** Erro de uma etapa: ícone e texto em vermelho, sem caixa nem alerta. */
@@ -114,15 +128,24 @@ interface JobPipelineProps {
 }
 
 /**
- * Interior do job: o pipeline como um painel de terminal. Cada etapa é uma linha com marcador
- * hexagonal (a mesma linguagem da marca), nome, estado e uma barra fina na etapa em execução. Abaixo,
- * início, fim e duração, e o erro quando o job falhou.
+ * Interior do job: o pipeline como um painel de terminal, na horizontal e no ritmo do "Como usar" do
+ * site: colmeia, etapa, colmeia, etapa... (a fila quebra de linha quando não cabe). Cada etapa tem a
+ * sua colmeia (duas fileiras de 20 hexágonos) logo antes dela: o trabalho para chegar nela, vazia,
+ * enchendo e pulsando completa. O marcador hexagonal da etapa se desenha, salta e solta um anel ao
+ * concluir. Abaixo, o aviso de tentativa da IA (etapa em andamento) e o erro, quando há; no fim,
+ * início, fim e duração.
  */
 export function JobPipeline({ job }: JobPipelineProps) {
   const rows = pipelineRows(job);
-  // O erro aparece na etapa em que ocorreu; sem etapa com falha (cancelado na fila, por exemplo), fica no fim.
-  const failedKey = rows.findLast((row) => row.status === JobStatusOptions.FAILED)?.key;
+  // O estado de cada etapa quando o pipeline apareceu: a que já estava assim não anima (job já concluído
+  // aberto depois: tudo pronto e parado, sem peso). Só muda com animação o que muda com ele na tela.
+  const initialStatus = useRef<Record<string, JobStatus>>(
+    Object.fromEntries(rows.map((row) => [row.key, row.status])),
+  );
+  const runningRow = rows.find((row) => row.status === JobStatusOptions.RUNNING);
   const done = rows.filter((row) => row.status === JobStatusOptions.COMPLETED).length;
+  // Terminou tudo: as colmeias param de pulsar, para não parecer que ainda há trabalho.
+  const allDone = rows.length > 0 && done === rows.length;
   const started = job.startedAt ? new Date(job.startedAt).getTime() : null;
   const finished = job.completedAt ? new Date(job.completedAt).getTime() : null;
 
@@ -135,103 +158,75 @@ export function JobPipeline({ job }: JobPipelineProps) {
         <span>{TrackStrings.pipelineCount(done, rows.length)}</span>
       </p>
 
-      <ol aria-label={TrackStrings.pipeline} className="flex flex-col">
-        {rows.map((row, index) => {
+      <ol aria-label={TrackStrings.pipeline} className="flex flex-wrap items-start gap-y-4">
+        {rows.map((row) => {
           const running = row.status === JobStatusOptions.RUNNING;
-          const showError = Boolean(job.error) && row.key === failedKey;
-          // Só a etapa em questão abre o espaço de andamento, tentativa e erro; as outras ficam recolhidas.
-          const expanded = running || row.status === JobStatusOptions.FAILED;
 
           return (
-            <li
-              key={row.key}
-              data-status={row.status}
-              className="relative flex gap-3 pb-3 last:pb-0"
-            >
-              {index < rows.length - 1 && (
-                <span
-                  aria-hidden
-                  className={cn(
-                    'absolute top-5 bottom-0 left-2.5 w-px -translate-x-1/2',
-                    row.status === JobStatusOptions.COMPLETED ? 'bg-emerald-500/50' : 'bg-border',
-                  )}
+            <li key={row.key} data-status={row.status} className="flex items-start">
+              {/* A colmeia vem antes da etapa: é o trabalho para chegar nela. Sempre determinada: sem medida fica vazia, nunca num "um terço" que parece já ter andado. */}
+              <ProgressBar
+                value={stepFill(row.status, job.progress)}
+                total={100}
+                label={TrackStrings.stepProgress(row.label)}
+                pulse={!allDone}
+                className="mt-2 w-36"
+              />
+
+              <div className="flex w-[5.5rem] flex-col items-center gap-1 text-center">
+                <HexStepMarker
+                  state={MARKER_STATE[row.status]}
+                  animate={initialStatus.current[row.key] !== row.status}
+                  className="h-7 w-6"
                 />
-              )}
 
-              <Marker status={row.status} />
+                <span
+                  className={cn(
+                    "min-h-7 text-[11px] leading-tight break-words transition-colors duration-300",
+                    row.status === JobStatusOptions.PENDING && "text-muted-foreground",
+                    running && "font-medium text-foreground",
+                    row.status === JobStatusOptions.FAILED && "font-medium text-destructive",
+                  )}
+                >
+                  {row.label}
+                </span>
 
-              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span
-                    className={cn(
-                      'min-w-0 truncate text-xs transition-colors duration-300',
-                      row.status === JobStatusOptions.PENDING && 'text-muted-foreground',
-                      running && 'font-medium text-foreground',
-                      row.status === JobStatusOptions.FAILED && 'font-medium text-destructive',
-                    )}
-                  >
-                    {row.label}
-                  </span>
-
-                  <span className="shrink-0 text-[11px] text-muted-foreground">
-                    {running && job.progress
-                      ? job.progress.unit === 'percent'
-                        ? TrackStrings.stepPercent(job.progress.done)
-                        : TrackStrings.stepPart(job.progress.done, job.progress.total)
-                      : (TrackStrings.stepStates[row.status] ?? row.status)}
-                  </span>
-                </div>
-
-                {/* O espaço tem altura mínima: a mensagem entra sem empurrar o que há dentro da etapa. Abre e fecha com a transição de altura do app. */}
-                <Collapsible open={expanded}>
-                  <CollapsibleContent>
-                    <div data-slot="step-detail" className="flex min-h-9 flex-col gap-1">
-                      {running && (
-                        <ProgressBar
-                          value={
-                            job.progress
-                              ? job.progress.unit === 'percent'
-                                ? job.progress.done
-                                : job.progress.done - 1
-                              : 0
-                          }
-                          // sempre determinada: sem medida a barra fica em 0, nunca num "um terço" que parece já ter andado
-                          total={job.progress?.total ?? 100}
-                          label={TrackStrings.stepProgress(row.label)}
-                          className="h-1"
-                        />
-                      )}
-
-                      {running && job.note && (
-                        <p className="text-[11px] break-words text-amber-500">
-                          {job.note}
-                        </p>
-                      )}
-
-                      {showError && <StepError message={job.error ?? ''} />}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                {/* Altura reservada: o estado entra (ou não, em "concluído") sem empurrar o resto. */}
+                <span
+                  className={cn(
+                    'min-h-4 text-[10px] text-muted-foreground',
+                    running && job.progress && 'font-medium text-primary',
+                  )}
+                >
+                  {stepStatusText(row.status, job.progress)}
+                </span>
               </div>
             </li>
           );
         })}
       </ol>
 
-      {job.error && !failedKey && <StepError message={job.error} />}
+      {/* Altura mínima: a tentativa da IA e o erro entram sem empurrar a tela. */}
+      <div data-slot="pipeline-detail" className="flex min-h-9 flex-col gap-1">
+        {job.note && runningRow && (
+          <p className="text-[11px] break-words text-amber-500">{job.note}</p>
+        )}
+
+        {job.error && <StepError message={job.error} />}
+      </div>
 
       <dl className="grid grid-cols-3 gap-3 border-t pt-3">
         <Fact
           label={TrackStrings.facts.started}
-          value={job.startedAt ? formatDateTime(job.startedAt) : '—'}
+          value={job.startedAt ? formatDateTime(job.startedAt) : "—"}
         />
         <Fact
           label={TrackStrings.facts.finished}
-          value={job.completedAt ? formatDateTime(job.completedAt) : '—'}
+          value={job.completedAt ? formatDateTime(job.completedAt) : "—"}
         />
         <Fact
           label={TrackStrings.facts.duration}
-          value={started !== null && finished !== null ? formatDuration(finished - started) : '—'}
+          value={started !== null && finished !== null ? formatDuration(finished - started) : "—"}
         />
       </dl>
     </div>

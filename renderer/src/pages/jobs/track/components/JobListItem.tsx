@@ -121,7 +121,7 @@ export function JobListItem({
                     value={job.resume.done}
                     total={job.resume.total}
                     label={TrackStrings.resume(job.resume.done, job.resume.total)}
-                    className="h-1.5 max-w-xs"
+                    className="max-w-xs"
                   />
 
                   <p className="text-xs text-muted-foreground">

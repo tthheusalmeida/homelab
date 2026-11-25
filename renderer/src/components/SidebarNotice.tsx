@@ -8,7 +8,7 @@ interface SidebarNoticeProps {
   title: string;
   /** Uma linha curta sob o título (ou sob a barra de progresso). */
   hint?: ReactNode;
-  /** Barra de progresso (`ProgressBar` com `className="h-1.5"`), entre o título e a dica. */
+  /** Barra de progresso (`ProgressBar`), entre o título e a dica. */
   progress?: ReactNode;
   /** Torna título, progresso e dica um único botão (clicar abre a tela do assunto). */
   onOpen?: () => void;

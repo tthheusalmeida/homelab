@@ -42,7 +42,6 @@ export function SidebarUpdateNotice() {
             value={status.progress}
             total={100}
             label={UpdateStrings.progressLabel}
-            className="h-1.5"
           />
         ) : undefined
       }

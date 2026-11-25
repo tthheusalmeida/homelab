@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 
 import type { Job } from '../../types/job.types';
 
-import { JobPipeline, pipelineRows } from './JobPipeline';
+import { JobPipeline, pipelineRows, stepFill, stepStatusText } from './JobPipeline';
 
 const makeJob = (overrides: Partial<Job> = {}): Job => ({
   id: 'job-1',
@@ -45,6 +45,36 @@ describe('pipelineRows', () => {
   );
 });
 
+describe('stepFill', () => {
+  it.each([
+    ['completed', undefined, 100],
+    ['pending', undefined, 0],
+    ['failed', { done: 2, total: 4 }, 0],
+    ['running', undefined, 0],
+    ['running', { done: 3, total: 4 }, 50],
+    ['running', { done: 1, total: 4 }, 0],
+    ['running', { done: 30, total: 100, unit: 'percent' as const }, 30],
+    ['running', { done: 250, total: 100, unit: 'percent' as const }, 100],
+    ['running', { done: 1, total: 0 }, 0],
+  ])('when the step is %s and the measure is %j, should be %s%%', (status, progress, expected) => {
+    expect(stepFill(status as Job['status'], progress)).toBe(expected);
+  });
+});
+
+describe('stepStatusText', () => {
+  it.each([
+    ['completed', undefined, ''],
+    ['completed', { done: 2, total: 4 }, ''],
+    ['pending', undefined, 'aguardando'],
+    ['failed', undefined, 'falhou'],
+    ['running', undefined, 'em andamento'],
+    ['running', { done: 2, total: 4 }, 'parte 2 de 4'],
+    ['running', { done: 30, total: 100, unit: 'percent' as const }, '30%'],
+  ])('when the step is %s and the measure is %j, should say "%s"', (status, progress, expected) => {
+    expect(stepStatusText(status as Job['status'], progress)).toBe(expected);
+  });
+});
+
 describe('JobPipeline', () => {
   it('when running, should list each step with its state and count the finished ones', () => {
     render(<JobPipeline job={makeJob()} />);
@@ -52,51 +82,173 @@ describe('JobPipeline', () => {
     const list = screen.getByRole('list', { name: 'pipeline' });
 
     expect(within(list).getAllByRole('listitem')).toHaveLength(3);
-    expect(within(list).getByText('concluído')).toBeInTheDocument();
+    expect(within(list).queryByText('concluído')).not.toBeInTheDocument();
     expect(within(list).getByText('em andamento')).toBeInTheDocument();
     expect(within(list).getByText('aguardando')).toBeInTheDocument();
     expect(screen.getByText('1/3 etapas')).toBeInTheDocument();
   });
 
-  it('when a step is running, should show a thin progress bar only on it', () => {
+  it('when rendering the steps, should lay them in a row that wraps, with a hexagon marker in the state of each', () => {
     render(<JobPipeline job={makeJob()} />);
 
-    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+    const items = screen.getAllByRole('listitem');
+
+    expect(screen.getByRole('list', { name: 'pipeline' })).toHaveClass('flex', 'flex-wrap');
     expect(
-      screen.getByRole('progressbar', { name: 'Em andamento: Converter áudio' }),
-    ).toBeInTheDocument();
+      items.map((item) => item.querySelector('[data-state]')?.getAttribute('data-state')),
+    ).toEqual(['done', 'running', 'pending']);
   });
 
-  it('when the running step has progress, should show the part and a determinate bar', () => {
-    render(<JobPipeline job={makeJob({ progress: { done: 2, total: 4 } })} />);
+  it('when rendering the steps, should put a honeycomb of forty hexagons before each one, then the step', () => {
+    render(<JobPipeline job={makeJob()} />);
 
-    expect(screen.getByText('parte 2 de 4')).toBeInTheDocument();
-    expect(
-      screen.getByRole('progressbar', { name: 'Em andamento: Converter áudio' }),
-    ).toHaveAttribute('aria-valuenow', '25');
+    const items = screen.getAllByRole('listitem');
+
+    expect(screen.getAllByRole('progressbar')).toHaveLength(3);
+
+    items.forEach((item) => {
+      expect(item.firstElementChild).toHaveAttribute('role', 'progressbar');
+      expect(item.querySelectorAll('.hp-cell')).toHaveLength(40);
+    });
   });
 
-  it('when the running step reports a percent, should show "N% de 100%" and fill the bar', () => {
-    render(<JobPipeline job={makeJob({ progress: { done: 10, total: 100, unit: 'percent' } })} />);
+  it('when a step is completed, should show its honeycomb full and pulsing; the next ones empty', () => {
+    render(<JobPipeline job={makeJob()} />);
 
-    expect(screen.getByText('10% de 100%')).toBeInTheDocument();
-    expect(
-      screen.getByRole('progressbar', { name: 'Em andamento: Converter áudio' }),
-    ).toHaveAttribute('aria-valuenow', '10');
+    const [first, second, third] = screen.getAllByRole('progressbar');
+
+    expect(first).toHaveAttribute('aria-valuenow', '100');
+    expect(first).toHaveAttribute('data-complete', 'true');
+    expect(second).toHaveAttribute('aria-valuenow', '0');
+    expect(third).toHaveAttribute('aria-valuenow', '0');
   });
 
-  it('when the AI is retrying, should show the attempt inside the running step only', () => {
+  it('when the running step has progress, should show the part and fill only its own honeycomb', () => {
+    render(<JobPipeline job={makeJob({ progress: { done: 3, total: 4 } })} />);
+
+    expect(screen.getByText('parte 3 de 4')).toBeInTheDocument();
+    expect(
+      screen.getByRole('progressbar', { name: 'Em andamento: Converter áudio' }),
+    ).toHaveAttribute('aria-valuenow', '50');
+    expect(
+      screen.getByRole('progressbar', { name: 'Em andamento: Transcrever' }),
+    ).toHaveAttribute('aria-valuenow', '0');
+  });
+
+  it('when the running step reports a percent, should show "N% de 100%" and fill its honeycomb', () => {
+    render(
+      <JobPipeline job={makeJob({ progress: { done: 30, total: 100, unit: 'percent' } })} />,
+    );
+
+    expect(screen.getByText('30%')).toBeInTheDocument();
+    expect(screen.getByText('30%')).toHaveClass('text-primary');
+    expect(screen.queryByText(/de 100/)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('progressbar', { name: 'Em andamento: Converter áudio' }),
+    ).toHaveAttribute('aria-valuenow', '30');
+  });
+
+  it('when the running step has no measure, should keep its honeycomb empty, never a partial guess', () => {
+    const { container } = render(<JobPipeline job={makeJob({ progress: undefined })} />);
+    const running = screen.getByRole('progressbar', { name: 'Em andamento: Converter áudio' });
+
+    expect(running).toHaveAttribute('aria-valuenow', '0');
+    expect(running.querySelectorAll('[data-filled="true"]')).toHaveLength(0);
+    expect(container.querySelectorAll('.animate-pulse')).toHaveLength(0);
+  });
+
+  it('when some steps are still left, should let the completed honeycombs pulse', () => {
+    render(<JobPipeline job={makeJob()} />);
+
+    expect(screen.getAllByRole('progressbar')[0]).toHaveAttribute('data-pulse', 'true');
+  });
+
+  it('when every step is completed, should stop every pulse: nothing moves anymore', () => {
+    render(
+      <JobPipeline
+        job={makeJob({
+          status: 'completed',
+          steps: [
+            { name: 'a', label: 'Baixar vídeo', status: 'completed' },
+            { name: 'b', label: 'Transcrever', status: 'completed' },
+          ],
+        })}
+      />,
+    );
+
+    screen.getAllByRole('progressbar').forEach((bar) => {
+      expect(bar).toHaveAttribute('data-complete', 'true');
+      expect(bar).toHaveAttribute('data-pulse', 'false');
+    });
+  });
+
+  it('when the pipeline appears with finished steps, should show them ready and still', () => {
+    render(<JobPipeline job={makeJob()} />);
+
+    const [completed, running] = screen.getAllByRole('listitem');
+
+    expect(completed.querySelector('[data-state]')).toHaveAttribute('data-static', 'true');
+    expect(running.querySelector('[data-state]')).toHaveAttribute('data-static', 'true');
+  });
+
+  it('when a step completes with the pipeline on screen, should animate it and keep the others still', () => {
+    const { rerender } = render(<JobPipeline job={makeJob()} />);
+
+    rerender(
+      <JobPipeline
+        job={makeJob({
+          steps: [
+            { name: 'download', label: 'Baixar vídeo', status: 'completed' },
+            { name: 'audio', label: 'Converter áudio', status: 'completed' },
+            { name: 'transcribe', label: 'Transcrever', status: 'running' },
+          ],
+        })}
+      />,
+    );
+
+    const [first, second, third] = screen
+      .getAllByRole('listitem')
+      .map((item) => item.querySelector('[data-state]'));
+
+    expect(first).toHaveAttribute('data-static', 'true');
+    expect(second).toHaveAttribute('data-static', 'false');
+    expect(third).toHaveAttribute('data-static', 'false');
+  });
+
+  it('when the job has not started, should keep every honeycomb empty', () => {
+    render(<JobPipeline job={makeJob({ status: 'pending', steps: [] })} />);
+
+    screen.getAllByRole('progressbar').forEach((bar) => {
+      expect(bar).toHaveAttribute('aria-valuenow', '0');
+    });
+  });
+
+  it('when a step is completed, should say nothing under its name but keep the space', () => {
+    render(<JobPipeline job={makeJob()} />);
+
+    const [completed] = screen.getAllByRole('listitem');
+    const status = completed.querySelectorAll('span')[2];
+
+    expect(status).toBeEmptyDOMElement();
+    expect(status).toHaveClass('min-h-4');
+  });
+
+  it('when rendering the steps, should reserve height for the name, the state and the detail', () => {
+    const { container } = render(<JobPipeline job={makeJob()} />);
+    const [first] = screen.getAllByRole('listitem');
+
+    expect(within(first).getByText('Baixar vídeo')).toHaveClass('min-h-7');
+    expect(container.querySelector('[data-slot="pipeline-detail"]')).toHaveClass('min-h-9');
+  });
+
+  it('when the AI is retrying, should show the attempt while a step runs', () => {
     render(
       <JobPipeline
         job={makeJob({ note: 'Tentando de novo (tentativa 2 de 3): serviço sobrecarregado' })}
       />,
     );
 
-    const rows = screen.getAllByRole('listitem');
-
-    expect(within(rows[1]).getByText(/tentativa 2 de 3/)).toBeInTheDocument();
-    expect(within(rows[0]).queryByText(/tentativa/)).not.toBeInTheDocument();
-    expect(within(rows[2]).queryByText(/tentativa/)).not.toBeInTheDocument();
+    expect(screen.getByText(/tentativa 2 de 3/)).toBeInTheDocument();
   });
 
   it('when the retry was solved and the note is gone, should not show the attempt anymore', () => {
@@ -109,7 +261,7 @@ describe('JobPipeline', () => {
     expect(screen.queryByText(/tentativa/)).not.toBeInTheDocument();
   });
 
-  it('when a step failed, should show the error inside that step and not again at the end', () => {
+  it('when a step failed, should mark it in red and show the error once', () => {
     render(
       <JobPipeline
         job={makeJob({
@@ -127,10 +279,11 @@ describe('JobPipeline', () => {
     const rows = screen.getAllByRole('listitem');
 
     expect(screen.getAllByText('Limite de uso da IA.')).toHaveLength(1);
-    expect(within(rows[1]).getByText('Limite de uso da IA.')).toBeInTheDocument();
+    expect(rows[1].querySelector('[data-state]')).toHaveAttribute('data-state', 'failed');
+    expect(within(rows[1]).getByText('falhou')).toBeInTheDocument();
   });
 
-  it('when the job failed without a failed step, should keep the error at the end', () => {
+  it('when the job failed without a failed step, should still show the error', () => {
     render(
       <JobPipeline
         job={makeJob({
@@ -142,88 +295,12 @@ describe('JobPipeline', () => {
     );
 
     expect(screen.getByText('Cancelado pelo usuário.')).toBeInTheDocument();
-    expect(
-      within(screen.getAllByRole('listitem')[0]).queryByText('Cancelado pelo usuário.'),
-    ).not.toBeInTheDocument();
   });
 
-  it('when the job was resumed and has no error, should show no alert in any step', () => {
-    render(
-      <JobPipeline
-        job={makeJob({
-          status: 'running',
-          error: undefined,
-          steps: [
-            { name: 'download', label: 'Baixar vídeo', status: 'completed' },
-            { name: 'audio', label: 'Converter áudio', status: 'running' },
-          ],
-        })}
-      />,
-    );
+  it('when the job was resumed and has no error, should show no alert', () => {
+    render(<JobPipeline job={makeJob({ error: undefined })} />);
 
     expect(screen.queryByText(/Falhou|erro/i)).not.toBeInTheDocument();
-  });
-
-  it('when rendering the steps, should open the detail space only in the running step', () => {
-    const { container } = render(<JobPipeline job={makeJob()} />);
-    const slots = container.querySelectorAll('[data-slot="step-detail"]');
-
-    expect(slots).toHaveLength(1);
-    expect(slots[0]).toHaveClass('min-h-9');
-    expect(within(screen.getAllByRole('listitem')[1]).getByRole('progressbar')).toBeInTheDocument();
-  });
-
-  it('when a step is pending or completed, should keep its detail space collapsed', () => {
-    render(<JobPipeline job={makeJob()} />);
-
-    const [completed, , pending] = screen.getAllByRole('listitem');
-
-    expect(completed.querySelector('[data-slot="step-detail"]')).toBeNull();
-    expect(pending.querySelector('[data-slot="step-detail"]')).toBeNull();
-  });
-
-  it('when a step fails, should open the detail space in that step for the error', () => {
-    const { container } = render(
-      <JobPipeline
-        job={makeJob({
-          status: 'failed',
-          error: 'Sem internet.',
-          steps: [
-            { name: 'download', label: 'Baixar vídeo', status: 'completed' },
-            { name: 'audio', label: 'Converter áudio', status: 'failed' },
-            { name: 'transcribe', label: 'Transcrever', status: 'pending' },
-          ],
-        })}
-      />,
-    );
-
-    expect(container.querySelectorAll('[data-slot="step-detail"]')).toHaveLength(1);
-    expect(
-      within(screen.getAllByRole('listitem')[1]).getByText('Sem internet.'),
-    ).toBeInTheDocument();
-  });
-
-  it('when the running step completes, should close its detail space with the height transition', () => {
-    const { container, rerender } = render(<JobPipeline job={makeJob()} />);
-
-    expect(container.querySelector('[data-slot="collapsible-content"]')).toHaveClass(
-      'data-open:animate-collapse-down',
-      'data-closed:animate-collapse-up',
-    );
-
-    rerender(
-      <JobPipeline
-        job={makeJob({
-          steps: [
-            { name: 'download', label: 'Baixar vídeo', status: 'completed' },
-            { name: 'audio', label: 'Converter áudio', status: 'completed' },
-            { name: 'transcribe', label: 'Transcrever', status: 'pending' },
-          ],
-        })}
-      />,
-    );
-
-    expect(container.querySelector('[data-slot="step-detail"]')).toBeNull();
   });
 
   it('when a step has an error, should show a red message with an icon, not an alert box', () => {
@@ -240,32 +317,6 @@ describe('JobPipeline', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.getByText('Sem internet.').closest('p')).toHaveClass('text-destructive');
     expect(container.querySelector('svg.lucide-circle-alert')).toBeInTheDocument();
-  });
-
-  it('when the running step has no measure, should show a determinate bar at 0%, never a partial indeterminate one', () => {
-    render(<JobPipeline job={makeJob({ progress: undefined })} />);
-
-    const bar = screen.getByRole('progressbar', { name: 'Em andamento: Converter áudio' });
-
-    expect(bar).toHaveAttribute('aria-valuenow', '0');
-    expect(bar.firstElementChild).toHaveStyle({ width: '0%' });
-    expect(bar.firstElementChild).not.toHaveClass('animate-pulse');
-  });
-
-  it('when the job failed, should show the error inside the failed step', () => {
-    render(
-      <JobPipeline
-        job={makeJob({
-          status: 'failed',
-          error: 'ffmpeg não encontrado.',
-          steps: [{ name: 'audio', label: 'Converter áudio', status: 'failed' }],
-        })}
-      />,
-    );
-
-    expect(screen.getByText('ffmpeg não encontrado.')).toBeInTheDocument();
-    expect(screen.getByText('falhou')).toBeInTheDocument();
-    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 
   it('when the job finished, should show start, end and duration', () => {

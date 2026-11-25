@@ -1137,6 +1137,193 @@
   animation-delay: 0.3s;
 }
 
+/*
+ * Progresso em colmeia (ProgressBar): duas fileiras de hexágonos que começam vazias, enche célula a célula
+ * (cada uma "salta" ao ser preenchida) e, completa, pulsa em onda. A célula da frente respira
+ * enquanto o trabalho segue. Cor: a de destaque (--primary).
+ */
+.hp-cell {
+  fill: var(--muted);
+  stroke: var(--border);
+  stroke-width: 0.6;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: fill 0.3s;
+}
+
+.hp-cell[data-filled="true"] {
+  fill: var(--brand);
+  stroke: var(--brand);
+}
+
+/* O salto só roda nas células que encheram com a barra na tela; as que já estavam cheias ao aparecer ficam paradas. */
+.hp-cell[data-filled="true"][data-still="false"] {
+  animation: hl-hp-fill 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hp-cell[data-frontier="true"] {
+  fill: var(--brand);
+  fill-opacity: 0.35;
+  animation: hl-hp-breathe 1.2s ease-in-out infinite;
+}
+
+[data-pulse="true"] .hp-cell[data-filled="true"] {
+  animation: hl-hp-wave 1.8s ease-in-out infinite;
+  animation-delay: calc(var(--k) * 0.045s);
+}
+
+@keyframes hl-hp-fill {
+  0% {
+    fill-opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    fill-opacity: 1;
+    transform: scale(1.18);
+  }
+  100% {
+    fill-opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes hl-hp-breathe {
+  50% {
+    fill-opacity: 0.8;
+  }
+}
+
+@keyframes hl-hp-wave {
+  0%,
+  100% {
+    fill-opacity: 0.3;
+  }
+  45% {
+    fill-opacity: 1;
+  }
+}
+
+/*
+ * Marcador de etapa (HexStepMarker): ao concluir, a borda se desenha, o preenchimento salta e um anel
+ * se espalha. Em andamento o hexágono respira; falhou, fica na cor de erro.
+ */
+.hs-border,
+.hs-ring {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.hs-border {
+  stroke: var(--border);
+  stroke-width: 4;
+}
+
+.hs-fill {
+  fill: transparent;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.hs-ring {
+  stroke: var(--brand);
+  stroke-width: 2.5;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+[data-state="running"] .hs-border {
+  stroke: var(--brand);
+  filter: drop-shadow(0 0 3px var(--brand));
+}
+
+[data-state="running"] .hs-fill {
+  fill: var(--brand);
+  fill-opacity: 0.18;
+  animation: hl-hs-breathe 1.4s ease-in-out infinite;
+}
+
+[data-state="done"] .hs-border {
+  stroke: var(--brand);
+  filter: drop-shadow(0 0 3px var(--brand));
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: hl-hs-draw 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+[data-state="done"] .hs-fill {
+  fill: var(--brand);
+  transform: scale(0);
+  animation: hl-hs-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.28s forwards;
+}
+
+[data-state="done"] .hs-ring {
+  animation: hl-hs-ping 0.8s ease-out 0.5s forwards;
+}
+
+[data-state="failed"] .hs-border {
+  stroke: var(--destructive);
+  filter: drop-shadow(0 0 3px var(--destructive));
+}
+
+[data-state="failed"] .hs-fill {
+  fill: var(--destructive);
+  transform: scale(0);
+  animation: hl-hs-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+[data-state="failed"] .hs-ring {
+  stroke: var(--destructive);
+}
+
+/* Etapa que já estava concluída (ou com falha) ao aparecer: pronta e parada, sem desenhar de novo. */
+[data-state="done"][data-static="true"] .hs-border {
+  animation: none;
+  stroke-dashoffset: 0;
+}
+
+[data-state="done"][data-static="true"] .hs-fill,
+[data-state="failed"][data-static="true"] .hs-fill {
+  animation: none;
+  transform: scale(1);
+}
+
+[data-state="done"][data-static="true"] .hs-ring,
+[data-state="failed"][data-static="true"] .hs-ring {
+  animation: none;
+  opacity: 0;
+}
+
+@keyframes hl-hs-breathe {
+  50% {
+    fill-opacity: 0.4;
+  }
+}
+
+@keyframes hl-hs-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes hl-hs-pop {
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes hl-hs-ping {
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
 /* Folha de papel (PaperPage variant="sheet"): sombra em camadas, como páginas empilhadas. */
 .paper-sheet {
   color-scheme: light;
