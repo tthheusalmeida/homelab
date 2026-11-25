@@ -29,6 +29,8 @@ Enquanto o app abre, aparece a **mesma colmeia carregando** (`hex-loader`, na co
 |---|---|
 | `Logo` | três hexágonos (dois neutros, um em `brand`); topo da sidebar e das Configurações |
 | `LogoImplosion` | a logo desenhada como três hexágonos separados que giram e encolhem como uma galáxia implodindo, viram um ponto (com clarão) e voltam crescendo até a posição certa; o ponto crítico é o centro da caixa, de onde sai o `Confetti` (agradecimento do convite da estrela, `apoio.md`) |
+| `ProgressBar` (`components/ProgressBar.tsx`) | progresso: colmeia de duas fileiras de hexágonos pequenos de tamanho fixo (20 por fileira no pipeline; em barra mais larga entram mais hexágonos, nunca maiores) (a "água de hexágonos" do site), neon (`brand`) com contorno; vazia em 0%, cada célula "salta" ao encher, a da frente respira e, completa, pulsa em onda (`pulse={false}` para tudo parado quando o processo todo acabou); CSS `.hp-*` em `global.css` |
+| `HexStepMarker` (`Hex.tsx`) | marcador de etapa: ao concluir a borda neon se desenha, o preenchimento salta e um anel se espalha; em andamento respira; com falha fica na cor de erro; CSS `.hs-*` |
 | `HexLoader` | carregando: os hexágonos acendem em sequência (`LoadingState`) |
 | `HexDot` | ponto de status hexagonal (serviços, status do sistema) |
 | `HexFrame` | moldura hexagonal do ícone de estados vazios e de erro |
