@@ -105,7 +105,7 @@ describe("LibraryPage custom order while dragging", () => {
     window.localStorage.clear();
   });
 
-  it("when dragging over another page, should preview the swap before dropping", () => {
+  it("when dragging over another page without dropping, should keep the order unchanged", () => {
     renderPage();
     const [first, , third] = screen.getAllByTestId("draggable-item");
     const dataTransfer = { setData: vi.fn(), effectAllowed: "", dropEffect: "" };
@@ -113,11 +113,27 @@ describe("LibraryPage custom order while dragging", () => {
     fireEvent.dragStart(first, { dataTransfer });
     fireEvent.dragEnter(third, { dataTransfer });
 
-    expect(titles()).toEqual(["Kubernetes", "Terraform", "Docker"]);
+    expect(titles()).toEqual(["Docker", "Kubernetes", "Terraform"]);
     expect(window.localStorage.getItem("library:order")).toBeNull();
   });
 
-  it("when the drag is cancelled without dropping, should put the pages back", () => {
+  it("when dragging over a page, should lift its bottom-right corner keeping the top-left fixed", () => {
+    renderPage();
+    const items = screen.getAllByTestId("draggable-item");
+    const dataTransfer = { setData: vi.fn(), effectAllowed: "", dropEffect: "" };
+
+    fireEvent.dragStart(items[0], { dataTransfer });
+    fireEvent.dragEnter(items[2], { dataTransfer });
+
+    expect(items[2]).toHaveClass("origin-top-left", "-rotate-3");
+    expect(items[1]).not.toHaveClass("-rotate-3");
+
+    fireEvent.dragEnd(items[0], { dataTransfer });
+
+    expect(items[2]).not.toHaveClass("-rotate-3");
+  });
+
+  it("when the drag ends without dropping on a page, should keep the order", () => {
     renderPage();
     const [first, , third] = screen.getAllByTestId("draggable-item");
     const dataTransfer = { setData: vi.fn(), effectAllowed: "", dropEffect: "" };

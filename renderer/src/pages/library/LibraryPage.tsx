@@ -95,8 +95,8 @@ export function LibraryPage() {
   // Ordem personalizada (arrastar): vale até a pessoa voltar à ordem automática ou escolher um "Ordenar por".
   const [customOrder, setCustomOrder] = useCustomOrder("library:order");
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  // Prévia da ordem enquanto arrasta: as páginas trocam de lugar na hora e só valem ao soltar.
-  const [draft, setDraft] = useState<string[] | null>(null);
+  // Página sob o cursor durante o arrastar: ganha um destaque; a troca só acontece ao soltar.
+  const [overId, setOverId] = useState<string | null>(null);
 
   const q = useDebouncedValue(search);
 
@@ -190,40 +190,27 @@ export function LibraryPage() {
   }
   const tagList = useTags();
 
-  const automatic = useMemo(
+  const shown = useMemo(
     () =>
       customOrder && documents.data
         ? applyCustomOrder(documents.data, customOrder)
         : (documents.data ?? []),
     [documents.data, customOrder],
   );
-  const shown = useMemo(
-    () => (draft ? applyCustomOrder(automatic, draft) : automatic),
-    [automatic, draft],
-  );
 
-  function hoverOn(targetId: string) {
-    if (draggingId && draggingId !== targetId) {
-      setDraft(
+  function finishDrag(dropOnId: string | null) {
+    if (draggingId && dropOnId && dropOnId !== draggingId) {
+      setCustomOrder(
         moveInOrder(
           shown.map((item) => item.id),
-          [],
+          customOrder ?? [],
           draggingId,
-          targetId,
+          dropOnId,
         ),
       );
     }
-  }
 
-  function finishDrag(commit: boolean) {
-    if (commit && draft) {
-      setCustomOrder([
-        ...draft,
-        ...(customOrder ?? []).filter((id) => !draft.includes(id)),
-      ]);
-    }
-
-    setDraft(null);
+    setOverId(null);
     setDraggingId(null);
   }
 
@@ -527,9 +514,10 @@ export function LibraryPage() {
                     index={index}
                     draggingId={draggingId}
                     onDragStart={setDraggingId}
-                    onHover={hoverOn}
-                    onDrop={() => finishDrag(true)}
-                    onDragEnd={() => finishDrag(false)}
+                    dropTarget={overId === document.id}
+                    onHover={setOverId}
+                    onDrop={() => finishDrag(document.id)}
+                    onDragEnd={() => finishDrag(null)}
                   >
                     <DocumentCard document={document} variant={view} />
                   </DraggableItem>
