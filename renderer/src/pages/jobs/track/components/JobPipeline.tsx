@@ -150,7 +150,7 @@ export function JobPipeline({ job }: JobPipelineProps) {
   const finished = job.completedAt ? new Date(job.completedAt).getTime() : null;
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3 font-mono">
+    <div className="flex flex-col gap-3 rounded-[4px] border bg-muted/30 p-3 font-mono">
       <p className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
         <span>
           <span className="text-primary">$</span> {TrackStrings.pipeline}

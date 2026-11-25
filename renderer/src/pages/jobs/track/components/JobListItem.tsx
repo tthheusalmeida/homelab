@@ -71,7 +71,7 @@ export function JobListItem({
       <Card
         data-accent={job.status}
         className={cn(
-          "border-l-4 transition-[box-shadow,border-color,background-color] duration-200 hover:ring-3 hover:ring-primary/15",
+          "rounded-[4px] border-l-4 transition-[box-shadow,border-color,background-color] duration-200 hover:ring-3 hover:ring-primary/15",
           accent,
         )}
       >
