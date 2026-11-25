@@ -283,6 +283,19 @@ describe('AppSidebar: contador de jobs em andamento', () => {
     expect(badge.closest('li')).toHaveTextContent('Em andamento');
   });
 
+  it('when a counter shows, should be a hexagon of fixed size so 10 and 199 do not push the layout', async () => {
+    withJobs([job('1', 'running')]);
+
+    renderSidebar();
+
+    const badge = await screen.findByLabelText('1 em andamento');
+
+    expect(badge.className).toContain('clip-path');
+    expect(badge).toHaveClass('h-7', 'w-6');
+    expect(badge).not.toHaveClass('min-w-5');
+    expect(badge).not.toHaveClass('rounded-md');
+  });
+
   it('when no job is in progress, should show no counter', async () => {
     const invoke = withJobs([job('1', 'completed'), job('2', 'failed')]);
 

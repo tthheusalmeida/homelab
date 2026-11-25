@@ -71,7 +71,7 @@ export function JobListItem({
       <Card
         data-accent={job.status}
         className={cn(
-          "border-l-4 transition-[box-shadow,border-color,background-color] duration-200 hover:ring-3 hover:ring-primary/15",
+          "rounded-[4px] border-l-4 transition-[box-shadow,border-color,background-color] duration-200 hover:ring-3 hover:ring-primary/15",
           accent,
         )}
       >
@@ -121,7 +121,7 @@ export function JobListItem({
                     value={job.resume.done}
                     total={job.resume.total}
                     label={TrackStrings.resume(job.resume.done, job.resume.total)}
-                    className="h-1.5 max-w-xs"
+                    className="max-w-xs"
                   />
 
                   <p className="text-xs text-muted-foreground">

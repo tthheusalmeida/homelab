@@ -25,6 +25,32 @@ const steps: JobStepType[] = [
 ];
 
 describe("JobStatusBadge", () => {
+  it("when rendered, should be a hexagon with the content inside, not a pill", () => {
+    const { container } = render(<JobStatusBadge status="completed" />);
+    const tag = container.querySelector('[data-slot="badge"]');
+
+    expect(tag).toHaveClass("rounded-none", "min-w-28");
+    expect(tag?.className).toContain("clip-path");
+    expect(tag).toHaveTextContent("Concluído");
+  });
+
+  it.each([
+    ["completed", "bg-emerald-800", "text-emerald-300"],
+    ["failed", "bg-destructive/10", "text-destructive"],
+    ["pending", "bg-secondary", "text-secondary-foreground"],
+    ["running", "bg-secondary", "text-secondary-foreground"],
+  ])("when status is %s, should keep its colors (%s, %s)", (status, background, text) => {
+    const { container } = render(<JobStatusBadge status={status as never} />);
+
+    expect(container.querySelector('[data-slot="badge"]')).toHaveClass(background, text);
+  });
+
+  it("when status is running, should show the hexagon loader", () => {
+    const { container } = render(<JobStatusBadge status="running" />);
+
+    expect(container.querySelector(".hex-loader")).not.toBeNull();
+  });
+
   it.each([
     ["pending", "Pendente"],
     ["running", "Em execução"],
@@ -38,6 +64,13 @@ describe("JobStatusBadge", () => {
 });
 
 describe("JobListItem", () => {
+  it("when rendered, should be a card with a small 4px radius, in the HomeLab theme, not a very rounded one", () => {
+    const { container } = render(<JobListItem job={makeJob()} />);
+
+    expect(container.querySelector('[data-slot="card"]')).toHaveClass("rounded-[4px]");
+    expect(container.querySelector('[data-slot="card"]')).not.toHaveClass("rounded-xl");
+  });
+
   it("when rendered, should show label, id and creation date", () => {
     render(<JobListItem job={makeJob()} />);
 

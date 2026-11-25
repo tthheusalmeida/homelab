@@ -37,6 +37,17 @@ const statusConfig = {
   }
 >;
 
+/**
+ * Recorte hexagonal "deitado" (pontas na esquerda e na direita) para uma etiqueta com texto: o
+ * hexágono da marca esticado para caber o ícone e o nome do estado dentro.
+ */
+const HEX_TAG_CLIP =
+  "[clip-path:polygon(0.6rem_0,calc(100%-0.6rem)_0,100%_50%,calc(100%-0.6rem)_100%,0.6rem_100%,0_50%)]";
+
+/**
+ * Estado do job, dentro de um hexágono. As cores de cada estado são as de sempre (concluído em verde,
+ * falha em vermelho, os demais no tom neutro); em execução, o `HexLoader`.
+ */
 export function JobStatusBadge({ status }: JobStatusBadgeProps) {
   const config = statusConfig[status];
   const Icon = config.icon;
@@ -44,7 +55,11 @@ export function JobStatusBadge({ status }: JobStatusBadgeProps) {
   return (
     <Badge
       variant={status === JobStatusOptions.FAILED ? "destructive" : "secondary"}
-      className={cn(config.className, "min-w-24 transition-colors duration-300")}
+      className={cn(
+        config.className,
+        "h-6 min-w-28 rounded-none px-4 transition-colors duration-300",
+        HEX_TAG_CLIP,
+      )}
     >
       {status === JobStatusOptions.RUNNING ? (
         <HexLoader key={status} decorative className="size-3.5 text-current" />

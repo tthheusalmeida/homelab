@@ -235,6 +235,12 @@ describe("JobForm", () => {
 });
 
 describe("JobTypeCard / JobTypeList", () => {
+  it("when rendered, should have the same small 4px radius as the job cards", () => {
+    const { container } = render(<JobTypeCard jobType={jobType("video-to-summary")} onSelect={vi.fn()} />);
+
+    expect(container.querySelector('[data-slot="card"]')).toHaveClass("rounded-[4px]");
+  });
+
   it("when the card button is clicked, should call onSelect with the job type", async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();

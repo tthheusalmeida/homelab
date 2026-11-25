@@ -34,7 +34,6 @@ export function SidebarSetupProgress() {
             value={overall.receivedBytes}
             total={overall.totalBytes}
             label="Progresso da instalação"
-            className="h-1.5"
           />
         ) : undefined
       }

@@ -21,7 +21,7 @@ export function JobTypeCard({ jobType, onSelect }: JobTypeCardProps) {
   const Icon = ICONS[jobType.type] ?? Terminal;
 
   return (
-    <Card className="transition-[box-shadow,border-color] duration-200 hover:border-primary/50 hover:ring-3 hover:ring-primary/15">
+    <Card className="rounded-[4px] transition-[box-shadow,border-color] duration-200 hover:border-primary/50 hover:ring-3 hover:ring-primary/15">
       <CardContent className="flex h-full flex-col gap-4">
         <div className="flex items-start gap-3">
           <HexFrame className="size-11">
