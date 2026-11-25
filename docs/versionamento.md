@@ -59,7 +59,7 @@ Regras:
 - Só **`feat`**, **`fix`** e quebra (`!`/`BREAKING CHANGE`) geram versão nova. `docs`, `chore`, `ci`, `test`, `refactor`, `perf`, `build` e `style` **esperam**: ficam no changelog do próximo release que sair por um `feat` ou `fix`. Para mudar quais tipos disparam, é a constante `RELEASE_TRIGGERS` em `scripts/release/conventional.mjs`.
 - A versão sai do SemVer da tabela acima (`feat` MINOR, `fix` PATCH, quebra MINOR em `0.x`). **Não se edita a versão do `package.json` à mão**: o workflow a injeta no build (nada é commitado de volta na `main`); o `package.json` do repositório fica com a última versão que foi atualizada à mão.
 - O **changelog** é gerado dos commits (agrupado em quebras, novidades, correções, desempenho e "outras mudanças") e vira o texto do Release. Por isso o **título do PR** (que vira o commit do squash) deve descrever a mudança para o usuário final.
-- O Release leva o instalador do Windows e o AppImage do Linux. Só é publicado se lint, testes e os dois builds passarem.
+- O Release leva o instalador do Windows e o AppImage do Linux. Só é publicado se os dois builds passarem; lint, tipos e testes não rodam de novo no release, porque o workflow `pr` já os exige antes do merge na `main`.
 - Ver o que sairia agora: `node scripts/release/plan.mjs` ou Actions > release > Run workflow (`dry_run`).
 
 Exceções (podem ir direto na `main`): apenas a correção de um erro da própria `main` quebrada, e só com o ok do usuário.

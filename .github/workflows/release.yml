@@ -61,27 +61,11 @@ jobs:
           name: release-notes
           path: release-notes.md
 
-  verify:
-    name: Lint, tipos e testes
-    needs: plan
-    if: needs.plan.outputs.release == 'true' && !inputs.dry_run
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run typecheck:renderer
-      - run: npm test
-      - run: npm run test:renderer
-      - run: npm run test:release
-
+  # Lint, tipos e testes não rodam aqui: o workflow `pr` já os exige antes do merge (proteção da main).
   build-windows:
     name: Instalador Windows
-    needs: [plan, verify]
+    needs: plan
+    if: needs.plan.outputs.release == 'true' && !inputs.dry_run
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
@@ -119,7 +103,8 @@ jobs:
 
   build-linux:
     name: AppImage Linux
-    needs: [plan, verify]
+    needs: plan
+    if: needs.plan.outputs.release == 'true' && !inputs.dry_run
     runs-on: ubuntu-22.04 # glibc mais antiga: roda em mais distribuições
     steps:
       - uses: actions/checkout@v5
