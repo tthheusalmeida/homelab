@@ -134,7 +134,7 @@ export const InfographicView = forwardRef<HTMLDivElement, InfographicViewProps>(
           <div
             ref={ref}
             className={cn(
-              '@container space-y-10 rounded-lg border bg-card p-5 text-card-foreground sm:p-6',
+              '@container space-y-10 rounded-lg border bg-card p-5 font-sans text-card-foreground sm:p-6',
               className,
             )}
           >
