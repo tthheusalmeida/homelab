@@ -10,7 +10,7 @@ import { ProgressBar } from '#components/ProgressBar';
 import { Tip } from '#components/Tip';
 
 import type { PdfReadProgress } from '../hooks/useInspectPdf';
-import { PdfStrings } from '../pdf-text';
+import { PdfStrings, readProgressText } from '../pdf-text';
 
 interface PdfFileFieldProps {
   inspection: PdfInspection | null;
@@ -52,15 +52,17 @@ export function PdfFileField({
     <section aria-label={label} className="space-y-3">
       {isReading ? (
         <div className="space-y-2 rounded-md border border-dashed p-4">
-          <p className="text-sm font-medium">
-            {progress ? PdfStrings.readingPages(progress.done, progress.total) : PdfStrings.reading}
-          </p>
+          <p className="text-sm font-medium">{readProgressText(progress)}</p>
 
           <ProgressBar
             value={progress?.done ?? 0}
             total={progress?.total ?? 0}
             label={PdfStrings.reading}
           />
+
+          {progress?.stage === 'recognize' && (
+            <p className="text-xs text-muted-foreground">{PdfStrings.recognizeHint}</p>
+          )}
 
           <Button type="button" size="sm" variant="outline" onClick={onCancelRead}>
             {PdfStrings.cancelRead}
@@ -102,6 +104,19 @@ export function PdfFileField({
                   value={formatNumber(inspection.estimatedCalls)}
                   hint={PdfStrings.callsHint}
                 />
+                {inspection.ocrPages > 0 && (
+                  <Fact
+                    label={PdfStrings.facts.ocrPages}
+                    value={PdfStrings.ocrPages(inspection.ocrPages)}
+                    hint={PdfStrings.ocrPagesHint}
+                  />
+                )}
+                {inspection.languages.length > 0 && (
+                  <Fact
+                    label={PdfStrings.facts.languages}
+                    value={PdfStrings.languages(inspection.languages)}
+                  />
+                )}
               </dl>
             </div>
           </div>

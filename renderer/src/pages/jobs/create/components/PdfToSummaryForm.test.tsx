@@ -10,7 +10,11 @@ const readState = {
   isPending: false,
   isError: false,
   error: null as Error | null,
-  progress: null as { done: number; total: number } | null,
+  progress: null as {
+    done: number;
+    total: number;
+    stage: 'text' | 'language' | 'download' | 'recognize';
+  } | null,
 };
 const thinkingState = { options: [{ id: 'off', label: 'Desativado' }] };
 const createMutate = vi.fn();
@@ -75,6 +79,8 @@ const inspection: PdfInspection = {
   sizeBytes: 2_500_000,
   pageCount: 120,
   emptyPages: 3,
+  ocrPages: 0,
+  languages: [],
   characters: 240_000,
   estimatedTokens: 60_000,
   parts: 8,
@@ -287,7 +293,7 @@ describe('PdfToSummaryForm', () => {
 
   it('when the reading is in progress, should show the pages read and a cancel button instead of the choose button', async () => {
     readState.isPending = true;
-    readState.progress = { done: 12, total: 120 };
+    readState.progress = { done: 12, total: 120, stage: 'text' };
     const user = userEvent.setup();
     render(<PdfToSummaryForm />);
 
@@ -302,10 +308,60 @@ describe('PdfToSummaryForm', () => {
 
   it('when the reading has not started counting pages, should say the file is being opened', () => {
     readState.isPending = true;
-    readState.progress = { done: 0, total: 0 };
+    readState.progress = { done: 0, total: 0, stage: 'text' };
     render(<PdfToSummaryForm />);
 
     expect(screen.getByText('Abrindo o arquivo…')).toBeInTheDocument();
+  });
+
+  it('when the app is finding the language of a scanned file, should say so', () => {
+    readState.isPending = true;
+    readState.progress = { done: 0, total: 0, stage: 'language' };
+    render(<PdfToSummaryForm />);
+
+    expect(screen.getByText('Identificando o idioma do documento…')).toBeInTheDocument();
+  });
+
+  it('when the language data is being downloaded, should say it only happens the first time', () => {
+    readState.isPending = true;
+    readState.progress = { done: 0, total: 0, stage: 'download' };
+    render(<PdfToSummaryForm />);
+
+    expect(screen.getByText(/só na primeira vez/i)).toBeInTheDocument();
+  });
+
+  it('when scanned pages are being recognized, should show the page count and that progress is saved', () => {
+    readState.isPending = true;
+    readState.progress = { done: 5, total: 20, stage: 'recognize' };
+    render(<PdfToSummaryForm />);
+
+    expect(screen.getByText(/Reconhecendo o texto da página 5 de 20/)).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '25');
+    expect(screen.getByText(/continua de onde parou/i)).toBeInTheDocument();
+  });
+
+  it('when scanned pages were read, should show how many were read from images and the languages', async () => {
+    readReturns({ ...inspection, ocrPages: 22, languages: ['Português', 'Francês'] });
+    const user = userEvent.setup();
+    render(<PdfToSummaryForm />);
+
+    await user.click(screen.getByRole('button', { name: 'Escolher PDF' }));
+
+    expect(screen.getByText('Lidas por imagem')).toBeInTheDocument();
+    expect(screen.getByText('22 páginas')).toBeInTheDocument();
+    expect(screen.getByText('Idioma')).toBeInTheDocument();
+    expect(screen.getByText('Português, Francês')).toBeInTheDocument();
+  });
+
+  it('when no page needed image reading, should not show the image or language facts', async () => {
+    readReturns(inspection);
+    const user = userEvent.setup();
+    render(<PdfToSummaryForm />);
+
+    await user.click(screen.getByRole('button', { name: 'Escolher PDF' }));
+
+    expect(screen.queryByText('Lidas por imagem')).not.toBeInTheDocument();
+    expect(screen.queryByText('Idioma')).not.toBeInTheDocument();
   });
 });
 
