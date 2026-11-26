@@ -7,6 +7,7 @@ import { cn } from '#lib/utils';
 import { HEX_CLIP } from '#lib/hex';
 
 import { InfographicPiece, pieceName } from '#components/InfographicPiece';
+import { MathText } from '#components/MathText';
 import { Tip } from '#components/Tip';
 
 const HEX = HEX_CLIP;
@@ -196,8 +197,10 @@ export function Txt({
         ? null
         : { section, kind, index };
 
+  const content = typeof children === 'string' ? <MathText>{children}</MathText> : children;
+
   if (!onPick || !target) {
-    return <>{children}</>;
+    return <>{content}</>;
   }
 
   return (
@@ -215,7 +218,7 @@ export function Txt({
         }}
         className="cursor-text rounded-sm outline-1 outline-offset-2 outline-brand/50 outline-dashed hover:bg-brand/10 focus-visible:outline-2 focus-visible:outline-brand"
       >
-        {children}
+        {content}
       </span>
     </Tip>
   );
