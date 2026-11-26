@@ -166,4 +166,25 @@ describe('summary instructions', () => {
       }
     },
   );
+
+  it.each(SUMMARY_DETAILS)(
+    'when the instructions are the default or the user own (%s), should always ask for the language of the source and for mixed languages to stay mixed',
+    (detail) => {
+      for (const prompt of [buildSummaryPrompt(detail), buildSummaryPrompt(detail, custom)]) {
+        const rules = prompt.slice(
+          prompt.indexOf('# REGRAS FIXAS DO APLICATIVO'),
+          prompt.indexOf('# SAÍDA'),
+        );
+
+        expect(rules).toContain('no mesmo idioma da fonte');
+        expect(rules).toContain('não traduza');
+        expect(rules).toContain('uma aula de francês explicada em português');
+        expect(rules).toContain('"vida = life"');
+        expect(rules).toContain('nunca "vida = vida"');
+        expect(rules).toContain(
+          'uma aula toda em inglês que ensina francês gera um resumo em inglês',
+        );
+      }
+    },
+  );
 });
