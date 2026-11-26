@@ -15,6 +15,7 @@ import {
   type InfographicLayoutId,
 } from '../../../../shared/infographic-layouts';
 import { INFOGRAPHIC_PIECE_KEYS } from '../../../../shared/infographic-pieces';
+import { plainText } from '../../../../shared/plain-text';
 import { parseJsonObject } from '../../../utils/json-answer';
 
 import { fillMissingPieces } from './infographic-pieces';
@@ -59,19 +60,9 @@ function shorten(text: string, max: number): string {
   return `${(lastSpace > max / 2 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.\-–—]+$/, '')}…`;
 }
 
-/** Tira markdown e espaços repetidos; o que não é texto vira vazio. */
-function plain(value: unknown): string {
-  return typeof value === 'string'
-    ? value
-        .replace(/[*_`~#>]+/g, '')
-        .replace(/\s+/g, ' ')
-        .trim()
-    : '';
-}
-
 /** Texto limpo e dentro do limite, sem pontuação solta no fim dos rótulos. */
 function text(value: unknown, max: number, label = false): string {
-  const clean = plain(value);
+  const clean = plainText(value);
 
   return shorten(label ? clean.replace(/[\s.;:,]+$/, '') : clean, max);
 }

@@ -109,3 +109,25 @@ describe('repairJson', () => {
     expect(JSON.parse(repairJson(fine))).toEqual(JSON.parse(fine));
   });
 });
+
+describe('formulas inside text values', () => {
+  const text = (answer: string): unknown => parseJsonObject(answer)?.text;
+
+  it('when a formula has single-backslash commands, should keep them as LaTeX', () => {
+    expect(text(String.raw`{"text": "$\frac{a}{\sqrt{5}} \neq \theta$"}`)).toBe(
+      String.raw`$\frac{a}{\sqrt{5}} \neq \theta$`,
+    );
+  });
+
+  it('when a formula already has double backslashes, should not double them again', () => {
+    expect(text(String.raw`{"text": "$\\frac{1}{2}$"}`)).toBe(String.raw`$\frac{1}{2}$`);
+  });
+
+  it('when the backslash-n is outside a formula, should still be a line break', () => {
+    expect(text(String.raw`{"text": "a\nlinha $x$"}`)).toBe('a\nlinha $x$');
+  });
+
+  it('when a dollar is escaped as money, should not start a formula', () => {
+    expect(text(String.raw`{"text": "R\\$ 5 \nfim"}`)).toBe('R\\$ 5 \nfim');
+  });
+});
