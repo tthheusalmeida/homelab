@@ -12,6 +12,8 @@ import {
 } from '../../../../shared/infographic-pieces';
 import { selectRelevantThemes } from '../../../../shared/infographic-themes';
 
+import { JSON_MATH_RULES } from './math-notation';
+
 export interface InfographicPromptInput {
   title: string;
   /** O resumo em Markdown. */
@@ -100,7 +102,8 @@ function infographicContract(
 - Se o resumo não tiver itens suficientes para um modelo, escolha outro modelo para aquela parte (por exemplo, Mitos e verdades ou Passos, que pedem menos) em vez de inventar itens.
 - **Peças:** TODO espaço leva uma peça (campo "piece"): a capa, cada item de cada seção e os dois lados de um comparativo. Nunca deixe vazio e nunca invente chaves: escolha SOMENTE entre as chaves do banco abaixo, copiada exatamente, no formato tema.peca (ex.: "financas.calculadora").
 - **Limites:** title até ${limits.maxTitleChars} caracteres (capa e seções); subtitle até ${limits.maxSubtitleChars}; kicker (assunto em poucas palavras, ex.: "Saúde · Sono") até ${limits.maxKickerChars}; title de item até ${limits.maxItemTitleChars}; text de item até ${limits.maxItemTextChars}; tag até ${limits.maxTagChars}; até ${limits.maxTips} tips de até ${limits.maxTipChars}; note até ${limits.maxNoteChars}; meterLabel até ${limits.maxMeterLabelChars}; cada takeaway até ${limits.maxTakeawayChars}.
-- Sem markdown e sem emojis nos textos.
+- Sem markdown e sem emojis nos textos (fórmulas seguem a regra abaixo).
+${JSON_MATH_RULES}
 
 # MODELOS (de cada seção)
 
