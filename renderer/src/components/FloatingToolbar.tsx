@@ -43,7 +43,7 @@ export function FloatingToolbar({
       aria-label={label}
       data-placement={placement}
       className={cn(
-        'z-20 flex cursor-default flex-wrap items-center justify-center gap-1 rounded-xl border bg-card/95 p-1.5 shadow-lg backdrop-blur',
+        'z-20 flex cursor-default flex-wrap items-center justify-center gap-1 rounded-xl border bg-card/95 p-1.5 font-sans shadow-lg backdrop-blur',
         placement === 'absolute'
           ? 'absolute bottom-[var(--floating-toolbar-bottom,0.25rem)] left-1/2 max-w-[calc(100%-2rem)] -translate-x-1/2'
           : 'sticky bottom-[var(--floating-toolbar-bottom,1.25rem)] mx-auto w-fit max-w-full',

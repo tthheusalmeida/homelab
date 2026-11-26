@@ -8,6 +8,9 @@
 
 const MAX_START_ATTEMPTS = 20;
 
+/** Um comando do LaTeX (`\frac`, `\sqrt`, `\neq`): barra seguida de duas letras ou mais. */
+const LATEX_COMMAND_START = /^[a-zA-Z]{2}/;
+
 interface Frame {
   open: '{' | '[';
   /** Já passou o `:` do valor atual (só em objeto). */
@@ -38,6 +41,8 @@ export function repairJson(source: string): string {
   let out = '';
   let inString = false;
   let escaped = false;
+  /** Dentro de uma fórmula (`$...$`) de um texto. */
+  let inMath = false;
 
   for (let index = 0; index < source.length; index += 1) {
     const char = source[index];
@@ -47,11 +52,19 @@ export function repairJson(source: string): string {
       if (escaped) {
         escaped = false;
         out += char;
+      } else if (char === '\\' && inMath && LATEX_COMMAND_START.test(source.slice(index + 1))) {
+        // `\frac` com uma barra só: em JSON seria "form feed" + "rac"; vale a barra literal do LaTeX
+        out += '\\\\';
       } else if (char === '\\') {
         escaped = true;
         out += char;
+      } else if (char === '$') {
+        // `R\\$` no JSON é o cifrão escapado (`R\$`) do texto: não abre nem fecha fórmula
+        inMath = out.endsWith('\\\\') ? inMath : !inMath;
+        out += char;
       } else if (char === '"') {
         inString = false;
+        inMath = false;
         out += char;
       } else if (char < ' ') {
         out += escapeControl(char);
@@ -148,12 +161,9 @@ function closeOpenParts(text: string, frames: Frame[], inString: boolean): strin
   return out;
 }
 
+/** Sempre repara antes de ler: um JSON válido não muda, e `\frac` válido mas errado (form feed) é pego. */
 function tryParse(candidate: string): unknown {
-  try {
-    return JSON.parse(candidate);
-  } catch {
-    return JSON.parse(repairJson(candidate));
-  }
+  return JSON.parse(repairJson(candidate));
 }
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>

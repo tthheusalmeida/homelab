@@ -46,6 +46,7 @@ O **HomeLab** é um app desktop (Windows e Linux) para quem aprende e pesquisa c
 - 🔒 **Transcrição local:** roda no seu computador (no Windows usa a placa NVIDIA quando existe), sem enviar o áudio para a nuvem.
 - ⏱️ **Transcrição com tempo:** marcas `[HH:MM:SS]`, linha do tempo lateral e horários que abrem o vídeo no ponto certo.
 - 🔔 **Aviso do sistema** quando uma tarefa termina.
+- ➗ **Fórmulas matemáticas:** o resumo, o mapa mental e o infográfico mostram fórmulas desenhadas (frações, raízes, índices), sem precisar de internet.
 
 <p align="center">
   <img src="docs/img/nova-tarefa.png" alt="Nova tarefa: transcrição, resumo de vídeo e resumo de PDF" width="860" />

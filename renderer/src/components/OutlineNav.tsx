@@ -1,6 +1,7 @@
 import { cn } from '#lib/utils';
 
 import { HexDot } from './Hex';
+import { MathText } from './MathText';
 
 export interface OutlineItem {
   id: string;
@@ -59,7 +60,9 @@ export function OutlineNav({ items, activeId, onSelect, ariaLabel, className }: 
                     !read && !active && 'bg-muted-foreground/40',
                   )}
                 />
-                <span className="min-w-0">{item.label}</span>
+                <span className="min-w-0">
+                  <MathText>{item.label}</MathText>
+                </span>
               </button>
             </li>
           );

@@ -19,6 +19,16 @@ describe('FloatingToolbar', () => {
     expect(bar.className).toContain('left-1/2');
   });
 
+  it('when inside the reading mode, should keep the app font instead of the reading font', () => {
+    render(
+      <FloatingToolbar label="Controles">
+        <button type="button">Ação</button>
+      </FloatingToolbar>,
+    );
+
+    expect(screen.getByRole('toolbar')).toHaveClass('font-sans');
+  });
+
   it('when placed sticky, should stick to the bottom of the scrolling area', () => {
     render(
       <FloatingToolbar label="Controles" placement="sticky">

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { MIND_MAP_EDIT_LIMITS, type MindMapLimits } from '../../../../shared/mind-map-limits';
+import { plainText } from '../../../../shared/plain-text';
 import { parseJsonObject } from '../../../utils/json-answer';
 import { MIND_MAP_LIMITS } from '../../ai/prompts/mind-map.prompt';
 
@@ -58,16 +59,6 @@ function shorten(text: string, max: number): string {
   return `${(lastSpace > max / 2 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.\-–—]+$/, '')}…`;
 }
 
-/** Tira markdown e espaços repetidos; o que não é texto vira vazio. */
-function plain(value: unknown): string {
-  return typeof value === 'string'
-    ? value
-        .replace(/[*_`~#>]+/g, '')
-        .replace(/\s+/g, ' ')
-        .trim()
-    : '';
-}
-
 /** O que cada jeito de limpar o texto faz: a IA é limpa de markdown; o que o usuário digita fica como está. */
 interface Cleaner {
   limits: MindMapLimits;
@@ -80,7 +71,7 @@ function cleanText(value: unknown, cleaner: Cleaner): string {
     ? typeof value === 'string'
       ? value.replace(/\s+/g, ' ').trim()
       : ''
-    : plain(value);
+    : plainText(value);
 }
 
 /** O termo: curto (e, vindo da IA, sem pontuação final). */
