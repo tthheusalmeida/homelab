@@ -1,7 +1,7 @@
-import { useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 
 import { Link, useLocation, useNavigate } from "react-router";
-import { Inbox, SearchX, Library as LibraryIcon } from "lucide-react";
+import { Inbox, SearchX, Library as LibraryIcon, Undo2 } from "lucide-react";
 
 import { InboxStrings } from "#lib/inbox-text";
 import { Button, buttonVariants } from "#ui/button";
@@ -21,8 +21,11 @@ import {
 } from "./components/CategoryEditDialog";
 import { CategoryTree, type TreePage } from "./components/CategoryTree";
 import { DocumentCard } from "./components/DocumentCard";
+import { DraggableItem } from "./components/DraggableItem";
 import { TagFilter } from "./components/TagFilter";
 import { ViewToggle, viewModes, type ViewMode } from "./components/ViewToggle";
+import { useCustomOrder } from "./hooks/useCustomOrder";
+import { applyCustomOrder, moveInOrder } from "./customOrder";
 import {
   useCategories,
   useDocuments,
@@ -88,6 +91,12 @@ export function LibraryPage() {
     "grid",
     viewModes,
   );
+
+  // Ordem personalizada (arrastar): vale até a pessoa voltar à ordem automática ou escolher um "Ordenar por".
+  const [customOrder, setCustomOrder] = useCustomOrder("library:order");
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  // Página sob o cursor durante o arrastar: ganha um destaque; a troca só acontece ao soltar.
+  const [overId, setOverId] = useState<string | null>(null);
 
   const q = useDebouncedValue(search);
 
@@ -180,6 +189,30 @@ export function LibraryPage() {
     }
   }
   const tagList = useTags();
+
+  const shown = useMemo(
+    () =>
+      customOrder && documents.data
+        ? applyCustomOrder(documents.data, customOrder)
+        : (documents.data ?? []),
+    [documents.data, customOrder],
+  );
+
+  function finishDrag(dropOnId: string | null) {
+    if (draggingId && dropOnId && dropOnId !== draggingId) {
+      setCustomOrder(
+        moveInOrder(
+          shown.map((item) => item.id),
+          customOrder ?? [],
+          draggingId,
+          dropOnId,
+        ),
+      );
+    }
+
+    setOverId(null);
+    setDraggingId(null);
+  }
 
   // Só a categoria escolhida filtra: se ela está sem páginas, a tela explica em vez de dizer "nenhum resultado".
   const onlyCategory =
@@ -302,8 +335,21 @@ export function LibraryPage() {
             label="Ordenar por"
             triggerWidth="w-40"
             contentWidth="w-44"
-            onValueChange={(value) => setSort((value as SortOption) ?? "title")}
+            onValueChange={(value) => {
+              setSort((value as SortOption) ?? "title");
+              setCustomOrder(null);
+            }}
           />
+
+          {customOrder && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCustomOrder(null)}
+            >
+              <Undo2 /> Voltar à ordem automática
+            </Button>
+          )}
 
           {hasFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -461,14 +507,20 @@ export function LibraryPage() {
                       : "space-y-3"
                 }
               >
-                {documents.data.map((document, index) => (
-                  <div
+                {shown.map((document, index) => (
+                  <DraggableItem
                     key={document.id}
-                    className="animate-enter [&>*]:h-full"
-                    style={{ "--i": index } as CSSProperties}
+                    id={document.id}
+                    index={index}
+                    draggingId={draggingId}
+                    onDragStart={setDraggingId}
+                    dropTarget={overId === document.id}
+                    onHover={setOverId}
+                    onDrop={() => finishDrag(document.id)}
+                    onDragEnd={() => finishDrag(null)}
                   >
                     <DocumentCard document={document} variant={view} />
-                  </div>
+                  </DraggableItem>
                 ))}
               </div>
             </>
