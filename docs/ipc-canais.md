@@ -196,7 +196,7 @@ Itens: `library` (páginas e livros), `inbox`, `jobs`, `chats`, `usage`, `settin
 ## pdf (criar página a partir de um PDF; ver `leitura-de-pdf.md`)
 | Canal | Payload | Retorno |
 |---|---|---|
-| `pdf:inspect` | — | `{ token, fileName, sizeBytes, pageCount, emptyPages, characters, estimatedTokens, parts, estimatedCalls, warnings }` ou `null` se o usuário cancelar; o main abre o diálogo (só `.pdf`) e lê o texto, com progresso em `pdf:progress` |
+| `pdf:inspect` | — | `{ token, fileName, sizeBytes, pageCount, emptyPages, ocrPages, languages, characters, estimatedTokens, parts, estimatedCalls, warnings }` ou `null` se o usuário cancelar; o main abre o diálogo (só `.pdf`) e lê o texto (páginas escaneadas por reconhecimento de imagem, ver `leitura-de-pdf.md`), com progresso em `pdf:progress`. `ocrPages` são as páginas lidas por imagem e `languages` os idiomas, por nome em português |
 | `pdf:cancel` | — | nada; interrompe a leitura entre duas páginas (`pdf:inspect` responde `null`) |
 
 O renderer **nunca envia caminho**: o PDF lido é identificado por um token e o texto fica na memória do main. Problemas do arquivo (não é PDF, passa de 50 MB ou 1500 páginas, protegido por senha, corrompido, sem texto, já há uma leitura em andamento) → `VALIDATION` com a mensagem pronta para o usuário.
@@ -218,7 +218,7 @@ Enviados com `webContents.send` a todas as janelas; a ponte (`window.api.on(even
 | Evento | Payload | Quando |
 |---|---|---|
 | `backup:progress` | `{ phase: preparing|running|verifying|done, processed, total, currentFile? }` | criar e restaurar backup |
-| `pdf:progress` | o mesmo (`processed` e `total` em páginas) | ler o texto de um PDF |
+| `pdf:progress` | `{ phase, processed, total, stage }`; `stage` é `text` (páginas lidas), `language` (descobrindo o idioma), `download` (baixando os dados do idioma) ou `recognize` (páginas escaneadas); `total` 0 nas etapas sem contagem | ler o texto de um PDF |
 | `library-move:progress` | o mesmo | mover a biblioteca |
 | `app:notice` | `{ id, level: info|warning|error, title, message?, detail?, link? }` | job terminou ou falhou, falha ao gravar em disco (aviso com `link` para a tela em que o usuário já está não é mostrado: dentro de Em andamento, o resultado já está no job) |
 
