@@ -165,6 +165,14 @@ describe('InfographicView: a história', () => {
     expect(ref.current?.contains(screen.getByText('Lembre um'))).toBe(true);
   });
 
+  it('when it is drawn inside the reading mode, should keep the app font instead of the reading font', () => {
+    const ref = createRef<HTMLDivElement>();
+
+    render(<InfographicView ref={ref} data={story([SAMPLES.steps])} />);
+
+    expect(ref.current).toHaveClass('font-sans');
+  });
+
   it('when the AI writes HTML in a text, should show it as plain text', () => {
     const data = story([
       section('steps', {

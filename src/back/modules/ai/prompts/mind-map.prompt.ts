@@ -1,3 +1,5 @@
+import { JSON_MATH_RULES } from './math-notation';
+
 /** Limites que o prompt pede e que `parseMindMap` volta a impor na resposta. */
 export const MIND_MAP_LIMITS = {
   /** Ramos de primeiro nível (os filhos diretos da raiz). */
@@ -32,7 +34,7 @@ Quem vai usar o mapa já leu o resumo e já conhece o assunto. O mapa serve para
 
 # ESTILO
 
-- **Termo de cada nó:** curto, um conceito, nome, comando, número ou passo, e não uma frase. Sem ponto final e sem markdown.
+- **Termo de cada nó:** curto, um conceito, nome, comando, número ou passo, e não uma frase. Sem ponto final e sem markdown (fórmulas seguem as regras fixas abaixo).
 - **Frase curta (note):** com o que o resumo diz sobre o termo (definição, função, regra, resultado), com as palavras do resumo. Dê uma frase a cada ramo principal e aos subtópicos em que ela ajuda a lembrar; nos detalhes use só o termo, salvo se ele sozinho não lembrar nada. Nunca repita o termo na frase.
 - Mantenha o idioma do resumo. Termos técnicos, nomes e comandos ficam exatamente como estão no resumo.
 - Priorize o que mais se esquece: conceitos-chave, definições, etapas de um processo (na ordem em que aparecem), comparações, comandos, números e avisos. Deixe de fora exemplos, introduções, repetições e detalhes menores.
@@ -56,6 +58,7 @@ function mindMapContract(): string {
 - **Profundidade:** no máximo ${maxDepth} níveis abaixo da raiz (ramo, subtópico, detalhe). **Total:** no máximo ${maxNodes} nós; em resumos curtos, bem menos.
 - **label (rótulo) de cada nó:** de 1 a 6 palavras e no máximo ${maxLabelChars} caracteres.
 - **note (opcional):** de até ${maxNoteChars} caracteres. Sem note, omita o campo.
+${JSON_MATH_RULES}
 `.trim();
 }
 

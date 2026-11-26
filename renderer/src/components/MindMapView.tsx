@@ -39,6 +39,7 @@ import { HexDot, HexLoader, HoneycombBackdrop, Logo } from './Hex';
 import { ActionMenu } from './ActionMenu';
 import { FloatingToolbar, ToolbarSeparator, ZoomButtons } from './FloatingToolbar';
 import { IconButton } from './IconButton';
+import { MathText } from './MathText';
 import { EditableTopic, type EditOps } from './MindMapEditable';
 
 /** Acima disso o mapa abre com os ramos recolhidos (a pessoa abre o que quiser). */
@@ -103,10 +104,14 @@ function Branches({ nodes, depth }: { nodes: MindMapNode[]; depth: number }) {
               <HexDot className="mt-[0.5em] bg-brand" />
 
               <div className="min-w-0">
-                <p className="font-semibold leading-snug">{node.label}</p>
+                <p className="font-semibold leading-snug">
+                  <MathText>{node.label}</MathText>
+                </p>
 
                 {node.note && (
-                  <p className="text-[0.9em] leading-snug text-muted-foreground">{node.note}</p>
+                  <p className="text-[0.9em] leading-snug text-muted-foreground">
+                    <MathText>{node.note}</MathText>
+                  </p>
                 )}
               </div>
             </div>
@@ -115,8 +120,15 @@ function Branches({ nodes, depth }: { nodes: MindMapNode[]; depth: number }) {
               <span aria-hidden="true" className="text-brand-text">
                 ↳{' '}
               </span>
-              <span className="font-medium text-foreground/90">{node.label}</span>
-              {node.note && <span> — {node.note}</span>}
+              <span className="font-medium text-foreground/90">
+                <MathText>{node.label}</MathText>
+              </span>
+              {node.note && (
+                <span>
+                  {' — '}
+                  <MathText>{node.note}</MathText>
+                </span>
+              )}
             </p>
           )}
 
@@ -164,11 +176,15 @@ function Topic({
           {index + 1}
         </span>
 
-        <span className="text-[1.35em] leading-tight font-bold text-brand-text">{node.label}</span>
+        <span className="text-[1.35em] leading-tight font-bold text-brand-text">
+          <MathText>{node.label}</MathText>
+        </span>
       </button>
 
       {node.note && (
-        <p className="mt-1 text-[0.95em] leading-snug text-foreground/85">{node.note}</p>
+        <p className="mt-1 text-[0.95em] leading-snug text-foreground/85">
+          <MathText>{node.note}</MathText>
+        </p>
       )}
 
       {hasDetails && !collapsed && (

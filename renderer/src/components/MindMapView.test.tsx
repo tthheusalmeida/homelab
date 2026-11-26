@@ -67,6 +67,17 @@ async function chooseDownload(label: 'PNG' | 'PNG transparente') {
 }
 
 describe('MindMapView', () => {
+  it('when a note has a formula, should draw it in the card', () => {
+    const withFormula: MindMap = {
+      ...map,
+      nodes: [{ label: 'Fibonacci', note: 'Vale $F_n = F_{n-1} + F_{n-2}$.', children: [] }],
+    };
+    const { container } = render(<MindMapView map={withFormula} />);
+
+    expect(container.querySelector('.katex')).not.toBeNull();
+    expect(container).not.toHaveTextContent('$');
+  });
+
   it('when rendered, should show the title and subtitle in the middle', () => {
     render(<MindMapView map={map} />);
 

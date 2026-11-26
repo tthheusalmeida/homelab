@@ -1,9 +1,17 @@
-import { Children, isValidElement, useMemo, type ReactNode } from "react";
+import {
+  Children,
+  isValidElement,
+  useMemo,
+  type ComponentProps,
+  type ReactNode,
+} from "react";
 
 import ReactMarkdown, { type Components } from "react-markdown";
+import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 
-import { headingIdsByLine, slugifyHeading } from "#lib/markdown";
+import { displayMath, headingIdsByLine, slugifyHeading } from "#lib/markdown";
 import { cn } from "#lib/utils";
 
 interface MarkdownMessageProps {
@@ -25,6 +33,13 @@ interface MarkdownMessageProps {
   /** Classes extras no texto (ex.: tipografia de página). */
   className?: string;
 }
+
+// Fórmulas em `$...$` e `$$...$$` viram LaTeX desenhado; fórmula inválida aparece como texto cru, sem
+// quebrar a página.
+const REMARK_PLUGINS = [remarkGfm, remarkMath];
+const REHYPE_PLUGINS: ComponentProps<typeof ReactMarkdown>["rehypePlugins"] = [
+  [rehypeKatex, { throwOnError: false }],
+];
 
 // Links abrem em nova aba sem vazar o referrer; imagens (por URL) nunca
 // passam da largura do texto. HTML cru não é renderizado (segurança).
@@ -95,12 +110,14 @@ export function MarkdownMessage({
   tone = "theme",
   className,
 }: MarkdownMessageProps) {
+  // As linhas mudam com as fórmulas em bloco, então os ids dos títulos saem do mesmo texto.
+  const source = useMemo(() => displayMath(content), [content]);
   const mapping = useMemo(
     () =>
       headingIds
-        ? withHeadingIds(headingIdsByLine(content), idPrefix)
+        ? withHeadingIds(headingIdsByLine(source), idPrefix)
         : components,
-    [content, headingIds, idPrefix],
+    [source, headingIds, idPrefix],
   );
 
   return (
@@ -113,8 +130,12 @@ export function MarkdownMessage({
       )}
       style={size === "inherit" ? { fontSize: "inherit" } : undefined}
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={mapping}>
-        {content}
+      <ReactMarkdown
+        remarkPlugins={REMARK_PLUGINS}
+        rehypePlugins={REHYPE_PLUGINS}
+        components={mapping}
+      >
+        {source}
       </ReactMarkdown>
     </div>
   );

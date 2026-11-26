@@ -1,5 +1,6 @@
 import { PROMPT_LIMITS } from '../../../../shared/contracts/prompts';
 
+import { SUMMARY_MATH_RULES } from './math-notation';
 import {
   buildSummaryPrompt,
   DEFAULT_SUMMARY_DETAIL,
@@ -139,6 +140,18 @@ describe('summary instructions', () => {
     expect(buildSummaryPrompt('detailed', custom)).toContain('**detalhado**');
     expect(buildSummaryPrompt('brief', custom)).toContain('significativamente mais conciso');
   });
+
+  it.each(SUMMARY_DETAILS)(
+    'when the instructions are the default or the user own (%s), should always add the formula rules inside the fixed rules',
+    (detail) => {
+      for (const prompt of [buildSummaryPrompt(detail), buildSummaryPrompt(detail, custom)]) {
+        expect(prompt.indexOf(SUMMARY_MATH_RULES)).toBeGreaterThan(
+          prompt.indexOf('# REGRAS FIXAS DO APLICATIVO'),
+        );
+        expect(prompt.indexOf(SUMMARY_MATH_RULES)).toBeLessThan(prompt.indexOf('# SAÍDA'));
+      }
+    },
+  );
 
   it.each(SUMMARY_DETAILS)(
     'when the instructions are the default or the user own (%s), should always add the fixed rules and the output before the content',

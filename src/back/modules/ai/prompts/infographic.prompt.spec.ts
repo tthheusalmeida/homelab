@@ -6,6 +6,7 @@ import {
   buildPieceCatalog,
   DEFAULT_INFOGRAPHIC_INSTRUCTIONS,
 } from './infographic.prompt';
+import { JSON_MATH_RULES } from './math-notation';
 
 describe('buildInfographicPrompt', () => {
   const base = { title: 'Redes', content: '## Camadas\n- **TCP**: transporte' };
@@ -15,6 +16,13 @@ describe('buildInfographicPrompt', () => {
 
     expect(prompt).toContain('Título: Redes');
     expect(prompt).toContain('- **TCP**: transporte');
+  });
+
+  it('when building the prompt, should put the formula rules in the fixed part, before the summary', () => {
+    const prompt = buildInfographicPrompt(base);
+
+    expect(prompt).toContain(JSON_MATH_RULES);
+    expect(prompt.indexOf(JSON_MATH_RULES)).toBeLessThan(prompt.indexOf('# RESUMO'));
   });
 
   it('when building the prompt, should list every layout so the AI can choose one', () => {
