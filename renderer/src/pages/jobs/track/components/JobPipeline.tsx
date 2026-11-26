@@ -131,7 +131,7 @@ interface JobPipelineProps {
  * Interior do job: o pipeline como um painel de terminal, na horizontal e no ritmo do "Como usar" do
  * site: colmeia, etapa, colmeia, etapa... (a fila quebra de linha quando não cabe). Cada etapa tem a
  * sua colmeia (duas fileiras de 20 hexágonos) logo antes dela: o trabalho para chegar nela, vazia,
- * enchendo e pulsando completa. O marcador hexagonal da etapa se desenha, salta e solta um anel ao
+ * enchendo. Só a colmeia da etapa em andamento pulsa; ao concluir, ela para e a da próxima começa. O marcador hexagonal da etapa se desenha, salta e solta um anel ao
  * concluir. Abaixo, o aviso de tentativa da IA (etapa em andamento) e o erro, quando há; no fim,
  * início, fim e duração.
  */
@@ -144,8 +144,6 @@ export function JobPipeline({ job }: JobPipelineProps) {
   );
   const runningRow = rows.find((row) => row.status === JobStatusOptions.RUNNING);
   const done = rows.filter((row) => row.status === JobStatusOptions.COMPLETED).length;
-  // Terminou tudo: as colmeias param de pulsar, para não parecer que ainda há trabalho.
-  const allDone = rows.length > 0 && done === rows.length;
   const started = job.startedAt ? new Date(job.startedAt).getTime() : null;
   const finished = job.completedAt ? new Date(job.completedAt).getTime() : null;
 
@@ -169,7 +167,8 @@ export function JobPipeline({ job }: JobPipelineProps) {
                 value={stepFill(row.status, job.progress)}
                 total={100}
                 label={TrackStrings.stepProgress(row.label)}
-                pulse={!allDone}
+                pulse={running}
+                pulseWhileFilling
                 className="mt-2 w-36"
               />
 

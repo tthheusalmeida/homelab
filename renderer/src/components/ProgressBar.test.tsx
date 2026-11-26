@@ -132,6 +132,18 @@ describe('ProgressBar', () => {
     expect(screen.getByRole('progressbar')).toHaveAttribute('data-pulse', 'false');
   });
 
+  it('when it is filling and pulseWhileFilling is on, should pulse before completing', () => {
+    render(<ProgressBar value={2} total={5} label="Copiando" pulseWhileFilling />);
+
+    expect(screen.getByRole('progressbar')).toHaveAttribute('data-pulse', 'true');
+  });
+
+  it('when pulseWhileFilling is on but the pulse is off, should stay still', () => {
+    render(<ProgressBar value={2} total={5} label="Copiando" pulse={false} pulseWhileFilling />);
+
+    expect(screen.getByRole('progressbar')).toHaveAttribute('data-pulse', 'false');
+  });
+
   it('when the value passes the total, should never go above 100%', () => {
     render(<ProgressBar value={9} total={5} label="Copiando" />);
 
