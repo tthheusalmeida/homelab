@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createHeadingIdGenerator,
+  displayMath,
   extractHeadings,
   headingIdsByLine,
   slugifyHeading,
@@ -125,5 +126,40 @@ describe("headingIdsByLine", () => {
 
   it("when a heading is inside a code block, should not map it", () => {
     expect(headingIdsByLine("```\n# no\n```").size).toBe(0);
+  });
+});
+
+describe("displayMath", () => {
+  it("when a line is only a formula between double dollars, should put it in its own block", () => {
+    expect(displayMath("a\n$$x^2$$\nb")).toBe("a\n$$\nx^2\n$$\nb");
+  });
+
+  it("when the formula is indented under a list item, should keep the indent on the three lines", () => {
+    expect(displayMath("  $$F_n = F_{n-1}$$")).toBe("  $$\n  F_n = F_{n-1}\n  $$");
+  });
+
+  it("when the formula already has its own lines, should leave it alone", () => {
+    const block = "$$\nx^2\n$$";
+
+    expect(displayMath(block)).toBe(block);
+  });
+
+  it("when the line has text around the formula, should leave it inline", () => {
+    expect(displayMath("Vale $$x$$ sempre")).toBe("Vale $$x$$ sempre");
+    expect(displayMath("$$x$$ *(nota)*")).toBe("$$x$$ *(nota)*");
+  });
+
+  it("when the line has two formulas, should not merge them into one block", () => {
+    expect(displayMath("$$a$$ e $$b$$")).toBe("$$a$$ e $$b$$");
+  });
+
+  it("when the line is inside a code block, should not touch it", () => {
+    const code = "```\n$$x$$\n```";
+
+    expect(displayMath(code)).toBe(code);
+  });
+
+  it("when the line is a single dollar formula, should not change it", () => {
+    expect(displayMath("$x$")).toBe("$x$");
   });
 });

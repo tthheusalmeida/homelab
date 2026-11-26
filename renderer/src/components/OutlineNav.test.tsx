@@ -25,6 +25,16 @@ describe('OutlineNav', () => {
     ]);
   });
 
+  it('when a title has a formula, should draw it instead of showing the dollars', () => {
+    const { container } = renderNav({
+      items: [{ id: 'f', label: 'Os primeiros $n$ termos de uma PG', level: 1 }],
+    });
+
+    expect(container.querySelector('.katex')).not.toBeNull();
+    expect(screen.getByRole('button')).not.toHaveTextContent('$');
+    expect(screen.getByRole('button')).toHaveTextContent('Os primeiros');
+  });
+
   it('when an item is clicked, should report its id', async () => {
     const onSelect = vi.fn();
     const user = userEvent.setup();

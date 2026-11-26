@@ -88,6 +88,38 @@ function scanHeadings(markdown: string): ScannedHeading[] {
   return headings;
 }
 
+const FENCE = /^\s*(```|~~~)/;
+/** Uma linha que é só uma fórmula entre `$$` (sem outro `$$` no meio). */
+const SINGLE_LINE_DISPLAY_MATH = /^(\s*)\$\$((?:(?!\$\$).)+)\$\$\s*$/;
+
+/**
+ * Fórmula `$$...$$` sozinha numa linha vira fórmula **em bloco** (grande e centralizada). O
+ * `remark-math` só faz bloco quando os `$$` estão em linhas próprias; numa linha só ele a trata como
+ * fórmula em linha, pequena, e a IA costuma escrever assim. Blocos de código ficam como estão.
+ */
+export function displayMath(markdown: string): string {
+  let fence: string | null = null;
+
+  return markdown
+    .split("\n")
+    .flatMap((line) => {
+      const fenceMatch = line.match(FENCE);
+
+      if (fenceMatch) {
+        fence = fence === null ? fenceMatch[1] : fence === fenceMatch[1] ? null : fence;
+
+        return [line];
+      }
+
+      const single = fence === null ? line.match(SINGLE_LINE_DISPLAY_MATH) : null;
+
+      return single
+        ? [`${single[1]}$$`, `${single[1]}${single[2].trim()}`, `${single[1]}$$`]
+        : [line];
+    })
+    .join("\n");
+}
+
 /** Títulos `#` a `###` do Markdown, para o sumário. */
 export function extractHeadings(markdown: string): Heading[] {
   return scanHeadings(markdown)
