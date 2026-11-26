@@ -9,7 +9,7 @@ Resumos, mapas mentais e infográficos mostram fórmulas desenhadas (KaTeX, empa
 - Essas regras ficam no **contrato fixo** dos prompts (`ai/prompts/math-notation.ts`: `SUMMARY_MATH_RULES` e `JSON_MATH_RULES`), não nas instruções editáveis: personalizar o prompt não as remove.
 
 ## Onde é desenhada
-- **Resumo (Markdown):** `MarkdownMessage` usa `remark-math` + `rehype-katex` (`throwOnError: false`). Vale também no chat. `$HOME` em código ou `echo $PATH` não viram fórmula.
+- **Resumo (Markdown):** `MarkdownMessage` usa `remark-math` + `rehype-katex` (`throwOnError: false`). Vale também no chat. `$HOME` em código ou `echo $PATH` não viram fórmula. Fórmula inteira entre crases (a IA às vezes escreve `` `$a_n$` ``) é desenhada como fórmula: `displayMath` tira as crases; o prompt também as proíbe.
 - **Mapa mental e infográfico:** são JSON de textos curtos, então usam o `MathText` (`components/MathText.tsx`), que separa prosa e fórmulas com `splitMath` e desenha só `$...$`. No infográfico, o `Txt` (que já envolve todo texto editável) passa strings por ele; no mapa, os termos e frases dos cartões.
 - **Fórmula inválida** (ex.: chave sem fechar) aparece como texto cru em vermelho, sem quebrar a tela. Comando desconhecido aparece em vermelho dentro da própria fórmula.
 - Telas de edição (campos de texto) mostram o LaTeX cru, para o usuário poder corrigir.

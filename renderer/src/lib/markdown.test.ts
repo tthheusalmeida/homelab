@@ -162,4 +162,25 @@ describe("displayMath", () => {
   it("when the line is a single dollar formula, should not change it", () => {
     expect(displayMath("$x$")).toBe("$x$");
   });
+
+  it("when a formula is wrapped in backticks, should unwrap it so it is drawn", () => {
+    expect(displayMath(String.raw`Termo geral: ` + "`$a_n = a_1 + (n-1)r$`.")).toBe(
+      String.raw`Termo geral: $a_n = a_1 + (n-1)r$.`,
+    );
+    expect(displayMath("Razão `$-1 < q < 1$` e `$S_n$`")).toBe("Razão $-1 < q < 1$ e $S_n$");
+  });
+
+  it("when a double-dollar formula is wrapped in backticks alone on the line, should unwrap it into a block", () => {
+    expect(displayMath("`$$x^2$$`")).toBe("$$\nx^2\n$$");
+  });
+
+  it("when backticks hold real code with a dollar, should keep the code", () => {
+    expect(displayMath("Use `$HOME` ou `echo R$ 10`")).toBe("Use `$HOME` ou `echo R$ 10`");
+  });
+
+  it("when a backticked formula is inside a code block, should not touch it", () => {
+    const code = "```\n`$x$`\n```";
+
+    expect(displayMath(code)).toBe(code);
+  });
 });

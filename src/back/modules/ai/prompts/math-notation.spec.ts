@@ -24,6 +24,13 @@ describe('math notation rules', () => {
     },
   );
 
+  it.each([
+    ['summary', SUMMARY_MATH_RULES],
+    ['json', JSON_MATH_RULES],
+  ])('when reading the %s rules, should forbid backticks around formulas', (_name, rules) => {
+    expect(rules).toContain('sem nenhuma crase');
+  });
+
   it('when reading the summary rules, should allow display blocks with double dollars', () => {
     expect(SUMMARY_MATH_RULES).toContain('$$');
   });

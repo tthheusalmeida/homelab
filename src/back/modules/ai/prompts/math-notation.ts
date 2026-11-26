@@ -4,7 +4,7 @@
  * prompts: o usuário personaliza as instruções, mas não esta regra.
  */
 
-const COMMON_RULES = `- **Fórmulas:** escreva toda fórmula, expressão matemática e símbolo (variável, índice, expoente, fração, raiz, letra grega) em LaTeX entre cifrões, como \`$F_n = F_{n-1} + F_{n-2}$\`. Mesmo uma expressão curta (\`$a_n$\`, \`$q^{n-1}$\`) vai entre cifrões: nunca escreva \`an\`, \`a1\`, \`q^{n-1}\` ou \`\\frac\` soltos no texto, porque sem os cifrões eles aparecem quebrados na tela. Esta regra vale mesmo que outra instrução peça "sem markdown". Nunca use \`\\( \\)\`, \`\\[ \\]\`, Unicode matemático (F₁, √5, ≥) nem bloco de código para fórmula. Use fórmula só para matemática de verdade, não para enfeitar.
+const COMMON_RULES = `- **Fórmulas:** escreva toda fórmula, expressão matemática e símbolo (variável, índice, expoente, fração, raiz, letra grega) em LaTeX entre cifrões, como \`$F_n = F_{n-1} + F_{n-2}$\`. Mesmo uma expressão curta (\`$a_n$\`, \`$q^{n-1}$\`) vai entre cifrões: nunca escreva \`an\`, \`a1\`, \`q^{n-1}\` ou \`\\frac\` soltos no texto, porque sem os cifrões eles aparecem quebrados na tela. Esta regra vale mesmo que outra instrução peça "sem markdown". Nunca use \`\\( \\)\`, \`\\[ \\]\`, Unicode matemático (F₁, √5, ≥) nem crases ou bloco de código em volta da fórmula: os cifrões já bastam, sem nenhuma crase. Use fórmula só para matemática de verdade, não para enfeitar.
 - **Dinheiro:** escreva o cifrão de valores como \`R\\$ 10\` (com a barra), para não virar fórmula.
 - Se uma fórmula do conteúdo estiver ilegível ou incompleta, não a reconstrua nem a invente: descreva em palavras o que dá para entender.`;
 
