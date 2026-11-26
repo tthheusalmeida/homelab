@@ -13,6 +13,7 @@ export const ComponentStrings = {
     download: 'Download de vídeos',
     gpu: 'Aceleração por placa de vídeo',
     model: 'Modelos de transcrição',
+    ocr: 'Leitura de PDF escaneado',
   } satisfies Record<ComponentGroup, string>,
   groupHints: {
     runtime: 'Necessários para o app funcionar. Se faltarem, o app os instala para você.',
@@ -20,6 +21,7 @@ export const ComponentStrings = {
       'Recomendado. Permite colar links do YouTube e de outras plataformas, não só do arquivo do vídeo.',
     gpu: 'Opcional. Deixa a transcrição bem mais rápida em placas de vídeo compatíveis.',
     model: 'Escolha o que baixar agora. Os outros podem ser baixados depois, nas Configurações.',
+    ocr: 'Opcional. Idiomas para ler o texto de PDFs escaneados. O app baixa sozinho o idioma que faltar, na versão rápida; a de alta qualidade é mais precisa e mais lenta, e vale mais quando instalada.',
   } satisfies Record<ComponentGroup, string>,
   states: {
     missing: 'Não instalado',

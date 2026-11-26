@@ -6,7 +6,8 @@ import { PdfMessages, PdfProblem, PdfReadError } from '../back/modules/pdf/pdf-r
 import { buildPdfWarnings } from '../back/modules/pdf/pdf-warnings';
 import type { EventPublisher } from '../ipc/event-publisher';
 import type { FilePicker } from '../ipc/file-picker';
-import type { PdfInspection } from '../shared/contracts/pdf';
+import type { PdfInspection, PdfReadStage } from '../shared/contracts/pdf';
+import { OCR_LANGUAGES } from '../back/modules/pdf/ocr/ocr-languages';
 import { IpcEvents } from '../shared/events';
 import { CHARS_PER_TOKEN } from '../shared/tokens';
 import type { PdfSessionStore } from './pdf-session.store';
@@ -54,16 +55,16 @@ export class PdfInspector {
         return null;
       }
 
-      this.publish('preparing', 0, 0);
+      this.publish('preparing', 0, 0, 'text');
 
       const extraction = await this.deps.extractor.extract(filePath, {
-        onProgress: (done, total) => this.publish('running', done, total),
+        onProgress: (done, total, stage) => this.publish('running', done, total, stage),
         isCancelled: () => this.cancelRequested,
       });
 
       const inspection = this.describe(filePath, extraction);
 
-      this.publish('done', extraction.pageCount, extraction.pageCount);
+      this.publish('done', extraction.pageCount, extraction.pageCount, 'text');
 
       return inspection;
     } catch (error) {
@@ -87,6 +88,7 @@ export class PdfInspector {
     const parts = chunk(extraction.pages).length;
     const fileName = path.basename(filePath);
     const token = this.deps.sessions.put({ filePath, fileName, extraction });
+    const languages = extraction.languages.map((language) => OCR_LANGUAGES[language].label);
 
     return {
       token,
@@ -94,6 +96,8 @@ export class PdfInspector {
       sizeBytes: extraction.sizeBytes,
       pageCount: extraction.pageCount,
       emptyPages: extraction.emptyPages,
+      ocrPages: extraction.ocrPages,
+      languages,
       characters: extraction.characters,
       estimatedTokens: Math.ceil(extraction.characters / CHARS_PER_TOKEN),
       parts,
@@ -103,11 +107,19 @@ export class PdfInspector {
         emptyPages: extraction.emptyPages,
         characters: extraction.characters,
         parts,
+        ocrPages: extraction.ocrPages,
+        ocrDiscardedPages: extraction.ocrDiscardedPages,
+        languages,
       }),
     };
   }
 
-  private publish(phase: 'preparing' | 'running' | 'done', processed: number, total: number): void {
-    this.deps.events.publish(IpcEvents.pdfProgress, { phase, processed, total });
+  private publish(
+    phase: 'preparing' | 'running' | 'done',
+    processed: number,
+    total: number,
+    stage: PdfReadStage,
+  ): void {
+    this.deps.events.publish(IpcEvents.pdfProgress, { phase, processed, total, stage });
   }
 }

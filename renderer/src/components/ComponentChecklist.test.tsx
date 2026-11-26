@@ -49,6 +49,26 @@ describe('ComponentChecklist', () => {
     expect(within(group).getByRole('checkbox')).toBeChecked();
   });
 
+  it('when the catalog has language data for scanned pdfs, should list it in its own group after the models', () => {
+    render(
+      <ComponentChecklist
+        components={[
+          component({ id: 'ocr-por-fast', group: 'ocr', label: 'Português (rápido)' }),
+          component({ id: 'model-small', group: 'model', label: 'Modelo small' }),
+        ]}
+        selected={new Set()}
+        onToggle={vi.fn()}
+      />,
+    );
+
+    const regions = screen.getAllByRole('region').map((region) => region.getAttribute('aria-label'));
+    const group = screen.getByRole('region', { name: 'Leitura de PDF escaneado' });
+
+    expect(regions).toEqual(['Modelos de transcrição', 'Leitura de PDF escaneado']);
+    expect(within(group).getByText('Português (rápido)')).toBeInTheDocument();
+    expect(within(group).getByRole('checkbox')).not.toBeChecked();
+  });
+
   it('when a component is required, should show it checked and locked', () => {
     render(
       <ComponentChecklist

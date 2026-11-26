@@ -10,7 +10,7 @@ import { ComponentStrings, progressText } from '#lib/components-text';
 import { cn } from '#lib/utils';
 import type { ComponentGroup, ComponentInfo } from '#shared/contracts/components';
 
-const GROUP_ORDER: ComponentGroup[] = ['runtime', 'download', 'gpu', 'model'];
+const GROUP_ORDER: ComponentGroup[] = ['runtime', 'download', 'gpu', 'model', 'ocr'];
 const WORKING = new Set(['queued', 'downloading', 'verifying', 'installing']);
 
 interface ComponentChecklistProps {

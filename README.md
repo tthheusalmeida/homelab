@@ -41,7 +41,7 @@ O **HomeLab** é um app desktop (Windows e Linux) para quem aprende e pesquisa c
 ### Tarefas: do vídeo ou PDF ao resumo
 
 - 🎬 **Transcrição e resumo de vídeo:** cole o link; o app cuida do download, do áudio e da transcrição. Vídeos que pedem login abrem uma janela própria do app, com cookies temporários.
-- 📄 **Resumo de PDF:** lê o texto, divide em partes e resume cada uma. O progresso fica em disco, então dá para **retomar** de onde parou.
+- 📄 **Resumo de PDF:** lê o texto, divide em partes e resume cada uma. O progresso fica em disco, então dá para **retomar** de onde parou. **PDFs escaneados** também funcionam: o app reconhece o texto das páginas que são imagem (no seu computador), descobre o idioma sozinho, inclusive documentos que misturam idiomas (como uma aula de francês explicada em português), e o resumo sai no idioma do documento.
 - ♻️ **Tentar de novo continua de onde parou:** a tarefa que falhou volta para a fila e retoma da etapa em que parou, sem baixar nem transcrever de novo o que já ficou pronto (mesmo depois de fechar o app). Nos resumos dá para trocar a IA na retomada, e cada etapa mostra o andamento em porcentagem.
 - 🔒 **Transcrição local:** roda no seu computador (no Windows usa a placa NVIDIA quando existe), sem enviar o áudio para a nuvem.
 - ⏱️ **Transcrição com tempo:** marcas `[HH:MM:SS]`, linha do tempo lateral e horários que abrem o vídeo no ponto certo.

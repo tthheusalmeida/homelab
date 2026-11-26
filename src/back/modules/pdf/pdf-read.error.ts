@@ -10,6 +10,8 @@ export const PdfProblem = {
   ENCRYPTED: 'ENCRYPTED',
   CORRUPT: 'CORRUPT',
   NO_TEXT: 'NO_TEXT',
+  TOO_MANY_OCR_PAGES: 'TOO_MANY_OCR_PAGES',
+  OCR_UNAVAILABLE: 'OCR_UNAVAILABLE',
   CANCELLED: 'CANCELLED',
   BUSY: 'BUSY',
 } as const;
@@ -31,8 +33,16 @@ export const PdfMessages = {
   encrypted: 'Este PDF é protegido por senha. Remova a proteção e tente de novo.',
   corrupt: 'O arquivo está corrompido ou incompleto e não pôde ser lido.',
   noText:
-    'Este PDF não tem texto para ler: parece ser escaneado ou feito só de imagens. ' +
-    'Apenas o texto é lido, as imagens não são reconhecidas.',
+    'Não foi possível ler texto neste PDF: as páginas são imagens ou fotos sem texto legível. ' +
+    'Tente um arquivo mais nítido ou com texto em vez de figuras.',
+  tooManyOcrPages: (pages: number): string =>
+    `${pages} páginas deste PDF precisam ser reconhecidas por imagem e o limite é ${PdfLimits.MAX_OCR_PAGES}. ` +
+    'Divida o documento em partes menores e envie uma de cada vez.',
+  ocrUnavailable:
+    'Este PDF é escaneado e o reconhecimento de texto em imagens não está disponível.',
+  ocrLanguageFailed: (reason: string): string =>
+    `Este PDF é escaneado e o app precisa baixar os dados de idioma para reconhecer o texto, mas não conseguiu.${reason ? ` ${reason}` : ''} ` +
+    'Confira a conexão com a internet e tente de novo.',
   cancelled: 'Leitura cancelada.',
   busy: 'Já existe um PDF sendo lido. Aguarde terminar.',
 } as const;
@@ -42,7 +52,8 @@ export class PdfReadError extends BadRequestException {
   constructor(
     readonly problem: PdfProblem,
     message: string,
+    options?: { cause?: unknown },
   ) {
-    super(message);
+    super(message, options);
   }
 }

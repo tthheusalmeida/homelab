@@ -24,7 +24,11 @@ import { ChatService } from '../back/modules/chat/chat.service';
 import { PdfCheckpointStore } from '../back/modules/pdf/pdf-checkpoint.store';
 import { PdfExtractor } from '../back/modules/pdf/pdf-extractor';
 import { countResumablePdfJobs } from '../jobs/pdf-resume';
+import { OcrPageCache } from '../back/modules/pdf/ocr/ocr-page-cache';
+import { OcrPageReader } from '../back/modules/pdf/ocr/ocr-page-reader';
+import { TesseractOcrEngine } from '../back/modules/pdf/ocr/tesseract-engine';
 import { PdfJsOpener } from '../back/modules/pdf/pdfjs-opener';
+import { ComponentOcrPacks } from '../components/ocr-language-packs';
 import { BackupService } from '../backup/backup.service';
 import { PdfInspector } from '../pdf/pdf-inspector';
 import { PdfSessionStore } from '../pdf/pdf-session.store';
@@ -488,9 +492,19 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     filePicker,
   });
 
+  const ocrPacks = new ComponentOcrPacks(services.components);
   const pdf = new PdfInspector({
     filePicker,
-    extractor: new PdfExtractor(new PdfJsOpener()),
+    extractor: new PdfExtractor(
+      new PdfJsOpener(),
+      undefined,
+      new OcrPageReader({
+        engine: new TesseractOcrEngine(ocrPacks),
+        packs: ocrPacks,
+        // junto do progresso dos resumos de PDF: mesma limpeza (30 dias e "Limpar temporários")
+        cache: new OcrPageCache(services.appPaths.pdfWorkDir),
+      }),
+    ),
     sessions: pdfSessions,
     events,
   });

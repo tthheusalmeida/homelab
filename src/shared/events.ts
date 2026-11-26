@@ -1,6 +1,7 @@
 import type { ComponentsStatus } from './contracts/components';
 import type { UpdateStatus } from './contracts/updates';
 import type { AppNotice, ProgressEventPayload } from './contracts/events';
+import type { PdfProgressPayload } from './contracts/pdf';
 
 /**
  * Eventos enviados pelo main ao renderer (sentido contrário ao `invoke`). Formato
@@ -23,7 +24,7 @@ export type IpcEvent = (typeof IpcEvents)[keyof typeof IpcEvents];
 export interface IpcEventPayloads {
   [IpcEvents.backupProgress]: ProgressEventPayload;
   /** Leitura do PDF: páginas lidas do total. */
-  [IpcEvents.pdfProgress]: ProgressEventPayload;
+  [IpcEvents.pdfProgress]: PdfProgressPayload;
   [IpcEvents.libraryMoveProgress]: ProgressEventPayload;
   [IpcEvents.notice]: AppNotice;
   [IpcEvents.componentsProgress]: ComponentsStatus;

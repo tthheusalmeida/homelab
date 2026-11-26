@@ -10,8 +10,22 @@ interface TextItem {
   transform?: number[];
 }
 
+interface PdfJsViewport {
+  width: number;
+  height: number;
+}
+
+/** Tela de desenho (a do `@napi-rs/canvas`) onde o `pdfjs` pinta a página. */
+export interface PageCanvas {
+  getContext(type: '2d'): unknown;
+  toBuffer(mime: 'image/png'): Uint8Array;
+}
+
 interface PdfJsPage {
   getTextContent(): Promise<{ items: Array<TextItem | object> }>;
+  getOperatorList(): Promise<{ fnArray: number[] }>;
+  getViewport(options: { scale: number }): PdfJsViewport;
+  render(options: Record<string, unknown>): { promise: Promise<void> };
   cleanup(): void;
 }
 
@@ -27,7 +41,20 @@ interface PdfJsLoadingTask {
 
 export interface PdfJsModule {
   getDocument(options: Record<string, unknown>): PdfJsLoadingTask;
+  /** Códigos das operações de desenho de uma página (para saber se ela desenha imagens). */
+  OPS: {
+    paintImageXObject: number;
+    paintInlineImageXObject: number;
+    paintImageMaskXObject: number;
+  };
 }
+
+export type CanvasFactory = (width: number, height: number) => PageCanvas;
+
+/** O `@napi-rs/canvas` (binário pronto por sistema) só é carregado quando uma página vira imagem. */
+export const napiCanvasFactory: CanvasFactory = (width, height) =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- carga sob demanda do binário nativo
+  (require('@napi-rs/canvas') as { createCanvas: CanvasFactory }).createCanvas(width, height);
 
 /**
  * O `pdfjs-dist` é só ESM e o main compila em CJS: o `import()` precisa sobreviver ao compilador
@@ -100,7 +127,10 @@ function mapOpenError(error: unknown): PdfReadError {
 
 /** Abre PDFs com o `pdfjs-dist` (Mozilla), que roda no Node e lê só o texto. */
 export class PdfJsOpener implements PdfOpener {
-  constructor(private readonly load: () => Promise<PdfJsModule> = loadPdfJs) {}
+  constructor(
+    private readonly load: () => Promise<PdfJsModule> = loadPdfJs,
+    private readonly createCanvas: CanvasFactory = napiCanvasFactory,
+  ) {}
 
   async open(filePath: string): Promise<PdfDocumentHandle> {
     const pdfjs = await this.load();
@@ -123,6 +153,8 @@ export class PdfJsOpener implements PdfOpener {
       throw mapOpenError(error);
     }
 
+    const createCanvas = this.createCanvas;
+
     return {
       pageCount: document.numPages,
 
@@ -134,6 +166,44 @@ export class PdfJsOpener implements PdfOpener {
           page.cleanup();
 
           return groupLines(content.items);
+        } catch (error) {
+          throw mapOpenError(error);
+        }
+      },
+
+      async hasImages(pageNumber: number): Promise<boolean> {
+        try {
+          const page = await document.getPage(pageNumber);
+          const operators = await page.getOperatorList();
+
+          page.cleanup();
+
+          const { paintImageXObject, paintInlineImageXObject, paintImageMaskXObject } = pdfjs.OPS;
+
+          return operators.fnArray.some(
+            (operator) =>
+              operator === paintImageXObject ||
+              operator === paintInlineImageXObject ||
+              operator === paintImageMaskXObject,
+          );
+        } catch (error) {
+          throw mapOpenError(error);
+        }
+      },
+
+      async renderPage(pageNumber: number, longEdgePx: number): Promise<Uint8Array> {
+        try {
+          const page = await document.getPage(pageNumber);
+          const base = page.getViewport({ scale: 1 });
+          const viewport = page.getViewport({
+            scale: longEdgePx / Math.max(base.width, base.height),
+          });
+          const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport, canvas }).promise;
+          page.cleanup();
+
+          return canvas.toBuffer('image/png');
         } catch (error) {
           throw mapOpenError(error);
         }
