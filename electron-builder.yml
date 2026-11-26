@@ -12,6 +12,18 @@ files:
   - dist-renderer/**
   - package.json
 asar: true
+# O reconhecimento de texto em imagens (tesseract.js) roda num worker, e um worker não executa
+# de dentro do .asar: o motor e as bibliotecas que ele carrega ficam desempacotados
+# (app.asar.unpacked). O código troca "app.asar" por "app.asar.unpacked" (tesseract-engine.ts).
+asarUnpack:
+  - node_modules/tesseract.js/**
+  - node_modules/tesseract.js-core/**
+  - node_modules/bmp-js/**
+  - node_modules/idb-keyval/**
+  - node_modules/is-url/**
+  - node_modules/regenerator-runtime/**
+  - node_modules/wasm-feature-detect/**
+  - node_modules/zlibjs/**
 # Repositório dos Releases: o `electron-builder` gera `latest.yml`/`latest-linux.yml` e os `.blockmap`
 # (lidos pelo atualizador do app) e embute o `app-update.yml`. Nunca publica sozinho: a CI usa
 # `--publish never` e anexa os arquivos ao Release (.github/workflows/release.yml).

@@ -95,6 +95,18 @@ export class ComponentsService {
     return this.modelLocation(active) ?? fallback;
   }
 
+  /** Caminho do arquivo de um componente do tipo arquivo (ex.: dados de idioma), ou `null` se não instalado. */
+  fileOf(id: string): string | null {
+    const spec = this.catalog.find((candidate) => candidate.id === id);
+
+    return spec && spec.kind === 'file' ? this.modelLocation(spec) : null;
+  }
+
+  /** Motivo da última falha de instalação do componente, se houve. */
+  failureOf(id: string): string | null {
+    return this.runtime.get(id)?.error ?? null;
+  }
+
   async install(ids: string[]): Promise<ComponentsStatus> {
     if (this.running) {
       throw new IpcError(IpcErrorCode.VALIDATION, ComponentMessages.busy);

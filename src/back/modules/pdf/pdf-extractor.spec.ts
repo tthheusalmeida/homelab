@@ -77,9 +77,9 @@ describe('PdfExtractor', () => {
     await extractor.extract(writePdf(), { onProgress });
 
     expect(onProgress.mock.calls).toEqual([
-      [1, 3],
-      [2, 3],
-      [3, 3],
+      [1, 3, 'text'],
+      [2, 3, 'text'],
+      [3, 3, 'text'],
     ]);
   });
 
@@ -141,13 +141,13 @@ describe('PdfExtractor', () => {
     expect(document.close).toHaveBeenCalled();
   });
 
-  it('when the pdf has almost no text, should fail with NO_TEXT explaining images are not read', async () => {
+  it('when the pdf has almost no text and no way to read images, should fail with NO_TEXT explaining the pages are images', async () => {
     const [extractor] = extractorWith(fakeDocument([['a'], [], ['b']]));
 
     const error = await extractor.extract(writePdf()).catch((e: PdfReadError) => e);
 
     expect(error).toMatchObject({ problem: PdfProblem.NO_TEXT });
-    expect((error as PdfReadError).message).toContain('escaneado');
+    expect((error as PdfReadError).message).toContain('imagens');
     expect(MIN_DOCUMENT_CHARS).toBeGreaterThan(2);
   });
 

@@ -118,6 +118,37 @@ describe('ComponentsService', () => {
     expect(status.overall).toBeNull();
   });
 
+  it('when asking for the file of a component, should return its path only once downloaded', async () => {
+    const service = build();
+
+    expect(service.fileOf('model-a')).toBeNull();
+
+    await service.install(['model-a']);
+    await service.whenIdle();
+
+    expect(service.fileOf('model-a')).toBe(path.join(dir, 'models', 'a.bin'));
+  });
+
+  it('when asking for the file of an unknown or bundled component, should return null', () => {
+    const service = build();
+
+    expect(service.fileOf('nao-existe')).toBeNull();
+    expect(service.fileOf('runtime')).toBeNull();
+  });
+
+  it('when a download fails, should keep the reason for the component until the next installation', async () => {
+    bodies.delete('https://x/a.bin');
+    const service = build();
+
+    expect(service.failureOf('model-a')).toBeNull();
+
+    await service.install(['model-a']);
+    await service.whenIdle();
+
+    expect(service.failureOf('model-a')).toContain('404');
+    expect(service.fileOf('model-a')).toBeNull();
+  });
+
   it('when a required bundled file is missing, should flag it as missing', async () => {
     fs.rmSync(path.join(binDir, 'whisper-cli.exe'));
 

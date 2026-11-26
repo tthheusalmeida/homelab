@@ -9,6 +9,9 @@ const extraction = (overrides: Partial<PdfExtraction> = {}): PdfExtraction => ({
   pageCount: 4,
   pages: ['a'.repeat(400), 'b'.repeat(400), '', 'c'.repeat(400)],
   emptyPages: 1,
+  ocrPages: 0,
+  ocrDiscardedPages: 0,
+  languages: [],
   characters: 1200,
   ...overrides,
 });
@@ -105,9 +108,12 @@ describe('PdfInspector', () => {
 
   it('when pages are read, should publish progress and end with done', async () => {
     const extract = jest.fn(
-      async (_file: string, hooks: { onProgress?: (d: number, t: number) => void }) => {
-        hooks.onProgress?.(1, 4);
-        hooks.onProgress?.(2, 4);
+      async (
+        _file: string,
+        hooks: { onProgress?: (d: number, t: number, stage: 'text') => void },
+      ) => {
+        hooks.onProgress?.(1, 4, 'text');
+        hooks.onProgress?.(2, 4, 'text');
 
         return extraction();
       },
@@ -117,10 +123,65 @@ describe('PdfInspector', () => {
     await inspector.inspect();
 
     expect(publish.mock.calls).toEqual([
-      [IpcEvents.pdfProgress, { phase: 'preparing', processed: 0, total: 0 }],
-      [IpcEvents.pdfProgress, { phase: 'running', processed: 1, total: 4 }],
-      [IpcEvents.pdfProgress, { phase: 'running', processed: 2, total: 4 }],
-      [IpcEvents.pdfProgress, { phase: 'done', processed: 4, total: 4 }],
+      [IpcEvents.pdfProgress, { phase: 'preparing', processed: 0, total: 0, stage: 'text' }],
+      [IpcEvents.pdfProgress, { phase: 'running', processed: 1, total: 4, stage: 'text' }],
+      [IpcEvents.pdfProgress, { phase: 'running', processed: 2, total: 4, stage: 'text' }],
+      [IpcEvents.pdfProgress, { phase: 'done', processed: 4, total: 4, stage: 'text' }],
+    ]);
+  });
+
+  it('when pages were read from images, should show how many, the languages by name and the warnings', async () => {
+    const extract = jest.fn().mockResolvedValue(
+      extraction({
+        emptyPages: 3,
+        ocrPages: 20,
+        ocrDiscardedPages: 3,
+        languages: ['por', 'fra'],
+      }),
+    );
+    const { inspector } = setup({ extract });
+
+    const result = await inspector.inspect();
+
+    expect(result!.ocrPages).toBe(20);
+    expect(result!.languages).toEqual(['Português', 'Francês']);
+    expect(result!.warnings.map((w) => w.code)).toEqual(
+      expect.arrayContaining(['OCR_USED', 'OCR_DISCARDED']),
+    );
+    expect(result!.warnings.map((w) => w.code)).not.toContain('PAGES_WITHOUT_TEXT');
+  });
+
+  it('when no page needed image reading, should list no languages and no image warnings', async () => {
+    const { inspector } = setup();
+
+    const result = await inspector.inspect();
+
+    expect(result!.ocrPages).toBe(0);
+    expect(result!.languages).toEqual([]);
+    expect(result!.warnings.map((w) => w.code)).not.toContain('OCR_USED');
+  });
+
+  it('when the reading moves through language, download and recognition, should publish each stage', async () => {
+    const extract = jest.fn(
+      async (
+        _file: string,
+        hooks: { onProgress?: (d: number, t: number, s: 'language' | 'recognize') => void },
+      ) => {
+        hooks.onProgress?.(0, 0, 'language');
+        hooks.onProgress?.(3, 20, 'recognize');
+
+        return extraction();
+      },
+    );
+    const { inspector, publish } = setup({ extract });
+
+    await inspector.inspect();
+
+    expect(publish.mock.calls.map(([, payload]) => [payload.phase, payload.stage])).toEqual([
+      ['preparing', 'text'],
+      ['running', 'language'],
+      ['running', 'recognize'],
+      ['done', 'text'],
     ]);
   });
 

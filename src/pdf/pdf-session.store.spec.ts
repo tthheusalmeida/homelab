@@ -6,6 +6,9 @@ const extraction: PdfExtraction = {
   pageCount: 1,
   pages: ['texto'],
   emptyPages: 0,
+  ocrPages: 0,
+  ocrDiscardedPages: 0,
+  languages: [],
   characters: 5,
 };
 

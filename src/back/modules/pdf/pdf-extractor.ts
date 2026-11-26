@@ -1,12 +1,23 @@
 import { open as openFile, stat } from 'node:fs/promises';
 
-import { PdfLimits } from '../../../shared/contracts/pdf';
+import { PdfLimits, type PdfReadStage } from '../../../shared/contracts/pdf';
+import type { OcrLanguageId } from './ocr/ocr-languages';
+import { hashFile } from './ocr/ocr-page-cache';
+import type { OcrReadRequest, OcrReadResult } from './ocr/ocr-page-reader';
 import { cleanPages } from './pdf-clean';
-import type { PdfOpener } from './pdf-opener.port';
+import type { PdfDocumentHandle, PdfOpener } from './pdf-opener.port';
 import { PdfMessages, PdfProblem, PdfReadError } from './pdf-read.error';
 
 /** Abaixo disso (no documento todo) o PDF é tratado como "sem texto" (escaneado ou só imagens). */
 export const MIN_DOCUMENT_CHARS = 200;
+
+/** Página com menos texto digital que isto (e com imagem) é lida por reconhecimento de imagem. */
+export const MIN_PAGE_TEXT_CHARS = 20;
+
+/** Porta do reconhecimento de texto em imagens (o `OcrPageReader`; os testes usam um falso). */
+export interface PdfOcr {
+  read(request: OcrReadRequest): Promise<OcrReadResult>;
+}
 
 const PDF_MAGIC = '%PDF-';
 
@@ -15,13 +26,20 @@ export interface PdfExtraction {
   pageCount: number;
   /** Texto limpo de cada página, em ordem; vazio quando a página não tinha texto. */
   pages: string[];
+  /** Páginas que ficaram sem texto (inclusive as lidas por imagem que não deram texto confiável). */
   emptyPages: number;
+  /** Páginas sem texto digital que o reconhecimento de imagem leu com sucesso. */
+  ocrPages: number;
+  /** Páginas lidas por imagem, mas sem texto confiável (foto, arte). */
+  ocrDiscardedPages: number;
+  /** Idiomas descobertos para o reconhecimento; vazio quando nenhuma página precisou dele. */
+  languages: OcrLanguageId[];
   characters: number;
 }
 
 export interface PdfExtractHooks {
-  /** Chamado a cada página lida (`done` de `total`). */
-  onProgress?: (done: number, total: number) => void;
+  /** Chamado a cada página lida (`done` de `total`) e a cada mudança de etapa (`total` 0). */
+  onProgress?: (done: number, total: number, stage: PdfReadStage) => void;
   /** Consultado entre as páginas; `true` interrompe a leitura (`CANCELLED`). */
   isCancelled?: () => boolean;
 }
@@ -37,6 +55,8 @@ export class PdfExtractor {
   constructor(
     private readonly opener: PdfOpener,
     private readonly yieldTurn: () => Promise<void> = nextTurn,
+    /** Sem ele, páginas sem texto digital ficam de fora (só o texto do PDF é lido). */
+    private readonly ocr?: PdfOcr,
   ) {}
 
   /** Confere o arquivo antes de abrir: existência, tamanho e se começa como um PDF. */
@@ -81,17 +101,81 @@ export class PdfExtractor {
         }
 
         rawPages.push(await document.readPage(page));
-        hooks.onProgress?.(page, document.pageCount);
+        hooks.onProgress?.(page, document.pageCount, 'text');
         await this.yieldTurn();
       }
 
-      return this.finish(cleanPages(rawPages), sizeBytes);
+      const recognized = await this.recognizeImagePages(filePath, document, rawPages, hooks);
+
+      return this.finish(cleanPages(rawPages), sizeBytes, recognized);
     } finally {
       await document.close().catch(() => undefined);
     }
   }
 
-  private finish(pages: string[], sizeBytes: number): PdfExtraction {
+  /**
+   * Lê por reconhecimento de imagem só as páginas que precisam: sem texto digital **e** com imagem
+   * (página em branco não gasta tempo). O texto dessas páginas entra em `rawPages`, no lugar vazio.
+   */
+  private async recognizeImagePages(
+    filePath: string,
+    document: PdfDocumentHandle,
+    rawPages: string[][],
+    hooks: PdfExtractHooks,
+  ): Promise<OcrOutcome> {
+    const none: OcrOutcome = { recognized: 0, discarded: 0, languages: [] };
+
+    if (!this.ocr || !document.renderPage || !document.hasImages) {
+      return none;
+    }
+
+    const pages: number[] = [];
+
+    for (let index = 0; index < rawPages.length; index += 1) {
+      if (this.isTextless(rawPages[index]) && (await document.hasImages(index + 1))) {
+        pages.push(index + 1);
+      }
+    }
+
+    if (pages.length === 0) {
+      return none;
+    }
+
+    if (pages.length > PdfLimits.MAX_OCR_PAGES) {
+      throw new PdfReadError(
+        PdfProblem.TOO_MANY_OCR_PAGES,
+        PdfMessages.tooManyOcrPages(pages.length),
+      );
+    }
+
+    const result = await this.ocr.read({
+      fileKey: await hashFile(filePath),
+      document,
+      pages,
+      knownText: rawPages.map((lines) => lines.join(' ')).join('\n'),
+      hooks: {
+        isCancelled: hooks.isCancelled,
+        onStage: (stage) => hooks.onProgress?.(0, 0, stage),
+        onProgress: (done, total) => hooks.onProgress?.(done, total, 'recognize'),
+      },
+    });
+
+    for (const [page, lines] of result.texts) {
+      rawPages[page - 1] = lines;
+    }
+
+    return {
+      recognized: result.texts.size,
+      discarded: result.discardedPages.length,
+      languages: result.languages,
+    };
+  }
+
+  private isTextless(lines: string[]): boolean {
+    return lines.join(' ').trim().length < MIN_PAGE_TEXT_CHARS;
+  }
+
+  private finish(pages: string[], sizeBytes: number, ocr: OcrOutcome): PdfExtraction {
     const characters = pages.reduce((total, text) => total + text.length, 0);
 
     if (characters < MIN_DOCUMENT_CHARS) {
@@ -103,6 +187,9 @@ export class PdfExtractor {
       pageCount: pages.length,
       pages,
       emptyPages: pages.filter((text) => !text.trim()).length,
+      ocrPages: ocr.recognized,
+      ocrDiscardedPages: ocr.discarded,
+      languages: ocr.languages,
       characters,
     };
   }
@@ -124,4 +211,10 @@ export class PdfExtractor {
       await file.close();
     }
   }
+}
+
+interface OcrOutcome {
+  recognized: number;
+  discarded: number;
+  languages: OcrLanguageId[];
 }

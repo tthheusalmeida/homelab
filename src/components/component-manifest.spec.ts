@@ -9,6 +9,12 @@ import {
   modelSpecs,
   platformTarget,
 } from './component-manifest';
+import {
+  OCR_LANGUAGE_IDS,
+  OCR_LANGUAGES,
+  OCR_MODEL_SOURCES,
+  OCR_QUALITIES,
+} from '../back/modules/pdf/ocr/ocr-languages';
 
 const WINDOWS = 'win32-x64';
 const LINUX = 'linux-x64';
@@ -44,9 +50,56 @@ describe('COMPONENT_TEMPLATES', () => {
   it('when showing the components, should not expose tool or system names in labels or descriptions', () => {
     for (const template of COMPONENT_TEMPLATES) {
       expect(`${template.label} ${template.description}`).not.toMatch(
-        /ffmpeg|yt-dlp|whisper|cuda|large-v3|turbo|\.exe|win32|linux/i,
+        /ffmpeg|yt-dlp|whisper|cuda|large-v3|turbo|tesseract|traineddata|\.exe|win32|linux/i,
       );
     }
+  });
+});
+
+describe('OCR language entries', () => {
+  const ocr = (target: string) => catalogFor(target).filter((spec) => spec.group === 'ocr');
+
+  it.each([WINDOWS, LINUX])(
+    'when building the catalog for %s, should have one entry per language and quality',
+    (target) => {
+      expect(ocr(target)).toHaveLength(OCR_LANGUAGE_IDS.length * OCR_QUALITIES.length);
+    },
+  );
+
+  it('when listing the entries, should be optional files that need no system variant', () => {
+    for (const spec of ocr(WINDOWS)) {
+      expect(spec.required).toBe(false);
+      expect(spec.kind).toBe('file');
+    }
+
+    expect(ocr(WINDOWS).map((spec) => spec.id)).toEqual(ocr(LINUX).map((spec) => spec.id));
+  });
+
+  it('when installing an entry, should keep each quality in its own folder so same-named files do not collide', () => {
+    const files = ocr(WINDOWS).map((spec) => spec.file);
+
+    expect(new Set(files).size).toBe(files.length);
+    expect(files).toContain('ocr/fast/por.traineddata');
+    expect(files).toContain('ocr/best/por.traineddata');
+  });
+
+  it('when downloading an entry, should use the pinned source and the checksum of the registry', () => {
+    const best = findComponent('ocr-fra-best', WINDOWS)!;
+
+    expect(best.download).toEqual({
+      url: `${OCR_MODEL_SOURCES.best}/fra.traineddata`,
+      sha256: OCR_LANGUAGES.fra.models.best.sha256,
+    });
+    expect(best.sizeBytes).toBe(OCR_LANGUAGES.fra.models.best.sizeBytes);
+  });
+
+  it('when showing an entry, should name the language and the quality in Portuguese', () => {
+    expect(findComponent('ocr-por-fast', WINDOWS)?.label).toBe('Português (rápido)');
+    expect(findComponent('ocr-eng-best', WINDOWS)?.label).toBe('Inglês (alta qualidade)');
+  });
+
+  it('when listing the Whisper models, should not include the language entries', () => {
+    expect(modelSpecs(WINDOWS).some((spec) => spec.id.startsWith('ocr-'))).toBe(false);
   });
 });
 

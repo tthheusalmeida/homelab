@@ -1,3 +1,14 @@
+import {
+  OCR_LANGUAGE_IDS,
+  OCR_LANGUAGES,
+  OCR_MODEL_SOURCES,
+  OCR_QUALITIES,
+  ocrComponentFile,
+  ocrComponentId,
+  ocrModelFile,
+  type OcrLanguageId,
+  type OcrQuality,
+} from '../back/modules/pdf/ocr/ocr-languages';
 import type { ComponentGroup } from '../shared/contracts/components';
 
 /**
@@ -94,6 +105,40 @@ function model(input: ModelSpecInput): ComponentTemplate {
     download: { url: `${HUGGING_FACE}/${input.file}`, sha256: input.sha256 },
   };
 }
+
+const OCR_QUALITY_LABELS: Record<OcrQuality, { label: string; description: string }> = {
+  fast: {
+    label: 'rápido',
+    description: 'Leitura rápida e leve; erra um pouco mais em letras pequenas.',
+  },
+  best: {
+    label: 'alta qualidade',
+    description: 'Leitura mais precisa, porém mais lenta. Vale mais que a rápida quando instalada.',
+  },
+};
+
+/** Dados de um idioma para ler texto em imagens (PDF escaneado), numa qualidade. */
+function ocrLanguage(language: OcrLanguageId, quality: OcrQuality): ComponentTemplate {
+  const { label, models } = OCR_LANGUAGES[language];
+  const { sizeBytes, sha256 } = models[quality];
+
+  return {
+    id: ocrComponentId(language, quality),
+    group: 'ocr',
+    label: `${label} (${OCR_QUALITY_LABELS[quality].label})`,
+    description: OCR_QUALITY_LABELS[quality].description,
+    required: false,
+    kind: 'file',
+    sizeBytes,
+    file: ocrComponentFile(language, quality),
+    download: { url: `${OCR_MODEL_SOURCES[quality]}/${ocrModelFile(language)}`, sha256 },
+  };
+}
+
+/** Um item por idioma e qualidade, gerado do registro de idiomas: idioma novo aparece sozinho. */
+export const OCR_TEMPLATES: readonly ComponentTemplate[] = OCR_LANGUAGE_IDS.flatMap((language) =>
+  OCR_QUALITIES.map((quality) => ocrLanguage(language, quality)),
+);
 
 /** Ordem de preferência quando o usuário ainda não escolheu o modelo ativo. */
 export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
@@ -254,6 +299,7 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
     sizeBytes: 147_951_465,
     sha256: '60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe',
   }),
+  ...OCR_TEMPLATES,
 ];
 
 /** Os componentes do sistema dado: cada item já com a forma de obtenção daquele sistema. */
