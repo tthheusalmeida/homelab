@@ -157,10 +157,34 @@ describe('JobPipeline', () => {
     expect(container.querySelectorAll('.animate-pulse')).toHaveLength(0);
   });
 
-  it('when some steps are still left, should let the completed honeycombs pulse', () => {
-    render(<JobPipeline job={makeJob()} />);
+  it('when a step is running, should pulse only its honeycomb: done and waiting ones stay still', () => {
+    render(<JobPipeline job={makeJob({ progress: { done: 3, total: 4 } })} />);
 
-    expect(screen.getAllByRole('progressbar')[0]).toHaveAttribute('data-pulse', 'true');
+    const [done, running, waiting] = screen.getAllByRole('progressbar');
+
+    expect(done).toHaveAttribute('data-pulse', 'false');
+    expect(running).toHaveAttribute('data-pulse', 'true');
+    expect(waiting).toHaveAttribute('data-pulse', 'false');
+  });
+
+  it('when the running step moves to the next one, should move the pulse with it', () => {
+    const { rerender } = render(<JobPipeline job={makeJob()} />);
+
+    rerender(
+      <JobPipeline
+        job={makeJob({
+          steps: [
+            { name: 'download', label: 'Baixar vídeo', status: 'completed' },
+            { name: 'audio', label: 'Converter áudio', status: 'completed' },
+            { name: 'transcribe', label: 'Transcrever', status: 'running' },
+          ],
+        })}
+      />,
+    );
+
+    const pulses = screen.getAllByRole('progressbar').map((bar) => bar.getAttribute('data-pulse'));
+
+    expect(pulses).toEqual(['false', 'false', 'true']);
   });
 
   it('when every step is completed, should stop every pulse: nothing moves anymore', () => {

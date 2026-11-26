@@ -12,6 +12,8 @@ interface ProgressBarProps {
   label: string;
   /** Completo, a colmeia pulsa em onda (padrão). Passe `false` quando o processo todo acabou: nada mais se move. */
   pulse?: boolean;
+  /** A onda também corre nos hexágonos já cheios enquanto a barra enche (etapa em andamento), não só completa. */
+  pulseWhileFilling?: boolean;
   className?: string;
 }
 
@@ -79,7 +81,14 @@ export function cellsPerRowFor(widthPx: number): number {
  * `pulse` seja `false`; as animações vivem em `global.css`). Em neon da marca (`brand`), com contorno.
  * Ocupa a largura do contêiner: limite-a com `w-*` ou `max-w-*`.
  */
-export function ProgressBar({ value, total, label, pulse = true, className }: ProgressBarProps) {
+export function ProgressBar({
+  value,
+  total,
+  label,
+  pulse = true,
+  pulseWhileFilling = false,
+  className,
+}: ProgressBarProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [perRow, setPerRow] = useState(MIN_CELLS_PER_ROW);
   const percent = progressPercent(value, total);
@@ -116,7 +125,7 @@ export function ProgressBar({ value, total, label, pulse = true, className }: Pr
       aria-valuemax={100}
       aria-valuenow={percent}
       data-complete={complete}
-      data-pulse={complete && pulse}
+      data-pulse={pulse && (complete || pulseWhileFilling)}
       className={cn('w-full', className)}
     >
       <svg viewBox={`0 0 ${width} ${HEIGHT}`} aria-hidden="true" className="block w-full">
