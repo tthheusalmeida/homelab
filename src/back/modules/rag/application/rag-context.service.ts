@@ -32,7 +32,14 @@ export interface RetrieveOptions {
  */
 @Injectable()
 export class RagContextService {
+  private wordsOnly = false;
+
   constructor(private readonly search: RagSearchService) {}
+
+  /** A última pergunta foi buscada só pelas palavras (a busca por sentido não participou). */
+  searchedByWordsOnly(): boolean {
+    return this.wordsOnly;
+  }
 
   /**
    * @param question a pergunta
@@ -48,7 +55,9 @@ export class RagContextService {
     const query =
       previousQuestion && isFollowUp(question) ? `${previousQuestion} ${question}` : question;
 
-    const { hits, semantic } = await this.search.search(query, budget.maxHits * 2);
+    const { hits, semantic, documents } = await this.search.search(query, budget.maxHits * 2);
+
+    this.wordsOnly = !semantic && documents > 0;
     const top = hits[0]?.score ?? 0;
     const picked: RagHit[] = [];
     let chars = 0;

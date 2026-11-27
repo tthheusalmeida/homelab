@@ -216,6 +216,8 @@ export class ChatService {
         boldCitations(answer, groupBySection(passages).length),
         referencesFor(answer, passages),
         digest,
+        // sem nenhuma página usada, avisa quando a busca olhou só as palavras
+        passages.length === 0 && (this.context?.searchedByWordsOnly?.() ?? false),
       );
     } finally {
       this.inFlight.delete(request.chatId);
@@ -285,6 +287,7 @@ export class ChatService {
     answer: string,
     references: ChatReference[],
     digest?: ChatDigest,
+    searchedByWordsOnly = false,
   ): ChatSendResponse {
     if (existing && !this.repository.findById(existing.id)) {
       throw new NotFoundException(ChatMessages.deletedWhileWaiting);
@@ -296,12 +299,14 @@ export class ChatService {
       role: ChatMessage['role'],
       content: string,
       cited: ChatReference[] = [],
+      wordsOnly = false,
     ): ChatMessage => ({
       id: uuidv7(),
       role,
       content,
       createdAt: now,
       ...(cited.length > 0 ? { references: cited } : {}),
+      ...(wordsOnly ? { searchedByWordsOnly: true } : {}),
     });
 
     const chat: StoredChat = {
@@ -317,7 +322,7 @@ export class ChatService {
       messages: [
         ...(current?.messages ?? []),
         turn('user', message),
-        turn('assistant', answer, references),
+        turn('assistant', answer, references, searchedByWordsOnly),
       ],
     };
 
