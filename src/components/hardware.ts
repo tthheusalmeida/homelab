@@ -4,7 +4,14 @@ import type {
   HardwareRecommendation,
 } from '../shared/contracts/components';
 
-import { CUDA_PACK_ID, YTDLP_ID } from './component-manifest';
+import {
+  CUDA_PACK_ID,
+  LLM_BALANCED_ID,
+  LLM_LIGHT_ID,
+  LLM_MAX_ID,
+  LLM_STRONG_ID,
+  YTDLP_ID,
+} from './component-manifest';
 
 export const HardwareMessages = {
   cudaStrong: (gpu: string, gb: number) =>
@@ -36,7 +43,44 @@ const MEDIUM_VRAM_MB = 3 * MB;
 /** Memória (MB) a partir da qual a versão compacta do turbo é confortável no processador. */
 const COMFORTABLE_RAM_MB = 15 * MB;
 
+/**
+ * Memória de vídeo (MB) a partir da qual a placa NVIDIA roda o assistente máximo, o avançado e o
+ * equilibrado. Com folga de propósito: o modelo precisa de espaço além dos pesos (o contexto), e as
+ * placas informam um pouco menos que o nome ("8 GB" aparece como 8188 MB, "24 GB" como 24564 MB).
+ */
+const CHAT_MAX_VRAM_MB = 22 * MB;
+const CHAT_STRONG_VRAM_MB = 10 * MB;
+const CHAT_BALANCED_VRAM_MB = 4 * MB;
+/** Sem placa que ajude, o equilibrado pede cerca de 8 GB de memória; abaixo disso, o leve. */
+const CHAT_BALANCED_RAM_MB = 8 * MB;
+
 const gb = (mb: number) => Math.round(mb / MB);
+
+/**
+ * O assistente de conversa que cabe bem na máquina (função pura). Com placa NVIDIA, vale a memória de
+ * vídeo; sem ela, o processador carrega o modelo, então no máximo o equilibrado: os maiores ficam
+ * lentos demais sem placa. Hardware que não identificamos cai na memória do PC.
+ */
+export function chatModelFor(gpus: GpuInfo[], ramMb: number): string {
+  const vram = Math.max(
+    0,
+    ...gpus
+      .filter((gpu) => gpu.vendor === 'nvidia' && gpu.kind === 'dedicated')
+      .map((gpu) => gpu.vramMb ?? 0),
+  );
+
+  if (vram >= CHAT_MAX_VRAM_MB) {
+    return LLM_MAX_ID;
+  }
+
+  if (vram >= CHAT_STRONG_VRAM_MB) {
+    return LLM_STRONG_ID;
+  }
+
+  return vram >= CHAT_BALANCED_VRAM_MB || ramMb >= CHAT_BALANCED_RAM_MB
+    ? LLM_BALANCED_ID
+    : LLM_LIGHT_ID;
+}
 
 /**
  * Escolhe aceleração e modelo a partir do hardware e acrescenta o que vale para qualquer máquina
@@ -49,7 +93,11 @@ export function recommendFor(
 ): HardwareRecommendation {
   const base = recommendByHardware(gpus, ramMb, options.accelerationAvailable ?? true);
 
-  return { ...base, componentIds: [...base.componentIds, YTDLP_ID] };
+  return {
+    ...base,
+    componentIds: [...base.componentIds, YTDLP_ID],
+    chatModelId: chatModelFor(gpus, ramMb),
+  };
 }
 
 function recommendByHardware(

@@ -49,6 +49,13 @@ export interface HardwareRecommendation {
   componentIds: string[];
   /** Modelo recomendado para virar o ativo. */
   modelId: string;
+  /**
+   * Assistente de conversa que cabe bem nesta máquina. Ganha o selo "Recomendado" (e vem marcado em
+   * Configurações > Componentes, como os outros recomendados). **Não** vai em `componentIds`, que é o
+   * que o assistente de instalação do primeiro uso marca para baixar: são de 3 a 17 GB, e o primeiro
+   * uso não deve baixá-los sem o usuário pedir.
+   */
+  chatModelId?: string;
   /** Explicação em português, mostrada ao usuário. */
   message: string;
 }

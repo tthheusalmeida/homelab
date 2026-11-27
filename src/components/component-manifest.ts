@@ -72,6 +72,11 @@ export const FFMPEG_ID = 'ffmpeg';
 export const YTDLP_ID = 'yt-dlp';
 export const OLLAMA_RUNTIME_ID = 'ollama-runtime';
 export const EMBEDDING_MODEL_ID = 'llm-embedding';
+/** Assistentes de conversa, do mais leve ao mais pesado. */
+export const LLM_LIGHT_ID = 'llm-light';
+export const LLM_BALANCED_ID = 'llm-balanced';
+export const LLM_STRONG_ID = 'llm-strong';
+export const LLM_MAX_ID = 'llm-max';
 
 /** Pasta (dentro dos pacotes, nos dados do usuário) do programa do assistente local: ele traz as próprias bibliotecas. */
 export const OLLAMA_FOLDER = 'ollama';
@@ -364,7 +369,7 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
     },
   },
   assistantModel({
-    id: 'llm-light',
+    id: LLM_LIGHT_ID,
     label: 'Assistente leve',
     description:
       'Para computadores simples. Responde bem perguntas diretas sobre as suas páginas, mas se perde em perguntas longas.',
@@ -372,7 +377,7 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
     sizeBytes: 2_683_396_812,
   }),
   assistantModel({
-    id: 'llm-balanced',
+    id: LLM_BALANCED_ID,
     label: 'Assistente equilibrado',
     description:
       'O melhor custo-benefício: respostas organizadas e fiéis às suas páginas. Pede cerca de 8 GB de memória.',
@@ -380,7 +385,7 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
     sizeBytes: 3_324_173_934,
   }),
   assistantModel({
-    id: 'llm-strong',
+    id: LLM_STRONG_ID,
     label: 'Assistente avançado',
     description:
       'Respostas mais completas. Pede um computador forte: placa de vídeo com 8 GB ou 16 GB de memória.',
@@ -388,7 +393,7 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
     sizeBytes: 6_550_825_550,
   }),
   assistantModel({
-    id: 'llm-max',
+    id: LLM_MAX_ID,
     label: 'Assistente máximo',
     description:
       'O mais capaz e o mais pesado. Só para placa de vídeo com 24 GB ou computador com 32 GB de memória ou mais.',

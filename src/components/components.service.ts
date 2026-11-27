@@ -467,7 +467,8 @@ export class ComponentsService {
 
   private buildStatus(hardware: HardwareProfile): ComponentsStatus {
     const active = this.activeModelSpec();
-    const recommended = new Set(hardware.recommendation.componentIds);
+    const { componentIds, chatModelId } = hardware.recommendation;
+    const recommended = new Set(chatModelId ? [...componentIds, chatModelId] : componentIds);
     const components: ComponentInfo[] = this.catalog.map((spec) => {
       const entry = this.runtime.get(spec.id);
       const installed = this.isInstalled(spec);

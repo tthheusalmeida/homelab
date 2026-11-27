@@ -6,6 +6,7 @@ import {
   parseGpuList,
   parseNvidiaSmi,
   recommendFor,
+  chatModelFor,
   parseLspci,
 } from './hardware';
 
@@ -22,7 +23,55 @@ const intel: GpuInfo = {
   vramMb: 128,
 };
 
+describe('chatModelFor', () => {
+  it('when the NVIDIA card has 24 GB (it reports a little less), should recommend the maximum assistant', () => {
+    expect(chatModelFor([nvidia(24564)], 65536)).toBe('llm-max');
+  });
+
+  it('when the NVIDIA card has between 10 and 22 GB, should recommend the advanced assistant', () => {
+    expect(chatModelFor([nvidia(12288)], 32768)).toBe('llm-strong');
+    expect(chatModelFor([nvidia(16376)], 32768)).toBe('llm-strong');
+  });
+
+  it('when the NVIDIA card has 8 GB (it reports 8188 MB), should recommend the balanced assistant', () => {
+    expect(chatModelFor([nvidia(8188)], 16384)).toBe('llm-balanced');
+  });
+
+  it('when the NVIDIA card has between 4 and 10 GB, should recommend the balanced assistant', () => {
+    expect(chatModelFor([nvidia(6144)], 16384)).toBe('llm-balanced');
+  });
+
+  it('when the NVIDIA card has little memory and the PC is simple, should recommend the light assistant', () => {
+    expect(chatModelFor([nvidia(2048)], 4096)).toBe('llm-light');
+  });
+
+  it('when there is no NVIDIA card and the PC has 8 GB or more, should recommend the balanced assistant, never a bigger one', () => {
+    expect(chatModelFor([intel], 8192)).toBe('llm-balanced');
+    expect(chatModelFor([intel], 65536)).toBe('llm-balanced');
+  });
+
+  it('when there is no NVIDIA card and the PC has little memory, should recommend the light assistant', () => {
+    expect(chatModelFor([intel], 4096)).toBe('llm-light');
+  });
+
+  it('when the card memory could not be measured, should fall back to the PC memory', () => {
+    expect(chatModelFor([nvidia(null)], 16384)).toBe('llm-balanced');
+    expect(chatModelFor([nvidia(null)], 4096)).toBe('llm-light');
+  });
+
+  it('when no card is identified, should decide by the PC memory', () => {
+    expect(chatModelFor([], 16384)).toBe('llm-balanced');
+  });
+});
+
 describe('recommendFor', () => {
+  it('when recommending, should name the chat assistant but keep it out of the components to download', () => {
+    const result = recommendFor([nvidia(12288)], 32768);
+
+    expect(result.chatModelId).toBe('llm-strong');
+    expect(result.componentIds).not.toContain('llm-strong');
+  });
+
   it('when there is an NVIDIA card with 6 GB or more, should recommend CUDA and the full turbo model', () => {
     const result = recommendFor([nvidia(12288)], 32768);
 
