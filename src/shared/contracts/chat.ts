@@ -33,6 +33,11 @@ export interface ChatMessage {
   createdAt: string;
   /** Só nas respostas do assistente que usaram páginas da biblioteca. */
   references?: ChatReference[];
+  /**
+   * A pergunta foi buscada só pelas palavras (a busca por sentido estava desligada) e nenhuma página
+   * foi usada: páginas que dizem o mesmo com outras palavras podem ter ficado de fora.
+   */
+  searchedByWordsOnly?: boolean;
 }
 
 /** Item da lista de chats (canal `chats:list`), do mais recente para o mais antigo. */

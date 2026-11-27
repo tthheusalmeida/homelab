@@ -7,6 +7,7 @@ import { HexDot } from "#components/Hex";
 import { ChatReferences } from "./ChatReferences";
 import { MarkdownMessage } from "#components/MarkdownMessage";
 import { cn } from "#lib/utils";
+import { ChatStrings } from "../strings";
 
 interface ChatMessageProps {
   message: AiMessage;
@@ -51,6 +52,12 @@ export const ChatMessage = memo(function ChatMessage({
       </div>
 
       {!isUser && references && <ChatReferences references={references} onPreview={onPreviewReference} />}
+
+      {!isUser && message.searchedByWordsOnly && (
+        <p className="max-w-prose font-mono text-[11px] text-muted-foreground">
+          {ChatStrings.wordsOnlyNotice}
+        </p>
+      )}
     </div>
   );
 });

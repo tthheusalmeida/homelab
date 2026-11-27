@@ -42,6 +42,9 @@ describe('RagContextService', () => {
       semantic: true,
     });
 
+  const searched = (semantic: boolean, documents: number) =>
+    search.search.mockResolvedValue({ hits: [], documents, chunks: 1, elapsedMs: 1, semantic });
+
   const many = (count: number) =>
     Array.from({ length: count }, (_, index) => hit(`p${index}`, { score: 10 - index * 0.1 }));
 
@@ -151,6 +154,42 @@ describe('RagContextService', () => {
       );
 
       expect(await service.retrieve('pergunta qualquer longa')).toHaveLength(2);
+    });
+  });
+
+  describe('busca só por palavras', () => {
+    it('when the meaning search did not take part and there are pages, should report words only', async () => {
+      searched(false, 5);
+
+      await service.retrieve('como isolar aplicações sem máquina virtual');
+
+      expect(service.searchedByWordsOnly()).toBe(true);
+    });
+
+    it('when the meaning search took part, should not report words only', async () => {
+      searched(true, 5);
+
+      await service.retrieve('como isolar aplicações sem máquina virtual');
+
+      expect(service.searchedByWordsOnly()).toBe(false);
+    });
+
+    it('when the library has no pages, should not report words only', async () => {
+      searched(false, 0);
+
+      await service.retrieve('como isolar aplicações sem máquina virtual');
+
+      expect(service.searchedByWordsOnly()).toBe(false);
+    });
+
+    it('when the next question is searched with the meaning, should clear the report', async () => {
+      searched(false, 5);
+      await service.retrieve('como isolar aplicações sem máquina virtual');
+      searched(true, 5);
+
+      await service.retrieve('como isolar aplicações sem máquina virtual');
+
+      expect(service.searchedByWordsOnly()).toBe(false);
     });
   });
 

@@ -116,6 +116,32 @@ describe("ChatMessage", () => {
 
     expect(screen.getByText("oi").tagName).toBe("STRONG");
   });
+
+  it("when the answer was searched by words only, should show the notice under it", () => {
+    render(
+      <ChatMessage
+        message={{ id: "1", role: "assistant", content: "resposta", searchedByWordsOnly: true }}
+      />,
+    );
+
+    expect(screen.getByText(/Busca só por palavras/)).toBeInTheDocument();
+  });
+
+  it("when the answer was not flagged, should not show the notice", () => {
+    render(<ChatMessage message={{ id: "1", role: "assistant", content: "resposta" }} />);
+
+    expect(screen.queryByText(/Busca só por palavras/)).not.toBeInTheDocument();
+  });
+
+  it("when a user message carries the flag, should not show the notice", () => {
+    render(
+      <ChatMessage
+        message={{ id: "1", role: "user", content: "pergunta", searchedByWordsOnly: true }}
+      />,
+    );
+
+    expect(screen.queryByText(/Busca só por palavras/)).not.toBeInTheDocument();
+  });
 });
 
 describe("ChatMessageList", () => {

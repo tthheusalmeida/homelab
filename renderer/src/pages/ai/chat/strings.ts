@@ -29,6 +29,9 @@ export const ChatStrings = {
     `A conversa "${title}" será excluída e não poderá ser recuperada.`,
   deleteConfirm: "Excluir",
 
+  wordsOnlyNotice:
+    "Busca só por palavras: a busca por sentido está desligada, então páginas que dizem o mesmo com outras palavras podem ter ficado de fora.",
+
   cancelled: "Geração cancelada",
   sendFailed: "Não foi possível enviar a mensagem.",
   loadChatFailed: "Não foi possível abrir esta conversa.",

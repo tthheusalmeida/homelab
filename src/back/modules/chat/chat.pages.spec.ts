@@ -25,13 +25,16 @@ const passage = (overrides: Partial<ChatContextPassage> = {}): ChatContextPassag
 
 describe('ChatService com as páginas da biblioteca', () => {
   let ai: { chat: jest.Mock };
-  let context: { retrieve: jest.Mock };
+  let context: { retrieve: jest.Mock; searchedByWordsOnly: jest.Mock };
   let repository: InMemoryChatRepository;
   let service: ChatService;
 
   beforeEach(() => {
     ai = { chat: jest.fn().mockResolvedValue('Enfatiza o fluxo [1].') };
-    context = { retrieve: jest.fn().mockResolvedValue([passage()]) };
+    context = {
+      retrieve: jest.fn().mockResolvedValue([passage()]),
+      searchedByWordsOnly: jest.fn().mockReturnValue(false),
+    };
     repository = new InMemoryChatRepository();
     service = new ChatService(ai as unknown as AIService, repository, context);
   });
@@ -94,6 +97,40 @@ describe('ChatService com as páginas da biblioteca', () => {
 
     expect(ai.chat.mock.calls[0][0].messages).toEqual([{ role: 'user', content: 'oi' }]);
     expect(chat.messages[1]).not.toHaveProperty('references');
+  });
+
+  it('when no page is used and the search looked only at the words, should flag the answer', async () => {
+    context.retrieve.mockResolvedValue([]);
+    context.searchedByWordsOnly.mockReturnValue(true);
+
+    const { chat } = await service.send(request());
+
+    expect(chat.messages[1]).toMatchObject({ searchedByWordsOnly: true });
+  });
+
+  it('when pages are used, should not flag the answer even if the search used only words', async () => {
+    context.searchedByWordsOnly.mockReturnValue(true);
+
+    const { chat } = await service.send(request());
+
+    expect(chat.messages[1]).not.toHaveProperty('searchedByWordsOnly');
+  });
+
+  it('when no page is used but the meaning search worked, should not flag the answer', async () => {
+    context.retrieve.mockResolvedValue([]);
+
+    const { chat } = await service.send(request());
+
+    expect(chat.messages[1]).not.toHaveProperty('searchedByWordsOnly');
+  });
+
+  it('when the user message is never flagged, should keep the flag off the question', async () => {
+    context.retrieve.mockResolvedValue([]);
+    context.searchedByWordsOnly.mockReturnValue(true);
+
+    const { chat } = await service.send(request());
+
+    expect(chat.messages[0]).not.toHaveProperty('searchedByWordsOnly');
   });
 
   it('when the search fails, should still answer the question without pages', async () => {

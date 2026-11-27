@@ -27,6 +27,11 @@ export interface ChatContextSource {
     previousQuestion?: string,
     options?: { contextLimit?: number; modelBillions?: number },
   ): Promise<ChatContextPassage[]>;
+  /**
+   * A última busca olhou só as palavras da pergunta (a busca por sentido não participou, havendo
+   * páginas). Opcional: quem não distingue os dois modos não implementa.
+   */
+  searchedByWordsOnly?(): boolean;
 }
 
 export const CHAT_CONTEXT = Symbol('CHAT_CONTEXT');

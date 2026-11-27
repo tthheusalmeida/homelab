@@ -24,6 +24,8 @@ export interface AiMessage {
   content: string;
   /** Páginas da biblioteca em que a resposta se apoiou (só nas respostas do assistente). */
   references?: ChatReference[];
+  /** A busca foi só por palavras e nenhuma página foi usada (a busca por sentido estava desligada). */
+  searchedByWordsOnly?: boolean;
 }
 
 export interface AiChatRequest {
