@@ -76,8 +76,8 @@ O **HomeLab** é um app desktop (Windows e Linux) para quem aprende e pesquisa c
 
 ### IA à sua escolha
 
-- 🤖 **Gemini**, **Anthropic (Claude)** ou **Groq** (com a sua chave, guardada cifrada) ou **IA no seu computador** (o app instala o assistente local e os modelos, do leve ao pesado, no Windows; ou use o seu Ollama); se o modelo escolhido estiver sobrecarregado, o app troca sozinho para o mais barato.
-- 📚 **Conversa com as suas páginas**: a IA responde com base no que você já tem na biblioteca e mostra, em cada resposta, de quais páginas veio, com um ícone que leva direto à seção.
+- 🤖 **Gemini**, **Anthropic (Claude)** ou **Groq** (com a sua chave, guardada cifrada) ou **IA no seu computador** (o app instala o assistente local e os modelos, do leve ao pesado, no Windows; ou use o seu Ollama, e no Linux baixe os modelos direto pelo app); se o modelo escolhido estiver sobrecarregado, o app troca sozinho para o mais barato.
+- 📚 **Conversa com as suas páginas**: a IA responde com base no que você já tem na biblioteca e mostra, em cada resposta, de quais páginas veio, com um ícone que leva direto à seção. A resposta aparece enquanto é escrita, a busca entende o sentido da pergunta (não só as palavras) e conversas longas são resumidas para os modelos pequenos não se perderem.
 - 🎛️ **IA padrão e troca na hora:** escolha qual IA faz a sugestão de título, o mapa mental e o infográfico (ou deixe automática, a mais barata) e veja sempre qual está em uso. Se o serviço estiver sobrecarregado, troque por outra só até fechar o app: ao abrir de novo, volta a padrão.
 - ✍️ **Prompts seus:** mude o jeito de a IA trabalhar, guarde versões com nome (por exemplo, uma para revisão e outra para prova) e escolha qual usar. Há exemplos prontos para começar (por exemplo, "Para prova"), o padrão do app fica sempre à mão e o formato da resposta não quebra.
 - 💬 **Várias conversas** salvas, com aviso quando o contexto fica grande.

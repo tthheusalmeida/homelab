@@ -27,6 +27,8 @@ export class SettingsBackConfig extends BackConfig {
     readonly platformTools?: PlatformTools,
     /** O assistente local que o app instala e liga (opcional). */
     private readonly assistant?: LocalAssistant,
+    /** Onde ficam os vetores da busca por sentido (cache; fora da pasta de backup). */
+    readonly embeddingsFile: string | null = null,
   ) {
     super();
   }

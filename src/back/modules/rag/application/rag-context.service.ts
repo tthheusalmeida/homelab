@@ -8,7 +8,13 @@ import { RagSearchService } from './rag-search.service';
 
 /** O trecho precisa conter pelo menos esta fração das palavras úteis da pergunta. */
 export const MIN_COVERAGE = 0.5;
-/** E pontuar pelo menos esta fração do melhor trecho (corta o "fundo da fila"). */
+/**
+ * Sem as palavras da pergunta, o trecho entra se o sentido dele é próximo o bastante (busca por
+ * vetores). Medido com o modelo de vetores em português: trechos do assunto ficam entre 0,35 e 0,52
+ * e o que não tem a ver ("capital da França") não passa de 0,27.
+ */
+export const MIN_SIMILARITY = 0.33;
+/** E pontuar pelo menos esta fração do melhor trecho (corta o "fundo da fila"; só na busca por palavras). */
 export const MIN_RELATIVE_SCORE = 0.35;
 
 export interface RetrieveOptions {
@@ -42,13 +48,13 @@ export class RagContextService {
     const query =
       previousQuestion && isFollowUp(question) ? `${previousQuestion} ${question}` : question;
 
-    const { hits } = await this.search.search(query, budget.maxHits * 2);
+    const { hits, semantic } = await this.search.search(query, budget.maxHits * 2);
     const top = hits[0]?.score ?? 0;
     const picked: RagHit[] = [];
     let chars = 0;
 
     for (const hit of hits) {
-      if (hit.coverage < MIN_COVERAGE || hit.score < top * MIN_RELATIVE_SCORE) {
+      if (!this.isRelevant(hit, top, semantic)) {
         continue;
       }
 
@@ -64,5 +70,18 @@ export class RagContextService {
     }
 
     return picked;
+  }
+
+  /**
+   * Só palavras: o trecho precisa ter a maioria das palavras da pergunta e pontuar perto do melhor.
+   * Com busca por sentido, entra também quem tem a maioria das palavras **ou** sentido próximo (a
+   * pontuação das duas listas juntas não serve de régua).
+   */
+  private isRelevant(hit: RagHit, top: number, semantic: boolean): boolean {
+    if (!semantic) {
+      return hit.coverage >= MIN_COVERAGE && hit.score >= top * MIN_RELATIVE_SCORE;
+    }
+
+    return hit.coverage >= MIN_COVERAGE || (hit.similarity ?? 0) >= MIN_SIMILARITY;
   }
 }

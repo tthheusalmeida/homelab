@@ -4,6 +4,10 @@ import { createTmpLibrary, type TmpLibrary } from '../../../testing/tmp-library'
 import { newPendingMeta } from '../../library/domain/document';
 import type { DocumentMeta } from '../../library/domain/library.types';
 import { LibraryIndex } from '../../library/infrastructure/library-index';
+import { normalize } from '../domain/vectors';
+import { EmbeddingStore } from '../infrastructure/embedding-store';
+
+import type { Embedder } from './embedder';
 import { RagSearchService } from './rag-search.service';
 
 const FIRST_WAY = [
@@ -209,5 +213,99 @@ describe('RagSearchService', () => {
     service.invalidate();
 
     expect((await service.search('capivara')).hits[0].documentId).toBe('late');
+  });
+});
+
+describe('RagSearchService: busca por sentido', () => {
+  let tmp: TmpLibrary;
+  let library: LibraryIndex;
+  let store: EmbeddingStore;
+  let embedder: { embed: jest.Mock };
+  let service: RagSearchService;
+
+  const meta = (id: string, title: string): DocumentMeta => ({
+    ...newPendingMeta({ id, title, type: 'summary' }),
+    status: 'published',
+    category: ['Livros'],
+  });
+
+  /** Vetor de brinquedo: eixo 0 = "containers", eixo 1 = "dinheiro". */
+  const vectorOf = (text: string) =>
+    normalize([
+      /contêiner|container|isol/i.test(text) ? 1 : 0.05,
+      /dinheiro|banco/i.test(text) ? 1 : 0.05,
+    ]);
+
+  beforeEach(async () => {
+    tmp = createTmpLibrary();
+    library = new LibraryIndex(tmp.storage);
+    store = new EmbeddingStore(null, 'm');
+    embedder = {
+      embed: jest.fn(async (texts: string[]) => texts.map(vectorOf)),
+    };
+    service = new RagSearchService(library, tmp.storage, embedder as Embedder, store);
+
+    await tmp.storage.save(
+      meta('docker', 'Docker'),
+      ['# Docker', '', 'Contêineres isolam processos sem máquina virtual.'].join(
+        String.fromCharCode(10),
+      ),
+    );
+    await tmp.storage.save(
+      meta('banco', 'Banco'),
+      ['# Banco', '', 'O banco guarda o dinheiro dos clientes.'].join(String.fromCharCode(10)),
+    );
+    await library.rebuild();
+    service.invalidate();
+  });
+
+  afterEach(() => tmp.cleanup());
+
+  it('when the vectors are not ready yet, should search by words only', async () => {
+    embedder.embed.mockResolvedValue(null);
+
+    const result = await service.search('isolar aplicações');
+
+    expect(result.semantic).toBe(false);
+    expect(result.hits.every((hit) => hit.similarity === undefined)).toBe(true);
+  });
+
+  it('when the vectors are ready, should find a page by meaning even without its words', async () => {
+    await service.search('qualquer coisa');
+    await service.whenEmbedded();
+
+    const result = await service.search('como isolar aplicações sem máquina virtual');
+
+    expect(result.semantic).toBe(true);
+    expect(result.hits[0]).toMatchObject({ documentId: 'docker' });
+    expect(result.hits[0].similarity).toBeGreaterThan(0.9);
+  });
+
+  it('when the same text was already embedded, should not ask the model again', async () => {
+    await service.search('x');
+    await service.whenEmbedded();
+    const asked = embedder.embed.mock.calls.length;
+
+    service.invalidate();
+    await service.search('y');
+    await service.whenEmbedded();
+
+    // só a pergunta nova foi ao modelo, nenhum trecho
+    expect(embedder.embed.mock.calls.length).toBe(asked + 1);
+  });
+
+  it('when the model of vectors is missing, should keep answering by words', async () => {
+    embedder.embed.mockResolvedValue(null);
+
+    await service.search('x');
+    await service.whenEmbedded();
+
+    await expect(service.search('docker')).resolves.toMatchObject({ semantic: false });
+  });
+
+  it('when there is no embedder at all, should search by words as before', async () => {
+    const plain = new RagSearchService(library, tmp.storage);
+
+    await expect(plain.search('docker')).resolves.toMatchObject({ semantic: false });
   });
 });

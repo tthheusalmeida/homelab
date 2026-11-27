@@ -15,8 +15,10 @@ export interface RagHit {
   text: string;
   /** Pontuação (só para ordenar e comparar; não tem unidade). */
   score: number;
-  /** Fração (0 a 1) das palavras úteis da pergunta que o trecho contém. */
+  /** Fração (0 a 1) das palavras úteis da pergunta que o trecho contém (0 se só a busca por sentido o achou). */
   coverage: number;
+  /** Semelhança de sentido com a pergunta (−1 a 1); ausente quando a busca por sentido não está disponível. */
+  similarity?: number;
 }
 
 export interface RagSearchResult {
@@ -26,4 +28,6 @@ export interface RagSearchResult {
   chunks: number;
   /** Quanto tempo a busca levou (milissegundos). */
   elapsedMs: number;
+  /** A busca por sentido participou desta busca (o modelo de vetores respondeu e há vetores prontos). */
+  semantic: boolean;
 }

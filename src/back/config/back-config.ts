@@ -41,6 +41,9 @@ export abstract class BackConfig {
   /** Arquivo do histórico de jobs; `null` guarda só em memória (testes). */
   abstract readonly jobsFile: string | null;
 
+  /** Cache dos vetores da busca por sentido (fica fora do backup); `null`/ausente guarda só em memória. */
+  readonly embeddingsFile?: string | null;
+
   /** Arquivo das conversas do chat; `null` guarda só em memória (testes). */
   abstract readonly chatsFile: string | null;
 

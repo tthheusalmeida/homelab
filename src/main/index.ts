@@ -449,6 +449,8 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
           ),
       },
       services.assistant,
+      // vetores da busca por sentido: cache nos dados do app, fora da pasta de backup
+      path.join(app.getPath('userData'), 'cache', 'embeddings.json'),
     ),
     whisper: services.whisper,
     alerts: new EventBackAlerts(events, systemNotifier),
@@ -526,6 +528,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
 
   new IpcRegistrar(ipcMain).register(
     createHandlers({
+      events,
       platformLogin: platformSessions,
       platformLogins: platformSessions,
       mindMapImages: new MindMapImageSaver(filePicker),

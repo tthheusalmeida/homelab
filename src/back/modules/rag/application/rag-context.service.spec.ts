@@ -25,7 +25,22 @@ describe('RagContextService', () => {
   let service: RagContextService;
 
   const found = (...hits: RagHit[]) =>
-    search.search.mockResolvedValue({ hits, documents: 1, chunks: 1, elapsedMs: 1 });
+    search.search.mockResolvedValue({
+      hits,
+      documents: 1,
+      chunks: 1,
+      elapsedMs: 1,
+      semantic: false,
+    });
+
+  const foundBySense = (...hits: RagHit[]) =>
+    search.search.mockResolvedValue({
+      hits,
+      documents: 1,
+      chunks: 1,
+      elapsedMs: 1,
+      semantic: true,
+    });
 
   const many = (count: number) =>
     Array.from({ length: count }, (_, index) => hit(`p${index}`, { score: 10 - index * 0.1 }));
@@ -64,6 +79,37 @@ describe('RagContextService', () => {
       found();
 
       await expect(service.retrieve('oi, tudo bem?')).resolves.toEqual([]);
+    });
+  });
+
+  describe('com a busca por sentido', () => {
+    it('when a hit has no question words but its meaning is close, should keep it', async () => {
+      foundBySense(hit('a', { coverage: 0, similarity: 0.5 }));
+
+      const result = await service.retrieve('como isolar aplicações sem máquina virtual');
+
+      expect(result.map((item) => item.documentId)).toEqual(['a']);
+    });
+
+    it('when a hit has neither the words nor a close meaning, should leave it out', async () => {
+      foundBySense(hit('a', { coverage: 0, similarity: 0.17 }));
+
+      expect(await service.retrieve('qual a capital da frança')).toEqual([]);
+    });
+
+    it('when a hit has most of the words, should keep it even with a low similarity', async () => {
+      foundBySense(hit('a', { coverage: 0.8, similarity: 0.1 }));
+
+      expect(await service.retrieve('pergunta qualquer longa')).toHaveLength(1);
+    });
+
+    it('when the scores come from two lists, should not cut by the score of the best one', async () => {
+      foundBySense(
+        hit('a', { score: 0.03, coverage: 0, similarity: 0.5 }),
+        hit('b', { score: 0.001, coverage: 0, similarity: 0.4 }),
+      );
+
+      expect(await service.retrieve('pergunta qualquer longa')).toHaveLength(2);
     });
   });
 

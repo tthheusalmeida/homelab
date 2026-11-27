@@ -1,11 +1,12 @@
 # Chat com as páginas da biblioteca (RAG)
 
-Status: **implementado** (busca por palavras, referências na conversa e Ollama como componente instalável, ver `componentes.md`). Fica para depois: busca por sentido (embeddings).
+Status: **implementado** (busca por palavras e por sentido, referências na conversa, resposta aos pedaços, resumo de conversa longa e Ollama como componente instalável, ver `componentes.md`).
 
 ## O que o usuário vê (resumo)
 - **Marcas `[1]`, `[2]` no texto, referências no fim:** o texto da resposta mantém as marcas como o modelo as escreveu, e abaixo dela fica a faixa de referências: um filete, a palavra "referências" e, **alinhados à direita**, um ícone de página por fonte, **com o número da marca no ícone** (1, 2, 3, 4…, na ordem da lista). O `[n]` do texto é exatamente o número do ícone. Ao passar o mouse (ou focar), o nome `Página › Seção` **abre para a esquerda** e fecha ao sair; clicar abre a página na seção (`ChatReferences`).
 - **Mais de uma referência:** a faixa lista **todas** as páginas que acompanharam a pergunta (uma por seção), não só as que o modelo citou; as não citadas também aparecem, com o número que o modelo viu.
-- **"Não achei isso nas suas páginas":** linha discreta, **do app e não do modelo** (modelos pequenos variam a frase, copiam instruções e às vezes dizem "não encontrei" sobre o que está nas páginas). Aparece quando a mensagem parece uma pergunta (4 palavras ou mais) e nenhuma página virou referência (`ChatMessage.notInPages`); "oi, tudo bem?" não dispara.
+- **Resposta aos pedaços:** o texto aparece enquanto o modelo o escreve (o "Pensando" some no primeiro pedaço). O Ollama transmite (`stream: true`, `ollama-stream.ts`); o `ChatService` entrega cada pedaço por `onChunk`, o `ChatHandler` junta os que chegam rápido (`ChunkBatcher`, 50 ms) e os publica no evento `chat:chunk` (`{ chatId, text }`, texto novo e não o acumulado); a `ChatPage` acumula o do chat aberto e mostra como a mensagem "streaming", trocada pela gravada quando a resposta fecha. Provedores que não transmitem (Gemini, Anthropic, Groq) respondem de uma vez, como antes. **Cancelar** agora interrompe a chamada ao Ollama (`AbortController`) e descarta o que sobrou.
+- **Sem aviso de "não achei":** o modelo **prioriza** as páginas quando há trecho que ajude (e cita `[n]`); quando nenhum trata do assunto, ele responde com o melhor que sabe, sem citar e sem comentar que não achou nas páginas. Sem referências, a resposta vem só com o texto (o aviso antigo, `notInPages`, foi removido; conversas gravadas com ele continuam abrindo).
 - **Mais espaço vertical:** o cabeçalho da Conversa não tem a frase de descrição e traz os seletores de IA na linha do título; o campo de mensagem e a lista são mais compactos.
 
 No chat da área de IA, toda pergunta passa antes pelas **páginas publicadas da biblioteca**. Se há trechos que têm a ver, o modelo responde com base neles e a resposta traz, abaixo, a lista de **referências**: cada uma é um link que abre a página **na seção** usada (`/library/<id>#<âncora>`). Se nada tem a ver (ex.: "oi, tudo bem?"), o chat responde como sempre e não mostra referências. Não há tela de busca à parte.
@@ -13,8 +14,8 @@ No chat da área de IA, toda pergunta passa antes pelas **páginas publicadas da
 ## Como funciona (da pergunta à referência)
 1. **Escolher o contexto** (`rag/application/rag-context.service.ts`). Busca os melhores trechos e fica só com os que **merecem** ir ao modelo: contêm pelo menos metade das palavras úteis da pergunta (`MIN_COVERAGE`) e pontuam pelo menos 35% do melhor (`MIN_RELATIVE_SCORE`). **Quantos entram depende da janela de contexto do modelo** (`shared/rag-budget.ts`, `contextBudget`): janela curta (menos de 16 mil tokens) recebe até 3 trechos / 3.000 caracteres, média 5 / 6.000, longa (65 mil ou mais) 8 / 12.000; janela desconhecida usa a média. A tela manda a janela do modelo escolhido em `contextLimit` (`chat:send`).
    **Pergunta de acompanhamento** (`rag/domain/follow-up.ts`): só é buscada junto com a anterior se for curta (menos de 3 palavras úteis) **e** apontar para o que já foi dito ("e a segunda?", "e isso?", "dê um exemplo", "fale mais"). Pergunta curta com assunto próprio ("E sobre DevOps?") é buscada sozinha, e avisar que o assunto mudou ("vamos falar só sobre X", "mudando de assunto") sempre corta a ligação.
-2. **Montar o que vai ao modelo** (`chat/chat-context.ts`, `withContext`). Os trechos da **mesma seção são juntos** (`groupBySection`) e as seções entram numeradas (`[1] Página › Seção`, `[2]`, `[3]`… sem buracos) à frente da pergunta, com a instrução de responder com base neles, citar `[n]` e dizer com clareza quando eles não bastam. O que fica **gravado** no chat é a pergunta como o usuário escreveu, sem os trechos. O histórico reenviado ao modelo leva as respostas antigas **sem as marcas `[n]`** (`withoutCitations`): elas só valem para os trechos daquela vez e, reenviadas, se confundem com a numeração dos trechos novos.
-3. **Montar as referências** (`referencesFor`). Uma referência por seção, **na mesma ordem e com a mesma numeração** que o modelo recebeu (`ChatReference.number` = o `[n]` do texto = o número no ícone), então o texto e a lista nunca desencontram. **A lista é montada pelo app, não pelo modelo**: o link nunca é inventado. Só há lista quando a resposta se apoia nas páginas: o modelo citou ao menos uma seção (citação dentro de frase que nega as páginas não conta) ou a primeira seção casa com pelo menos 75% das palavras da pergunta (`STRONG_COVERAGE`). **Referência errada pesa mais que referência faltando**: resposta que abre dizendo que não achou (`saysNotFound`), ou que só cita para dizer que o trecho não serve, fica sem lista e o app mostra "Não achei isso nas suas páginas".
+2. **Montar o que vai ao modelo** (`chat/chat-context.ts`, `withContext`). Os trechos da **mesma seção são juntos** (`groupBySection`) e as seções entram numeradas (`[1] Página › Seção`, `[2]`, `[3]`… sem buracos) à frente da pergunta, com a instrução de dar prioridade a eles e citar `[n]`, completar com o que o modelo sabe quando cobrem só em parte e, se nenhum trata do assunto, ignorá-los e responder normalmente (sem citar e sem comentar as páginas). O que fica **gravado** no chat é a pergunta como o usuário escreveu, sem os trechos. O histórico reenviado ao modelo leva as respostas antigas **sem as marcas `[n]`** (`withoutCitations`): elas só valem para os trechos daquela vez e, reenviadas, se confundem com a numeração dos trechos novos.
+3. **Montar as referências** (`referencesFor`). Uma referência por seção, **na mesma ordem e com a mesma numeração** que o modelo recebeu (`ChatReference.number` = o `[n]` do texto = o número no ícone), então o texto e a lista nunca desencontram. **A lista é montada pelo app, não pelo modelo**: o link nunca é inventado. Só há lista quando a resposta se apoia nas páginas: o modelo citou ao menos uma seção (citação dentro de frase que nega as páginas não conta) ou a primeira seção casa com pelo menos 75% das palavras da pergunta (`STRONG_COVERAGE`). **Referência errada pesa mais que referência faltando**: resposta que abre dizendo que não achou (`saysNotFound`), ou que só cita para dizer que o trecho não serve, fica sem lista.
 4. **Gravar.** A mensagem do assistente guarda `references` (contrato `ChatReference` em `shared/contracts/chat.ts`); sem páginas relevantes, o campo nem existe. Backup e restauração levam as referências junto.
 5. **Falha da busca não derruba o chat**: se a busca der erro, a pergunta segue sem contexto.
 
@@ -30,27 +31,40 @@ O chat só conhece a porta `ChatContextSource` (`CHAT_CONTEXT`); quem a implemen
 
 Medido nos `docs/` do projeto: 39 arquivos → 448 trechos em 73 ms; cada busca leva de 0,1 a 5 ms.
 
+## Busca por sentido (embeddings)
+Além das palavras, a busca compara o **sentido**: o app pede ao Ollama os **vetores** (`/api/embed`, modelo `embeddinggemma`, 768 números por trecho, `shared/embedding-model.ts`) dos trechos e da pergunta, e mede a semelhança (cosseno).
+- **Híbrida:** a lista por palavras (BM25) e a por sentido são unidas por *reciprocal rank fusion* (`domain/vectors.ts`, `fuseRankings`), então "isolar aplicações sem máquina virtual" acha a página de Docker sem a palavra "Docker". Um trecho entra no contexto se tem a maioria das palavras da pergunta (`MIN_COVERAGE`) **ou** semelhança de pelo menos `MIN_SIMILARITY` (0,33). **Medido** com o modelo real em português: trechos do assunto ficaram entre 0,35 e 0,52 e o que não tem a ver ("capital da França", "copa de 2014") não passou de 0,27. Com a busca por sentido, a pontuação junta das duas listas não serve de régua e o corte relativo não vale.
+- **Em segundo plano e aos poucos:** os vetores dos trechos novos são feitos em lotes de 32 (`RagSearchService.embedPending`) sem travar a busca, que usa os que já estão prontos. **Guardados pelo hash do texto** (`infrastructure/embedding-store.ts`): editar uma página refaz só os trechos mudados e abrir o app de novo não refaz nada. Cache em `<userData>/cache/embeddings.json` (**fora do backup**, refeito se o arquivo some ou é de outro modelo).
+- **Opcional e com queda graciosa:** sem o modelo de vetores (não baixado, Ollama desligado), `OllamaEmbedder` devolve `null`, espera 60 s antes de tentar de novo e a busca segue só por palavras, como antes. O app o instala em Configurações > Componentes > "Busca por sentido" (~620 MB, qualquer sistema; no Linux vai para o **seu** Ollama). Usa o mesmo Ollama do chat (o assistente do app, se for ele).
+
+## Resumo de conversa longa
+Cada envio reenvia o histórico; quando ele passa do que o modelo aguenta, **o começo vira um resumo** (`shared/chat-history.ts`, `chat/chat-digest.ts`, `ChatService.summarize`).
+- **Orçamento** (`historyBudget`): 30% da janela do modelo, no máximo 3.000 tokens estimados para modelo pequeno (menos de 3 bilhões de parâmetros) e 6.000 para médio (menos de 8); mínimo 1.500; sem janela conhecida, 8.000. Modelo grande e de janela longa quase nunca resume.
+- **Corte** (`summaryCut`): as 4 últimas mensagens nunca entram no resumo, e o corte cai no começo de uma pergunta do usuário.
+- **Resumo** feito uma vez, pela mesma IA, em até 200 palavras (mantém o que o usuário quer, fatos, números, decisões e pendências), e **gravado no chat** (`ChatDetail.digest = { text, upTo }`): os envios seguintes só o reaproveitam; quando o histórico volta a crescer, o resumo anterior entra no novo pedido. O modelo recebe o resumo como o começo da conversa (um par usuário/assistente) seguido das mensagens que ele não cobre. A tela continua mostrando **todas** as mensagens.
+- Se a IA falhar ao resumir, o chat segue com o histórico inteiro. O aviso de conversa grande conta o resumo no lugar das mensagens que ele cobre (`historyTokens`).
+
 ## Aviso de conversa grande
 O aviso antes do envio (80% da janela do modelo) soma ao histórico o que os trechos das páginas podem acrescentar (`contextOverheadTokens`: a instrução fixa mais o máximo de caracteres do orçamento da janela). O `num_ctx` pedido ao Ollama já contava os trechos, porque eles entram na mensagem antes do cálculo.
 
 ## Âncoras (o link cai na seção)
 A regra que transforma um título em âncora (`## Fluxo de Trabalho` → `fluxo-de-trabalho`; repetido vira `-2`) é **uma só**, em `shared/markdown-headings.ts`, usada pelo indexador e pelo visualizador (`renderer/src/lib/markdown.ts` a reexporta). A página rola até a seção do endereço com `useScrollToHash` (`DocumentPage`).
 
-## Por que não há índice em disco
-A montagem leva milissegundos; guardar o índice só traria o risco de ficar velho. Em disco só irão dados **caros de refazer** (os embeddings, na próxima etapa), em `data/rag/`, fora do backup.
+## Por que o índice de palavras não vai a disco
+A montagem leva milissegundos; guardar o índice só traria o risco de ficar velho. Em disco ficam só os dados **caros de refazer**: os vetores (ver acima).
 
 ## Medir a acurácia
 Montar 20 a 30 perguntas reais, cada uma com a página que deveria ser referenciada, e contar quantas vezes ela está nas referências. Acima de ~90% a busca por sentido é luxo; perto de 70%, vale fazê-la.
 
 ## Limites conhecidos
-- Não entende **sinônimos** ("salvar no disco" ≠ "persistência"): é o que a busca por sentido resolve.
+- Sem o modelo de vetores, não entende **sinônimos** ("salvar no disco" ≠ "persistência"); com ele, entende.
 - O radical é por regras simples, sem dicionário; pode juntar palavras diferentes (a busca tolera, pois pergunta e páginas passam pelo mesmo caminho).
 - Pergunta de acompanhamento só olha a pergunta anterior, não a conversa toda, e a regra de "apontar para o que já foi dito" é uma lista de palavras (pronomes, ordinais, "continue"), não entendimento da frase.
-- O histórico ainda é reenviado **inteiro** a cada mensagem (sem corte nem resumo); só o aviso de conversa grande protege. Resumir ou cortar o começo da conversa muda o que o modelo "lembra" e fica para uma decisão à parte.
+- O resumo é da IA e pode perder um detalhe; a conversa completa continua na tela e no disco.
 - O orçamento de trechos segue a janela do modelo, não o tamanho dele: um modelo pequeno com janela longa recebe muitos trechos e pode se perder.
-- **A busca por palavras não sabe dizer "isso não está nas páginas".** Palavras genéricas casam por acaso e a correção de digitação pode ligar palavras diferentes ("capital" a "capitul"). Medido nos `docs/` do projeto, perguntas fora do assunto ainda recebem trechos como contexto; quem evita a referência errada é o modelo, que não cita o que não usou. Com modelo muito pequeno que ignora as instruções, a resposta pode vir sem referências. A busca por sentido melhora isso.
+- **A busca por palavras sozinha não sabe dizer "isso não está nas páginas".** Palavras genéricas casam por acaso e a correção de digitação pode ligar palavras diferentes ("capital" a "capitul"); perguntas fora do assunto ainda podem receber trechos, e quem evita a referência errada é o modelo, que não cita o que não usou. A busca por sentido ajuda, mas o corte de 0,33 foi medido num conjunto pequeno de exemplos: confira com as suas páginas.
 - Saudações ("oi", "tudo bem", "obrigado") são palavras vazias: não disparam busca.
 
 ## Pendente
-- Busca por sentido (embeddings) e busca híbrida, se a medição mostrar que faz falta.
-- Recuo de conversa longa (resumo ou corte do histórico antigo): hoje só o aviso de conversa grande e o histórico sem as perguntas respondidas com "não encontrei".
+- Streaming nos provedores da nuvem (Gemini, Anthropic, Groq); hoje só o Ollama transmite.
+- Medir a acurácia da busca híbrida com perguntas reais (ver "Medir a acurácia") e ajustar `MIN_SIMILARITY`.
