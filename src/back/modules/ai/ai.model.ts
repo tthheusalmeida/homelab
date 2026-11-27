@@ -59,6 +59,11 @@ export interface AIChatRequest {
   json?: boolean;
   /** Chamado antes de cada nova tentativa automática (para mostrar "tentando de novo"). */
   onRetry?: (info: AIRetryInfo) => void;
+  /**
+   * Recebe a resposta aos pedaços, conforme o modelo a escreve (o texto novo, não o acumulado). Só
+   * provedores que sabem transmitir a usam; os outros respondem de uma vez e não chamam isto.
+   */
+  onChunk?: (text: string) => void;
   /** Cancela a chamada em andamento (e as esperas entre tentativas). */
   signal?: AbortSignal;
   /**

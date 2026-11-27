@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { MessageSquare, Plus, Trash2 } from 'lucide-react';
+import { MessageSquare, PanelLeftClose, PanelLeftOpen, Plus, Trash2 } from 'lucide-react';
 
 import type { ChatSummary } from '#shared/contracts/chat';
 import { Button } from '#ui/button';
@@ -15,6 +15,9 @@ interface ChatListProps {
   isLoading: boolean;
   isError: boolean;
   activeId?: string;
+  /** Lista aberta (240 px) ou recolhida numa faixa estreita. */
+  open?: boolean;
+  onToggle?: () => void;
   /** Enquanto uma resposta é gerada não dá para trocar de conversa. */
   disabled?: boolean;
   onSelect: (id: string) => void;
@@ -29,20 +32,69 @@ export function ChatList({
   isLoading,
   isError,
   activeId,
+  open = true,
+  onToggle,
   disabled = false,
   onSelect,
   onNew,
   onDelete,
   onRetry,
 }: ChatListProps) {
+  if (!open) {
+    return (
+      <nav
+        aria-label={ChatStrings.listLabel}
+        className="flex w-12 shrink-0 flex-col items-center gap-2 border-r px-2 py-3"
+      >
+        <Tip content={ChatStrings.showList} side="right">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={ChatStrings.showList}
+            onClick={onToggle}
+          >
+            <PanelLeftOpen />
+          </Button>
+        </Tip>
+
+        <Tip content={ChatStrings.newChat} side="right">
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label={ChatStrings.newChat}
+            disabled={disabled}
+            onClick={onNew}
+          >
+            <Plus />
+          </Button>
+        </Tip>
+      </nav>
+    );
+  }
+
   return (
     <nav
       aria-label={ChatStrings.listLabel}
-      className="flex min-h-0 w-60 shrink-0 flex-col gap-2 overflow-y-auto border-r pr-3"
+      className="flex min-h-0 w-64 shrink-0 flex-col gap-2 overflow-y-auto border-r px-3 py-3"
     >
-      <p className="px-1 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-        <span className="text-primary">$</span> {ChatStrings.listTitle}
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="px-1 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+          <span className="text-primary">$</span> {ChatStrings.listTitle}
+        </p>
+
+        {onToggle && (
+          <Tip content={ChatStrings.hideList} side="right">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={ChatStrings.hideList}
+              onClick={onToggle}
+            >
+              <PanelLeftClose />
+            </Button>
+          </Tip>
+        )}
+      </div>
 
       <Button variant="outline" className="justify-start" disabled={disabled} onClick={onNew}>
         <Plus />

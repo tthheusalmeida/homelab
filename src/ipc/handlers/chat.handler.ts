@@ -6,11 +6,15 @@ import type {
   ChatSummary,
 } from '../../shared/contracts/chat';
 import { IpcError, IpcErrorCode } from '../../shared/errors';
+import { IpcEvents } from '../../shared/events';
+import type { EventPublisher } from '../event-publisher';
 import { IpcHandler, type IpcRoute } from '../ipc-handler';
+
+import { ChunkBatcher } from './chunk-batcher';
 
 /** Porta do `ChatService` do back. */
 export interface ChatSource {
-  send(request: ChatSendRequest): Promise<ChatSendResponse>;
+  send(request: ChatSendRequest, onChunk?: (text: string) => void): Promise<ChatSendResponse>;
   cancel(chatId: string): void;
   list(): ChatSummary[];
   get(id: string): ChatDetail;
@@ -24,7 +28,11 @@ export interface ChatSource {
  * (`NOT_FOUND`) e mensagem vazia ou id inválido como 400 (`VALIDATION`), pelo `IpcErrorMapper`.
  */
 export class ChatHandler extends IpcHandler {
-  constructor(private readonly chat: ChatSource) {
+  constructor(
+    private readonly chat: ChatSource,
+    /** Por onde o texto da resposta segue para a tela aos pedaços; sem ele, a resposta chega inteira. */
+    private readonly events?: EventPublisher,
+  ) {
     super();
   }
 
@@ -39,9 +47,25 @@ export class ChatHandler extends IpcHandler {
   }
 
   private async send(request: ChatSendRequest): Promise<ChatSendResponse> {
+    const events = this.events;
+    const batcher = events
+      ? new ChunkBatcher((text) =>
+          events.publish(IpcEvents.chatChunk, { chatId: request.chatId, text }),
+        )
+      : null;
+
     try {
-      return await this.chat.send(request);
+      const response = await this.chat.send(
+        request,
+        batcher ? (text) => batcher.push(text) : undefined,
+      );
+
+      batcher?.flush();
+
+      return response;
     } catch (error) {
+      batcher?.stop();
+
       if (error instanceof IpcError || isClientError(error)) {
         throw error;
       }

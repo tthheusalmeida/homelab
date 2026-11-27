@@ -39,6 +39,30 @@ const setup = (props: Partial<React.ComponentProps<typeof ChatList>> = {}) => {
   return { ...handlers, user: userEvent.setup() };
 };
 
+describe("ChatList recolhível", () => {
+  it("when the toggle is clicked, should ask to hide the list", async () => {
+    const onToggle = vi.fn();
+    const { user } = setup({ onToggle });
+
+    await user.click(screen.getByRole("button", { name: "Esconder conversas" }));
+
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("when collapsed, should show only the narrow rail with show and new-chat buttons, and no titles", async () => {
+    const onToggle = vi.fn();
+    const { user, onNew } = setup({ open: false, onToggle });
+
+    expect(screen.queryByText("Conversa a")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Mostrar conversas" }));
+    await user.click(screen.getByRole("button", { name: "Novo chat" }));
+
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(onNew).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("ChatList", () => {
   it("when chats exist, should list them with the message count in the singular or plural", () => {
     setup();

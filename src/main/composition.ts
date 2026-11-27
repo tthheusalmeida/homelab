@@ -14,7 +14,16 @@ import {
 import { LocalProvidersService } from '../providers/local-providers.service';
 import { DesktopWhisperService, type WhisperRunner } from '../providers/desktop-whisper.service';
 import { ComponentsService } from '../components/components.service';
-import { CUDA_PACK_ID, findComponent, platformTarget } from '../components/component-manifest';
+import { OllamaModelInstaller, type PullFetch } from '../components/ollama-model-installer';
+import { ConfiguredOllama } from '../providers/configured-ollama';
+import { TagsPresence } from '../components/ollama-presence';
+import { OllamaRuntime, type SpawnProcess } from '../providers/ollama-runtime';
+import {
+  CUDA_PACK_ID,
+  OLLAMA_FOLDER,
+  findComponent,
+  platformTarget,
+} from '../components/component-manifest';
 import { detectHardware } from '../components/hardware';
 import type { FetchLike } from '../components/downloader';
 import { WhisperBinaryResolver } from '../providers/whisper-binary-resolver';
@@ -47,6 +56,12 @@ export interface CompositionOptions {
   ffmpegVersion: () => Promise<string>;
   /** Cliente HTTP em fluxo, usado para baixar modelos e pacotes (`fetch` do Electron). */
   downloadFetch: FetchLike;
+  /** Inicia um programa em segundo plano (o assistente local). */
+  spawnProcess?: SpawnProcess;
+  /** Cliente HTTP com corpo e método (baixar e remover modelos do assistente local). */
+  httpFetch?: PullFetch;
+  /** Encerra um processo e os que ele abriu (no Windows, `taskkill /T`). */
+  killTree?: (pid: number) => void;
   /** Executa um programa e devolve a saída (detecção da placa de vídeo). */
   runForOutput: (file: string, args: string[]) => Promise<string>;
   totalMemoryMb: () => number;
@@ -83,10 +98,59 @@ export function createServices(options: CompositionOptions) {
     options.cipher,
   );
 
+  // O assistente local (IA no computador) mora nos dados do usuário, fora da pasta do app: uma
+  // atualização do app não apaga os 2 GB do programa nem os modelos já baixados.
+  const packagesDir = path.join(options.userDataDir, 'components', 'packages');
+  const assistantModelsDir = path.join(options.userDataDir, 'components', 'assistant-models');
+  const assistant = new OllamaRuntime({
+    programDir: path.join(packagesDir, OLLAMA_FOLDER),
+    modelsDir: assistantModelsDir,
+    platform: options.platform,
+    spawnProcess:
+      options.spawnProcess ??
+      (() => {
+        throw new Error('Não foi possível iniciar o assistente local neste ambiente.');
+      }),
+    ping: options.fetchFn,
+    killTree: options.killTree,
+    exists: options.exists,
+  });
+
+  const httpFetch: PullFetch =
+    options.httpFetch ?? (() => Promise.reject(new Error('Sem acesso à rede neste ambiente.')));
+  const ownOllama = new ConfiguredOllama(() => settings.get().local.ollama.url, options.fetchFn);
+
   const components = new ComponentsService({
     binDir,
     modelsDir: path.join(options.userDataDir, 'components', 'models'),
     downloadsDir: path.join(options.userDataDir, 'components', 'downloads'),
+    packagesDir,
+    installers: [
+      new OllamaModelInstaller({
+        modelsDir: assistantModelsDir,
+        assistant,
+        fetchFn: httpFetch,
+      }),
+      // Modelos para o Ollama do próprio usuário (Linux): baixa nele e pergunta a ele o que já tem.
+      new OllamaModelInstaller({
+        kind: 'ollama-pull',
+        assistant: ownOllama,
+        presence: new TagsPresence(async () => {
+          try {
+            const response = await httpFetch(`${ownOllama.baseUrl}/api/tags`, {
+              method: 'GET',
+              signal: AbortSignal.timeout(3_000),
+            });
+            const data = (await response.json()) as { models?: Array<{ name?: string }> };
+
+            return (data.models ?? []).flatMap((model) => (model.name ? [model.name] : []));
+          } catch {
+            return null;
+          }
+        }),
+        fetchFn: httpFetch,
+      }),
+    ],
     platform: options.platform,
     arch: options.arch,
     state: new JsonFile(path.join(options.userDataDir, DataFiles.components)),
@@ -138,6 +202,8 @@ export function createServices(options: CompositionOptions) {
     secrets,
     whisper,
     components,
+    /** O assistente local (ligado sob demanda e desligado ao fechar o app). */
+    assistant,
     settingsService: new SettingsService(settings),
     externalProviders: new ExternalProvidersService(
       createExternalDefinitions(options.keyCheckers),
@@ -147,7 +213,7 @@ export function createServices(options: CompositionOptions) {
       [
         createWhisperDefinition(options.exists, activeWhisperConfig),
         createFfmpegDefinition(options.ffmpegVersion),
-        createOllamaDefinition(options.fetchFn),
+        createOllamaDefinition(options.fetchFn, assistant),
       ],
       settings,
     ),

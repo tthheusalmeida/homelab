@@ -40,7 +40,7 @@ Documentos/HomeLab/
 | Entrada | `Documentos/HomeLab/inbox` (fixa) |
 | Temporários | `Documentos/HomeLab/temp/video` e `.../temp/audio` (fixos) |
 | Whisper | `resources/bin/<platform>-<arch>`, executável `whisper-cli(.exe)`, modelo `ggml-large-v3-turbo.bin` **na mesma pasta** (fixos; só dá para testar) |
-| Ollama | `http://localhost:11434` |
+| Ollama | `http://localhost:11434` (com o **assistente local** instalado e este endereço no padrão, o app usa o assistente, em `http://127.0.0.1:11435`; ver `componentes.md`) |
 | Aparência | tema `system` (acompanha o Windows), cor de destaque `cyan` (a do ícone) e leitura: fonte padrão, letra 16, zoom 100% e cores do tema (intensidades 50 e 900 ao escolher uma cor) |
 
 ### Trocar a pasta da biblioteca

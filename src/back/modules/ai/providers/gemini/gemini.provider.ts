@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, type GenerateContentResponseUsageMetadata } from '@google/genai';
 
 import type { AIChatRequest, AIProvider, AIProviderModel, AIThinkingOption } from '../../ai.model';
 
@@ -86,7 +86,7 @@ export class GeminiProvider implements AIProvider, ChatBackend {
 
   /** Uma tentativa ao Gemini (as repetições e a troca de modelo são de `runResilientChat`). */
   async attempt(model: string, request: AIChatRequest): Promise<ChatAnswer> {
-    const result = await this.client().models.generateContent({
+    const params = {
       model,
       contents: request.messages
         ? request.messages.map((turn) => ({
@@ -103,7 +103,13 @@ export class GeminiProvider implements AIProvider, ChatBackend {
             },
           }
         : {}),
-    });
+    };
+
+    if (request.onChunk) {
+      return this.streamAttempt(params, request.onChunk);
+    }
+
+    const result = await this.client().models.generateContent(params);
 
     if (!result.text) {
       throw new GeminiEmptyResponseError();
@@ -114,6 +120,38 @@ export class GeminiProvider implements AIProvider, ChatBackend {
       inputTokens: result.usageMetadata?.promptTokenCount ?? 0,
       outputTokens: result.usageMetadata?.candidatesTokenCount ?? 0,
       totalTokens: result.usageMetadata?.totalTokenCount,
+    };
+  }
+
+  /** A resposta aos pedaços: o consumo vem no último pedaço do fluxo. */
+  private async streamAttempt(
+    params: Parameters<GoogleGenAI['models']['generateContentStream']>[0],
+    onChunk: (text: string) => void,
+  ): Promise<ChatAnswer> {
+    const stream = await this.client().models.generateContentStream(params);
+    let text = '';
+    let usage: GenerateContentResponseUsageMetadata | undefined;
+
+    for await (const chunk of stream) {
+      const piece = chunk.text ?? '';
+
+      if (piece) {
+        text += piece;
+        onChunk(piece);
+      }
+
+      usage = chunk.usageMetadata ?? usage;
+    }
+
+    if (!text) {
+      throw new GeminiEmptyResponseError();
+    }
+
+    return {
+      text,
+      inputTokens: usage?.promptTokenCount ?? 0,
+      outputTokens: usage?.candidatesTokenCount ?? 0,
+      totalTokens: usage?.totalTokenCount,
     };
   }
 

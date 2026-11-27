@@ -28,3 +28,20 @@ export function modelContextLimit(model?: AiModel): number | null {
 
   return limit > 0 ? limit : null;
 }
+
+/**
+ * Tamanho do modelo em bilhões de parâmetros, lido do texto que o Ollama informa ("0.8B", "4.7B",
+ * "560M"); `null` quando não informa (modelos na nuvem).
+ */
+export function modelParameterBillions(model?: AiModel): number | null {
+  const match = model?.details?.parameter_size?.trim().match(/^([\d.]+)\s*([MBK])/i);
+  const amount = match ? Number(match[1]) : Number.NaN;
+
+  if (!match || !(amount > 0)) {
+    return null;
+  }
+
+  const unit = match[2].toUpperCase();
+
+  return unit === "B" ? amount : unit === "M" ? amount / 1_000 : amount / 1_000_000;
+}

@@ -17,6 +17,11 @@ interface PageHeaderProps {
   actions?: ReactNode;
   /** Filtros, busca ou abas da tela: ficam presos junto com o cabeçalho, abaixo da descrição. */
   toolbar?: ReactNode;
+  /**
+   * Cabeçalho de uma linha só (título e comando lado a lado, sem folga): para telas que precisam de
+   * altura, como a Conversa. Sem descrição, status nem barra de ferramentas.
+   */
+  compact?: boolean;
   className?: string;
 }
 
@@ -36,9 +41,39 @@ export function PageHeader({
   status,
   actions,
   toolbar,
+  compact = false,
   className,
 }: PageHeaderProps) {
   const slot = useContext(PageHeaderSlotContext);
+
+  const prompt = (
+    <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground select-none">
+      <span>root@homelab:~$</span>
+      <span>{command}</span>
+      <span aria-hidden="true" className="inline-block h-3.5 w-1.5 animate-pulse bg-brand" />
+    </div>
+  );
+
+  if (compact) {
+    const row = (
+      <header
+        data-slot="page-header"
+        className={cn("border-b border-border bg-background px-4 py-2", className)}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="flex min-w-0 items-baseline gap-3">
+            <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+
+            {prompt}
+          </div>
+
+          {actions}
+        </div>
+      </header>
+    );
+
+    return slot ? createPortal(row, slot) : row;
+  }
 
   const header = (
     <header
@@ -48,11 +83,7 @@ export function PageHeader({
         className,
       )}
     >
-      <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground select-none">
-        <span>root@homelab:~$</span>
-        <span>{command}</span>
-        <span aria-hidden="true" className="inline-block h-3.5 w-1.5 animate-pulse bg-brand" />
-      </div>
+      {prompt}
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">

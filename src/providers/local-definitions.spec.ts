@@ -132,3 +132,59 @@ describe('ffmpeg definition', () => {
     expect(createFfmpegDefinition(() => Promise.resolve('')).editable).toBe(false);
   });
 });
+
+describe('ollama definition com o assistente local', () => {
+  const assistant = (installed = true) => ({
+    baseUrl: 'http://127.0.0.1:11435',
+    isInstalled: () => installed,
+    ensureRunning: jest.fn().mockResolvedValue(undefined),
+  });
+
+  it('when the assistant is installed and the address is the default, should start it and test it', async () => {
+    const fetchFn = jest.fn().mockResolvedValue({ ok: true, status: 200 });
+    const local = assistant();
+
+    const result = await createOllamaDefinition(fetchFn, local).test({
+      url: 'http://localhost:11434',
+    });
+
+    expect(result.ok).toBe(true);
+    expect(local.ensureRunning).toHaveBeenCalledTimes(1);
+    expect(fetchFn).toHaveBeenCalledWith('http://127.0.0.1:11435/api/tags', expect.anything());
+  });
+
+  it('when the user typed another address, should test that one and leave the assistant off', async () => {
+    const fetchFn = jest.fn().mockResolvedValue({ ok: true, status: 200 });
+    const local = assistant();
+
+    await createOllamaDefinition(fetchFn, local).test({ url: 'http://outro-pc:11434' });
+
+    expect(local.ensureRunning).not.toHaveBeenCalled();
+    expect(fetchFn).toHaveBeenCalledWith('http://outro-pc:11434/api/tags', expect.anything());
+  });
+
+  it('when the assistant is not installed, should test the configured address', async () => {
+    const fetchFn = jest.fn().mockResolvedValue({ ok: true, status: 200 });
+    const local = assistant(false);
+
+    await createOllamaDefinition(fetchFn, local).test({ url: 'http://localhost:11434' });
+
+    expect(local.ensureRunning).not.toHaveBeenCalled();
+    expect(fetchFn).toHaveBeenCalledWith('http://localhost:11434/api/tags', expect.anything());
+  });
+
+  it('when the assistant cannot start, should answer not reachable naming its address', async () => {
+    const fetchFn = jest.fn();
+    const local = assistant();
+
+    local.ensureRunning.mockRejectedValue(new Error('não iniciou'));
+
+    await expect(
+      createOllamaDefinition(fetchFn, local).test({ url: 'http://localhost:11434' }),
+    ).resolves.toEqual({
+      ok: false,
+      message: 'Não foi possível conectar ao Ollama em http://127.0.0.1:11435.',
+    });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});

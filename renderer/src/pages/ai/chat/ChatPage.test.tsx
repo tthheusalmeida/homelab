@@ -7,7 +7,8 @@ import userEvent from "@testing-library/user-event";
 
 import { IpcChannels } from "#shared/channels";
 import type { ChatDetail, ChatSummary } from "#shared/contracts/chat";
-import { failure, mockApi, ok, payloadsOf } from "#test/api-mock";
+import { IpcEvents } from "#shared/events";
+import { emitEvent, failure, mockApi, ok, payloadsOf } from "#test/api-mock";
 
 import { createTestQueryClient } from "../../../test/utils";
 
@@ -344,6 +345,107 @@ describe("ChatPage: enviar mensagens", () => {
     expect(within(chatList()).getByRole("button", { name: /^Conversa a/ })).toBeDisabled();
   });
 
+  it("when the model writes the answer in pieces, should show the text growing and drop the thinking indicator", async () => {
+    const user = userEvent.setup();
+
+    setup({ chats: [makeChat("a")], url: "/ai/chat?c=a", send: () => new Promise(() => {}) });
+
+    await screen.findByText("pergunta a");
+    await user.type(textbox(), "conta algo");
+    await user.click(sendButton());
+    await screen.findByText("Pensando");
+
+    act(() => emitEvent(IpcEvents.chatChunk, { chatId: "a", text: "Era uma " }));
+    act(() => emitEvent(IpcEvents.chatChunk, { chatId: "a", text: "vez" }));
+
+    expect(await screen.findByText("Era uma vez")).toBeInTheDocument();
+    expect(screen.queryByText("Pensando")).not.toBeInTheDocument();
+  });
+
+  it("when pieces arrive for another chat, should not show them here", async () => {
+    const user = userEvent.setup();
+
+    setup({ chats: [makeChat("a")], url: "/ai/chat?c=a", send: () => new Promise(() => {}) });
+
+    await screen.findByText("pergunta a");
+    await user.type(textbox(), "oi");
+    await user.click(sendButton());
+    await screen.findByText("Pensando");
+
+    act(() => emitEvent(IpcEvents.chatChunk, { chatId: "outro", text: "não é daqui" }));
+
+    expect(screen.queryByText("não é daqui")).not.toBeInTheDocument();
+    expect(screen.getByText("Pensando")).toBeInTheDocument();
+  });
+
+  it("when the answer lands, should replace the pieces with the saved message, shown once", async () => {
+    const user = userEvent.setup();
+
+    setup({ chats: [makeChat("a")], url: "/ai/chat?c=a" });
+
+    await screen.findByText("pergunta a");
+    await user.type(textbox(), "pergunta nova");
+    await user.click(sendButton());
+    act(() => emitEvent(IpcEvents.chatChunk, { chatId: "a", text: "ok!" }));
+
+    await waitFor(() => expect(within(conversation()).getAllByText("ok!")).toHaveLength(1));
+    expect(screen.queryByText("Pensando")).not.toBeInTheDocument();
+  });
+
+  it("when the list is hidden, should remember it and show the rail instead of the titles", async () => {
+    const user = userEvent.setup();
+
+    window.localStorage.removeItem("homelab:chat-list-open");
+    setup({ chats: [makeChat("a")] });
+
+    await within(chatList()).findByText("Conversa a");
+    await user.click(screen.getByRole("button", { name: "Esconder conversas" }));
+
+    expect(within(chatList()).queryByText("Conversa a")).not.toBeInTheDocument();
+    expect(window.localStorage.getItem("homelab:chat-list-open")).toBe("0");
+
+    await user.click(screen.getByRole("button", { name: "Mostrar conversas" }));
+
+    expect(await within(chatList()).findByText("Conversa a")).toBeInTheDocument();
+    window.localStorage.removeItem("homelab:chat-list-open");
+  });
+
+  it("when Ctrl+F is pressed, should open the floating search inside the conversation and count the matches", async () => {
+    const user = userEvent.setup();
+
+    setup({ chats: [makeChat("a")], url: "/ai/chat?c=a" });
+    await screen.findByText("pergunta a");
+
+    await user.keyboard("{Control>}f{/Control}");
+    await user.type(await screen.findByRole("searchbox", { name: "Pesquisar na conversa" }), "resposta");
+
+    expect(await screen.findByText("1 de 1")).toBeInTheDocument();
+  });
+
+  it("when the chat has answers with references, should show their count in the header button", async () => {
+    setup({
+      chats: [
+        makeChat("a", {
+          messages: [
+            { id: "1", role: "user", content: "p", createdAt: iso(0) },
+            {
+              id: "2",
+              role: "assistant",
+              content: "r [1]",
+              createdAt: iso(0),
+              references: [
+                { documentId: "d", title: "DORA", headingPath: ["DORA"], anchor: null, category: [], number: 1 },
+              ],
+            },
+          ],
+        }),
+      ],
+      url: "/ai/chat?c=a",
+    });
+
+    expect(await screen.findByRole("button", { name: "Referências desta conversa: 1" })).toBeEnabled();
+  });
+
   it("when send is clicked while waiting, should cancel, tell the main, show the status and put the text back", async () => {
     const user = userEvent.setup();
     const { invoke } = setup({
@@ -594,6 +696,36 @@ describe("ChatPage: tamanho do contexto", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(textbox()).toHaveValue("mais uma pergunta");
     expect(search()).toBe("?c=a");
+    expect(payloadsOf(invoke, IpcChannels.chat.send)).toEqual([]);
+  });
+
+  it("when the model window is known, should send it so the main sizes the page excerpts to it", async () => {
+    const user = userEvent.setup();
+    const { invoke } = setup({ chats: [makeChat("a")], url: "/ai/chat?c=a", contextLength: 128_000 });
+
+    await screen.findByText("pergunta a");
+    await waitFor(() => expect(payloadsOf(invoke, IpcChannels.ai.models).length).toBeGreaterThan(0));
+    await user.type(textbox(), "oi");
+    await user.click(sendButton());
+
+    await waitFor(() =>
+      expect(payloadsOf(invoke, IpcChannels.chat.send)).toEqual([
+        expect.objectContaining({ chatId: "a", contextLimit: 128_000 }),
+      ]),
+    );
+  });
+
+  it("when the page excerpts would push a small conversation over 80% of a short window, should warn before sending", async () => {
+    const user = userEvent.setup();
+    // A conversa é minúscula, mas numa janela de 1.000 tokens só os trechos das páginas já passam de 80%.
+    const { invoke } = setup({ chats: [makeChat("a")], url: "/ai/chat?c=a", contextLength: 1_000 });
+
+    await screen.findByText("pergunta a");
+    await waitFor(() => expect(payloadsOf(invoke, IpcChannels.ai.models).length).toBeGreaterThan(0));
+    await user.type(textbox(), "oi");
+    await user.click(sendButton());
+
+    expect(await screen.findByRole("dialog")).toHaveTextContent("Esta conversa está grande");
     expect(payloadsOf(invoke, IpcChannels.chat.send)).toEqual([]);
   });
 

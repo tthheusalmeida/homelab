@@ -272,4 +272,47 @@ describe('GroqProvider', () => {
       await expect(build().thinking()).resolves.toEqual([]);
     });
   });
+
+  describe('resposta aos pedaços', () => {
+    async function* fluxo() {
+      yield { choices: [{ delta: { content: 'Olá, ' } }] };
+      yield { choices: [{ delta: { content: 'mundo' } }] };
+      yield {
+        choices: [{ delta: {} }],
+        x_groq: { usage: { prompt_tokens: 4, completion_tokens: 6, total_tokens: 10 } },
+      };
+    }
+
+    it('when the caller wants the pieces, should stream, hand them over and record usage from the last chunk', async () => {
+      create.mockResolvedValue(fluxo());
+      const pieces: string[] = [];
+
+      const text = await build().chat({
+        message: 'oi',
+        model: cheapest,
+        onChunk: (piece) => pieces.push(piece),
+      });
+
+      expect(text).toBe('Olá, mundo');
+      expect(pieces).toEqual(['Olá, ', 'mundo']);
+      expect(firstArg(0)).toMatchObject({ stream: true });
+      expect(usage.getUsage().recentRequests[0]).toMatchObject({
+        inputTokens: 4,
+        outputTokens: 6,
+        success: true,
+      });
+    });
+
+    it('when the stream brings no text, should fail as an empty answer', async () => {
+      async function* vazio() {
+        yield { choices: [{ delta: {} }] };
+      }
+
+      create.mockResolvedValue(vazio());
+
+      await expect(
+        build().chat({ message: 'oi', model: cheapest, onChunk: () => undefined }),
+      ).rejects.toThrow();
+    });
+  });
 });

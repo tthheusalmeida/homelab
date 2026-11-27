@@ -1,6 +1,20 @@
 /** Textos da tela de chat (interface em português). */
 export const ChatStrings = {
   newChat: "Novo chat",
+  referencesOpen: (count: number) =>
+    count === 0 ? "Referências desta conversa (nenhuma ainda)" : `Referências desta conversa: ${count}`,
+  previewDescription: "Consulta rápida: a conversa continua aqui, onde você parou.",
+  previewLoading: "Abrindo a página",
+  previewFailed: "Não foi possível abrir esta página. Ela pode ter sido removida.",
+  previewClose: "Fechar",
+  previewOpenPage: "Abrir a página",
+  referencesTitle: "Referências desta conversa",
+  referencesDescription:
+    "As páginas em que cada resposta deste chat se apoiou. O número é o da marca [n] no texto daquela resposta.",
+  referencesOfAnswer: (question: string) =>
+    question ? `Resposta a: ${question}` : "Resposta",
+  hideList: "Esconder conversas",
+  showList: "Mostrar conversas",
   listTitle: "conversas",
   listLabel: "Conversas",
   emptyList: "Nenhuma conversa ainda. Envie uma mensagem para começar.",
@@ -14,6 +28,9 @@ export const ChatStrings = {
   deleteDescription: (title: string) =>
     `A conversa "${title}" será excluída e não poderá ser recuperada.`,
   deleteConfirm: "Excluir",
+
+  wordsOnlyNotice:
+    "Busca só por palavras: a busca por sentido está desligada, então páginas que dizem o mesmo com outras palavras podem ter ficado de fora.",
 
   cancelled: "Geração cancelada",
   sendFailed: "Não foi possível enviar a mensagem.",

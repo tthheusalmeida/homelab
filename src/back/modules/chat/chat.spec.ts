@@ -66,6 +66,7 @@ describe('ChatService', () => {
         modelId: 'm',
         providerId: 'ollama',
         thinking: undefined,
+        signal: expect.any(AbortSignal),
         messages: [{ role: 'user', content: 'oi' }],
       });
     });

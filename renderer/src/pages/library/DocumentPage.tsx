@@ -19,6 +19,7 @@ import { ReadingSurface } from "#components/ReadingSurface";
 import { cn } from "#lib/utils";
 import { useReadingPreferences } from "#hooks/use-appearance";
 import { useCtrlWheelZoom } from "#hooks/use-ctrl-wheel-zoom";
+import { useScrollToHash } from "#hooks/use-scroll-to-hash";
 import { stepZoom } from "#lib/reading";
 import { useActiveSection } from "#hooks/use-active-section";
 import { useReadingSides } from "#hooks/use-reading-sides";
@@ -109,6 +110,9 @@ export function DocumentPage() {
 
   // Título em leitura agora (destacado no sumário).
   const activeId = useActiveSection(headings.map((heading) => heading.id));
+
+  // Link para uma seção (`#fluxo-de-trabalho`, como o da busca por assunto): rola até ela.
+  useScrollToHash(Boolean(data) && !alternateView);
 
   // Ctrl+F: busca no texto da página (só onde há texto: não vale no mapa mental nem no infográfico).
   const find = useFind(container, data?.content);

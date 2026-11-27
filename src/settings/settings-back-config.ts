@@ -1,4 +1,5 @@
 import { BackConfig } from '../back/config/back-config';
+import type { LocalAssistant } from '../back/config/local-assistant';
 
 import type { PlatformTools } from '../back/modules/video/platform-downloader';
 
@@ -6,6 +7,7 @@ import type { AiPreference } from '../shared/contracts/ai';
 import type { ExternalProviderId } from '../shared/contracts/providers';
 import type { ApiKeys } from './api-keys';
 import type { AppPaths } from './app-paths';
+import { DEFAULT_OLLAMA_URL } from './settings-defaults';
 import type { SettingsStore } from './settings-store';
 
 /**
@@ -23,6 +25,10 @@ export class SettingsBackConfig extends BackConfig {
     /** Caminho do ffmpeg, ou quem o resolve a cada uso (assim um ffmpeg recém-instalado vale sem reiniciar). */
     private readonly ffmpeg?: string | (() => string),
     readonly platformTools?: PlatformTools,
+    /** O assistente local que o app instala e liga (opcional). */
+    private readonly assistant?: LocalAssistant,
+    /** Onde ficam os vetores da busca por sentido (cache; fora da pasta de backup). */
+    readonly embeddingsFile: string | null = null,
   ) {
     super();
   }
@@ -83,7 +89,19 @@ export class SettingsBackConfig extends BackConfig {
     return this.appPaths.chatsFile;
   }
 
+  localAssistant(): LocalAssistant | null {
+    return this.assistant ?? null;
+  }
+
+  /**
+   * O endereço configurado, exceto quando o assistente local está instalado e o usuário não escolheu
+   * outro endereço: aí vale o do assistente. Quem aponta para outro Ollama continua com o seu.
+   */
   get ollamaUrl(): string {
-    return this.settings.get().local.ollama.url;
+    const configured = this.settings.get().local.ollama.url;
+
+    return this.assistant?.isInstalled() && configured === DEFAULT_OLLAMA_URL
+      ? this.assistant.baseUrl
+      : configured;
   }
 }

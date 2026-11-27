@@ -81,12 +81,12 @@ Erros: Gemini sem chave → `NOT_CONFIGURED` (mensagem manda abrir Configuraçõ
 | Canal | Payload | Retorno |
 |---|---|---|
 | `chat:send` | `{ chatId, message, modelId, providerId, thinking? }` | `{ message, chat }` (o chat atualizado, com todas as mensagens) |
-| `chat:cancel` | `{ chatId }` | nada; descarta a resposta que ainda está sendo gerada |
+| `chat:cancel` | `{ chatId }` | nada; interrompe a resposta que está sendo gerada e descarta o que chegar |
 | `chats:list` | — | resumos, do mais recente para o mais antigo (`id`, `title`, `createdAt`, `updatedAt`, `providerId`, `modelId`, `thinking?`, `messageCount`) |
 | `chats:get` | `{ id }` | chat com `messages`; inexistente → `NOT_FOUND` |
 | `chats:delete` | `{ id }` | nada; inexistente → `NOT_FOUND` |
 
-O `chatId` é criado pela tela (uuid) ao abrir um chat novo; o chat **nasce com a primeira mensagem** (não existe canal para criar vazio). O main reenvia o **histórico inteiro** ao provedor. Pergunta e resposta só são gravadas **juntas, em caso de sucesso**. `chat:cancel` não interrompe a chamada ao provedor (os tokens são gastos): o main descarta a resposta quando ela chega (o `chat:send` responde `VALIDATION` "A resposta foi cancelada."). Um envio por chat por vez. Erros: falha do provedor → `PROVIDER_FAILED`; sem chave → `NOT_CONFIGURED`; mensagem vazia ou id inválido → `VALIDATION`; chat excluído enquanto respondia → `NOT_FOUND`; disco → o aviso `app:notice` (a conversa segue em memória).
+O `chatId` é criado pela tela (uuid) ao abrir um chat novo; o chat **nasce com a primeira mensagem** (não existe canal para criar vazio). O main reenvia o histórico ao provedor (o começo de uma conversa longa vira um resumo gravado no chat, `digest`). Enquanto o modelo escreve, o main publica o evento `chat:chunk` (`{ chatId, text }`, só o texto novo) para a tela mostrar a resposta crescendo; o `chat:send` só responde quando termina. Pergunta e resposta só são gravadas **juntas, em caso de sucesso**. `chat:cancel` aborta a chamada ao provedor e o `chat:send` responde `VALIDATION` "A resposta foi cancelada.". Um envio por chat por vez. Erros: falha do provedor → `PROVIDER_FAILED`; sem chave → `NOT_CONFIGURED`; mensagem vazia ou id inválido → `VALIDATION`; chat excluído enquanto respondia → `NOT_FOUND`; disco → o aviso `app:notice` (a conversa segue em memória).
 
 ## library (fases 6a e 6b)
 | Canal | Substitui | Payload | Retorno | Fase |

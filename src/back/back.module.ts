@@ -9,6 +9,7 @@ import { HealthAIModule } from './modules/health/ai/health-ai.module';
 import { HealthSystemModule } from './modules/health/system/health-system.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { LibraryModule } from './modules/library/library.module';
+import { RagModule } from './modules/rag/rag.module';
 import { VideoModule } from './modules/video/video.module';
 
 export interface BackModuleOptions {
@@ -26,6 +27,7 @@ export const BACK_FEATURE_MODULES = [
   HealthAIModule,
   JobsModule,
   LibraryModule,
+  RagModule,
   ChatModule,
   VideoModule,
   AIModule,

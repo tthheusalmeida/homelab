@@ -37,13 +37,44 @@ export interface ChatBackend {
   attempt(model: string, request: AIChatRequest): Promise<ChatAnswer>;
 }
 
+/** Se alguma tentativa já entregou texto à tela (compartilhado entre todas as tentativas de uma resposta). */
+interface StreamState {
+  emitted: boolean;
+}
+
+/**
+ * O pedido de uma tentativa. Se uma tentativa anterior já entregou texto aos pedaços e falhou, as
+ * seguintes **não** transmitem: o texto novo se somaria ao pedaço que já está na tela e repetiria o
+ * começo. A resposta inteira chega no fim, como em qualquer outra chamada.
+ */
+function requestForAttempt(request: AIChatRequest, state: StreamState): AIChatRequest {
+  const { onChunk } = request;
+
+  if (!onChunk) {
+    return request;
+  }
+
+  if (state.emitted) {
+    return { ...request, onChunk: undefined };
+  }
+
+  return {
+    ...request,
+    onChunk: (text) => {
+      state.emitted = true;
+      onChunk(text);
+    },
+  };
+}
+
 /** Repete a tentativa em erro passageiro, avisando quem chamou antes de cada nova. */
 function attemptWithRetry(
   backend: ChatBackend,
   model: string,
   request: AIChatRequest,
+  state: StreamState,
 ): Promise<ChatAnswer> {
-  return withRetry(() => backend.attempt(model, request), {
+  return withRetry(() => backend.attempt(model, requestForAttempt(request, state)), {
     maxAttempts: backend.maxAttempts,
     delaysMs: backend.retryDelaysMs,
     // cancelado: não repete nem espera a próxima tentativa
@@ -70,9 +101,10 @@ async function answerWithFallback(
   backend: ChatBackend,
   model: string,
   request: AIChatRequest,
+  state: StreamState,
 ): Promise<{ answer: ChatAnswer; usedModel: string }> {
   try {
-    return { answer: await attemptWithRetry(backend, model, request), usedModel: model };
+    return { answer: await attemptWithRetry(backend, model, request, state), usedModel: model };
   } catch (error) {
     const fallbackModel = backend.catalog.cheapest();
     const { retryable, message } = backend.classify(error);
@@ -95,7 +127,7 @@ async function answerWithFallback(
     });
 
     return {
-      answer: await attemptWithRetry(backend, fallbackModel, request),
+      answer: await attemptWithRetry(backend, fallbackModel, request, state),
       usedModel: fallbackModel,
     };
   }
@@ -129,7 +161,9 @@ export async function runResilientChat(
   }
 
   try {
-    const { answer, usedModel } = await answerWithFallback(backend, model, request);
+    const { answer, usedModel } = await answerWithFallback(backend, model, request, {
+      emitted: false,
+    });
     const { inputTokens, outputTokens } = answer;
 
     usage.record({

@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { ChatComposer } from "./ChatComposer";
 import { ChatEmptyState } from "./ChatEmptyState";
 import { ChatMessage } from "./ChatMessage";
+import { STREAMING_MESSAGE_ID } from "../types/chat";
 import { ChatMessageList } from "./ChatMessageList";
 
 describe("ChatComposer", () => {
@@ -25,6 +26,16 @@ describe("ChatComposer", () => {
   };
 
   const box = () => screen.getByPlaceholderText("Envie uma mensagem...");
+
+  it("when the field is empty, should start with one line and keep the button next to it, aligned to the bottom", () => {
+    setup({ value: "" });
+
+    const row = box().parentElement as HTMLElement;
+
+    expect(box()).toHaveAttribute("rows", "1");
+    expect(row).toHaveClass("items-end");
+    expect(row).toContainElement(screen.getByRole("button", { name: "Enviar mensagem" }));
+  });
 
   it("when typing, should call onChange with the new value", async () => {
     const { onChange, user } = setup({ value: "" });
@@ -106,6 +117,67 @@ describe("ChatMessage", () => {
 
     expect(screen.getByText("oi").tagName).toBe("STRONG");
   });
+
+  it("when the answer was searched by words only, should show the notice under it", () => {
+    render(
+      <ChatMessage
+        message={{ id: "1", role: "assistant", content: "resposta", searchedByWordsOnly: true }}
+      />,
+    );
+
+    expect(screen.getByText(/Busca só por palavras/)).toBeInTheDocument();
+  });
+
+  it("when the answer was not flagged, should not show the notice", () => {
+    render(<ChatMessage message={{ id: "1", role: "assistant", content: "resposta" }} />);
+
+    expect(screen.queryByText(/Busca só por palavras/)).not.toBeInTheDocument();
+  });
+
+  it("when a user message carries the flag, should not show the notice", () => {
+    render(
+      <ChatMessage
+        message={{ id: "1", role: "user", content: "pergunta", searchedByWordsOnly: true }}
+      />,
+    );
+
+    expect(screen.queryByText(/Busca só por palavras/)).not.toBeInTheDocument();
+  });
+});
+
+describe("ChatComposer while the assistant answers", () => {
+  const renderComposer = (isSending: boolean) =>
+    render(<ChatComposer value="" onChange={vi.fn()} onSend={vi.fn()} isSending={isSending} />);
+
+  it("when the assistant is answering, should pulse the hexagon button", () => {
+    renderComposer(true);
+
+    expect(screen.getByRole("button", { name: "Parar geração" })).toHaveClass("animate-pulse");
+  });
+
+  it("when the assistant is idle, should not pulse the send button", () => {
+    renderComposer(false);
+
+    expect(screen.getByRole("button", { name: "Enviar mensagem" })).not.toHaveClass(
+      "animate-pulse",
+    );
+  });
+
+  it("when the assistant is answering, should show a small filled square to stop", () => {
+    renderComposer(true);
+
+    const icon = screen.getByRole("button", { name: "Parar geração" }).querySelector("svg");
+
+    expect(icon).toHaveClass("lucide-square", "fill-current", "size-3");
+  });
+
+  it("when the assistant is idle, should show an up arrow to send", () => {
+    renderComposer(false);
+
+    const icon = screen.getByRole("button", { name: "Enviar mensagem" }).querySelector("svg");
+
+    expect(icon).toHaveClass("lucide-arrow-up");
+  });
 });
 
 describe("ChatMessageList", () => {
@@ -139,6 +211,64 @@ describe("ChatMessageList", () => {
 
     expect(screen.queryByText("Pensando")).not.toBeInTheDocument();
     expect(screen.queryByText("Geração cancelada")).not.toBeInTheDocument();
+  });
+
+  describe("troca da resposta aos pedaços pela gravada", () => {
+    const question = { id: "1", role: "user" as const, content: "pergunta" };
+    const lastBubble = () => screen.getByRole("log").lastElementChild;
+
+    it("when the streamed answer is replaced by the saved one, should keep the same bubble (no flash)", () => {
+      const { rerender } = render(
+        <ChatMessageList
+          messages={[question, { id: STREAMING_MESSAGE_ID, role: "assistant", content: "Olá" }]}
+        />,
+      );
+      const before = lastBubble();
+
+      rerender(
+        <ChatMessageList
+          messages={[question, { id: "gravada-1", role: "assistant", content: "Olá, mundo" }]}
+        />,
+      );
+
+      expect(lastBubble()).toBe(before);
+      expect(screen.getByText("Olá, mundo")).toBeInTheDocument();
+    });
+
+    it("when a message was never streamed, should render its own bubble", () => {
+      const { rerender } = render(<ChatMessageList messages={[question]} />);
+      const before = lastBubble();
+
+      rerender(
+        <ChatMessageList
+          messages={[question, { id: "gravada-2", role: "assistant", content: "resposta" }]}
+        />,
+      );
+
+      expect(screen.getByRole("log").children).toHaveLength(2);
+      expect(lastBubble()).not.toBe(before);
+    });
+
+    it("when a new question follows a streamed answer, should keep the old answer and add the new bubbles", () => {
+      const answer = { id: "gravada-3", role: "assistant" as const, content: "primeira" };
+      const { rerender } = render(
+        <ChatMessageList
+          messages={[question, { id: STREAMING_MESSAGE_ID, role: "assistant", content: "pri" }]}
+        />,
+      );
+
+      rerender(<ChatMessageList messages={[question, answer]} />);
+      const kept = lastBubble();
+
+      rerender(
+        <ChatMessageList
+          messages={[question, answer, { id: "2", role: "user", content: "outra pergunta" }]}
+        />,
+      );
+
+      expect(screen.getByRole("log").children).toHaveLength(3);
+      expect(screen.getByRole("log").children[1]).toBe(kept);
+    });
   });
 });
 

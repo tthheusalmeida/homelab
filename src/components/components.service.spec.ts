@@ -50,7 +50,7 @@ describe('ComponentsService', () => {
   let fetchFn: jest.Mock;
   let catalog: ComponentSpec[];
 
-  const build = (platform: NodeJS.Platform = 'win32') =>
+  const build = (platform: NodeJS.Platform = 'win32', profile: HardwareProfile = hardware) =>
     new ComponentsService({
       binDir,
       modelsDir: path.join(dir, 'models'),
@@ -59,7 +59,7 @@ describe('ComponentsService', () => {
       state: new JsonFile(path.join(dir, 'components.json')),
       events,
       fetchFn: fetchFn as unknown as FetchLike,
-      hardware: () => Promise.resolve(hardware),
+      hardware: () => Promise.resolve(profile),
       catalog,
     });
 
@@ -158,6 +158,17 @@ describe('ComponentsService', () => {
   it('when the hardware recommends a component, should mark it recommended', async () => {
     expect((await infoOf(build(), 'model-a'))?.recommended).toBe(true);
     expect((await infoOf(build(), 'model-b'))?.recommended).toBe(false);
+  });
+
+  it('when the hardware names a chat assistant, should mark it recommended without listing it to download', async () => {
+    const withChat: HardwareProfile = {
+      ...hardware,
+      recommendation: { ...hardware.recommendation, chatModelId: 'model-b' },
+    };
+    const service = build('win32', withChat);
+
+    expect((await infoOf(service, 'model-b'))?.recommended).toBe(true);
+    expect(withChat.recommendation.componentIds).not.toContain('model-b');
   });
 
   it('when installing a model, should download it, install it and make it the active one', async () => {

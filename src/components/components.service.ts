@@ -15,6 +15,7 @@ import { IpcError, IpcErrorCode } from '../shared/errors';
 import { IpcEvents } from '../shared/events';
 import type { JsonFile } from '../storage/json-file';
 
+import type { ComponentInstaller } from './component-installer';
 import { catalogFor, platformTarget, type ComponentSpec } from './component-manifest';
 import { downloadVerified, type FetchLike } from './downloader';
 
@@ -41,6 +42,12 @@ export interface ComponentsDeps {
   modelsDir: string;
   /** Onde os downloads do pacote CUDA ficam até serem extraídos. */
   downloadsDir: string;
+  /**
+   * Onde ficam os pacotes que trazem a própria pasta (`extractTo`), como o assistente local. Fica nos
+   * dados do usuário, **fora da pasta do app**, para uma atualização do app não apagar o que é grande.
+   * Sem ela, usa a pasta de binários.
+   */
+  packagesDir?: string;
   platform: NodeJS.Platform;
   /** Arquitetura (`process.arch`); define quais componentes existem neste sistema. */
   arch?: string;
@@ -49,6 +56,8 @@ export interface ComponentsDeps {
   fetchFn: FetchLike;
   hardware: () => Promise<HardwareProfile>;
   catalog?: readonly ComponentSpec[];
+  /** Quem cuida dos componentes que não são arquivo com checksum (ex.: modelos do assistente local). */
+  installers?: readonly ComponentInstaller[];
 }
 
 interface RuntimeEntry {
@@ -81,6 +90,8 @@ export class ComponentsService {
   }
 
   async status(): Promise<ComponentsStatus> {
+    await this.refreshInstallers();
+
     return this.buildStatus(await this.hardware());
   }
 
@@ -149,6 +160,15 @@ export class ComponentsService {
     return this.status();
   }
 
+  /** Pede aos instaladores que atualizem o que sabem (nunca falha: sem resposta, vale o que já se sabia). */
+  private async refreshInstallers(): Promise<void> {
+    await Promise.all(
+      (this.deps.installers ?? []).map((installer) =>
+        (installer.refresh?.() ?? Promise.resolve()).catch(() => undefined),
+      ),
+    );
+  }
+
   cancel(): void {
     this.abort?.abort();
   }
@@ -172,7 +192,13 @@ export class ComponentsService {
       throw new IpcError(IpcErrorCode.VALIDATION, ComponentMessages.activeModel);
     }
 
-    if (spec.kind === 'zip') {
+    const custom = this.installerFor(spec);
+
+    if (custom) {
+      await custom.remove(spec);
+    } else if (spec.kind === 'zip' && spec.extractTo) {
+      await fs.promises.rm(this.packageRoot(spec), { recursive: true, force: true });
+    } else if (spec.kind === 'zip') {
       for (const file of spec.provides ?? []) {
         await fs.promises.rm(path.join(this.deps.binDir, file), { force: true });
       }
@@ -235,6 +261,23 @@ export class ComponentsService {
   }
 
   private async installOne(spec: ComponentSpec, signal: AbortSignal): Promise<void> {
+    const custom = this.installerFor(spec);
+
+    if (custom) {
+      this.setRuntime(spec.id, 'downloading', { receivedBytes: 0, totalBytes: spec.sizeBytes });
+
+      await custom.install(spec, {
+        signal,
+        progress: (receivedBytes, totalBytes) =>
+          this.setRuntime(spec.id, 'downloading', {
+            receivedBytes,
+            totalBytes: totalBytes > 0 ? totalBytes : spec.sizeBytes,
+          }),
+      });
+
+      return;
+    }
+
     const download = spec.download;
 
     if (!download) {
@@ -260,7 +303,10 @@ export class ComponentsService {
       this.setRuntime(spec.id, 'installing', null);
 
       try {
-        await extractZip(destination, this.deps.binDir, { signal });
+        const target = this.packageRoot(spec);
+
+        await fs.promises.mkdir(target, { recursive: true });
+        await extractZip(destination, target, { signal });
       } finally {
         await fs.promises.rm(destination, { force: true });
       }
@@ -279,7 +325,7 @@ export class ComponentsService {
       spec.kind === 'binary'
         ? [destination]
         : spec.kind === 'zip'
-          ? (spec.provides ?? [spec.file]).map((file) => path.join(this.deps.binDir, file))
+          ? (spec.provides ?? [spec.file]).map((file) => path.join(this.packageRoot(spec), file))
           : [];
 
     for (const file of files) {
@@ -305,7 +351,12 @@ export class ComponentsService {
   }
 
   private async assertWritable(): Promise<void> {
-    for (const dir of [this.deps.modelsDir, this.deps.downloadsDir, this.deps.binDir]) {
+    for (const dir of [
+      this.deps.modelsDir,
+      this.deps.downloadsDir,
+      this.deps.binDir,
+      ...(this.deps.packagesDir ? [this.deps.packagesDir] : []),
+    ]) {
       try {
         await fs.promises.mkdir(dir, { recursive: true });
         await fs.promises.access(dir, fs.constants.W_OK);
@@ -352,15 +403,32 @@ export class ComponentsService {
     return candidates.find((file) => fs.existsSync(file)) ?? null;
   }
 
+  /** Pasta onde o pacote `zip` é extraído e onde `provides` é conferido. */
+  private packageRoot(spec: ComponentSpec): string {
+    return spec.extractTo
+      ? path.join(this.deps.packagesDir ?? this.deps.binDir, spec.extractTo)
+      : this.deps.binDir;
+  }
+
+  private installerFor(spec: ComponentSpec): ComponentInstaller | undefined {
+    return this.deps.installers?.find((installer) => installer.handles(spec));
+  }
+
   private isInstalled(spec: ComponentSpec): boolean {
+    const custom = this.installerFor(spec);
+
+    if (custom) {
+      return custom.isInstalled(spec);
+    }
+
     if (spec.kind === 'bundled' || spec.kind === 'binary') {
       return fs.existsSync(path.join(this.deps.binDir, this.exe(spec.file)));
     }
 
     if (spec.kind === 'zip') {
-      return (spec.provides ?? [spec.file]).every((file) =>
-        fs.existsSync(path.join(this.deps.binDir, file)),
-      );
+      const root = this.packageRoot(spec);
+
+      return (spec.provides ?? [spec.file]).every((file) => fs.existsSync(path.join(root, file)));
     }
 
     return this.modelLocation(spec) !== null;
@@ -399,7 +467,8 @@ export class ComponentsService {
 
   private buildStatus(hardware: HardwareProfile): ComponentsStatus {
     const active = this.activeModelSpec();
-    const recommended = new Set(hardware.recommendation.componentIds);
+    const { componentIds, chatModelId } = hardware.recommendation;
+    const recommended = new Set(chatModelId ? [...componentIds, chatModelId] : componentIds);
     const components: ComponentInfo[] = this.catalog.map((spec) => {
       const entry = this.runtime.get(spec.id);
       const installed = this.isInstalled(spec);

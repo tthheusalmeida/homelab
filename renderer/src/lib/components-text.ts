@@ -14,6 +14,8 @@ export const ComponentStrings = {
     gpu: 'Aceleração por placa de vídeo',
     model: 'Modelos de transcrição',
     ocr: 'Leitura de PDF escaneado',
+    assistant: 'Assistente local',
+    llm: 'Assistentes para conversar',
   } satisfies Record<ComponentGroup, string>,
   groupHints: {
     runtime: 'Necessários para o app funcionar. Se faltarem, o app os instala para você.',
@@ -22,6 +24,9 @@ export const ComponentStrings = {
     gpu: 'Opcional. Deixa a transcrição bem mais rápida em placas de vídeo compatíveis.',
     model: 'Escolha o que baixar agora. Os outros podem ser baixados depois, nas Configurações.',
     ocr: 'Opcional. Idiomas para ler o texto de PDFs escaneados. O app baixa sozinho o idioma que faltar, na versão rápida; a de alta qualidade é mais precisa e mais lenta, e vale mais quando instalada.',
+    assistant:
+      'Opcional. Uma inteligência artificial que roda no seu computador, sem internet e sem enviar suas páginas para fora. Instale este primeiro; ele liga sozinho quando você conversa.',
+    llm: 'Opcional. Escolha um conforme a força do seu computador: os leves rodam em qualquer um, os pesados pedem placa de vídeo. Depois de instalado, aparece na Conversa, em Provedor > Ollama. No Linux, o app manda o seu Ollama baixar o modelo (ele precisa estar ligado).',
   } satisfies Record<ComponentGroup, string>,
   states: {
     missing: 'Não instalado',

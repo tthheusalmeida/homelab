@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 
 vi.mock("../api/chat", () => ({
   getAiProviders: vi.fn(),
@@ -49,6 +51,47 @@ describe("chat query hooks", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(getAiModels).toHaveBeenCalledWith("gemini");
+  });
+
+  describe("model list freshness", () => {
+    // Como o app: o cache é mantido e uma consulta vale por 30 s (o cliente de teste padrão a descarta).
+    const keepingWrapper = () => {
+      const client = new QueryClient({
+        defaultOptions: { queries: { staleTime: 30_000, retry: false } },
+      });
+
+      return ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      );
+    };
+
+    it("when the provider is Ollama, should check the list again on remount, since models are installed in another window", async () => {
+      vi.mocked(getAiModels).mockResolvedValue([]);
+
+      const wrapper = keepingWrapper();
+      const first = renderHook(() => useAiModels("ollama"), { wrapper });
+
+      await waitFor(() => expect(first.result.current.isSuccess).toBe(true));
+      first.unmount();
+      renderHook(() => useAiModels("ollama"), { wrapper });
+
+      await waitFor(() => expect(getAiModels).toHaveBeenCalledTimes(2));
+    });
+
+    it("when the provider is a cloud one, should reuse the list it already has", async () => {
+      vi.mocked(getAiModels).mockResolvedValue([]);
+
+      const wrapper = keepingWrapper();
+      const first = renderHook(() => useAiModels("gemini"), { wrapper });
+
+      await waitFor(() => expect(first.result.current.isSuccess).toBe(true));
+      first.unmount();
+
+      const second = renderHook(() => useAiModels("gemini"), { wrapper });
+
+      await waitFor(() => expect(second.result.current.isSuccess).toBe(true));
+      expect(getAiModels).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("when useAiThinking lacks provider or model, should not fetch", () => {

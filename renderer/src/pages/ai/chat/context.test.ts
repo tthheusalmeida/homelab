@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { checkContext } from "#shared/tokens";
 
-import { contextPercent, formatTokens, modelContextLimit } from "./context";
+import type { AiModel } from "./types/chat";
+import {
+  contextPercent,
+  formatTokens,
+  modelContextLimit,
+  modelParameterBillions,
+} from "./context";
 
 describe("formatTokens", () => {
   it.each([
@@ -43,5 +49,32 @@ describe("modelContextLimit", () => {
     expect(modelContextLimit(undefined)).toBeNull();
     expect(modelContextLimit({ ...base, details: { context_length: 0 } })).toBeNull();
     expect(modelContextLimit(base)).toBeNull();
+  });
+});
+
+describe("modelParameterBillions", () => {
+  const model = (parameter_size?: string) =>
+    ({ id: "m", label: "m", providerId: "ollama", details: { parameter_size } }) as AiModel;
+
+  it.each([
+    ["0.8B", 0.8],
+    ["4B", 4],
+    ["4.7B", 4.7],
+    ["9 B", 9],
+    ["560M", 0.56],
+    ["70b", 70],
+  ])("when the model reports %s, should read %s billion parameters", (text, expected) => {
+    expect(modelParameterBillions(model(text))).toBeCloseTo(expected);
+  });
+
+  it.each([undefined, "", "grande", "0B"])(
+    "when the size is %s, should be unknown",
+    (text) => {
+      expect(modelParameterBillions(model(text))).toBeNull();
+    },
+  );
+
+  it("when there is no model, should be unknown", () => {
+    expect(modelParameterBillions(undefined)).toBeNull();
   });
 });

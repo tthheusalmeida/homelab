@@ -1,19 +1,22 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 
-import type { ChatSummary } from "#shared/contracts/chat";
-import {
-  checkContext,
-  estimateConversationTokens,
-  type ContextCheck,
-} from "#shared/tokens";
+import type { ChatReference, ChatSummary } from "#shared/contracts/chat";
+import { historyTokens } from "#shared/chat-history";
+import { contextOverheadTokens } from "#shared/rag-budget";
+import { checkContext, type ContextCheck } from "#shared/tokens";
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { ErrorState } from "#components/ErrorState";
 import { PageHeader } from "#components/PageHeader";
 
-import type { AiMessage, ChatStatus } from "./types/chat";
+import { STREAMING_MESSAGE_ID, type AiMessage, type ChatStatus } from "./types/chat";
 
-import { contextPercent, formatTokens, modelContextLimit } from "./context";
+import {
+  contextPercent,
+  formatTokens,
+  modelContextLimit,
+  modelParameterBillions,
+} from "./context";
 import { ChatStrings } from "./strings";
 
 import { useAiSelection } from "./hooks/useAiSelection";
@@ -24,9 +27,17 @@ import { ChatEmptyState } from "./components/ChatEmptyState";
 import { ChatList } from "./components/ChatList";
 import { ChatMessageList } from "./components/ChatMessageList";
 import { ChatComposer } from "./components/ChatComposer";
+import { ChatReferencesPanel } from "./components/ChatReferencesPanel";
+import { ReferencePreview } from "./components/ReferencePreview";
 import { ChatSettings } from "./components/ChatSettings";
+import { referencesByAnswer, usedReferences } from "./references";
 import { ContextWarningDialog } from "./components/ContextWarningDialog";
 import { useSnackbar } from "#components/Snackbar";
+import { FindBar } from "#components/FindBar";
+import { useFind } from "#hooks/use-find";
+import { useIpcEvent } from "#hooks/use-ipc-event";
+import { usePersistedFlag } from "#hooks/use-persisted-flag";
+import { IpcEvents } from "#shared/events";
 
 /** Parâmetro da URL com o chat aberto; sem ele, é um chat novo (que só é salvo ao enviar). */
 const CHAT_PARAM = "c";
@@ -52,8 +63,18 @@ export function ChatPage() {
    */
   const [pending, setPending] = useState<{ content: string; baseCount: number } | null>(null);
 
+  /** Texto da resposta que o modelo está escrevendo agora, recebido aos pedaços. */
+  const [streamed, setStreamed] = useState<{ chatId: string; text: string } | null>(null);
+
+  /** A lista de conversas ocupa 240 px; recolhida, a leitura ganha a largura toda (lembrado entre aberturas). */
+  const [listOpen, setListOpen] = usePersistedFlag("homelab:chat-list-open", true);
+
   const [message, setMessage] = useState("");
   const [warning, setWarning] = useState<{ check: ContextCheck; content: string } | null>(null);
+  /** A área que rola com as mensagens: onde a pesquisa dentro do texto procura. */
+  const [textContainer, setTextContainer] = useState<HTMLElement | null>(null);
+  /** Referência aberta para consulta rápida, sem sair da conversa. */
+  const [previewed, setPreviewed] = useState<ChatReference | null>(null);
   const [chatToDelete, setChatToDelete] = useState<ChatSummary | null>(null);
 
   const { sendMessage, abort, isSending } = useAiChat();
@@ -70,22 +91,39 @@ export function ChatPage() {
   const activeModelId = ai.modelId;
   const activeThinkingId = ai.thinkingId;
 
-  const history = chat?.messages ?? NO_MESSAGES;
-  const showPending = pending !== null && history.length === pending.baseCount;
-  const pendingContent = showPending ? pending.content : null;
-  const messages = useMemo<AiMessage[]>(
-    () =>
-      pendingContent === null
-        ? history
-        : [...history, { id: "pending", role: "user", content: pendingContent }],
-    [history, pendingContent],
+  useIpcEvent(IpcEvents.chatChunk, ({ chatId: id, text }) =>
+    setStreamed((current) => ({
+      chatId: id,
+      text: current?.chatId === id ? current.text + text : text,
+    })),
   );
 
+  const history = chat?.messages ?? NO_MESSAGES;
+  const answerReferences = useMemo(() => referencesByAnswer(history), [history]);
+  const usedPages = useMemo(() => usedReferences(history).length, [history]);
+  const showPending = pending !== null && history.length === pending.baseCount;
+  const pendingContent = showPending ? pending.content : null;
+  const streamingText = showPending && streamed?.chatId === chatId ? streamed.text : null;
+  const messages = useMemo<AiMessage[]>(() => {
+    if (pendingContent === null) {
+      return history;
+    }
+
+    const sent: AiMessage[] = [...history, { id: "pending", role: "user", content: pendingContent }];
+
+    return streamingText
+      ? [...sent, { id: STREAMING_MESSAGE_ID, role: "assistant", content: streamingText }]
+      : sent;
+  }, [history, pendingContent, streamingText]);
+
   const modelLimit = modelContextLimit(ai.activeModel);
+  // Cada envio soma ao histórico os trechos das páginas da biblioteca (o main os escolhe, por janela).
+  const modelBillions = modelParameterBillions(ai.activeModel);
+  const pagesTokens = contextOverheadTokens(modelLimit, modelBillions);
   const contextHint =
     history.length > 0
       ? ChatStrings.contextHint(
-          formatTokens(estimateConversationTokens(history, message)),
+          formatTokens(historyTokens(history, chat?.digest, message) + pagesTokens),
         )
       : undefined;
 
@@ -123,6 +161,7 @@ export function ChatPage() {
 
     setWarning(null);
     setPending({ content, baseCount: history.length });
+    setStreamed(null);
     setMessage("");
     setSendError(null);
     setChatStatus("sending");
@@ -134,9 +173,12 @@ export function ChatPage() {
         modelId: activeModelId,
         thinking: activeThinkingId,
         message: content,
+        contextLimit: modelLimit ?? undefined,
+        modelBillions: modelBillions ?? undefined,
       });
 
       setPending(null);
+      setStreamed(null);
       setChatStatus("idle");
 
       // O chat novo passou a existir: a URL passa a apontar para ele.
@@ -145,6 +187,7 @@ export function ChatPage() {
       }
     } catch (error) {
       setPending(null);
+      setStreamed(null);
       // A pergunta não foi gravada: o texto volta ao campo para ajustar ou tentar de novo.
       setMessage(content);
 
@@ -176,7 +219,10 @@ export function ChatPage() {
     }
 
     // Conversa grande: avisa antes de enviar (cada envio reenvia tudo e custa tokens).
-    const check = checkContext(estimateConversationTokens(history, content), modelLimit);
+    const check = checkContext(
+      historyTokens(history, chat?.digest, content) + pagesTokens,
+      modelLimit,
+    );
 
     if (check.shouldWarn) {
       setWarning({ check, content });
@@ -217,24 +263,40 @@ export function ChatPage() {
     !isLoading &&
     !isSending;
 
+  // Ctrl+F: pesquisa flutuante no texto da conversa (a mesma do resumo), marcando as ocorrências.
+  const find = useFind(textContainer, messages);
+
   const showMessages = messages.length > 0 || chatStatus !== "idle" || sendError !== null;
 
   // O AppLayout não rola nesta rota: a raiz ocupa a área útil e só a lista de conversas e o
   // conteúdo da conversa rolam; o campo de mensagem fica sempre à vista.
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <PageHeader
-        title="Conversa"
-        command="ai --chat"
-        description="Converse com a IA; cada conversa fica salva e pode ser retomada depois."
+    // O -m-4 desfaz o respiro da área da tela: a lista de conversas vai de ponta a ponta (a linha dela
+    // encosta no cabeçalho e na borda de baixo) e cada coluna tem o seu próprio espaçamento.
+    <div className="-m-4 flex min-h-0 flex-1 flex-col">
+      {/* Sem frase de descrição e com os seletores da IA na linha do título: mais altura para a conversa. */}
+      <PageHeader compact title="Conversa" command="ai --chat" 
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <ChatReferencesPanel
+              answers={answerReferences}
+              total={usedPages}
+              onPreview={setPreviewed}
+            />
+
+            <ChatSettings {...ai} />
+          </div>
+        }
       />
 
-      <div className="flex min-h-0 flex-1 gap-4">
+      <div className="flex min-h-0 flex-1">
       <ChatList
         chats={chatsQuery.data}
         isLoading={chatsQuery.isLoading}
         isError={chatsQuery.isError}
         activeId={urlChatId}
+        open={listOpen}
+        onToggle={() => setListOpen(!listOpen)}
         disabled={isSending}
         onSelect={openChat}
         onNew={() => startNewChat()}
@@ -242,7 +304,7 @@ export function ChatPage() {
         onRetry={() => void chatsQuery.refetch()}
       />
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col px-4 pt-3 pb-3">
         {urlChatId && chatQuery.isError ? (
           <div className="flex flex-1 items-center justify-center">
             <ErrorState
@@ -253,7 +315,13 @@ export function ChatPage() {
             />
           </div>
         ) : showMessages ? (
-          <ChatMessageList messages={messages} status={chatStatus} error={sendError} />
+          <ChatMessageList
+            messages={messages}
+            status={chatStatus}
+            error={sendError}
+            onContainer={setTextContainer}
+            onPreviewReference={setPreviewed}
+          />
         ) : (
           <ChatEmptyState />
         )}
@@ -265,11 +333,19 @@ export function ChatPage() {
           disabled={!canSend && !isSending}
           isSending={isSending}
           contextHint={contextHint}
-          settings={
-            <ChatSettings {...ai} />
-          }
         />
       </div>
+
+      {find.open && (
+        <FindBar
+          {...find.barProps}
+          label="Pesquisar na conversa"
+          results={find.results}
+          onClose={find.close}
+        />
+      )}
+
+      <ReferencePreview reference={previewed} onClose={() => setPreviewed(null)} />
 
       <ContextWarningDialog
         open={warning !== null}
