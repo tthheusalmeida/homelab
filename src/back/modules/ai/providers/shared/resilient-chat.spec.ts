@@ -188,4 +188,56 @@ describe('runResilientChat', () => {
       model: 'caro',
     });
   });
+
+  describe('resposta aos pedaços e repetição', () => {
+    it('when an attempt streamed text and then failed, should not stream again on the retry (no repeated start on screen)', async () => {
+      const pieces: string[] = [];
+
+      attempt
+        .mockImplementationOnce(
+          async (_model: string, request: { onChunk?: (t: string) => void }) => {
+            request.onChunk?.('começo ');
+            throw transient();
+          },
+        )
+        .mockImplementationOnce(
+          async (_model: string, request: { onChunk?: (t: string) => void }) => {
+            request.onChunk?.('texto inteiro');
+
+            return answer('texto inteiro');
+          },
+        );
+
+      const text = await runResilientChat(backend, usage, {
+        message: 'oi',
+        model: 'caro',
+        onChunk: (piece) => pieces.push(piece),
+      });
+
+      expect(text).toBe('texto inteiro');
+      expect(pieces).toEqual(['começo ']);
+    });
+
+    it('when the first attempt failed before any text, should stream the retry normally', async () => {
+      const pieces: string[] = [];
+
+      attempt
+        .mockRejectedValueOnce(transient())
+        .mockImplementationOnce(
+          async (_model: string, request: { onChunk?: (t: string) => void }) => {
+            request.onChunk?.('ok');
+
+            return answer('ok');
+          },
+        );
+
+      await runResilientChat(backend, usage, {
+        message: 'oi',
+        model: 'caro',
+        onChunk: (piece) => pieces.push(piece),
+      });
+
+      expect(pieces).toEqual(['ok']);
+    });
+  });
 });

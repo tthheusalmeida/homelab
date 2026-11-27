@@ -98,17 +98,22 @@ export class AnthropicProvider implements AIProvider, ChatBackend {
       ? request.messages.map((turn) => ({ role: turn.role, content: turn.content }))
       : [{ role: 'user', content: request.message }];
 
-    const response = await this.client()
-      .messages.stream(
-        {
-          model,
-          max_tokens: MAX_OUTPUT_TOKENS,
-          messages,
-          ...(request.json ? { system: JSON_ONLY_INSTRUCTION } : {}),
-        },
-        request.signal ? { signal: request.signal } : undefined,
-      )
-      .finalMessage();
+    const stream = this.client().messages.stream(
+      {
+        model,
+        max_tokens: MAX_OUTPUT_TOKENS,
+        messages,
+        ...(request.json ? { system: JSON_ONLY_INSTRUCTION } : {}),
+      },
+      request.signal ? { signal: request.signal } : undefined,
+    );
+
+    // a resposta já vinha em fluxo; agora cada pedaço de texto também segue para a tela
+    if (request.onChunk) {
+      stream.on('text', request.onChunk);
+    }
+
+    const response = await stream.finalMessage();
 
     if (response.stop_reason === 'refusal') {
       throw new AnthropicRefusalError();

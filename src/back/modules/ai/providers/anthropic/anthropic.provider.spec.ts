@@ -1,5 +1,6 @@
 const finalMessage = jest.fn();
-const stream = jest.fn((..._args: unknown[]) => ({ finalMessage }));
+const on = jest.fn();
+const stream = jest.fn((..._args: unknown[]) => ({ finalMessage, on }));
 const list = jest.fn();
 
 jest.mock('@anthropic-ai/sdk', () => ({
@@ -362,6 +363,36 @@ describe('AnthropicProvider', () => {
   describe('thinking', () => {
     it('when asked, should offer no options', async () => {
       await expect(build().thinking()).resolves.toEqual([]);
+    });
+  });
+
+  describe('resposta aos pedaços', () => {
+    it('when the caller wants the pieces, should hand each text piece over as the stream writes it', async () => {
+      finalMessage.mockResolvedValue(answer('Olá, mundo'));
+      on.mockImplementation((_event: string, listener: (text: string) => void) => {
+        listener('Olá, ');
+        listener('mundo');
+      });
+      const pieces: string[] = [];
+
+      const text = await build().chat({
+        message: 'oi',
+        model: cheapestAnthropicModel(),
+        onChunk: (piece) => pieces.push(piece),
+      });
+
+      expect(text).toBe('Olá, mundo');
+      expect(pieces).toEqual(['Olá, ', 'mundo']);
+      expect(on).toHaveBeenCalledWith('text', expect.any(Function));
+    });
+
+    it('when the caller does not want pieces, should not listen to the stream', async () => {
+      on.mockReset();
+      finalMessage.mockResolvedValue(answer('ok'));
+
+      await build().chat({ message: 'oi', model: cheapestAnthropicModel() });
+
+      expect(on).not.toHaveBeenCalled();
     });
   });
 });

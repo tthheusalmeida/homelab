@@ -101,15 +101,19 @@ export class GroqProvider implements AIProvider, ChatBackend {
       ? [{ role: 'system' as const, content: JSON_ONLY_INSTRUCTION }, ...turns]
       : turns;
 
-    const response = await this.client().chat.completions.create(
-      {
-        model,
-        messages,
-        max_completion_tokens: MAX_OUTPUT_TOKENS,
-        ...(request.json ? { response_format: { type: 'json_object' as const } } : {}),
-      },
-      request.signal ? { signal: request.signal } : undefined,
-    );
+    const params = {
+      model,
+      messages,
+      max_completion_tokens: MAX_OUTPUT_TOKENS,
+      ...(request.json ? { response_format: { type: 'json_object' as const } } : {}),
+    };
+    const options = request.signal ? { signal: request.signal } : undefined;
+
+    if (request.onChunk) {
+      return this.streamAttempt(params, options, request.onChunk);
+    }
+
+    const response = await this.client().chat.completions.create(params, options);
 
     const text = response.choices[0]?.message?.content ?? '';
 
@@ -123,6 +127,44 @@ export class GroqProvider implements AIProvider, ChatBackend {
       outputTokens: response.usage?.completion_tokens ?? 0,
       totalTokens: response.usage?.total_tokens,
     };
+  }
+
+  /** A resposta aos pedaços: o consumo vem no último pedaço do fluxo. */
+  private async streamAttempt(
+    params: Parameters<Groq['chat']['completions']['create']>[0],
+    options: { signal: AbortSignal } | undefined,
+    onChunk: (text: string) => void,
+  ): Promise<ChatAnswer> {
+    const stream = await this.client().chat.completions.create(
+      { ...params, stream: true },
+      options,
+    );
+    let text = '';
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let totalTokens: number | undefined;
+
+    for await (const chunk of stream) {
+      const piece = chunk.choices[0]?.delta?.content ?? '';
+      const usage = chunk.x_groq?.usage;
+
+      if (piece) {
+        text += piece;
+        onChunk(piece);
+      }
+
+      if (usage) {
+        inputTokens = usage.prompt_tokens ?? inputTokens;
+        outputTokens = usage.completion_tokens ?? outputTokens;
+        totalTokens = usage.total_tokens ?? totalTokens;
+      }
+    }
+
+    if (!text) {
+      throw new GroqEmptyResponseError();
+    }
+
+    return { text, inputTokens, outputTokens, totalTokens };
   }
 
   chat(request: AIChatRequest): Promise<string> {

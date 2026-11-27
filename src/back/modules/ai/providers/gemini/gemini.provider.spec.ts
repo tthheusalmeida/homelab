@@ -1,10 +1,11 @@
 const generateContent = jest.fn();
+const generateContentStream = jest.fn();
 const list = jest.fn();
 const get = jest.fn();
 
 jest.mock('@google/genai', () => ({
   GoogleGenAI: jest.fn().mockImplementation(() => ({
-    models: { generateContent, list, get },
+    models: { generateContent, generateContentStream, list, get },
   })),
 }));
 
@@ -40,6 +41,7 @@ describe('GeminiProvider', () => {
   beforeEach(() => {
     usage = new AiUsageService();
     generateContent.mockReset();
+    generateContentStream.mockReset();
     sleep.mockClear();
     list.mockReset();
     get.mockReset();
@@ -455,6 +457,45 @@ describe('GeminiProvider', () => {
       get.mockRejectedValue(new Error('x'));
 
       await expect(build().thinking('abc')).rejects.toThrow('abc');
+    });
+  });
+
+  describe('resposta aos pedaços', () => {
+    async function* fluxo() {
+      yield { text: 'Olá, ' };
+      yield { text: 'mundo' };
+      yield {
+        text: '',
+        usageMetadata: { promptTokenCount: 3, candidatesTokenCount: 5, totalTokenCount: 8 },
+      };
+    }
+
+    it('when the caller wants the pieces, should stream, hand them over and record usage from the last chunk', async () => {
+      generateContentStream.mockResolvedValue(fluxo());
+      const pieces: string[] = [];
+
+      const text = await build().chat({
+        message: 'oi',
+        model: cheapestModel(),
+        onChunk: (piece) => pieces.push(piece),
+      });
+
+      expect(text).toBe('Olá, mundo');
+      expect(pieces).toEqual(['Olá, ', 'mundo']);
+      expect(generateContent).not.toHaveBeenCalled();
+      expect(usage.getUsage().recentRequests[0]).toMatchObject({
+        inputTokens: 3,
+        outputTokens: 5,
+        success: true,
+      });
+    });
+
+    it('when the caller does not want pieces, should use the single call', async () => {
+      generateContent.mockResolvedValue({ text: 'ok', usageMetadata: {} });
+
+      await build().chat({ message: 'oi', model: cheapestModel() });
+
+      expect(generateContentStream).not.toHaveBeenCalled();
     });
   });
 });
