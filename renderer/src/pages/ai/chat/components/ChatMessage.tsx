@@ -1,5 +1,7 @@
 import { memo } from "react";
 
+import type { ChatReference } from "#shared/contracts/chat";
+
 import type { AiMessage } from "../types/chat";
 import { HexDot } from "#components/Hex";
 import { ChatReferences } from "./ChatReferences";
@@ -8,6 +10,8 @@ import { cn } from "#lib/utils";
 
 interface ChatMessageProps {
   message: AiMessage;
+  /** Abre uma referência da resposta para consulta rápida (sem sair da conversa). */
+  onPreviewReference?: (reference: ChatReference) => void;
 }
 
 /**
@@ -15,7 +19,10 @@ interface ChatMessageProps {
  * texto numa caixa de borda fina. A do usuário vem à direita, na cor de destaque; a do assistente
  * ocupa a largura toda. Memoizado: o Markdown de uma resposta longa não é refeito a cada tecla do campo.
  */
-export const ChatMessage = memo(function ChatMessage({ message }: ChatMessageProps) {
+export const ChatMessage = memo(function ChatMessage({
+  message,
+  onPreviewReference,
+}: ChatMessageProps) {
   const isUser = message.role === "user";
   const references = message.references;
 
@@ -43,7 +50,7 @@ export const ChatMessage = memo(function ChatMessage({ message }: ChatMessagePro
         {isUser ? message.content : <MarkdownMessage content={message.content} />}
       </div>
 
-      {!isUser && references && <ChatReferences references={references} />}
+      {!isUser && references && <ChatReferences references={references} onPreview={onPreviewReference} />}
     </div>
   );
 });

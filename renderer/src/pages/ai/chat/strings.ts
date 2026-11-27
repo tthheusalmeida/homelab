@@ -3,6 +3,11 @@ export const ChatStrings = {
   newChat: "Novo chat",
   referencesOpen: (count: number) =>
     count === 0 ? "Referências desta conversa (nenhuma ainda)" : `Referências desta conversa: ${count}`,
+  previewDescription: "Consulta rápida: a conversa continua aqui, onde você parou.",
+  previewLoading: "Abrindo a página",
+  previewFailed: "Não foi possível abrir esta página. Ela pode ter sido removida.",
+  previewClose: "Fechar",
+  previewOpenPage: "Abrir a página",
   referencesTitle: "Referências desta conversa",
   referencesDescription:
     "As páginas em que cada resposta deste chat se apoiou. O número é o da marca [n] no texto daquela resposta.",

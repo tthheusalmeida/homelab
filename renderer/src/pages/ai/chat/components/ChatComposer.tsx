@@ -49,7 +49,7 @@ export function ChatComposer({
             onChange={(event) => onChange(event.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Envie uma mensagem..."
-            className="max-h-[40dvh] min-h-10 min-w-0 flex-1 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
+            className="max-h-[40dvh] min-h-10 min-w-0 flex-1 resize-none border-0 bg-transparent shadow-none dark:bg-transparent focus-visible:ring-0"
           />
 
           <HexButton

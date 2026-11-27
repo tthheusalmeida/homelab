@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { BookMarked } from 'lucide-react';
 
+import type { ChatReference } from '#shared/contracts/chat';
 import { MarkdownFileIcon } from '#components/MarkdownFileIcon';
 import { Tip } from '#components/Tip';
 import { Button } from '#ui/button';
@@ -15,6 +16,8 @@ interface ChatReferencesPanelProps {
   answers: AnswerReferences[];
   /** Quantas páginas diferentes o chat usou (para o tooltip). */
   total: number;
+  /** Abre uma referência para consulta rápida (a lista se fecha e a conversa continua à vista). */
+  onPreview?: (reference: ChatReference) => void;
 }
 
 /**
@@ -22,7 +25,7 @@ interface ChatReferencesPanelProps {
  * agrupadas por resposta. Dentro de cada grupo, cada página traz o número da marca `[n]` que aquela
  * resposta usou no texto, e é um link para a página na seção.
  */
-export function ChatReferencesPanel({ answers, total }: ChatReferencesPanelProps) {
+export function ChatReferencesPanel({ answers, total, onPreview }: ChatReferencesPanelProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -61,7 +64,14 @@ export function ChatReferencesPanel({ answers, total }: ChatReferencesPanelProps
                     <li key={`${reference.documentId}#${reference.anchor ?? ''}`}>
                       <Link
                         to={referenceTarget(reference)}
-                        onClick={() => setOpen(false)}
+                        onClick={(event) => {
+                          setOpen(false);
+
+                          if (onPreview && !event.ctrlKey && !event.metaKey && event.button === 0) {
+                            event.preventDefault();
+                            onPreview(reference);
+                          }
+                        }}
                         className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted focus-visible:bg-muted"
                       >
                         {reference.number !== undefined && (

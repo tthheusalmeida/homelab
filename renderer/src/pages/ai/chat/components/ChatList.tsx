@@ -44,7 +44,7 @@ export function ChatList({
     return (
       <nav
         aria-label={ChatStrings.listLabel}
-        className="flex w-9 shrink-0 flex-col items-center gap-2 border-r pr-2"
+        className="flex w-12 shrink-0 flex-col items-center gap-2 border-r px-2 py-3"
       >
         <Tip content={ChatStrings.showList} side="right">
           <Button
@@ -75,7 +75,7 @@ export function ChatList({
   return (
     <nav
       aria-label={ChatStrings.listLabel}
-      className="flex min-h-0 w-60 shrink-0 flex-col gap-2 overflow-y-auto border-r pr-3"
+      className="flex min-h-0 w-64 shrink-0 flex-col gap-2 overflow-y-auto border-r px-3 py-3"
     >
       <div className="flex items-center justify-between">
         <p className="px-1 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">

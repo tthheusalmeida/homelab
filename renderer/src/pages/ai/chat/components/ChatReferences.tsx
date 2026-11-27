@@ -7,10 +7,21 @@ import { referenceLabel, referenceSection, referenceTarget } from "../references
 
 interface ChatReferencesProps {
   references: ChatReference[];
+  /**
+   * Clique em uma referência: abre a consulta rápida, sem sair da conversa. Com Ctrl (ou Cmd) o link
+   * segue para a página, como antes. Sem isto, o clique só segue o link.
+   */
+  onPreview?: (reference: ChatReference) => void;
 }
 
 /** Um ícone de página; ao passar o mouse (ou focar), o nome abre **para a esquerda** e fecha ao sair. */
-function ReferenceChip({ reference }: { reference: ChatReference }) {
+function ReferenceChip({
+  reference,
+  onPreview,
+}: {
+  reference: ChatReference;
+  onPreview?: (reference: ChatReference) => void;
+}) {
   const section = referenceSection(reference);
   // O `[n]` do texto que aponta para esta página.
   const number = reference.number;
@@ -19,6 +30,14 @@ function ReferenceChip({ reference }: { reference: ChatReference }) {
     <Link
       to={referenceTarget(reference)}
       aria-label={referenceLabel(reference)}
+      onClick={(event) => {
+        if (!onPreview || event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) {
+          return;
+        }
+
+        event.preventDefault();
+        onPreview(reference);
+      }}
       className="group flex h-7 items-center rounded-md border border-transparent text-xs text-muted-foreground transition-colors hover:border-border hover:bg-card hover:text-foreground focus-visible:border-border focus-visible:bg-card focus-visible:text-foreground"
     >
       {/* 0fr -> 1fr anima só a largura; fechado, o nome fica fora da vista (o leitor de tela lê o aria-label). */}
@@ -53,7 +72,7 @@ function ReferenceChip({ reference }: { reference: ChatReference }) {
  * discreto de que aquilo é fonte, como o rodapé de um texto) e, à direita, um ícone de página para
  * cada uma. A lista é montada pelo app, não pelo modelo.
  */
-export function ChatReferences({ references }: ChatReferencesProps) {
+export function ChatReferences({ references, onPreview }: ChatReferencesProps) {
   if (references.length === 0) {
     return null;
   }
@@ -67,7 +86,7 @@ export function ChatReferences({ references }: ChatReferencesProps) {
       <ul className="flex shrink-0 items-center justify-end gap-0.5">
         {references.map((reference) => (
           <li key={`${reference.documentId}#${reference.anchor ?? ""}`}>
-            <ReferenceChip reference={reference} />
+            <ReferenceChip reference={reference} onPreview={onPreview} />
           </li>
         ))}
       </ul>

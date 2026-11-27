@@ -1,5 +1,7 @@
 import { memo, useCallback, useEffect, useRef } from "react";
 
+import type { ChatReference } from "#shared/contracts/chat";
+
 import { STREAMING_MESSAGE_ID, type AiMessage, type ChatStatus } from "../types/chat";
 
 import { ChatMessage } from "./ChatMessage";
@@ -11,6 +13,8 @@ interface ChatMessageListProps {
   status?: ChatStatus;
   /** Falha do último envio (a mensagem volta ao campo para tentar de novo). */
   error?: string | null;
+  /** Abre uma referência para consulta rápida. */
+  onPreviewReference?: (reference: ChatReference) => void;
   /** Recebe a área que rola (o texto da conversa), para a pesquisa dentro do texto marcar as ocorrências. */
   onContainer?: (element: HTMLDivElement | null) => void;
 }
@@ -20,6 +24,7 @@ export const ChatMessageList = memo(function ChatMessageList({
   status = "idle",
   error = null,
   onContainer,
+  onPreviewReference,
 }: ChatMessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   useErrorAlert(error);
@@ -52,7 +57,7 @@ export const ChatMessageList = memo(function ChatMessageList({
       >
         {messages.map((message) => (
           <div key={message.id} className="animate-enter">
-            <ChatMessage message={message} />
+            <ChatMessage message={message} onPreviewReference={onPreviewReference} />
           </div>
         ))}
 

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 
-import type { ChatSummary } from "#shared/contracts/chat";
+import type { ChatReference, ChatSummary } from "#shared/contracts/chat";
 import { historyTokens } from "#shared/chat-history";
 import { contextOverheadTokens } from "#shared/rag-budget";
 import { checkContext, type ContextCheck } from "#shared/tokens";
@@ -28,6 +28,7 @@ import { ChatList } from "./components/ChatList";
 import { ChatMessageList } from "./components/ChatMessageList";
 import { ChatComposer } from "./components/ChatComposer";
 import { ChatReferencesPanel } from "./components/ChatReferencesPanel";
+import { ReferencePreview } from "./components/ReferencePreview";
 import { ChatSettings } from "./components/ChatSettings";
 import { referencesByAnswer, usedReferences } from "./references";
 import { ContextWarningDialog } from "./components/ContextWarningDialog";
@@ -72,6 +73,8 @@ export function ChatPage() {
   const [warning, setWarning] = useState<{ check: ContextCheck; content: string } | null>(null);
   /** A área que rola com as mensagens: onde a pesquisa dentro do texto procura. */
   const [textContainer, setTextContainer] = useState<HTMLElement | null>(null);
+  /** Referência aberta para consulta rápida, sem sair da conversa. */
+  const [previewed, setPreviewed] = useState<ChatReference | null>(null);
   const [chatToDelete, setChatToDelete] = useState<ChatSummary | null>(null);
 
   const { sendMessage, abort, isSending } = useAiChat();
@@ -268,19 +271,25 @@ export function ChatPage() {
   // O AppLayout não rola nesta rota: a raiz ocupa a área útil e só a lista de conversas e o
   // conteúdo da conversa rolam; o campo de mensagem fica sempre à vista.
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
+    // O -m-4 desfaz o respiro da área da tela: a lista de conversas vai de ponta a ponta (a linha dela
+    // encosta no cabeçalho e na borda de baixo) e cada coluna tem o seu próprio espaçamento.
+    <div className="-m-4 flex min-h-0 flex-1 flex-col">
       {/* Sem frase de descrição e com os seletores da IA na linha do título: mais altura para a conversa. */}
       <PageHeader compact title="Conversa" command="ai --chat" 
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <ChatReferencesPanel answers={answerReferences} total={usedPages} />
+            <ChatReferencesPanel
+              answers={answerReferences}
+              total={usedPages}
+              onPreview={setPreviewed}
+            />
 
             <ChatSettings {...ai} />
           </div>
         }
       />
 
-      <div className="flex min-h-0 flex-1 gap-3">
+      <div className="flex min-h-0 flex-1">
       <ChatList
         chats={chatsQuery.data}
         isLoading={chatsQuery.isLoading}
@@ -295,7 +304,7 @@ export function ChatPage() {
         onRetry={() => void chatsQuery.refetch()}
       />
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col px-4 pt-3 pb-3">
         {urlChatId && chatQuery.isError ? (
           <div className="flex flex-1 items-center justify-center">
             <ErrorState
@@ -311,6 +320,7 @@ export function ChatPage() {
             status={chatStatus}
             error={sendError}
             onContainer={setTextContainer}
+            onPreviewReference={setPreviewed}
           />
         ) : (
           <ChatEmptyState />
@@ -334,6 +344,8 @@ export function ChatPage() {
           onClose={find.close}
         />
       )}
+
+      <ReferencePreview reference={previewed} onClose={() => setPreviewed(null)} />
 
       <ContextWarningDialog
         open={warning !== null}

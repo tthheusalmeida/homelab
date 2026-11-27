@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 
 import type { ChatReference } from "#shared/contracts/chat";
@@ -112,6 +113,36 @@ describe("ChatReferences: abrir para a esquerda", () => {
     expect(label).toHaveClass("grid-cols-[0fr]");
     expect(label.className).toContain("group-hover:grid-cols-[1fr]");
     expect(icon.querySelector("svg")).not.toBeNull();
+  });
+});
+
+describe("ChatReferences: consulta rápida", () => {
+  it("when a preview handler exists, should open the reference on click instead of navigating", async () => {
+    const onPreview = vi.fn();
+    const user = userEvent.setup();
+
+    renderIn(<ChatReferences references={[reference({ number: 1 })]} onPreview={onPreview} />);
+    await user.click(screen.getByRole("link"));
+
+    expect(onPreview).toHaveBeenCalledWith(expect.objectContaining({ documentId: "doc-1" }));
+  });
+
+  it("when Ctrl is held, should let the link go to the page as before", async () => {
+    const onPreview = vi.fn();
+    const user = userEvent.setup();
+
+    renderIn(<ChatReferences references={[reference()]} onPreview={onPreview} />);
+    await user.keyboard("{Control>}");
+    await user.click(screen.getByRole("link"));
+    await user.keyboard("{/Control}");
+
+    expect(onPreview).not.toHaveBeenCalled();
+  });
+
+  it("when there is no preview handler, should just keep the link to the page", () => {
+    renderIn(<ChatReferences references={[reference()]} />);
+
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/library/doc-1#fluxo-de-trabalho");
   });
 });
 
