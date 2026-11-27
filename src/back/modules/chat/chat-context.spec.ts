@@ -36,14 +36,14 @@ describe('withContext', () => {
   });
 
   it('when there are passages, should ask the model to cite the numbers', () => {
-    expect(withContext('x', [passage()])).toContain('cite o número, como [1]');
+    expect(withContext('x', [passage()])).toContain('cite o número em negrito, como **[1]**');
   });
 
   it('when the excerpts help, should ask to prioritize them and cite the numbers', () => {
     const prompt = withContext('x', [passage()]);
 
     expect(prompt).toContain('dê prioridade a ele');
-    expect(prompt).toContain('cite o número, como [1]');
+    expect(prompt).toContain('cite o número em negrito, como **[1]**');
   });
 
   it('when the excerpts are off topic, should let the model answer with what it knows, without citing or mentioning the pages', () => {

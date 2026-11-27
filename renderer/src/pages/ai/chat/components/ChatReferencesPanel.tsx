@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { BookMarked } from 'lucide-react';
 
 import { MarkdownFileIcon } from '#components/MarkdownFileIcon';
+import { Tip } from '#components/Tip';
 import { Button } from '#ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '#ui/dialog';
 
@@ -23,16 +24,19 @@ export function ChatReferencesPanel({ references }: ChatReferencesPanelProps) {
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={references.length === 0}
-        aria-label={ChatStrings.referencesOpen(references.length)}
-        onClick={() => setOpen(true)}
-      >
-        <BookMarked />
-        {ChatStrings.referencesButton(references.length)}
-      </Button>
+      {/* Só o ícone, no tamanho e no fundo dos seletores ao lado; o nome e a contagem ficam no tooltip. */}
+      <Tip content={ChatStrings.referencesOpen(references.length)} side="bottom">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="bg-muted/50 hover:bg-muted"
+          disabled={references.length === 0}
+          aria-label={ChatStrings.referencesOpen(references.length)}
+          onClick={() => setOpen(true)}
+        >
+          <BookMarked />
+        </Button>
+      </Tip>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

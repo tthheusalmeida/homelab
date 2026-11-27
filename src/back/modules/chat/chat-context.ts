@@ -31,17 +31,73 @@ export interface ChatContextSource {
 
 export const CHAT_CONTEXT = Symbol('CHAT_CONTEXT');
 
-const CITATION = /\[(\d{1,2})\]/g;
+/** Números de uma marca: `[1]` ou, juntos, `[2,3]` (também com espaço ou ponto e vírgula). */
+const MARK_NUMBERS = String.raw`\d{1,2}(?:\s*[,;]\s*\d{1,2})*`;
+const CITATION = new RegExp(String.raw`\[(${MARK_NUMBERS})\]`, 'g');
+/** A marca com o espaço antes e o negrito em volta, se o modelo a escreveu assim (`**[1]**`). */
+const CITATION_WITH_BOLD = new RegExp(String.raw`[ \t]?\*{0,2}\[${MARK_NUMBERS}\]\*{0,2}`, 'g');
+/** Negrito (`**`) ou uma marca de citação, na ordem em que aparecem no texto. */
+const BOLD_OR_CITATION = new RegExp(String.raw`\*\*|\[(${MARK_NUMBERS})\]`, 'g');
+/** Trechos de código (em bloco ou na linha): `[1]` dentro deles é código, não citação. */
+const CODE_SPANS = /(```[\s\S]*?```|`[^`\n]*`)/;
+
+/** Os números de uma marca (`"2, 3"` vira `[2, 3]`). */
+function numbersOf(mark: string): number[] {
+  return mark.split(/[,;]/).map((part) => Number(part.trim()));
+}
 
 /** Sem citação, só o 1º trecho vira referência, e só se casa com (quase) toda a pergunta. */
 export const STRONG_COVERAGE = 0.75;
 
 /**
- * Resposta antiga sem as marcas `[1]`, `[2]`. Elas só valem para os trechos daquela vez; reenviadas
- * no histórico, se confundem com a numeração dos trechos novos e ainda levam o modelo a repeti-las.
+ * Resposta antiga sem as marcas `[1]`, `[2,3]` (e o negrito delas). Elas só valem para os trechos
+ * daquela vez; reenviadas no histórico, se confundem com a numeração dos trechos novos e ainda levam
+ * o modelo a repeti-las.
  */
 export function withoutCitations(text: string): string {
-  return text.replace(/[ \t]?\[\d{1,2}\]/g, '');
+  return text.replace(CITATION_WITH_BOLD, '');
+}
+
+/**
+ * Põe as marcas de citação em **negrito**: `**[1]**`, `**[2,3]**`. Só vale para números de trechos
+ * que existiam (1 até `sections`); marca fora disso, dentro de código ou já em negrito fica como
+ * está (negrito dentro de negrito quebraria o Markdown).
+ */
+export function boldCitations(answer: string, sections: number): string {
+  if (sections < 1) {
+    return answer;
+  }
+
+  let bold = false;
+
+  return answer
+    .split(CODE_SPANS)
+    .map((part, index) => {
+      // as partes de índice ímpar são código
+      if (index % 2 === 1) {
+        return part;
+      }
+
+      let result = '';
+      let last = 0;
+
+      for (const match of part.matchAll(BOLD_OR_CITATION)) {
+        result += part.slice(last, match.index);
+        last = match.index + match[0].length;
+
+        if (match[0] === '**') {
+          bold = !bold;
+          result += '**';
+        } else if (bold || numbersOf(match[1]).some((n) => n < 1 || n > sections)) {
+          result += match[0];
+        } else {
+          result += `**${match[0]}**`;
+        }
+      }
+
+      return result + part.slice(last);
+    })
+    .join('');
 }
 
 /** Tamanho máximo da primeira frase olhada para saber se a resposta diz que não achou nada. */
@@ -172,7 +228,7 @@ export function withContext(question: string, passages: ChatContextPassage[]): s
 
   return [
     'Abaixo estão trechos numerados das páginas da biblioteca do usuário.',
-    'Quando algum trecho ajuda a responder, dê prioridade a ele: baseie a resposta no trecho, comece direto pela resposta e cite o número, como [1], depois de cada afirmação tirada dele.',
+    'Quando algum trecho ajuda a responder, dê prioridade a ele: baseie a resposta no trecho, comece direto pela resposta e cite o número em negrito, como **[1]** (ou **[1,2]** quando vêm de mais de um trecho), depois de cada afirmação tirada dele.',
     'Se os trechos cobrem só uma parte, use o que eles trazem (citando) e complete com o que você sabe.',
     'Se nenhum trecho tratar do assunto, ignore-os e responda normalmente com o seu melhor conhecimento, sem citar número e sem comentar que não achou nas páginas.',
     'Fale com o usuário em segunda pessoa, de forma simples e direta, sem dizer "trechos fornecidos" nem "documentos".',
@@ -201,7 +257,7 @@ export function referencesFor(answer: string, passages: ChatContextPassage[]): C
   const sections = groupBySection(passages);
   const cited = new Set(
     [...withoutNegatedSentences(answer).matchAll(CITATION)]
-      .map((match) => Number(match[1]))
+      .flatMap((match) => numbersOf(match[1]))
       .filter((n) => n >= 1),
   );
   const anyCited = sections.some((_, index) => cited.has(index + 1));

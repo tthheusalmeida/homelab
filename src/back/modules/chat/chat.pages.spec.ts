@@ -71,6 +71,22 @@ describe('ChatService com as páginas da biblioteca', () => {
     expect(chat.messages[0].references).toBeUndefined();
   });
 
+  it('when the answer cites a page, should save and return the mark in bold', async () => {
+    const result = await service.send(request());
+
+    expect(result.message).toBe('Enfatiza o fluxo **[1]**.');
+    expect(result.chat.messages[1].content).toBe('Enfatiza o fluxo **[1]**.');
+  });
+
+  it('when no page matches, should leave the answer text untouched', async () => {
+    context.retrieve.mockResolvedValue([]);
+    ai.chat.mockResolvedValue('O índice [1] do array.');
+
+    const result = await service.send(request());
+
+    expect(result.message).toBe('O índice [1] do array.');
+  });
+
   it('when no page matches, should send the plain question and store no references', async () => {
     context.retrieve.mockResolvedValue([]);
 
@@ -186,9 +202,9 @@ describe('ChatService: janela do modelo e respostas sem fonte', () => {
     expect(chat.messages[1].references).toHaveLength(1);
   });
 
-  it('when the answer is stored, should keep its citation marks for the screen', async () => {
+  it('when the answer is stored, should keep its citation marks, in bold, for the screen', async () => {
     const { chat } = await service.send(request());
 
-    expect(chat.messages[1].content).toBe('Enfatiza o fluxo [1].');
+    expect(chat.messages[1].content).toBe('Enfatiza o fluxo **[1]**.');
   });
 });

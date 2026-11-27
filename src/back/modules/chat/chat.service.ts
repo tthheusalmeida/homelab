@@ -22,6 +22,8 @@ import { AIService } from '../ai/ai.service';
 
 import {
   CHAT_CONTEXT,
+  boldCitations,
+  groupBySection,
   referencesFor,
   withContext,
   withoutDeadEnds,
@@ -210,7 +212,8 @@ export class ChatService {
         request,
         existing,
         message,
-        answer,
+        // as marcas [n] ficam em negrito, como **[1]**, para se destacarem no texto
+        boldCitations(answer, groupBySection(passages).length),
         referencesFor(answer, passages),
         digest,
       );

@@ -41,26 +41,24 @@ export function ChatComposer({
   return (
     <footer className="shrink-0 pt-2">
       <div className="mx-auto w-full max-w-4xl">
-        <div className="relative rounded-xl border bg-card shadow-lg">
+        {/* O campo cresce com as linhas (até 40% da altura da janela, depois rola) e o botão fica alinhado embaixo, ao lado dele. */}
+        <div className="flex items-end gap-2 rounded-xl border bg-card p-1.5 shadow-lg">
           <Textarea
+            rows={1}
             value={value}
             onChange={(event) => onChange(event.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Envie uma mensagem..."
-            className="min-h-14 resize-none border-0 bg-transparent pr-12 shadow-none focus-visible:ring-0"
+            className="max-h-[40dvh] min-h-10 min-w-0 flex-1 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
           />
 
           <HexButton
-            className="absolute right-2.5 bottom-2.5 h-8 w-7"
+            className="mb-0.5 h-9 w-8 shrink-0"
             disabled={disabled}
             aria-label={isSending ? "Parar geração" : "Enviar mensagem"}
             onClick={onSend}
           >
-            {isSending ? (
-              <Pause className="size-3.5 fill-current" />
-            ) : (
-              <Send className="size-3.5" />
-            )}
+            {isSending ? <Pause className="size-4 fill-current" /> : <Send className="size-4" />}
           </HexButton>
         </div>
 

@@ -26,6 +26,16 @@ describe("ChatComposer", () => {
 
   const box = () => screen.getByPlaceholderText("Envie uma mensagem...");
 
+  it("when the field is empty, should start with one line and keep the button next to it, aligned to the bottom", () => {
+    setup({ value: "" });
+
+    const row = box().parentElement as HTMLElement;
+
+    expect(box()).toHaveAttribute("rows", "1");
+    expect(row).toHaveClass("items-end");
+    expect(row).toContainElement(screen.getByRole("button", { name: "Enviar mensagem" }));
+  });
+
   it("when typing, should call onChange with the new value", async () => {
     const { onChange, user } = setup({ value: "" });
 
