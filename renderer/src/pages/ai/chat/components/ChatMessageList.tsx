@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef } from "react";
 
-import type { AiMessage, ChatStatus } from "../types/chat";
+import { STREAMING_MESSAGE_ID, type AiMessage, type ChatStatus } from "../types/chat";
 
 import { ChatMessage } from "./ChatMessage";
 import { LoadingState } from "#components/LoadingState";
@@ -21,12 +21,15 @@ export const ChatMessageList = memo(function ChatMessageList({
   const scrollRef = useRef<HTMLDivElement>(null);
   useErrorAlert(error);
 
+  // A resposta chegando aos pedaços: o "Pensando" sai assim que o primeiro texto aparece.
+  const isStreaming = messages.at(-1)?.id === STREAMING_MESSAGE_ID;
+
   // Rola só esta lista até o fim (scrollIntoView também moveria a página e a barra de envio).
   useEffect(() => {
     const element = scrollRef.current;
 
-    element?.scrollTo?.({ top: element.scrollHeight, behavior: "smooth" });
-  }, [messages, status, error]);
+    element?.scrollTo?.({ top: element.scrollHeight, behavior: isStreaming ? "auto" : "smooth" });
+  }, [messages, status, error, isStreaming]);
 
   return (
     <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
@@ -41,7 +44,7 @@ export const ChatMessageList = memo(function ChatMessageList({
           </div>
         ))}
 
-        {status === "sending" && (
+        {status === "sending" && !isStreaming && (
           <div className="animate-enter-fade">
             <LoadingState message="Pensando" inline />
           </div>

@@ -1,6 +1,8 @@
 import { IpcChannels } from '../../shared/channels';
 import { IpcError, IpcErrorCode } from '../../shared/errors';
+import { IpcEvents } from '../../shared/events';
 import { IpcRegistrar } from '../ipc-registrar';
+import { FakeEventPublisher } from '../testing/fake-event-publisher';
 import { FakeIpcMain } from '../testing/fake-ipc-main';
 
 import { ChatHandler, type ChatSource } from './chat.handler';
@@ -52,7 +54,7 @@ describe('ChatHandler: enviar', () => {
       ok: true,
       data: { message: 'olá', chat: { id: 'c1' } },
     });
-    expect(fakes.send).toHaveBeenCalledWith(request);
+    expect(fakes.send).toHaveBeenCalledWith(request, undefined);
   });
 
   it('when thinking is omitted, should still forward the request untouched', async () => {
@@ -66,7 +68,7 @@ describe('ChatHandler: enviar', () => {
 
     await ipc.invoke(IpcChannels.chat.send, withoutThinking);
 
-    expect(fakes.send).toHaveBeenCalledWith(withoutThinking);
+    expect(fakes.send).toHaveBeenCalledWith(withoutThinking, undefined);
   });
 
   it('when Ollama fails, should answer PROVIDER_FAILED keeping the message', async () => {
@@ -218,5 +220,70 @@ describe('ChatHandler: cancelar, listar, abrir e excluir', () => {
       ok: false,
       error: { code: 'NOT_FOUND' },
     });
+  });
+});
+
+describe('ChatHandler: resposta aos pedaços', () => {
+  const setupWithEvents = (send: ChatSource['send']) => {
+    const events = new FakeEventPublisher();
+    const ipc = new FakeIpcMain();
+    const source: ChatSource = {
+      send,
+      cancel: jest.fn(),
+      list: jest.fn(),
+      get: jest.fn(),
+      delete: jest.fn(),
+    };
+
+    new IpcRegistrar(ipc).register([new ChatHandler(source, events)]);
+
+    return { ipc, events };
+  };
+
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('when the service writes pieces, should publish them as chat:chunk for that chat, in order and batched', async () => {
+    const { ipc, events } = setupWithEvents(async (_request, onChunk) => {
+      onChunk?.('Olá, ');
+      onChunk?.('mundo');
+
+      return { message: 'Olá, mundo', chat: { id: 'c1' } } as never;
+    });
+
+    await ipc.invoke(IpcChannels.chat.send, request);
+
+    expect(events.payloadsOf(IpcEvents.chatChunk)).toEqual([{ chatId: 'c1', text: 'Olá, mundo' }]);
+  });
+
+  it('when the service fails, should drop the pieces that were waiting', async () => {
+    const { ipc, events } = setupWithEvents(async (_request, onChunk) => {
+      onChunk?.('metade');
+
+      throw new Error('caiu');
+    });
+
+    await ipc.invoke(IpcChannels.chat.send, request);
+    jest.advanceTimersByTime(1_000);
+
+    expect(events.payloadsOf(IpcEvents.chatChunk)).toEqual([]);
+  });
+
+  it('when there is no event publisher, should not ask the service for pieces', async () => {
+    const send = jest.fn().mockResolvedValue({ message: 'ok', chat: { id: 'c1' } });
+    const ipc = new FakeIpcMain();
+
+    new IpcRegistrar(ipc).register([
+      new ChatHandler({
+        send,
+        cancel: jest.fn(),
+        list: jest.fn(),
+        get: jest.fn(),
+        delete: jest.fn(),
+      }),
+    ]);
+    await ipc.invoke(IpcChannels.chat.send, request);
+
+    expect(send).toHaveBeenCalledWith(request, undefined);
   });
 });

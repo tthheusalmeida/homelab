@@ -190,35 +190,12 @@ describe("ChatMessage: marcas no texto e referências no fim", () => {
   });
 });
 
-describe("ChatMessage: aviso de que não achou nas páginas", () => {
-  const answer = { id: "1", role: "assistant" as const, content: "Paris é a capital da França." };
+describe("ChatMessage: resposta fora das páginas", () => {
+  it("when the answer has no references, should show only the text, with no warning", () => {
+    renderIn(<ChatMessage message={{ id: "1", role: "assistant", content: "Paris é a capital da França." }} />);
 
-  it("when the answer is flagged, should say in plain words that it was not in the pages", () => {
-    renderIn(<ChatMessage message={{ ...answer, notInPages: true }} />);
-
-    expect(screen.getByRole("note")).toHaveTextContent("Não achei isso nas suas páginas");
-  });
-
-  it("when the answer is not flagged, should show no note", () => {
-    renderIn(<ChatMessage message={answer} />);
-
+    expect(screen.getByText("Paris é a capital da França.")).toBeInTheDocument();
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
-  });
-
-  it("when the answer has references, should show them and no note", () => {
-    renderIn(
-      <ChatMessage message={{ ...answer, references: [reference()], notInPages: true }} />,
-    );
-
-    expect(screen.getByRole("navigation", { name: "Referências" })).toBeInTheDocument();
-    expect(screen.queryByRole("note")).not.toBeInTheDocument();
-  });
-
-  it("when a user message carries the flag by mistake, should not show the note", () => {
-    renderIn(
-      <ChatMessage message={{ id: "2", role: "user", content: "Pergunta", notInPages: true }} />,
-    );
-
-    expect(screen.queryByRole("note")).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Referências" })).not.toBeInTheDocument();
   });
 });

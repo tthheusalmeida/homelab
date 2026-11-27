@@ -10,6 +10,8 @@ import { HealthCheck, HealthStatusOptions } from '../../../health/health.model';
 
 import { AiUsageService } from '../../usage/ai-usage.service';
 
+import { prepareOllama } from './ollama-endpoint';
+import { readOllamaStream } from './ollama-stream';
 import { describeOllamaError } from './ollama-errors';
 import { pricing } from './ollama.pricing';
 import { chooseContextWindow, parseModelContextLimit } from './context-window';
@@ -92,12 +94,8 @@ export class OllamaProvider implements AIProvider {
    * Liga o assistente local se é ele que está em uso (instalado pelo app e sem outro endereço
    * configurado). Com o Ollama do próprio usuário não faz nada.
    */
-  private async prepare(): Promise<void> {
-    const assistant = this.config.localAssistant?.();
-
-    if (assistant?.isInstalled() && this.baseUrl === assistant.baseUrl) {
-      await assistant.ensureRunning();
-    }
+  private prepare(): Promise<void> {
+    return prepareOllama(this.config);
   }
 
   private calculateCost(model: string, inputTokens: number, outputTokens: number): number {
@@ -138,34 +136,36 @@ export class OllamaProvider implements AIProvider {
 
     try {
       const history = request.messages;
+      const body = {
+        model: request.model,
+        messages: history ?? [{ role: 'user', content: request.message }],
+        think: request.thinking === 'on',
+        ...(request.json ? { format: 'json' } : {}),
+        // Com histórico, o contexto precisa caber a conversa (senão o Ollama a corta sem avisar).
+        ...(history
+          ? {
+              options: {
+                num_ctx: chooseContextWindow(history, await this.contextLimit(request.model)),
+              },
+            }
+          : {}),
+      };
+
+      if (request.onChunk) {
+        const streamed = await this.streamChat(body, request.signal, request.onChunk);
+
+        this.recordSuccess(request.model, streamed.inputTokens, streamed.outputTokens, startedAt);
+
+        return streamed.text;
+      }
+
       const response = await firstValueFrom(
         this.httpService.post(
           `${this.baseUrl}/api/chat`,
-          {
-            model: request.model,
-            messages: history ?? [
-              {
-                role: 'user',
-                content: request.message,
-              },
-            ],
-            think: request.thinking === 'on',
-            stream: false,
-            ...(request.json ? { format: 'json' } : {}),
-            // Com histórico, o contexto precisa caber a conversa (senão o Ollama a corta sem avisar).
-            ...(history
-              ? {
-                  options: {
-                    num_ctx: chooseContextWindow(history, await this.contextLimit(request.model)),
-                  },
-                }
-              : {}),
-          },
+          { ...body, stream: false },
           ...(request.signal ? [{ signal: request.signal }] : []),
         ),
       );
-
-      const latencyMs = Date.now() - startedAt;
 
       const text = parseOllamaChatResponse(response.data);
 
@@ -179,21 +179,7 @@ export class OllamaProvider implements AIProvider {
       const outputTokens =
         isObject(data) && hasProperty(data, 'eval_count') ? Number(data.eval_count ?? 0) : 0;
 
-      const totalTokens = inputTokens + outputTokens;
-
-      const estimatedCost = this.calculateCost(request.model, inputTokens, outputTokens);
-
-      this.usageService.record({
-        provider: 'ollama',
-        model: request.model,
-        operation: 'chat',
-        inputTokens,
-        outputTokens,
-        totalTokens,
-        estimatedCost,
-        latencyMs,
-        success: true,
-      });
+      this.recordSuccess(request.model, inputTokens, outputTokens, startedAt);
 
       return text;
     } catch (error) {
@@ -208,6 +194,42 @@ export class OllamaProvider implements AIProvider {
 
       throw new Error(message, { cause: error });
     }
+  }
+
+  /** Chama o `/api/chat` em fluxo e entrega o texto aos pedaços, conforme o modelo o escreve. */
+  private async streamChat(
+    body: object,
+    signal: AbortSignal | undefined,
+    onChunk: (text: string) => void,
+  ) {
+    const response = await firstValueFrom(
+      this.httpService.post(
+        `${this.baseUrl}/api/chat`,
+        { ...body, stream: true },
+        { responseType: 'stream', ...(signal ? { signal } : {}) },
+      ),
+    );
+
+    return readOllamaStream(response.data as AsyncIterable<Buffer | string>, onChunk);
+  }
+
+  private recordSuccess(
+    model: string,
+    inputTokens: number,
+    outputTokens: number,
+    startedAt: number,
+  ): void {
+    this.usageService.record({
+      provider: 'ollama',
+      model,
+      operation: 'chat',
+      inputTokens,
+      outputTokens,
+      totalTokens: inputTokens + outputTokens,
+      estimatedCost: this.calculateCost(model, inputTokens, outputTokens),
+      latencyMs: Date.now() - startedAt,
+      success: true,
+    });
   }
 
   /** Máximo de contexto do modelo (0 se não der para saber); a consulta é feita uma vez por modelo. */

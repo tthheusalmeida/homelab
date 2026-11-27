@@ -19,6 +19,8 @@ const validModel = (name: string) => ({
   capabilities: ['completion', 'thinking'],
 });
 
+const NL = String.fromCharCode(10);
+
 describe('OllamaProvider', () => {
   const OLLAMA_URL = 'http://ollama.test:1234';
   let http: { get: jest.Mock; post: jest.Mock };
@@ -95,6 +97,48 @@ describe('OllamaProvider', () => {
         estimatedCost: 0,
         success: true,
       });
+    });
+
+    it('when the caller wants the pieces, should stream, hand each piece over and still record usage', async () => {
+      async function* body(): AsyncGenerator<Buffer> {
+        yield Buffer.from('{"message":{"content":"Ol"}}' + NL + '{"message":{"content":"á"}}' + NL);
+        yield Buffer.from('{"done":true,"prompt_eval_count":5,"eval_count":2}' + NL);
+      }
+
+      http.post.mockReturnValue(of({ data: body() }));
+      const pieces: string[] = [];
+
+      const text = await provider.chat({
+        message: 'oi',
+        model: 'qwen3.5:4b',
+        onChunk: (piece) => pieces.push(piece),
+      });
+
+      expect(text).toBe('Olá');
+      expect(pieces).toEqual(['Ol', 'á']);
+      expect(http.post).toHaveBeenCalledWith(
+        `${OLLAMA_URL}/api/chat`,
+        expect.objectContaining({ stream: true }),
+        expect.objectContaining({ responseType: 'stream' }),
+      );
+      expect(usage.getUsage().recentRequests[0]).toMatchObject({
+        inputTokens: 5,
+        outputTokens: 2,
+        success: true,
+      });
+    });
+
+    it('when the stream breaks with an error line, should record a failure and throw', async () => {
+      async function* body(): AsyncGenerator<Buffer> {
+        yield Buffer.from('{"error":"modelo caiu"}' + NL);
+      }
+
+      http.post.mockReturnValue(of({ data: body() }));
+
+      await expect(
+        provider.chat({ message: 'oi', model: 'm', onChunk: () => undefined }),
+      ).rejects.toThrow();
+      expect(usage.getUsage().recentRequests[0]).toMatchObject({ success: false });
     });
 
     it('when thinking is not on, should send think=false', async () => {

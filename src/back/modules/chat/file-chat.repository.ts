@@ -25,6 +25,8 @@ export function isStoredChat(value: unknown): value is StoredChat {
     typeof chat.providerId === 'string' &&
     typeof chat.modelId === 'string' &&
     Array.isArray(chat.messages) &&
+    (chat.digest === undefined ||
+      (typeof chat.digest?.text === 'string' && typeof chat.digest?.upTo === 'number')) &&
     chat.messages.every(
       (message) =>
         typeof message?.id === 'string' &&

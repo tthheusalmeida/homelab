@@ -7,7 +7,8 @@ import userEvent from "@testing-library/user-event";
 
 import { IpcChannels } from "#shared/channels";
 import type { ChatDetail, ChatSummary } from "#shared/contracts/chat";
-import { failure, mockApi, ok, payloadsOf } from "#test/api-mock";
+import { IpcEvents } from "#shared/events";
+import { emitEvent, failure, mockApi, ok, payloadsOf } from "#test/api-mock";
 
 import { createTestQueryClient } from "../../../test/utils";
 
@@ -342,6 +343,53 @@ describe("ChatPage: enviar mensagens", () => {
     expect(screen.getByText("Pensando")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Novo chat/ })).toBeDisabled();
     expect(within(chatList()).getByRole("button", { name: /^Conversa a/ })).toBeDisabled();
+  });
+
+  it("when the model writes the answer in pieces, should show the text growing and drop the thinking indicator", async () => {
+    const user = userEvent.setup();
+
+    setup({ chats: [makeChat("a")], url: "/ai/chat?c=a", send: () => new Promise(() => {}) });
+
+    await screen.findByText("pergunta a");
+    await user.type(textbox(), "conta algo");
+    await user.click(sendButton());
+    await screen.findByText("Pensando");
+
+    act(() => emitEvent(IpcEvents.chatChunk, { chatId: "a", text: "Era uma " }));
+    act(() => emitEvent(IpcEvents.chatChunk, { chatId: "a", text: "vez" }));
+
+    expect(await screen.findByText("Era uma vez")).toBeInTheDocument();
+    expect(screen.queryByText("Pensando")).not.toBeInTheDocument();
+  });
+
+  it("when pieces arrive for another chat, should not show them here", async () => {
+    const user = userEvent.setup();
+
+    setup({ chats: [makeChat("a")], url: "/ai/chat?c=a", send: () => new Promise(() => {}) });
+
+    await screen.findByText("pergunta a");
+    await user.type(textbox(), "oi");
+    await user.click(sendButton());
+    await screen.findByText("Pensando");
+
+    act(() => emitEvent(IpcEvents.chatChunk, { chatId: "outro", text: "não é daqui" }));
+
+    expect(screen.queryByText("não é daqui")).not.toBeInTheDocument();
+    expect(screen.getByText("Pensando")).toBeInTheDocument();
+  });
+
+  it("when the answer lands, should replace the pieces with the saved message, shown once", async () => {
+    const user = userEvent.setup();
+
+    setup({ chats: [makeChat("a")], url: "/ai/chat?c=a" });
+
+    await screen.findByText("pergunta a");
+    await user.type(textbox(), "pergunta nova");
+    await user.click(sendButton());
+    act(() => emitEvent(IpcEvents.chatChunk, { chatId: "a", text: "ok!" }));
+
+    await waitFor(() => expect(within(conversation()).getAllByText("ok!")).toHaveLength(1));
+    expect(screen.queryByText("Pensando")).not.toBeInTheDocument();
   });
 
   it("when send is clicked while waiting, should cancel, tell the main, show the status and put the text back", async () => {

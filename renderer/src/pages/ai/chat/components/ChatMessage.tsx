@@ -2,7 +2,6 @@ import { memo } from "react";
 
 import type { AiMessage } from "../types/chat";
 import { HexDot } from "#components/Hex";
-import { ChatNotInPages } from "./ChatNotInPages";
 import { ChatReferences } from "./ChatReferences";
 import { MarkdownMessage } from "#components/MarkdownMessage";
 import { cn } from "#lib/utils";
@@ -45,8 +44,6 @@ export const ChatMessage = memo(function ChatMessage({ message }: ChatMessagePro
       </div>
 
       {!isUser && references && <ChatReferences references={references} />}
-
-      {!isUser && !references && message.notInPages && <ChatNotInPages />}
     </div>
   );
 });

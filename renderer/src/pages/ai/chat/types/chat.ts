@@ -24,8 +24,6 @@ export interface AiMessage {
   content: string;
   /** Páginas da biblioteca em que a resposta se apoiou (só nas respostas do assistente). */
   references?: ChatReference[];
-  /** A pergunta parecia ser sobre as páginas e nenhuma serviu de referência (só nas respostas do assistente). */
-  notInPages?: boolean;
 }
 
 export interface AiChatRequest {
@@ -39,5 +37,8 @@ export interface AiChatRequest {
   /** Tamanho do modelo em bilhões de parâmetros, quando conhecido (modelo pequeno recebe menos trechos). */
   modelBillions?: number;
 }
+
+/** Id da mensagem do assistente que está sendo escrita (ainda não gravada). */
+export const STREAMING_MESSAGE_ID = "streaming";
 
 export type ChatStatus = "idle" | "sending" | "cancelled";

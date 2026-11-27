@@ -2,6 +2,7 @@ import { JobAccess, type PlatformLogin } from '../../jobs/job-access';
 import type { ExternalProvidersService } from '../../providers/external-providers.service';
 import type { LocalProvidersService } from '../../providers/local-providers.service';
 import type { SettingsService } from '../../settings/settings.service';
+import type { EventPublisher } from '../event-publisher';
 import type { IpcHandler } from '../ipc-handler';
 
 import { AiHandler, type AiCatalog, type AiSelectionPort, type AiUsageSource } from './ai.handler';
@@ -60,6 +61,8 @@ export interface BackReaders {
 }
 
 export interface HandlerDeps {
+  /** Eventos do main para a tela (ex.: a resposta do chat aos pedaços). */
+  events?: EventPublisher;
   appInfo: AppInfo;
   folderPicker: FolderPicker;
   libraryMover: LibraryFolderPort;
@@ -91,7 +94,7 @@ export function createHandlers(deps: HandlerDeps): IpcHandler[] {
     new LocalProvidersHandler(deps.localProviders),
     new HealthHandler(deps.back.healthSystem, deps.back.healthAi),
     new AiHandler(deps.back.ai, deps.back.aiUsage, deps.back.aiSelection),
-    new ChatHandler(deps.back.chat),
+    new ChatHandler(deps.back.chat, deps.events),
     new LibraryHandler(deps.back.library, deps.back.libraryClassifier),
     new MindMapHandler(deps.back.mindMaps, deps.mindMapImages),
     new InfographicHandler(deps.back.infographics),

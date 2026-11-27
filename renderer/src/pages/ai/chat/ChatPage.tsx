@@ -2,17 +2,14 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 
 import type { ChatSummary } from "#shared/contracts/chat";
+import { historyTokens } from "#shared/chat-history";
 import { contextOverheadTokens } from "#shared/rag-budget";
-import {
-  checkContext,
-  estimateConversationTokens,
-  type ContextCheck,
-} from "#shared/tokens";
+import { checkContext, type ContextCheck } from "#shared/tokens";
 import { ConfirmDialog } from "#components/ConfirmDialog";
 import { ErrorState } from "#components/ErrorState";
 import { PageHeader } from "#components/PageHeader";
 
-import type { AiMessage, ChatStatus } from "./types/chat";
+import { STREAMING_MESSAGE_ID, type AiMessage, type ChatStatus } from "./types/chat";
 
 import {
   contextPercent,
@@ -33,6 +30,8 @@ import { ChatComposer } from "./components/ChatComposer";
 import { ChatSettings } from "./components/ChatSettings";
 import { ContextWarningDialog } from "./components/ContextWarningDialog";
 import { useSnackbar } from "#components/Snackbar";
+import { useIpcEvent } from "#hooks/use-ipc-event";
+import { IpcEvents } from "#shared/events";
 
 /** Parâmetro da URL com o chat aberto; sem ele, é um chat novo (que só é salvo ao enviar). */
 const CHAT_PARAM = "c";
@@ -58,6 +57,9 @@ export function ChatPage() {
    */
   const [pending, setPending] = useState<{ content: string; baseCount: number } | null>(null);
 
+  /** Texto da resposta que o modelo está escrevendo agora, recebido aos pedaços. */
+  const [streamed, setStreamed] = useState<{ chatId: string; text: string } | null>(null);
+
   const [message, setMessage] = useState("");
   const [warning, setWarning] = useState<{ check: ContextCheck; content: string } | null>(null);
   const [chatToDelete, setChatToDelete] = useState<ChatSummary | null>(null);
@@ -76,16 +78,28 @@ export function ChatPage() {
   const activeModelId = ai.modelId;
   const activeThinkingId = ai.thinkingId;
 
+  useIpcEvent(IpcEvents.chatChunk, ({ chatId: id, text }) =>
+    setStreamed((current) => ({
+      chatId: id,
+      text: current?.chatId === id ? current.text + text : text,
+    })),
+  );
+
   const history = chat?.messages ?? NO_MESSAGES;
   const showPending = pending !== null && history.length === pending.baseCount;
   const pendingContent = showPending ? pending.content : null;
-  const messages = useMemo<AiMessage[]>(
-    () =>
-      pendingContent === null
-        ? history
-        : [...history, { id: "pending", role: "user", content: pendingContent }],
-    [history, pendingContent],
-  );
+  const streamingText = showPending && streamed?.chatId === chatId ? streamed.text : null;
+  const messages = useMemo<AiMessage[]>(() => {
+    if (pendingContent === null) {
+      return history;
+    }
+
+    const sent: AiMessage[] = [...history, { id: "pending", role: "user", content: pendingContent }];
+
+    return streamingText
+      ? [...sent, { id: STREAMING_MESSAGE_ID, role: "assistant", content: streamingText }]
+      : sent;
+  }, [history, pendingContent, streamingText]);
 
   const modelLimit = modelContextLimit(ai.activeModel);
   // Cada envio soma ao histórico os trechos das páginas da biblioteca (o main os escolhe, por janela).
@@ -94,7 +108,7 @@ export function ChatPage() {
   const contextHint =
     history.length > 0
       ? ChatStrings.contextHint(
-          formatTokens(estimateConversationTokens(history, message) + pagesTokens),
+          formatTokens(historyTokens(history, chat?.digest, message) + pagesTokens),
         )
       : undefined;
 
@@ -132,6 +146,7 @@ export function ChatPage() {
 
     setWarning(null);
     setPending({ content, baseCount: history.length });
+    setStreamed(null);
     setMessage("");
     setSendError(null);
     setChatStatus("sending");
@@ -148,6 +163,7 @@ export function ChatPage() {
       });
 
       setPending(null);
+      setStreamed(null);
       setChatStatus("idle");
 
       // O chat novo passou a existir: a URL passa a apontar para ele.
@@ -156,6 +172,7 @@ export function ChatPage() {
       }
     } catch (error) {
       setPending(null);
+      setStreamed(null);
       // A pergunta não foi gravada: o texto volta ao campo para ajustar ou tentar de novo.
       setMessage(content);
 
@@ -188,7 +205,7 @@ export function ChatPage() {
 
     // Conversa grande: avisa antes de enviar (cada envio reenvia tudo e custa tokens).
     const check = checkContext(
-      estimateConversationTokens(history, content) + pagesTokens,
+      historyTokens(history, chat?.digest, content) + pagesTokens,
       modelLimit,
     );
 

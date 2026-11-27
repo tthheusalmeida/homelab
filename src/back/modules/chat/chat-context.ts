@@ -171,10 +171,10 @@ export function withContext(question: string, passages: ChatContextPassage[]): s
     .join('\n\n');
 
   return [
-    'Você responde usando as páginas da biblioteca do usuário. Abaixo estão trechos delas, numerados.',
-    'Comece direto pela resposta, com base nesses trechos, e cite o número, como [1], depois de cada afirmação tirada deles.',
-    'Se nenhum trecho tratar do assunto da pergunta, ignore-os: não cite nenhum e responda normalmente com o que você sabe.',
-    'Se tratam só em parte, responda o que eles cobrem e diga o que ficou de fora.',
+    'Abaixo estão trechos numerados das páginas da biblioteca do usuário.',
+    'Quando algum trecho ajuda a responder, dê prioridade a ele: baseie a resposta no trecho, comece direto pela resposta e cite o número, como [1], depois de cada afirmação tirada dele.',
+    'Se os trechos cobrem só uma parte, use o que eles trazem (citando) e complete com o que você sabe.',
+    'Se nenhum trecho tratar do assunto, ignore-os e responda normalmente com o seu melhor conhecimento, sem citar número e sem comentar que não achou nas páginas.',
     'Fale com o usuário em segunda pessoa, de forma simples e direta, sem dizer "trechos fornecidos" nem "documentos".',
     '',
     'Trechos:',

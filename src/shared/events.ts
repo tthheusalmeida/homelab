@@ -2,6 +2,7 @@ import type { ComponentsStatus } from './contracts/components';
 import type { UpdateStatus } from './contracts/updates';
 import type { AppNotice, ProgressEventPayload } from './contracts/events';
 import type { PdfProgressPayload } from './contracts/pdf';
+import type { ChatChunkPayload } from './contracts/chat';
 
 /**
  * Eventos enviados pelo main ao renderer (sentido contrário ao `invoke`). Formato
@@ -16,6 +17,7 @@ export const IpcEvents = {
   settingsNavigate: 'settings:navigate',
   updatesChanged: 'updates:changed',
   restartPending: 'app:restart-needed',
+  chatChunk: 'chat:chunk',
 } as const;
 
 export type IpcEvent = (typeof IpcEvents)[keyof typeof IpcEvents];
@@ -34,6 +36,8 @@ export interface IpcEventPayloads {
   [IpcEvents.settingsNavigate]: { section?: string };
   /** Há alteração que só vale depois de reiniciar (sempre `true`: o estado zera ao reiniciar). */
   [IpcEvents.restartPending]: boolean;
+  /** Pedaço novo da resposta que o modelo está escrevendo no chat. */
+  [IpcEvents.chatChunk]: ChatChunkPayload;
 }
 
 export type IpcEventPayload<E extends IpcEvent> = IpcEventPayloads[E];

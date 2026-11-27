@@ -16,19 +16,19 @@ import type {
   ChatSendResponse,
   ChatSummary,
 } from '../../../shared/contracts/chat';
+import { historyBudget, summaryCut, type ChatDigest } from '../../../shared/chat-history';
 import { IpcError, IpcErrorCode } from '../../../shared/errors';
 import { AIService } from '../ai/ai.service';
 
 import {
   CHAT_CONTEXT,
-  looksLikeAQuestion,
   referencesFor,
   withContext,
-  withoutCitations,
   withoutDeadEnds,
   type ChatContextPassage,
   type ChatContextSource,
 } from './chat-context';
+import { digestPrompt, digestTurns, historyTurns } from './chat-digest';
 import { titleFromMessage } from './chat.title';
 import { isStoredChat } from './file-chat.repository';
 import { CHAT_REPOSITORY, type ChatRepository } from './chat.repository';
@@ -45,6 +45,10 @@ export const ChatMessages = {
 
 const CHAT_ID_FORMAT = /^[A-Za-z0-9_-]{1,100}$/;
 
+function cancelledError(): IpcError {
+  return new IpcError(IpcErrorCode.VALIDATION, ChatMessages.cancelled);
+}
+
 function summarize(chat: StoredChat): ChatSummary {
   const { messages, ...rest } = chat;
 
@@ -52,14 +56,13 @@ function summarize(chat: StoredChat): ChatSummary {
 }
 
 /**
- * Chats com histórico. A cada envio o histórico **inteiro** vai ao provedor (mais tokens, de
- * propósito). A pergunta e a resposta só são gravadas **juntas, em caso de sucesso**: se o provedor
- * falha, o chat não muda. Cancelar descarta a resposta quando ela chegar (a chamada ao provedor não
- * é interrompida, então os tokens são gastos).
+ * Chats com histórico. A cada envio o histórico vai ao provedor; quando passa do que o modelo aguenta,
+ * o começo vira um resumo gravado no chat (ver `summarize`). A pergunta e a resposta só são gravadas **juntas, em caso de sucesso**: se o provedor
+ * falha, o chat não muda. Cancelar interrompe a chamada ao provedor e descarta o que chegar.
  */
 @Injectable()
 export class ChatService {
-  private readonly inFlight = new Set<string>();
+  private readonly inFlight = new Map<string, AbortController>();
   private readonly cancelled = new Set<string>();
 
   constructor(
@@ -133,12 +136,19 @@ export class ChatService {
 
   /** Marca a resposta em andamento do chat para ser descartada quando chegar. */
   cancel(chatId: string): void {
-    if (this.inFlight.has(chatId)) {
+    const running = this.inFlight.get(chatId);
+
+    if (running) {
       this.cancelled.add(chatId);
+      running.abort();
     }
   }
 
-  async send(request: ChatSendRequest): Promise<ChatSendResponse> {
+  async send(
+    request: ChatSendRequest,
+    /** Recebe o texto da resposta aos pedaços, conforme o modelo o escreve (quando o provedor transmite). */
+    onChunk?: (text: string) => void,
+  ): Promise<ChatSendResponse> {
     const message = request.message.trim();
 
     if (!CHAT_ID_FORMAT.test(request.chatId ?? '')) {
@@ -155,39 +165,94 @@ export class ChatService {
 
     const existing = this.repository.findById(request.chatId);
 
-    this.inFlight.add(request.chatId);
+    const controller = new AbortController();
+
+    this.inFlight.set(request.chatId, controller);
     this.cancelled.delete(request.chatId);
 
     try {
-      const history = (existing?.messages ?? []).map(({ role, content }) => ({
-        role,
-        // as marcas [n] de respostas antigas não valem para os trechos desta vez
-        content: role === 'assistant' ? withoutCitations(content) : content,
-      }));
+      const cut = this.digestCut(request, existing);
+      const digest = cut === null ? existing?.digest : await this.summarize(request, existing, cut);
+      const history = historyTurns(existing?.messages ?? [], digest);
       const passages = await this.passagesFor(message, existing, {
         contextLimit: request.contextLimit,
         modelBillions: request.modelBillions,
       });
-      const answer = await this.aiService.chat({
-        message,
-        modelId: request.modelId,
-        providerId: request.providerId,
-        thinking: request.thinking,
-        // Com páginas relevantes, as perguntas antigas respondidas com "não encontrei" ficam de fora.
-        messages: [
-          ...(passages.length > 0 ? withoutDeadEnds(history) : history),
-          { role: 'user', content: withContext(message, passages) },
-        ],
-      });
+      let answer: string;
 
-      if (this.cancelled.has(request.chatId)) {
-        throw new IpcError(IpcErrorCode.VALIDATION, ChatMessages.cancelled);
+      try {
+        answer = await this.aiService.chat({
+          message,
+          modelId: request.modelId,
+          providerId: request.providerId,
+          thinking: request.thinking,
+          signal: controller.signal,
+          // Cancelado, nada mais chega à tela: o resto do que o modelo escrever é jogado fora.
+          ...(onChunk
+            ? { onChunk: (text: string) => this.cancelled.has(request.chatId) || onChunk(text) }
+            : {}),
+          // Com páginas relevantes, as perguntas antigas respondidas com "não encontrei" ficam de fora.
+          messages: [
+            ...digestTurns(digest),
+            ...(passages.length > 0 ? withoutDeadEnds(history) : history),
+            { role: 'user', content: withContext(message, passages) },
+          ],
+        });
+      } catch (error) {
+        throw this.cancelled.has(request.chatId) ? cancelledError() : error;
       }
 
-      return this.record(request, existing, message, answer, referencesFor(answer, passages));
+      if (this.cancelled.has(request.chatId)) {
+        throw cancelledError();
+      }
+
+      return this.record(
+        request,
+        existing,
+        message,
+        answer,
+        referencesFor(answer, passages),
+        digest,
+      );
     } finally {
       this.inFlight.delete(request.chatId);
       this.cancelled.delete(request.chatId);
+    }
+  }
+
+  /**
+   * Resumo do começo da conversa quando o histórico passou do que o modelo aguenta (ver
+   * `historyBudget`). O resumo é feito uma vez e **gravado no chat**: os envios seguintes só o
+   * reaproveitam, e ele só é refeito (incluindo o anterior) quando o histórico volta a crescer.
+   * Se a IA falhar ao resumir, o chat segue com o histórico inteiro.
+   */
+  private digestCut(request: ChatSendRequest, existing: StoredChat | null): number | null {
+    return summaryCut(
+      existing?.messages ?? [],
+      existing?.digest,
+      historyBudget(request.contextLimit, request.modelBillions),
+    );
+  }
+
+  private async summarize(
+    request: ChatSendRequest,
+    existing: StoredChat | null,
+    cut: number,
+  ): Promise<ChatDigest | undefined> {
+    const messages = existing?.messages ?? [];
+
+    try {
+      const covered = existing?.digest?.upTo ?? 0;
+      const text = await this.aiService.chat({
+        message: digestPrompt(existing?.digest?.text, messages.slice(covered, cut)),
+        modelId: request.modelId,
+        providerId: request.providerId,
+        signal: this.inFlight.get(request.chatId)?.signal,
+      });
+
+      return text.trim() === '' ? existing?.digest : { text: text.trim(), upTo: cut };
+    } catch {
+      return existing?.digest;
     }
   }
 
@@ -216,6 +281,7 @@ export class ChatService {
     message: string,
     answer: string,
     references: ChatReference[],
+    digest?: ChatDigest,
   ): ChatSendResponse {
     if (existing && !this.repository.findById(existing.id)) {
       throw new NotFoundException(ChatMessages.deletedWhileWaiting);
@@ -227,19 +293,13 @@ export class ChatService {
       role: ChatMessage['role'],
       content: string,
       cited: ChatReference[] = [],
-      notInPages = false,
     ): ChatMessage => ({
       id: uuidv7(),
       role,
       content,
       createdAt: now,
       ...(cited.length > 0 ? { references: cited } : {}),
-      ...(notInPages ? { notInPages: true } : {}),
     });
-
-    // Pergunta de verdade e nenhuma página serviu de referência: a tela avisa, com as palavras dela.
-    const notInPages =
-      this.context !== undefined && references.length === 0 && looksLikeAQuestion(message);
 
     const chat: StoredChat = {
       id: request.chatId,
@@ -250,10 +310,11 @@ export class ChatService {
       modelId: request.modelId,
       ...(request.thinking !== undefined ? { thinking: request.thinking } : {}),
       messageCount: (current?.messages.length ?? 0) + 2,
+      ...(digest ? { digest } : {}),
       messages: [
         ...(current?.messages ?? []),
         turn('user', message),
-        turn('assistant', answer, references, notInPages),
+        turn('assistant', answer, references),
       ],
     };
 

@@ -1,6 +1,5 @@
 import {
   groupBySection,
-  looksLikeAQuestion,
   referencesFor,
   saysNotFound,
   withContext,
@@ -40,12 +39,19 @@ describe('withContext', () => {
     expect(withContext('x', [passage()])).toContain('cite o número, como [1]');
   });
 
-  it('when the excerpts may be off topic, should tell the model to ignore them and cite none', () => {
+  it('when the excerpts help, should ask to prioritize them and cite the numbers', () => {
+    const prompt = withContext('x', [passage()]);
+
+    expect(prompt).toContain('dê prioridade a ele');
+    expect(prompt).toContain('cite o número, como [1]');
+  });
+
+  it('when the excerpts are off topic, should let the model answer with what it knows, without citing or mentioning the pages', () => {
     const prompt = withContext('x', [passage()]);
 
     expect(prompt).toContain('ignore-os');
-    expect(prompt).toContain('não cite nenhum');
-    expect(prompt).toContain('responda normalmente com o que você sabe');
+    expect(prompt).toContain('seu melhor conhecimento');
+    expect(prompt).toContain('sem citar número e sem comentar que não achou nas páginas');
   });
 
   it('when building the prompt, should not hand the model a ready-made sentence to copy (small models repeat it)', () => {
@@ -56,7 +62,7 @@ describe('withContext', () => {
   });
 
   it('when the excerpts only cover part of the question, should ask to say what is missing', () => {
-    expect(withContext('x', [passage()])).toContain('diga o que ficou de fora');
+    expect(withContext('x', [passage()])).toContain('complete com o que você sabe');
   });
 
   it('when the model answers, should be told to talk to the user directly and not mention excerpts', () => {
@@ -220,23 +226,6 @@ describe('referencesFor com resposta que diz não ter achado', () => {
       referencesFor('Não foi possível encontrar a resposta.', [passage({ coverage: 1 })]),
     ).toEqual([]);
   });
-});
-
-describe('looksLikeAQuestion', () => {
-  it.each([
-    'o que diz a primeira maneira do devops',
-    'Qual a capital da França?',
-    'Como faço um bolo de chocolate?',
-  ])('when the message is "%s", should be a real question', (message) => {
-    expect(looksLikeAQuestion(message)).toBe(true);
-  });
-
-  it.each(['oi', 'Oi, tudo bem?', 'obrigado', 'e a segunda?', '', '   '])(
-    'when the message is "%s", should be just conversation',
-    (message) => {
-      expect(looksLikeAQuestion(message)).toBe(false);
-    },
-  );
 });
 
 describe('groupBySection', () => {

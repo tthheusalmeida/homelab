@@ -76,6 +76,7 @@ export class AIService {
       ...(dto.json ? { json: true } : {}),
       ...(dto.messages ? { messages: dto.messages } : {}),
       ...(dto.onRetry ? { onRetry: dto.onRetry } : {}),
+      ...(dto.onChunk ? { onChunk: dto.onChunk } : {}),
       ...(dto.signal ? { signal: dto.signal } : {}),
     });
   }

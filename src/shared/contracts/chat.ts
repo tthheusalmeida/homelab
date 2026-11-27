@@ -1,4 +1,7 @@
+import type { ChatDigest } from '../chat-history';
 import type { AiProviderId } from './ai';
+
+export type { ChatDigest };
 
 export type ChatRole = 'user' | 'assistant';
 
@@ -30,12 +33,6 @@ export interface ChatMessage {
   createdAt: string;
   /** Só nas respostas do assistente que usaram páginas da biblioteca. */
   references?: ChatReference[];
-  /**
-   * A pergunta parecia ser sobre as páginas, mas nenhuma serviu de referência: a tela avisa "não achei
-   * isso nas suas páginas". Só nas respostas do assistente; ausente quando há referências ou quando
-   * era só conversa.
-   */
-  notInPages?: boolean;
 }
 
 /** Item da lista de chats (canal `chats:list`), do mais recente para o mais antigo. */
@@ -54,6 +51,8 @@ export interface ChatSummary {
 /** Chat inteiro, com todas as mensagens (canais `chats:get` e `chat:send`). */
 export interface ChatDetail extends ChatSummary {
   messages: ChatMessage[];
+  /** Resumo do começo da conversa, enviado ao modelo no lugar das mensagens que cobre (a tela mostra todas). */
+  digest?: ChatDigest;
 }
 
 export interface ChatRequest {
@@ -88,4 +87,10 @@ export interface ChatSendResponse {
 /** Payload de `chat:cancel`: descarta a resposta que ainda está sendo gerada para esse chat. */
 export interface ChatCancelRequest {
   chatId: string;
+}
+
+/** Payload do evento `chat:chunk`: texto novo (não o acumulado) da resposta em andamento do chat. */
+export interface ChatChunkPayload {
+  chatId: string;
+  text: string;
 }
