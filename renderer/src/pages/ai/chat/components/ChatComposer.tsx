@@ -1,8 +1,9 @@
 import type { KeyboardEvent } from "react";
 
-import { Pause, Send } from "lucide-react";
+import { ArrowUp, Square } from "lucide-react";
 
 import { HexButton } from "#components/HexButton";
+import { cn } from "#lib/utils";
 import { Textarea } from "#ui/textarea";
 
 interface ChatComposerProps {
@@ -53,12 +54,17 @@ export function ChatComposer({
           />
 
           <HexButton
-            className="mb-0.5 h-9 w-8 shrink-0"
+            className={cn("mb-0.5 h-9 w-8 shrink-0", isSending && "animate-pulse")}
             disabled={disabled}
             aria-label={isSending ? "Parar geração" : "Enviar mensagem"}
             onClick={onSend}
           >
-            {isSending ? <Pause className="size-4 fill-current" /> : <Send className="size-4" />}
+            {/* Como no Claude: seta para cima para enviar e um quadradinho cheio para parar. */}
+            {isSending ? (
+              <Square className="size-3 fill-current" />
+            ) : (
+              <ArrowUp className="size-4.5" strokeWidth={2.25} />
+            )}
           </HexButton>
         </div>
 

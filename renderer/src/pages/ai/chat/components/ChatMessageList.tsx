@@ -41,6 +41,21 @@ export const ChatMessageList = memo(function ChatMessageList({
   // A resposta chegando aos pedaços: o "Pensando" sai assim que o primeiro texto aparece.
   const isStreaming = messages.at(-1)?.id === STREAMING_MESSAGE_ID;
 
+  // A resposta aos pedaços e a resposta gravada são a mesma bolha. Se a chave mudasse na troca (de
+  // "streaming" para o id gravado), a bolha seria refeita e a animação de entrada tocaria de novo:
+  // era a piscada no fim da resposta. Guardamos o id gravado para manter a chave de antes.
+  const slot = useRef({ wasStreaming: false, savedId: null as string | null });
+  const last = messages.at(-1);
+
+  if (isStreaming) {
+    slot.current = { wasStreaming: true, savedId: null };
+  } else if (slot.current.wasStreaming && last?.role === "assistant") {
+    slot.current = { wasStreaming: false, savedId: last.id };
+  }
+
+  const keyOf = (id: string) =>
+    id === STREAMING_MESSAGE_ID || id === slot.current.savedId ? STREAMING_MESSAGE_ID : id;
+
   // Rola só esta lista até o fim (scrollIntoView também moveria a página e a barra de envio).
   useEffect(() => {
     const element = scrollRef.current;
@@ -56,7 +71,7 @@ export const ChatMessageList = memo(function ChatMessageList({
         className="mx-auto flex w-full max-w-4xl flex-col gap-3 px-4 py-2"
       >
         {messages.map((message) => (
-          <div key={message.id} className="animate-enter">
+          <div key={keyOf(message.id)} className="animate-enter">
             <ChatMessage message={message} onPreviewReference={onPreviewReference} />
           </div>
         ))}
