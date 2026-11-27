@@ -50,3 +50,41 @@ export function usedReferences(
 
   return [...used.values()];
 }
+
+/** As referências de uma resposta, com a pergunta a que ela respondeu. */
+export interface AnswerReferences {
+  id: string;
+  /** O que o usuário perguntou (a mensagem logo antes da resposta); vazio se não houver. */
+  question: string;
+  references: ChatReference[];
+}
+
+/**
+ * As referências da conversa **agrupadas por resposta**, na ordem do chat. O número de cada uma só
+ * faz sentido dentro da própria resposta (o `[1]` de uma não é o `[1]` de outra), então a lista da
+ * conversa as mostra assim: quem vê a marca no texto acha, no grupo daquela resposta, qual página é.
+ */
+export function referencesByAnswer(
+  messages: ReadonlyArray<{
+    id: string;
+    role: string;
+    content: string;
+    references?: ChatReference[];
+  }>,
+): AnswerReferences[] {
+  return messages.flatMap((message, index) => {
+    if (message.role !== "assistant" || !message.references?.length) {
+      return [];
+    }
+
+    const before = messages[index - 1];
+
+    return [
+      {
+        id: message.id,
+        question: before?.role === "user" ? before.content : "",
+        references: message.references,
+      },
+    ];
+  });
+}

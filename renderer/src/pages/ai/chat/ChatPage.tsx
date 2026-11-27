@@ -29,7 +29,7 @@ import { ChatMessageList } from "./components/ChatMessageList";
 import { ChatComposer } from "./components/ChatComposer";
 import { ChatReferencesPanel } from "./components/ChatReferencesPanel";
 import { ChatSettings } from "./components/ChatSettings";
-import { usedReferences } from "./references";
+import { referencesByAnswer, usedReferences } from "./references";
 import { ContextWarningDialog } from "./components/ContextWarningDialog";
 import { useSnackbar } from "#components/Snackbar";
 import { FindBar } from "#components/FindBar";
@@ -96,7 +96,8 @@ export function ChatPage() {
   );
 
   const history = chat?.messages ?? NO_MESSAGES;
-  const chatReferences = useMemo(() => usedReferences(history), [history]);
+  const answerReferences = useMemo(() => referencesByAnswer(history), [history]);
+  const usedPages = useMemo(() => usedReferences(history).length, [history]);
   const showPending = pending !== null && history.length === pending.baseCount;
   const pendingContent = showPending ? pending.content : null;
   const streamingText = showPending && streamed?.chatId === chatId ? streamed.text : null;
@@ -272,7 +273,7 @@ export function ChatPage() {
       <PageHeader compact title="Conversa" command="ai --chat" 
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <ChatReferencesPanel references={chatReferences} />
+            <ChatReferencesPanel answers={answerReferences} total={usedPages} />
 
             <ChatSettings {...ai} />
           </div>

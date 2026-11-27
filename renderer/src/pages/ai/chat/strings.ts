@@ -4,8 +4,10 @@ export const ChatStrings = {
   referencesOpen: (count: number) =>
     count === 0 ? "Referências desta conversa (nenhuma ainda)" : `Referências desta conversa: ${count}`,
   referencesTitle: "Referências desta conversa",
-  referencesDescription: "As páginas da biblioteca em que as respostas deste chat se apoiaram.",
-  referenceAnswers: (count: number) => (count === 1 ? "1 resposta" : `${count} respostas`),
+  referencesDescription:
+    "As páginas em que cada resposta deste chat se apoiou. O número é o da marca [n] no texto daquela resposta.",
+  referencesOfAnswer: (question: string) =>
+    question ? `Resposta a: ${question}` : "Resposta",
   hideList: "Esconder conversas",
   showList: "Mostrar conversas",
   listTitle: "conversas",

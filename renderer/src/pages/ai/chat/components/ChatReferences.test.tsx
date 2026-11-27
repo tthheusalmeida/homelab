@@ -88,7 +88,7 @@ describe("ChatMessage com referências", () => {
   });
 });
 
-describe("ChatReferences: número e nome sempre à vista", () => {
+describe("ChatReferences: abrir para a esquerda", () => {
   it("when rendered, should put a hairline and the word references before the icons", () => {
     renderIn(<ChatReferences references={[reference()]} />);
 
@@ -103,30 +103,15 @@ describe("ChatReferences: número e nome sempre à vista", () => {
     ).toBeInTheDocument();
   });
 
-  it("when a reference has a mark number, should show [n] in bold before its name, with no hover needed", () => {
-    renderIn(<ChatReferences references={[reference({ number: 3 })]} />);
+  it("when a reference has a name, should lay it out left of the icon so it grows leftwards", () => {
+    renderIn(<ChatReferences references={[reference()]} />);
 
     const link = screen.getByRole("link");
+    const [label, icon] = Array.from(link.children);
 
-    expect(link).toHaveTextContent("[3]");
-    expect(link).toHaveTextContent("Práticas da Primeira Maneira › Fluxo de trabalho");
-    expect(link.querySelector("svg")).not.toBeNull();
-  });
-
-  it("when the marks skip a number, should show the number the text uses", () => {
-    renderIn(
-      <ChatReferences
-        references={[
-          reference({ number: 1 }),
-          reference({ documentId: "doc-3", title: "Terceira", headingPath: [], anchor: null, number: 3 }),
-        ]}
-      />,
-    );
-
-    expect(screen.getAllByTestId("reference-number").map((badge) => badge.textContent)).toEqual([
-      "1",
-      "3",
-    ]);
+    expect(label).toHaveClass("grid-cols-[0fr]");
+    expect(label.className).toContain("group-hover:grid-cols-[1fr]");
+    expect(icon.querySelector("svg")).not.toBeNull();
   });
 });
 

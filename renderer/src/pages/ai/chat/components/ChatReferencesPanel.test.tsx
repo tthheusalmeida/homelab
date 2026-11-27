@@ -13,13 +13,16 @@ const reference = (overrides: Partial<ChatReference> = {}): ChatReference => ({
   headingPath: ["DORA", "Métricas"],
   anchor: "metricas",
   category: [],
+  number: 1,
   ...overrides,
 });
 
-const renderPanel = (references: Parameters<typeof ChatReferencesPanel>[0]["references"]) =>
+type Answers = Parameters<typeof ChatReferencesPanel>[0]["answers"];
+
+const renderPanel = (answers: Answers, total = answers.length) =>
   render(
     <MemoryRouter>
-      <ChatReferencesPanel references={references} />
+      <ChatReferencesPanel answers={answers} total={total} />
     </MemoryRouter>,
   );
 
@@ -30,37 +33,57 @@ describe("ChatReferencesPanel", () => {
     expect(screen.getByRole("button", { name: /nenhuma ainda/ })).toBeDisabled();
   });
 
-  it("when the chat used pages, should show how many and open the list of all of them with links and counts", async () => {
+  it("when the chat used pages, should list them by answer, each with the number of its mark and a link", async () => {
     const user = userEvent.setup();
 
-    renderPanel([
-      { reference: reference(), answers: 2 },
-      { reference: reference({ documentId: "doc-2", title: "Scrum", headingPath: ["Scrum"], anchor: null }), answers: 1 },
-    ]);
+    renderPanel(
+      [
+        {
+          id: "a1",
+          question: "O que é DORA?",
+          references: [
+            reference({ number: 1 }),
+            reference({ documentId: "doc-2", title: "Scrum", headingPath: ["Scrum"], anchor: null, number: 3 }),
+          ],
+        },
+        { id: "a2", question: "E o Scrum?", references: [reference({ documentId: "doc-2", title: "Scrum", headingPath: ["Scrum"], anchor: null, number: 1 })] },
+      ],
+      2,
+    );
 
     await user.click(screen.getByRole("button", { name: "Referências desta conversa: 2" }));
 
-    const list = await screen.findByRole("list", { name: "Referências desta conversa" });
-    const links = within(list).getAllByRole("link");
+    const first = await screen.findByRole("region", { name: "Resposta a: O que é DORA?" });
+    const links = within(first).getAllByRole("link");
 
     expect(links[0]).toHaveAttribute("href", "/library/doc-1#metricas");
+    expect(links[0]).toHaveTextContent("[1]");
     expect(links[0]).toHaveTextContent("DORA › Métricas");
-    expect(links[0]).toHaveTextContent("2 respostas");
     expect(links[1]).toHaveAttribute("href", "/library/doc-2");
-    expect(links[1]).toHaveTextContent("1 resposta");
+    expect(links[1]).toHaveTextContent("[3]");
+
+    const second = screen.getByRole("region", { name: "Resposta a: E o Scrum?" });
+
+    expect(within(second).getByRole("link")).toHaveTextContent("[1]");
+  });
+
+  it("when a reference has no number (saved before the numbering), should list it without one", async () => {
+    const user = userEvent.setup();
+
+    renderPanel([{ id: "a", question: "", references: [reference({ number: undefined })] }], 1);
+    await user.click(screen.getByRole("button", { name: /Referências desta conversa/ }));
+
+    expect(await screen.findByRole("link")).not.toHaveTextContent("[");
+    expect(screen.getByRole("region", { name: "Resposta" })).toBeInTheDocument();
   });
 
   it("when a link is clicked, should close the list", async () => {
     const user = userEvent.setup();
 
-    renderPanel([{ reference: reference(), answers: 1 }]);
+    renderPanel([{ id: "a", question: "p", references: [reference()] }], 1);
     await user.click(screen.getByRole("button", { name: /Referências desta conversa/ }));
     await user.click(await screen.findByRole("link"));
 
-    await waitFor(() =>
-      expect(
-        screen.queryByRole("list", { name: "Referências desta conversa" }),
-      ).not.toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.queryByRole("link")).not.toBeInTheDocument());
   });
 });

@@ -2,7 +2,6 @@ import { Link } from "react-router";
 
 import type { ChatReference } from "#shared/contracts/chat";
 import { MarkdownFileIcon } from "#components/MarkdownFileIcon";
-import { Tip } from "#components/Tip";
 
 import { referenceLabel, referenceSection, referenceTarget } from "../references";
 
@@ -10,36 +9,42 @@ interface ChatReferencesProps {
   references: ChatReference[];
 }
 
-/**
- * Uma referência: o número da marca (**[1]**, o mesmo do texto da resposta), o ícone da página e o
- * nome `Página › Seção`, sempre à vista. Quem lê a marca no texto acha aqui qual página é, sem
- * procurar na conversa.
- */
+/** Um ícone de página; ao passar o mouse (ou focar), o nome abre **para a esquerda** e fecha ao sair. */
 function ReferenceChip({ reference }: { reference: ChatReference }) {
   const section = referenceSection(reference);
+  // O `[n]` do texto que aponta para esta página.
   const number = reference.number;
 
   return (
-    <Tip content={referenceLabel(reference)} side="top">
-      <Link
-        to={referenceTarget(reference)}
-        aria-label={referenceLabel(reference)}
-        className="flex max-w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:bg-card focus-visible:text-foreground"
-      >
+    <Link
+      to={referenceTarget(reference)}
+      aria-label={referenceLabel(reference)}
+      className="group flex h-7 items-center rounded-md border border-transparent text-xs text-muted-foreground transition-colors hover:border-border hover:bg-card hover:text-foreground focus-visible:border-border focus-visible:bg-card focus-visible:text-foreground"
+    >
+      {/* 0fr -> 1fr anima só a largura; fechado, o nome fica fora da vista (o leitor de tela lê o aria-label). */}
+      <span className="grid grid-cols-[0fr] transition-[grid-template-columns] duration-200 ease-out group-hover:grid-cols-[1fr] group-focus-visible:grid-cols-[1fr]">
+        <span className="min-w-0 overflow-hidden">
+          <span className="block max-w-64 truncate pr-1 pl-2.5 whitespace-nowrap" aria-hidden="true">
+            <span className="font-medium text-foreground">{reference.title}</span>
+            {section && <span> › {section}</span>}
+          </span>
+        </span>
+      </span>
+
+      <span className="relative flex size-7 shrink-0 items-center justify-center text-primary/80 transition-colors group-hover:text-primary group-focus-visible:text-primary">
+        <MarkdownFileIcon className="size-4" />
+
         {number !== undefined && (
-          <span aria-hidden="true" className="shrink-0 font-mono font-bold text-foreground">
-            [<span data-testid="reference-number">{number}</span>]
+          <span
+            data-testid="reference-number"
+            aria-hidden="true"
+            className="absolute right-0.5 bottom-0.5 font-mono text-[9px] leading-none font-semibold text-foreground/70"
+          >
+            {number}
           </span>
         )}
-
-        <MarkdownFileIcon className="size-3.5 shrink-0 text-primary/80" />
-
-        <span className="min-w-0 truncate" aria-hidden="true">
-          <span className="font-medium text-foreground">{reference.title}</span>
-          {section && <span> › {section}</span>}
-        </span>
-      </Link>
-    </Tip>
+      </span>
+    </Link>
   );
 }
 
@@ -54,16 +59,14 @@ export function ChatReferences({ references }: ChatReferencesProps) {
   }
 
   return (
-    <nav aria-label="Referências" className="flex w-full flex-col gap-1">
-      <div className="flex items-center gap-2">
-        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">referências</span>
+    <nav aria-label="Referências" className="flex w-full items-center gap-2">
+      <span aria-hidden="true" className="h-px min-w-0 flex-1 bg-border" />
 
-        <span aria-hidden="true" className="h-px min-w-0 flex-1 bg-border" />
-      </div>
+      <span className="shrink-0 font-mono text-[11px] text-muted-foreground">referências</span>
 
-      <ul className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+      <ul className="flex shrink-0 items-center justify-end gap-0.5">
         {references.map((reference) => (
-          <li key={`${reference.documentId}#${reference.anchor ?? ""}`} className="min-w-0 max-w-full">
+          <li key={`${reference.documentId}#${reference.anchor ?? ""}`}>
             <ReferenceChip reference={reference} />
           </li>
         ))}

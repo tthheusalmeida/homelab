@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import type { ChatReference } from "#shared/contracts/chat";
 
-import { referenceLabel, referenceSection, referenceTarget, usedReferences } from "./references";
+import {
+  referenceLabel,
+  referenceSection,
+  referenceTarget,
+  referencesByAnswer,
+  usedReferences,
+} from "./references";
 
 const reference = (overrides: Partial<ChatReference> = {}): ChatReference => ({
   documentId: "doc-1",
@@ -79,5 +85,38 @@ describe("usedReferences", () => {
 
   it("when no answer has references, should be empty", () => {
     expect(usedReferences([{}, { references: [] }])).toEqual([]);
+  });
+});
+
+describe("referencesByAnswer", () => {
+  const message = (id: string, role: string, content: string, references?: ChatReference[]) => ({
+    id,
+    role,
+    content,
+    references,
+  });
+
+  it("when answers have references, should group them by answer with the question that came before", () => {
+    const groups = referencesByAnswer([
+      message("1", "user", "O que é DORA?"),
+      message("2", "assistant", "r [1]", [reference({ number: 1 })]),
+      message("3", "user", "oi"),
+      message("4", "assistant", "olá"),
+      message("5", "user", "E o Scrum?"),
+      message("6", "assistant", "r [2]", [reference({ anchor: "b", number: 2 })]),
+    ]);
+
+    expect(groups.map((group) => [group.id, group.question, group.references[0].number])).toEqual([
+      ["2", "O que é DORA?", 1],
+      ["6", "E o Scrum?", 2],
+    ]);
+  });
+
+  it("when the answer has no user message before it, should keep an empty question", () => {
+    expect(referencesByAnswer([message("1", "assistant", "r", [reference()])])[0].question).toBe("");
+  });
+
+  it("when there are no references, should be empty", () => {
+    expect(referencesByAnswer([message("1", "user", "p"), message("2", "assistant", "r")])).toEqual([]);
   });
 });
