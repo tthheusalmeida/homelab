@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 
 import type { ChatSummary } from "#shared/contracts/chat";
+import { contextOverheadTokens } from "#shared/rag-budget";
 import {
   checkContext,
   estimateConversationTokens,
@@ -13,7 +14,12 @@ import { PageHeader } from "#components/PageHeader";
 
 import type { AiMessage, ChatStatus } from "./types/chat";
 
-import { contextPercent, formatTokens, modelContextLimit } from "./context";
+import {
+  contextPercent,
+  formatTokens,
+  modelContextLimit,
+  modelParameterBillions,
+} from "./context";
 import { ChatStrings } from "./strings";
 
 import { useAiSelection } from "./hooks/useAiSelection";
@@ -82,10 +88,13 @@ export function ChatPage() {
   );
 
   const modelLimit = modelContextLimit(ai.activeModel);
+  // Cada envio soma ao histórico os trechos das páginas da biblioteca (o main os escolhe, por janela).
+  const modelBillions = modelParameterBillions(ai.activeModel);
+  const pagesTokens = contextOverheadTokens(modelLimit, modelBillions);
   const contextHint =
     history.length > 0
       ? ChatStrings.contextHint(
-          formatTokens(estimateConversationTokens(history, message)),
+          formatTokens(estimateConversationTokens(history, message) + pagesTokens),
         )
       : undefined;
 
@@ -134,6 +143,8 @@ export function ChatPage() {
         modelId: activeModelId,
         thinking: activeThinkingId,
         message: content,
+        contextLimit: modelLimit ?? undefined,
+        modelBillions: modelBillions ?? undefined,
       });
 
       setPending(null);
@@ -176,7 +187,10 @@ export function ChatPage() {
     }
 
     // Conversa grande: avisa antes de enviar (cada envio reenvia tudo e custa tokens).
-    const check = checkContext(estimateConversationTokens(history, content), modelLimit);
+    const check = checkContext(
+      estimateConversationTokens(history, content) + pagesTokens,
+      modelLimit,
+    );
 
     if (check.shouldWarn) {
       setWarning({ check, content });
@@ -222,14 +236,11 @@ export function ChatPage() {
   // O AppLayout não rola nesta rota: a raiz ocupa a área útil e só a lista de conversas e o
   // conteúdo da conversa rolam; o campo de mensagem fica sempre à vista.
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <PageHeader
-        title="Conversa"
-        command="ai --chat"
-        description="Converse com a IA; cada conversa fica salva e pode ser retomada depois."
-      />
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      {/* Sem frase de descrição e com os seletores da IA na linha do título: mais altura para a conversa. */}
+      <PageHeader title="Conversa" command="ai --chat" actions={<ChatSettings {...ai} />} />
 
-      <div className="flex min-h-0 flex-1 gap-4">
+      <div className="flex min-h-0 flex-1 gap-3">
       <ChatList
         chats={chatsQuery.data}
         isLoading={chatsQuery.isLoading}
@@ -265,9 +276,6 @@ export function ChatPage() {
           disabled={!canSend && !isSending}
           isSending={isSending}
           contextHint={contextHint}
-          settings={
-            <ChatSettings {...ai} />
-          }
         />
       </div>
 

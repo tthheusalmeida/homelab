@@ -597,6 +597,36 @@ describe("ChatPage: tamanho do contexto", () => {
     expect(payloadsOf(invoke, IpcChannels.chat.send)).toEqual([]);
   });
 
+  it("when the model window is known, should send it so the main sizes the page excerpts to it", async () => {
+    const user = userEvent.setup();
+    const { invoke } = setup({ chats: [makeChat("a")], url: "/ai/chat?c=a", contextLength: 128_000 });
+
+    await screen.findByText("pergunta a");
+    await waitFor(() => expect(payloadsOf(invoke, IpcChannels.ai.models).length).toBeGreaterThan(0));
+    await user.type(textbox(), "oi");
+    await user.click(sendButton());
+
+    await waitFor(() =>
+      expect(payloadsOf(invoke, IpcChannels.chat.send)).toEqual([
+        expect.objectContaining({ chatId: "a", contextLimit: 128_000 }),
+      ]),
+    );
+  });
+
+  it("when the page excerpts would push a small conversation over 80% of a short window, should warn before sending", async () => {
+    const user = userEvent.setup();
+    // A conversa é minúscula, mas numa janela de 1.000 tokens só os trechos das páginas já passam de 80%.
+    const { invoke } = setup({ chats: [makeChat("a")], url: "/ai/chat?c=a", contextLength: 1_000 });
+
+    await screen.findByText("pergunta a");
+    await waitFor(() => expect(payloadsOf(invoke, IpcChannels.ai.models).length).toBeGreaterThan(0));
+    await user.type(textbox(), "oi");
+    await user.click(sendButton());
+
+    expect(await screen.findByRole("dialog")).toHaveTextContent("Esta conversa está grande");
+    expect(payloadsOf(invoke, IpcChannels.chat.send)).toEqual([]);
+  });
+
   it("when the model limit is unknown and the conversation is still small, should not warn", async () => {
     const user = userEvent.setup();
     const { invoke } = setup({ chats: [bigChat()], url: "/ai/chat?c=a", contextLength: 0 });

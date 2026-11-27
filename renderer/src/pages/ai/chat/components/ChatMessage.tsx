@@ -2,6 +2,8 @@ import { memo } from "react";
 
 import type { AiMessage } from "../types/chat";
 import { HexDot } from "#components/Hex";
+import { ChatNotInPages } from "./ChatNotInPages";
+import { ChatReferences } from "./ChatReferences";
 import { MarkdownMessage } from "#components/MarkdownMessage";
 import { cn } from "#lib/utils";
 
@@ -16,6 +18,7 @@ interface ChatMessageProps {
  */
 export const ChatMessage = memo(function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const references = message.references;
 
   return (
     <div className={cn("flex flex-col gap-1.5", isUser ? "items-end" : "items-start")}>
@@ -40,6 +43,10 @@ export const ChatMessage = memo(function ChatMessage({ message }: ChatMessagePro
       >
         {isUser ? message.content : <MarkdownMessage content={message.content} />}
       </div>
+
+      {!isUser && references && <ChatReferences references={references} />}
+
+      {!isUser && !references && message.notInPages && <ChatNotInPages />}
     </div>
   );
 });

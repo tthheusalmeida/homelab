@@ -1,10 +1,17 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { uuidv7 } from 'uuidv7';
 
 import type { RecordImportResult, RestoreMode } from '../../../shared/contracts/backup';
 import type {
   ChatDetail,
   ChatMessage,
+  ChatReference,
   ChatSendRequest,
   ChatSendResponse,
   ChatSummary,
@@ -12,6 +19,16 @@ import type {
 import { IpcError, IpcErrorCode } from '../../../shared/errors';
 import { AIService } from '../ai/ai.service';
 
+import {
+  CHAT_CONTEXT,
+  looksLikeAQuestion,
+  referencesFor,
+  withContext,
+  withoutCitations,
+  withoutDeadEnds,
+  type ChatContextPassage,
+  type ChatContextSource,
+} from './chat-context';
 import { titleFromMessage } from './chat.title';
 import { isStoredChat } from './file-chat.repository';
 import { CHAT_REPOSITORY, type ChatRepository } from './chat.repository';
@@ -48,6 +65,8 @@ export class ChatService {
   constructor(
     private readonly aiService: AIService,
     @Inject(CHAT_REPOSITORY) private readonly repository: ChatRepository,
+    /** Páginas da biblioteca que acompanham a pergunta. Sem ela, o chat funciona como antes. */
+    @Optional() @Inject(CHAT_CONTEXT) private readonly context?: ChatContextSource,
   ) {}
 
   /** Do mais recente para o mais antigo. */
@@ -140,23 +159,53 @@ export class ChatService {
     this.cancelled.delete(request.chatId);
 
     try {
-      const history = (existing?.messages ?? []).map(({ role, content }) => ({ role, content }));
+      const history = (existing?.messages ?? []).map(({ role, content }) => ({
+        role,
+        // as marcas [n] de respostas antigas não valem para os trechos desta vez
+        content: role === 'assistant' ? withoutCitations(content) : content,
+      }));
+      const passages = await this.passagesFor(message, existing, {
+        contextLimit: request.contextLimit,
+        modelBillions: request.modelBillions,
+      });
       const answer = await this.aiService.chat({
         message,
         modelId: request.modelId,
         providerId: request.providerId,
         thinking: request.thinking,
-        messages: [...history, { role: 'user', content: message }],
+        // Com páginas relevantes, as perguntas antigas respondidas com "não encontrei" ficam de fora.
+        messages: [
+          ...(passages.length > 0 ? withoutDeadEnds(history) : history),
+          { role: 'user', content: withContext(message, passages) },
+        ],
       });
 
       if (this.cancelled.has(request.chatId)) {
         throw new IpcError(IpcErrorCode.VALIDATION, ChatMessages.cancelled);
       }
 
-      return this.record(request, existing, message, answer);
+      return this.record(request, existing, message, answer, referencesFor(answer, passages));
     } finally {
       this.inFlight.delete(request.chatId);
       this.cancelled.delete(request.chatId);
+    }
+  }
+
+  /**
+   * Trechos das páginas que acompanham a pergunta. A busca é um **extra**: se falhar, o chat segue
+   * sem contexto em vez de deixar de responder.
+   */
+  private async passagesFor(
+    message: string,
+    existing: StoredChat | null,
+    model: { contextLimit?: number; modelBillions?: number },
+  ): Promise<ChatContextPassage[]> {
+    const previous = existing?.messages.filter(({ role }) => role === 'user').at(-1)?.content;
+
+    try {
+      return (await this.context?.retrieve(message, previous, model)) ?? [];
+    } catch {
+      return [];
     }
   }
 
@@ -166,6 +215,7 @@ export class ChatService {
     existing: StoredChat | null,
     message: string,
     answer: string,
+    references: ChatReference[],
   ): ChatSendResponse {
     if (existing && !this.repository.findById(existing.id)) {
       throw new NotFoundException(ChatMessages.deletedWhileWaiting);
@@ -173,12 +223,23 @@ export class ChatService {
 
     const current = existing ? (this.repository.findById(existing.id) ?? existing) : null;
     const now = new Date().toISOString();
-    const turn = (role: ChatMessage['role'], content: string): ChatMessage => ({
+    const turn = (
+      role: ChatMessage['role'],
+      content: string,
+      cited: ChatReference[] = [],
+      notInPages = false,
+    ): ChatMessage => ({
       id: uuidv7(),
       role,
       content,
       createdAt: now,
+      ...(cited.length > 0 ? { references: cited } : {}),
+      ...(notInPages ? { notInPages: true } : {}),
     });
+
+    // Pergunta de verdade e nenhuma página serviu de referência: a tela avisa, com as palavras dela.
+    const notInPages =
+      this.context !== undefined && references.length === 0 && looksLikeAQuestion(message);
 
     const chat: StoredChat = {
       id: request.chatId,
@@ -189,7 +250,11 @@ export class ChatService {
       modelId: request.modelId,
       ...(request.thinking !== undefined ? { thinking: request.thinking } : {}),
       messageCount: (current?.messages.length ?? 0) + 2,
-      messages: [...(current?.messages ?? []), turn('user', message), turn('assistant', answer)],
+      messages: [
+        ...(current?.messages ?? []),
+        turn('user', message),
+        turn('assistant', answer, references, notInPages),
+      ],
     };
 
     this.repository.save(chat);

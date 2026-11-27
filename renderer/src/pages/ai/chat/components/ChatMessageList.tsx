@@ -33,7 +33,7 @@ export const ChatMessageList = memo(function ChatMessageList({
       <div
         role="log"
         aria-label="Mensagens da conversa"
-        className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-4"
+        className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-2"
       >
         {messages.map((message) => (
           <div key={message.id} className="animate-enter">

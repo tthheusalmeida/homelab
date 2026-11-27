@@ -29,7 +29,8 @@ export function isStoredChat(value: unknown): value is StoredChat {
       (message) =>
         typeof message?.id === 'string' &&
         typeof message?.content === 'string' &&
-        (message?.role === 'user' || message?.role === 'assistant'),
+        (message?.role === 'user' || message?.role === 'assistant') &&
+        (message?.references === undefined || Array.isArray(message.references)),
     )
   );
 }

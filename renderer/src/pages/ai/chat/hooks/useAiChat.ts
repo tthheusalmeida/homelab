@@ -54,6 +54,8 @@ export function useAiChat() {
           modelId: data.modelId,
           providerId: data.providerId as AiProviderId,
           thinking: data.thinking,
+          contextLimit: data.contextLimit,
+          modelBillions: data.modelBillions,
         }),
         controller.signal,
       );

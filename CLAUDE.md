@@ -37,6 +37,7 @@ Estado: app instalável e em uso (versão `0.1.x`). Todas as fases da migração
 | `docs/prompts.md` | Prompts personalizáveis: instruções editáveis (versões nomeadas) separadas do contrato fixo (limites, formato, segurança), onde ficam, canais e limites do texto |
 | `docs/leitura-de-pdf.md` | Criar página a partir de um PDF: leitura só do texto, limites, avisos, divisão em partes, IA por parte, progresso em disco e retomada |
 | `docs/persistencia.md` | Jobs e chats em disco, pasta-raiz única para backup, exclusão de jobs, seção de Chats |
+| `docs/chat-com-paginas.md` | RAG no chat: a pergunta busca nas páginas publicadas, o modelo responde com base nos trechos e a resposta traz as referências (link que abre a página na seção); busca por palavras, correção de digitação, âncoras |
 | `docs/ia-padrao.md` | IA padrão (Configurações), troca temporária por sessão, o chip "IA em uso" e as camadas que decidem qual IA vale |
 | `docs/adicionar-provider.md` | Como adicionar um provider de IA na nuvem (cinco passos, o que o compilador e os testes cobram, peças comuns para reaproveitar) |
 | `docs/regras-de-negocio.md` | Onde ficam as regras que **não mudam** (`docs/regras/back`, `docs/regras/front`) |

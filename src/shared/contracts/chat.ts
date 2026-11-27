@@ -2,11 +2,40 @@ import type { AiProviderId } from './ai';
 
 export type ChatRole = 'user' | 'assistant';
 
+/**
+ * Página da biblioteca em que a resposta se apoiou. Quem monta a lista é o app (a partir dos trechos
+ * que a busca achou), nunca o modelo, então o link não é inventado. Abrir `/library/<documentId>`
+ * com `#<anchor>` leva à seção.
+ */
+export interface ChatReference {
+  documentId: string;
+  /** Título da página. */
+  title: string;
+  /** Títulos até o trecho usado, do maior ao menor (o 1º costuma repetir o título da página). */
+  headingPath: string[];
+  /** Âncora da seção; `null` se o trecho vem antes do primeiro título. */
+  anchor: string | null;
+  category: string[];
+  /**
+   * Posição da referência na lista (1, 2, 3…): é o número `[n]` que o texto da resposta usa para
+   * apontar para esta página, e a tela o mostra no ícone. Ausente em conversas gravadas antes disso.
+   */
+  number?: number;
+}
+
 export interface ChatMessage {
   id: string;
   role: ChatRole;
   content: string;
   createdAt: string;
+  /** Só nas respostas do assistente que usaram páginas da biblioteca. */
+  references?: ChatReference[];
+  /**
+   * A pergunta parecia ser sobre as páginas, mas nenhuma serviu de referência: a tela avisa "não achei
+   * isso nas suas páginas". Só nas respostas do assistente; ausente quando há referências ou quando
+   * era só conversa.
+   */
+  notInPages?: boolean;
 }
 
 /** Item da lista de chats (canal `chats:list`), do mais recente para o mais antigo. */
@@ -41,6 +70,13 @@ export interface ChatSendRequest {
   modelId: string;
   providerId: AiProviderId;
   thinking?: string;
+  /**
+   * Janela de contexto do modelo, em tokens, quando a tela a conhece. Define quantos trechos das
+   * páginas da biblioteca acompanham a pergunta (janela curta recebe menos).
+   */
+  contextLimit?: number;
+  /** Tamanho do modelo em bilhões de parâmetros, quando se sabe (modelo pequeno recebe menos trechos). */
+  modelBillions?: number;
 }
 
 export interface ChatSendResponse {

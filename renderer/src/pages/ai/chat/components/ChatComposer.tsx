@@ -11,7 +11,8 @@ interface ChatComposerProps {
   onSend: () => void;
   disabled?: boolean;
   isSending?: boolean;
-  settings: React.ReactNode;
+  /** Seletores da IA, quando ficam junto do campo (o chat os põe no cabeçalho para ganhar altura). */
+  settings?: React.ReactNode;
   /** Texto discreto sobre o tamanho do contexto (ex.: "~12 mil tokens no contexto (estimativa)"). */
   contextHint?: string;
 }
@@ -38,7 +39,7 @@ export function ChatComposer({
   }
 
   return (
-    <footer className="shrink-0 pt-3">
+    <footer className="shrink-0 pt-2">
       <div className="mx-auto w-full max-w-3xl">
         <div className="relative rounded-xl border bg-card shadow-lg">
           <Textarea
@@ -46,7 +47,7 @@ export function ChatComposer({
             onChange={(event) => onChange(event.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Envie uma mensagem..."
-            className="min-h-24 resize-none border-0 bg-transparent pr-14 shadow-none focus-visible:ring-0"
+            className="min-h-16 resize-none border-0 bg-transparent pr-14 shadow-none focus-visible:ring-0"
           />
 
           <HexButton
@@ -63,10 +64,10 @@ export function ChatComposer({
           </HexButton>
         </div>
 
-        <div className="mt-2 flex items-center justify-between gap-4">
-          <div className="min-w-0">{settings}</div>
+        <div className="mt-1.5 flex items-center justify-between gap-4">
+          {settings ? <div className="min-w-0">{settings}</div> : <span />}
 
-          <div className="flex shrink-0 flex-col items-end text-xs text-muted-foreground">
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 text-xs text-muted-foreground">
             {contextHint && <span data-testid="context-hint">{contextHint}</span>}
 
             <span>Enter para enviar · Shift + Enter para nova linha</span>
