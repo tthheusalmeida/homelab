@@ -46,6 +46,10 @@ describe('withContext', () => {
     expect(prompt).toContain('cite o número em negrito, como **[1]**');
   });
 
+  it('when building the prompt, should ask to cite only what was really used', () => {
+    expect(withContext('x', [passage()])).toContain('Só cite um trecho se você de fato usou');
+  });
+
   it('when the excerpts are off topic, should let the model answer with what it knows, without citing or mentioning the pages', () => {
     const prompt = withContext('x', [passage()]);
 
@@ -95,18 +99,10 @@ describe('referencesFor', () => {
     ]);
   });
 
-  it('when the answer cites none and the search is not sure, should list no reference at all', () => {
+  it('when the answer cites none, should list no reference even if the pages match the question well', () => {
     expect(referencesFor('Resposta sem marcas.', passages)).toEqual([]);
     expect(referencesFor('Resposta sem marcas.', [passage({ coverage: 0.5 })])).toEqual([]);
-  });
-
-  it('when the answer cites none but the first passage matches almost the whole question, should list only the first one', () => {
-    const references = referencesFor('Resposta sem marcas.', [
-      passage({ coverage: 0.8 }),
-      passage({ documentId: 'doc-2', anchor: 'outra', coverage: 1 }),
-    ]);
-
-    expect(references.map((reference) => reference.documentId)).toEqual(['doc-1']);
+    expect(referencesFor('Resposta sem marcas.', [passage({ coverage: 1 })])).toEqual([]);
   });
 
   it('when the answer cites a number that does not exist, should ignore it', () => {
@@ -167,17 +163,13 @@ describe('referencesFor', () => {
     expect(references.map((reference) => reference.number)).toEqual([1, 2, 3, 4]);
   });
 
-  it('when no citation exists and the first passage is strong, should show only the first one', () => {
-    const references = referencesFor('Sem marcas.', [
-      passage({ coverage: 0.9 }),
-      passage({ documentId: 'doc-2', anchor: 'b' }),
-    ]);
-
-    expect(references.map((reference) => reference.documentId)).toEqual(['doc-1']);
-  });
-
-  it('when no citation exists and the first passage is strong, should number the references from 1', () => {
-    expect(referencesFor('Sem marcas.', [passage({ coverage: 0.9 })])[0].number).toBe(1);
+  it('when no citation exists, should show nothing: the answer came from what the model knows', () => {
+    expect(
+      referencesFor('Sem marcas.', [
+        passage({ coverage: 0.9 }),
+        passage({ documentId: 'doc-2', anchor: 'b' }),
+      ]),
+    ).toEqual([]);
   });
 });
 

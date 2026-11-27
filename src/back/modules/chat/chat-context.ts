@@ -46,9 +46,6 @@ function numbersOf(mark: string): number[] {
   return mark.split(/[,;]/).map((part) => Number(part.trim()));
 }
 
-/** Sem citação, só o 1º trecho vira referência, e só se casa com (quase) toda a pergunta. */
-export const STRONG_COVERAGE = 0.75;
-
 /**
  * Resposta antiga sem as marcas `[1]`, `[2,3]` (e o negrito delas). Elas só valem para os trechos
  * daquela vez; reenviadas no histórico, se confundem com a numeração dos trechos novos e ainda levam
@@ -229,6 +226,7 @@ export function withContext(question: string, passages: ChatContextPassage[]): s
   return [
     'Abaixo estão trechos numerados das páginas da biblioteca do usuário.',
     'Quando algum trecho ajuda a responder, dê prioridade a ele: baseie a resposta no trecho, comece direto pela resposta e cite o número em negrito, como **[1]** (ou **[1,2]** quando vêm de mais de um trecho), depois de cada afirmação tirada dele.',
+    'Só cite um trecho se você de fato usou o que ele diz; conversa e perguntas de assunto geral não levam citação.',
     'Se os trechos cobrem só uma parte, use o que eles trazem (citando) e complete com o que você sabe.',
     'Se nenhum trecho tratar do assunto, ignore-os e responda normalmente com o seu melhor conhecimento, sem citar número e sem comentar que não achou nas páginas.',
     'Fale com o usuário em segunda pessoa, de forma simples e direta, sem dizer "trechos fornecidos" nem "documentos".',
@@ -261,16 +259,16 @@ export function referencesFor(answer: string, passages: ChatContextPassage[]): C
       .filter((n) => n >= 1),
   );
   const anyCited = sections.some((_, index) => cited.has(index + 1));
-  const strongFirst = (sections[0]?.coverage ?? 0) >= STRONG_COVERAGE;
 
-  if (!anyCited && !strongFirst) {
+  // Sem citação, a resposta veio do que o modelo sabe: nenhuma referência.
+  if (!anyCited) {
     return [];
   }
 
-  // Só as seções que a resposta citou. Sem citação (o modelo esqueceu), só a primeira, que casa com
-  // quase toda a pergunta. O número é o `[n]` que o modelo viu, então a lista pode ter buracos.
+  // Só as seções que a resposta citou. O número é o `[n]` que o modelo viu, então a lista pode ter
+  // buracos.
   return sections.flatMap((section, index) =>
-    (anyCited ? cited.has(index + 1) : index === 0)
+    cited.has(index + 1)
       ? [
           {
             documentId: section.documentId,
