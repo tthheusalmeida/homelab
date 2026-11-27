@@ -10,6 +10,7 @@ import {
   type OcrQuality,
 } from '../back/modules/pdf/ocr/ocr-languages';
 import type { ComponentGroup } from '../shared/contracts/components';
+import { EMBEDDING_MODEL, EMBEDDING_MODEL_BYTES } from '../shared/embedding-model';
 
 /**
  * Catálogo de componentes. Para acrescentar uma dependência, acrescente uma entrada aqui: o
@@ -22,6 +23,8 @@ import type { ComponentGroup } from '../shared/contracts/components';
  * - `ollama-model`: modelo do assistente local, baixado do registro do Ollama pelo próprio assistente
  *   (`file` é a referência do modelo, ex.: `qwen3.5:4b`); quem o instala e detecta é um
  *   `ComponentInstaller`, não o download com checksum.
+ * - `ollama-pull`: o mesmo modelo, mas baixado no Ollama que o **usuário** instalou e liga (Linux):
+ *   o app só manda o Ollama baixar e pergunta a ele o que já tem.
  */
 export interface ComponentSpec {
   id: string;
@@ -29,7 +32,7 @@ export interface ComponentSpec {
   label: string;
   description: string;
   required: boolean;
-  kind: 'bundled' | 'file' | 'zip' | 'binary' | 'ollama-model';
+  kind: 'bundled' | 'file' | 'zip' | 'binary' | 'ollama-model' | 'ollama-pull';
   sizeBytes: number;
   /** Arquivo que prova que está instalado (relativo à pasta de binários ou à de modelos). */
   file: string;
@@ -68,6 +71,7 @@ export const WHISPER_RUNTIME_ID = 'whisper-runtime';
 export const FFMPEG_ID = 'ffmpeg';
 export const YTDLP_ID = 'yt-dlp';
 export const OLLAMA_RUNTIME_ID = 'ollama-runtime';
+export const EMBEDDING_MODEL_ID = 'llm-embedding';
 
 /** Pasta (dentro dos pacotes, nos dados do usuário) do programa do assistente local: ele traz as próprias bibliotecas. */
 export const OLLAMA_FOLDER = 'ollama';
@@ -127,7 +131,10 @@ interface AssistantModelInput {
   sizeBytes: number;
 }
 
-/** Modelo do assistente local (só onde o assistente existe: hoje, Windows). */
+/**
+ * Modelo do Ollama. No Windows vai para o assistente que o app instala; no Linux, para o Ollama que
+ * o usuário instalou e liga (o app manda baixar e pergunta a ele o que já tem).
+ */
 function assistantModel(input: AssistantModelInput): ComponentTemplate {
   return {
     id: input.id,
@@ -137,6 +144,7 @@ function assistantModel(input: AssistantModelInput): ComponentTemplate {
     required: false,
     variants: {
       'win32-x64': { kind: 'ollama-model', sizeBytes: input.sizeBytes, file: input.ref },
+      'linux-x64': { kind: 'ollama-pull', sizeBytes: input.sizeBytes, file: input.ref },
     },
   };
 }
@@ -386,6 +394,14 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
       'O mais capaz e o mais pesado. Só para placa de vídeo com 24 GB ou computador com 32 GB de memória ou mais.',
     ref: 'qwen3.5:27b',
     sizeBytes: 17_478_556_591,
+  }),
+  assistantModel({
+    id: EMBEDDING_MODEL_ID,
+    label: 'Busca por sentido',
+    description:
+      'Faz o chat achar as suas páginas pelo sentido da pergunta, e não só pelas palavras. Pequeno, funciona junto com qualquer assistente acima e roda em qualquer computador.',
+    ref: EMBEDDING_MODEL,
+    sizeBytes: EMBEDDING_MODEL_BYTES,
   }),
   ...OCR_TEMPLATES,
 ];

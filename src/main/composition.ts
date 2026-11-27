@@ -15,6 +15,8 @@ import { LocalProvidersService } from '../providers/local-providers.service';
 import { DesktopWhisperService, type WhisperRunner } from '../providers/desktop-whisper.service';
 import { ComponentsService } from '../components/components.service';
 import { OllamaModelInstaller, type PullFetch } from '../components/ollama-model-installer';
+import { ConfiguredOllama } from '../providers/configured-ollama';
+import { TagsPresence } from '../components/ollama-presence';
 import { OllamaRuntime, type SpawnProcess } from '../providers/ollama-runtime';
 import {
   CUDA_PACK_ID,
@@ -114,6 +116,10 @@ export function createServices(options: CompositionOptions) {
     exists: options.exists,
   });
 
+  const httpFetch: PullFetch =
+    options.httpFetch ?? (() => Promise.reject(new Error('Sem acesso à rede neste ambiente.')));
+  const ownOllama = new ConfiguredOllama(() => settings.get().local.ollama.url, options.fetchFn);
+
   const components = new ComponentsService({
     binDir,
     modelsDir: path.join(options.userDataDir, 'components', 'models'),
@@ -123,9 +129,26 @@ export function createServices(options: CompositionOptions) {
       new OllamaModelInstaller({
         modelsDir: assistantModelsDir,
         assistant,
-        fetchFn:
-          options.httpFetch ??
-          (() => Promise.reject(new Error('Sem acesso à rede neste ambiente.'))),
+        fetchFn: httpFetch,
+      }),
+      // Modelos para o Ollama do próprio usuário (Linux): baixa nele e pergunta a ele o que já tem.
+      new OllamaModelInstaller({
+        kind: 'ollama-pull',
+        assistant: ownOllama,
+        presence: new TagsPresence(async () => {
+          try {
+            const response = await httpFetch(`${ownOllama.baseUrl}/api/tags`, {
+              method: 'GET',
+              signal: AbortSignal.timeout(3_000),
+            });
+            const data = (await response.json()) as { models?: Array<{ name?: string }> };
+
+            return (data.models ?? []).flatMap((model) => (model.name ? [model.name] : []));
+          } catch {
+            return null;
+          }
+        }),
+        fetchFn: httpFetch,
       }),
     ],
     platform: options.platform,

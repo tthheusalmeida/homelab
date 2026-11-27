@@ -16,6 +16,8 @@ export interface InstallContext {
 export interface ComponentInstaller {
   handles(spec: ComponentSpec): boolean;
   isInstalled(spec: ComponentSpec): boolean;
+  /** Atualiza o que `isInstalled` sabe, quando isso exige perguntar a alguém (ex.: o servidor do Ollama). */
+  refresh?(): Promise<void>;
   install(spec: ComponentSpec, context: InstallContext): Promise<void>;
   remove(spec: ComponentSpec): Promise<void>;
 }

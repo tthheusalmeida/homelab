@@ -302,3 +302,74 @@ describe('OllamaModelInstaller', () => {
     });
   });
 });
+
+describe('OllamaModelInstaller no Ollama do usuário', () => {
+  it('when it handles the pull kind only, should leave the assistant models to the other installer', () => {
+    const installer = new OllamaModelInstaller({
+      kind: 'ollama-pull',
+      assistant: {
+        baseUrl: 'http://localhost:11434',
+        isInstalled: () => true,
+        ensureRunning: jest.fn(),
+      },
+      presence: { has: () => false },
+      fetchFn: jest.fn(),
+    });
+
+    expect(installer.handles(spec({ kind: 'ollama-pull' }))).toBe(true);
+    expect(installer.handles(spec({ kind: 'ollama-model' }))).toBe(false);
+  });
+
+  it('when the pull finishes, should refresh what the server has and only then check the model is there', async () => {
+    const present = new Set<string>();
+    const refresh = jest.fn(async () => {
+      present.add('qwen3.5:4b');
+    });
+    const fetchFn: PullFetch = jest.fn(async () =>
+      streamOf(
+        line({ status: 'pulling x', digest: 'd1', total: 10, completed: 10 }),
+        line({ status: 'success' }),
+      ),
+    );
+    const installer = new OllamaModelInstaller({
+      kind: 'ollama-pull',
+      assistant: {
+        baseUrl: 'http://localhost:11434',
+        isInstalled: () => true,
+        ensureRunning: jest.fn(),
+      },
+      presence: { has: (ref) => present.has(ref), refresh },
+      fetchFn,
+    });
+
+    await installer.install(spec({ kind: 'ollama-pull' }), {
+      signal: new AbortController().signal,
+      progress: jest.fn(),
+    });
+
+    expect(refresh).toHaveBeenCalled();
+    expect(fetchFn).toHaveBeenCalledWith('http://localhost:11434/api/pull', expect.anything());
+  });
+
+  it('when the own Ollama is off, should fail with its message and not try to download', async () => {
+    const fetchFn: PullFetch = jest.fn();
+    const installer = new OllamaModelInstaller({
+      kind: 'ollama-pull',
+      assistant: {
+        baseUrl: 'http://localhost:11434',
+        isInstalled: () => true,
+        ensureRunning: jest.fn().mockRejectedValue(new Error('Ollama desligado')),
+      },
+      presence: { has: () => false },
+      fetchFn,
+    });
+
+    await expect(
+      installer.install(spec({ kind: 'ollama-pull' }), {
+        signal: new AbortController().signal,
+        progress: jest.fn(),
+      }),
+    ).rejects.toThrow('Ollama desligado');
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});

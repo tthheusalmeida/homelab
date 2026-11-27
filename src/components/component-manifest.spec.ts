@@ -30,7 +30,8 @@ describe('COMPONENT_TEMPLATES', () => {
     'when a component is downloadable on %s, should have an https url and a sha256',
     (target) => {
       const downloaded = catalogFor(target).filter(
-        (item) => item.kind !== 'bundled' && item.kind !== 'ollama-model',
+        (item) =>
+          item.kind !== 'bundled' && item.kind !== 'ollama-model' && item.kind !== 'ollama-pull',
       );
 
       for (const spec of downloaded) {
@@ -125,9 +126,14 @@ describe('assistente local', () => {
     expect(runtime()?.download?.sha256).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it('when asking for Linux, should not offer the program or its models yet', () => {
+  it("when asking for Linux, should not offer the program, but offer the models to pull into the user's own Ollama", () => {
+    const models = catalogFor(LINUX).filter((spec) => spec.group === 'llm');
+
     expect(findComponent('ollama-runtime', LINUX)).toBeUndefined();
-    expect(catalogFor(LINUX).filter((spec) => spec.group === 'llm')).toEqual([]);
+    expect(models.map((spec) => spec.id)).toEqual(assistants().map((spec) => spec.id));
+    expect(models.every((spec) => spec.kind === 'ollama-pull' && spec.download === undefined)).toBe(
+      true,
+    );
   });
 
   it('when listing the assistants, should go from light to heavy with growing sizes', () => {
@@ -138,14 +144,18 @@ describe('assistente local', () => {
       'llm-balanced',
       'llm-strong',
       'llm-max',
+      'llm-embedding',
     ]);
-    expect(sizes).toEqual([...sizes].sort((a, b) => a - b));
+    // o modelo de vetores fica no fim da lista, fora da escada dos assistentes
+    const ladder = sizes.slice(0, -1);
+
+    expect(ladder).toEqual([...ladder].sort((a, b) => a - b));
   });
 
   it('when listing the assistants, should be optional models fetched by reference, not by download', () => {
     for (const spec of assistants()) {
       expect(spec).toMatchObject({ kind: 'ollama-model', required: false });
-      expect(spec.file).toMatch(/^qwen3\.5:\d+(\.\d+)?b$/);
+      expect(spec.file).toMatch(/^(qwen3\.5:\d+(\.\d+)?b|embeddinggemma)$/);
       expect(spec.download).toBeUndefined();
     }
   });

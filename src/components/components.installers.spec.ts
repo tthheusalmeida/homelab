@@ -78,6 +78,23 @@ describe('ComponentsService com instaladores e pacotes em pasta própria', () =>
 
   afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
+  describe('atualização do que o instalador sabe', () => {
+    it('when the status is asked, should let the installer refresh first so a model pulled outside the app shows up', async () => {
+      installer.refresh = jest.fn(async () => {
+        installed.add('llm-balanced');
+      });
+
+      expect((await infoOf(build([assistantModel]), 'llm-balanced'))?.state).toBe('installed');
+      expect(installer.refresh).toHaveBeenCalled();
+    });
+
+    it('when the installer cannot refresh, should still answer with what it knew', async () => {
+      installer.refresh = jest.fn().mockRejectedValue(new Error('servidor desligado'));
+
+      expect((await infoOf(build([assistantModel]), 'llm-balanced'))?.state).toBe('missing');
+    });
+  });
+
   describe('instalador próprio', () => {
     it('when the installer says it is not there, should list the assistant as missing', async () => {
       expect((await infoOf(build([assistantModel]), 'llm-balanced'))?.state).toBe('missing');

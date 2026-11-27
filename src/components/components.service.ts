@@ -90,6 +90,8 @@ export class ComponentsService {
   }
 
   async status(): Promise<ComponentsStatus> {
+    await this.refreshInstallers();
+
     return this.buildStatus(await this.hardware());
   }
 
@@ -156,6 +158,15 @@ export class ComponentsService {
     });
 
     return this.status();
+  }
+
+  /** Pede aos instaladores que atualizem o que sabem (nunca falha: sem resposta, vale o que já se sabia). */
+  private async refreshInstallers(): Promise<void> {
+    await Promise.all(
+      (this.deps.installers ?? []).map((installer) =>
+        (installer.refresh?.() ?? Promise.resolve()).catch(() => undefined),
+      ),
+    );
   }
 
   cancel(): void {

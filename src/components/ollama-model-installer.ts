@@ -1,10 +1,11 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-
 import type { LocalAssistant } from '../back/config/local-assistant';
 
 import type { ComponentInstaller, InstallContext } from './component-installer';
 import type { ComponentSpec } from './component-manifest';
+import { manifestPath } from './ollama-manifest';
+import { ManifestPresence, type ModelPresence } from './ollama-presence';
+
+export { manifestPath };
 
 export const OllamaModelMessages = {
   pullFailed: 'Não foi possível baixar este assistente. Confira a conexão e tente de novo.',
@@ -14,7 +15,7 @@ export const OllamaModelMessages = {
 export type PullFetch = (
   url: string,
   init: {
-    method: 'POST' | 'DELETE';
+    method: 'GET' | 'POST' | 'DELETE';
     headers?: Record<string, string>;
     body?: string;
     signal?: AbortSignal;
@@ -22,8 +23,12 @@ export type PullFetch = (
 ) => Promise<Response>;
 
 export interface OllamaModelInstallerDeps {
-  /** Onde o assistente guarda os modelos (a mesma pasta que o `OllamaRuntime` usa). */
-  modelsDir: string;
+  /** Onde o assistente guarda os modelos (a mesma pasta que o `OllamaRuntime` usa). Sem `presence`, é por ela que se detecta o modelo. */
+  modelsDir?: string;
+  /** Como saber que o modelo está instalado (padrão: o manifesto na pasta de modelos). */
+  presence?: ModelPresence;
+  /** Tipo de componente que este instalador cuida (padrão: `ollama-model`, do assistente do app). */
+  kind?: ComponentSpec['kind'];
   assistant: LocalAssistant;
   fetchFn: PullFetch;
   now?: () => number;
@@ -31,18 +36,6 @@ export interface OllamaModelInstallerDeps {
 
 /** Intervalo mínimo entre dois avisos de andamento (o assistente manda dezenas por segundo). */
 const PROGRESS_INTERVAL_MS = 150;
-
-/**
- * Arquivo que prova que o modelo está instalado: o "manifesto" que o assistente grava ao terminar o
- * download (`<modelos>/manifests/registry.ollama.ai/library/<nome>/<tamanho>`). Ele só aparece com
- * o modelo completo, então a detecção não precisa ligar o assistente.
- */
-export function manifestPath(modelsDir: string, ref: string): string {
-  const [name, tag = 'latest'] = ref.split(':');
-  const namespaced = name.includes('/') ? name : `library/${name}`;
-
-  return path.join(modelsDir, 'manifests', 'registry.ollama.ai', ...namespaced.split('/'), tag);
-}
 
 interface PullLine {
   status?: string;
@@ -68,14 +61,22 @@ function parseLine(line: string): PullLine | null {
  * tentativa continua de onde parou).
  */
 export class OllamaModelInstaller implements ComponentInstaller {
-  constructor(private readonly deps: OllamaModelInstallerDeps) {}
+  private readonly presence: ModelPresence;
+
+  constructor(private readonly deps: OllamaModelInstallerDeps) {
+    this.presence = deps.presence ?? new ManifestPresence(deps.modelsDir ?? '');
+  }
 
   handles(spec: ComponentSpec): boolean {
-    return spec.kind === 'ollama-model';
+    return spec.kind === (this.deps.kind ?? 'ollama-model');
   }
 
   isInstalled(spec: ComponentSpec): boolean {
-    return fs.existsSync(manifestPath(this.deps.modelsDir, spec.file));
+    return this.presence.has(spec.file);
+  }
+
+  refresh(): Promise<void> {
+    return this.presence.refresh?.() ?? Promise.resolve();
   }
 
   async install(spec: ComponentSpec, { signal, progress }: InstallContext): Promise<void> {
@@ -150,6 +151,8 @@ export class OllamaModelInstaller implements ComponentInstaller {
       handle(last);
     }
 
+    await this.refresh();
+
     if (!finished || !this.isInstalled(spec)) {
       throw new Error(OllamaModelMessages.pullFailed);
     }
@@ -169,5 +172,7 @@ export class OllamaModelInstaller implements ComponentInstaller {
     if (!response.ok && response.status !== 404) {
       throw new Error(OllamaModelMessages.removeFailed);
     }
+
+    await this.refresh();
   }
 }
