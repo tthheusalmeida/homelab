@@ -113,6 +113,47 @@ describe('RagContextService', () => {
     });
   });
 
+  describe('corte pela semelhança do melhor trecho', () => {
+    it('when a hit is far below the best similarity, should leave it out even with the words', async () => {
+      foundBySense(
+        hit('a', { coverage: 1, similarity: 0.7 }),
+        hit('b', { coverage: 1, similarity: 0.4 }),
+      );
+
+      const result = await service.retrieve('pergunta qualquer longa');
+
+      expect(result.map((item) => item.documentId)).toEqual(['a']);
+    });
+
+    it('when a hit is close to the best similarity, should keep it', async () => {
+      foundBySense(
+        hit('a', { coverage: 0, similarity: 0.5 }),
+        hit('b', { coverage: 0, similarity: 0.45 }),
+      );
+
+      const result = await service.retrieve('pergunta qualquer longa');
+
+      expect(result.map((item) => item.documentId)).toEqual(['a', 'b']);
+    });
+
+    it('when a hit has no vector yet, should not cut it by similarity', async () => {
+      foundBySense(hit('a', { coverage: 1, similarity: 0.7 }), hit('b', { coverage: 1 }));
+
+      const result = await service.retrieve('pergunta qualquer longa');
+
+      expect(result.map((item) => item.documentId)).toEqual(['a', 'b']);
+    });
+
+    it('when the best similarity is weak, should keep the hits near it', async () => {
+      foundBySense(
+        hit('a', { coverage: 0, similarity: 0.45 }),
+        hit('b', { coverage: 0, similarity: 0.4 }),
+      );
+
+      expect(await service.retrieve('pergunta qualquer longa')).toHaveLength(2);
+    });
+  });
+
   describe('quantos trechos cabem na janela do modelo', () => {
     it('when the window is unknown, should keep the medium number of hits', async () => {
       found(...many(20));

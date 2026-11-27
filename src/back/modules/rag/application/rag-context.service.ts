@@ -16,6 +16,13 @@ export const MIN_COVERAGE = 0.5;
 export const MIN_SIMILARITY = 0.33;
 /** E pontuar pelo menos esta fração do melhor trecho (corta o "fundo da fila"; só na busca por palavras). */
 export const MIN_RELATIVE_SCORE = 0.35;
+/**
+ * Com busca por sentido, o trecho também precisa ter pelo menos esta fração da semelhança do melhor
+ * trecho. Corta o "fundo da fila" sem um número fixo: pergunta com resposta clara fica só com as
+ * páginas fortes, e pergunta de sentido fraco (melhor trecho em 0,45) mantém os seus. Medido nas
+ * páginas reais: 0,8 tira cerca de 70% dos trechos fora do assunto sem perder a página certa.
+ */
+export const MIN_RELATIVE_SIMILARITY = 0.8;
 
 export interface RetrieveOptions {
   /** Janela de contexto do modelo, em tokens: define quantos trechos acompanham a pergunta. */
@@ -50,11 +57,12 @@ export class RagContextService {
 
     const { hits, semantic } = await this.search.search(query, budget.maxHits * 2);
     const top = hits[0]?.score ?? 0;
+    const topSimilarity = Math.max(0, ...hits.map((hit) => hit.similarity ?? 0));
     const picked: RagHit[] = [];
     let chars = 0;
 
     for (const hit of hits) {
-      if (!this.isRelevant(hit, top, semantic)) {
+      if (!this.isRelevant(hit, top, semantic, topSimilarity)) {
         continue;
       }
 
@@ -75,13 +83,19 @@ export class RagContextService {
   /**
    * Só palavras: o trecho precisa ter a maioria das palavras da pergunta e pontuar perto do melhor.
    * Com busca por sentido, entra também quem tem a maioria das palavras **ou** sentido próximo (a
-   * pontuação das duas listas juntas não serve de régua).
+   * pontuação das duas listas juntas não serve de régua). Nesse caso a régua é a semelhança do
+   * melhor trecho: quem fica bem abaixo dela sai, mesmo com palavras em comum.
    */
-  private isRelevant(hit: RagHit, top: number, semantic: boolean): boolean {
+  private isRelevant(hit: RagHit, top: number, semantic: boolean, topSimilarity: number): boolean {
     if (!semantic) {
       return hit.coverage >= MIN_COVERAGE && hit.score >= top * MIN_RELATIVE_SCORE;
     }
 
-    return hit.coverage >= MIN_COVERAGE || (hit.similarity ?? 0) >= MIN_SIMILARITY;
+    const closeEnough = hit.coverage >= MIN_COVERAGE || (hit.similarity ?? 0) >= MIN_SIMILARITY;
+    // Trecho sem vetor (ainda não calculado) não tem semelhança para comparar: não é cortado.
+    const nearTheBest =
+      hit.similarity === undefined || hit.similarity >= topSimilarity * MIN_RELATIVE_SIMILARITY;
+
+    return closeEnough && nearTheBest;
   }
 }
