@@ -19,6 +19,9 @@ import type { ComponentGroup } from '../shared/contracts/components';
  * - `file`: arquivo baixado para a pasta de modelos.
  * - `zip`: pacote baixado e extraído na pasta de binários (ao lado do `whisper-cli`).
  * - `binary`: programa único baixado direto para a pasta de binários (o yt-dlp).
+ * - `ollama-model`: modelo do assistente local, baixado do registro do Ollama pelo próprio assistente
+ *   (`file` é a referência do modelo, ex.: `qwen3.5:4b`); quem o instala e detecta é um
+ *   `ComponentInstaller`, não o download com checksum.
  */
 export interface ComponentSpec {
   id: string;
@@ -26,7 +29,7 @@ export interface ComponentSpec {
   label: string;
   description: string;
   required: boolean;
-  kind: 'bundled' | 'file' | 'zip' | 'binary';
+  kind: 'bundled' | 'file' | 'zip' | 'binary' | 'ollama-model';
   sizeBytes: number;
   /** Arquivo que prova que está instalado (relativo à pasta de binários ou à de modelos). */
   file: string;
@@ -34,6 +37,8 @@ export interface ComponentSpec {
   download?: { url: string; sha256: string };
   /** Só para `zip`: arquivos extraídos (relativos à pasta de binários), conferidos na detecção. */
   provides?: string[];
+  /** Só para `zip`: pasta (dentro de `packagesDir`) onde o pacote é extraído e onde `provides` é conferido; sem ela, a pasta de binários. */
+  extractTo?: string;
 }
 
 /** Sistema + arquitetura (`win32-x64`, `linux-x64`...): a mesma chave da pasta `resources/bin`. */
@@ -41,7 +46,7 @@ export type PlatformTarget = string;
 
 /** O que muda de um sistema para outro num mesmo componente. */
 export type ComponentVariant = Pick<ComponentSpec, 'kind' | 'sizeBytes' | 'file'> &
-  Partial<Pick<ComponentSpec, 'download' | 'provides'>>;
+  Partial<Pick<ComponentSpec, 'download' | 'provides' | 'extractTo'>>;
 
 /**
  * Entrada do catálogo. O usuário vê um item só, com o mesmo nome em qualquer sistema; `variants`
@@ -62,6 +67,13 @@ export const CUDA_PACK_ID = 'cuda-pack';
 export const WHISPER_RUNTIME_ID = 'whisper-runtime';
 export const FFMPEG_ID = 'ffmpeg';
 export const YTDLP_ID = 'yt-dlp';
+export const OLLAMA_RUNTIME_ID = 'ollama-runtime';
+
+/** Pasta (dentro dos pacotes, nos dados do usuário) do programa do assistente local: ele traz as próprias bibliotecas. */
+export const OLLAMA_FOLDER = 'ollama';
+
+/** Versão do assistente local do catálogo (Windows). O pacote é o do projeto oficial, com checksum. */
+const OLLAMA_RELEASE = 'https://github.com/ollama/ollama/releases/download/v0.40.18';
 
 /** Versão do yt-dlp do catálogo. O programa se atualiza sozinho (`yt-dlp -U`) quando um site muda. */
 const YTDLP_VERSION = '2026.10.26';
@@ -103,6 +115,29 @@ function model(input: ModelSpecInput): ComponentTemplate {
     sizeBytes: input.sizeBytes,
     file: input.file,
     download: { url: `${HUGGING_FACE}/${input.file}`, sha256: input.sha256 },
+  };
+}
+
+interface AssistantModelInput {
+  id: string;
+  label: string;
+  description: string;
+  /** Referência do modelo no registro do Ollama (`nome:tamanho`). */
+  ref: string;
+  sizeBytes: number;
+}
+
+/** Modelo do assistente local (só onde o assistente existe: hoje, Windows). */
+function assistantModel(input: AssistantModelInput): ComponentTemplate {
+  return {
+    id: input.id,
+    group: 'llm',
+    label: input.label,
+    description: input.description,
+    required: false,
+    variants: {
+      'win32-x64': { kind: 'ollama-model', sizeBytes: input.sizeBytes, file: input.ref },
+    },
   };
 }
 
@@ -298,6 +333,59 @@ export const COMPONENT_TEMPLATES: readonly ComponentTemplate[] = [
     file: 'ggml-base.bin',
     sizeBytes: 147_951_465,
     sha256: '60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe',
+  }),
+  {
+    id: OLLAMA_RUNTIME_ID,
+    group: 'assistant',
+    label: 'Assistente local',
+    description:
+      'Roda a inteligência artificial no seu computador, sem internet e sem enviar nada para fora. É o motor dos assistentes abaixo e ocupa cerca de 2 GB.',
+    required: false,
+    variants: {
+      'win32-x64': {
+        kind: 'zip',
+        sizeBytes: 1_717_307_988,
+        file: 'ollama.exe',
+        extractTo: OLLAMA_FOLDER,
+        provides: ['ollama.exe'],
+        download: {
+          url: `${OLLAMA_RELEASE}/ollama-windows-amd64.zip`,
+          sha256: 'ca97292ac1e9acc77fcf473bb2741fa6acd12e3798f261b419680068b7cc4c16',
+        },
+      },
+    },
+  },
+  assistantModel({
+    id: 'llm-light',
+    label: 'Assistente leve',
+    description:
+      'Para computadores simples. Responde bem perguntas diretas sobre as suas páginas, mas se perde em perguntas longas.',
+    ref: 'qwen3.5:2b',
+    sizeBytes: 2_683_396_812,
+  }),
+  assistantModel({
+    id: 'llm-balanced',
+    label: 'Assistente equilibrado',
+    description:
+      'O melhor custo-benefício: respostas organizadas e fiéis às suas páginas. Pede cerca de 8 GB de memória.',
+    ref: 'qwen3.5:4b',
+    sizeBytes: 3_324_173_934,
+  }),
+  assistantModel({
+    id: 'llm-strong',
+    label: 'Assistente avançado',
+    description:
+      'Respostas mais completas. Pede um computador forte: placa de vídeo com 8 GB ou 16 GB de memória.',
+    ref: 'qwen3.5:9b',
+    sizeBytes: 6_550_825_550,
+  }),
+  assistantModel({
+    id: 'llm-max',
+    label: 'Assistente máximo',
+    description:
+      'O mais capaz e o mais pesado. Só para placa de vídeo com 24 GB ou computador com 32 GB de memória ou mais.',
+    ref: 'qwen3.5:27b',
+    sizeBytes: 17_478_556_591,
   }),
   ...OCR_TEMPLATES,
 ];

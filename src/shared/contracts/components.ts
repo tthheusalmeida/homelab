@@ -2,7 +2,7 @@
  * Componentes que o app precisa para funcionar (Whisper, ffmpeg, aceleração por GPU, modelos).
  * O assistente de instalação e Configurações > Componentes mostram esta lista.
  */
-export type ComponentGroup = 'runtime' | 'download' | 'gpu' | 'model' | 'ocr';
+export type ComponentGroup = 'runtime' | 'download' | 'gpu' | 'model' | 'ocr' | 'assistant' | 'llm';
 
 export type ComponentState =
   'missing' | 'queued' | 'downloading' | 'verifying' | 'installing' | 'installed' | 'failed';

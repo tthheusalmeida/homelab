@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -332,6 +332,18 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
     exists: fs.existsSync,
     fetchFn: (url, init) => fetch(url, init),
     downloadFetch: (url, init) => fetch(url, init),
+    httpFetch: (url, init) => fetch(url, init),
+    spawnProcess: (command, args, spawnOptions) => spawn(command, args, spawnOptions),
+    killTree: (pid) => {
+      if (process.platform === 'win32') {
+        spawn('taskkill', ['/pid', String(pid), '/T', '/F'], {
+          windowsHide: true,
+          stdio: 'ignore',
+        });
+      } else {
+        process.kill(pid);
+      }
+    },
     runForOutput: async (file, args) => (await run(file, args, { timeout: 15000 })).stdout,
     totalMemoryMb: () => os.totalmem() / 1048576,
     ffmpegVersion: async () => (await run(ffmpegPath(), ['-version'], { timeout: 5000 })).stdout,
@@ -342,6 +354,8 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
       remove: (file) => fs.promises.unlink(file),
     },
   });
+  // O assistente local só roda enquanto o app está aberto.
+  app.on('will-quit', () => services.assistant.stop());
   // Vídeos que exigem login: o usuário entra uma vez numa janela do app, os logins ficam cifrados e vão ao yt-dlp em arquivo temporário.
   const cookieVault = new CookieVault(services.secrets, () => Date.now());
   const platformSessions = new PlatformSessions({
@@ -434,6 +448,7 @@ async function startCore(target: FrontTarget): Promise<{ needsSetup: boolean }> 
             async (file, args) => (await run(file, args, { timeout: 5000 })).stdout,
           ),
       },
+      services.assistant,
     ),
     whisper: services.whisper,
     alerts: new EventBackAlerts(events, systemNotifier),

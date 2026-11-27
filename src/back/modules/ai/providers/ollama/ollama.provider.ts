@@ -75,16 +75,29 @@ function parseOllamaModelsResponse(data: unknown): AIProviderModel[] {
 export class OllamaProvider implements AIProvider {
   readonly name = 'ollama' as const;
   readonly label = 'Ollama';
-  private readonly baseUrl: string;
+  /** Endereço do Ollama, lido a cada uso: instalar o assistente local passa a valer sem reiniciar. */
+  private get baseUrl(): string {
+    return this.config.ollamaUrl;
+  }
   /** Limite de contexto de cada modelo (0 = desconhecido), consultado uma vez por modelo. */
   private readonly contextLimits = new Map<string, number>();
 
   constructor(
     private readonly httpService: HttpService,
     private readonly usageService: AiUsageService,
-    config: BackConfig,
-  ) {
-    this.baseUrl = config.ollamaUrl;
+    private readonly config: BackConfig,
+  ) {}
+
+  /**
+   * Liga o assistente local se é ele que está em uso (instalado pelo app e sem outro endereço
+   * configurado). Com o Ollama do próprio usuário não faz nada.
+   */
+  private async prepare(): Promise<void> {
+    const assistant = this.config.localAssistant?.();
+
+    if (assistant?.isInstalled() && this.baseUrl === assistant.baseUrl) {
+      await assistant.ensureRunning();
+    }
   }
 
   private calculateCost(model: string, inputTokens: number, outputTokens: number): number {
@@ -119,6 +132,8 @@ export class OllamaProvider implements AIProvider {
   }
 
   async chat(request: AIChatRequest): Promise<string> {
+    await this.prepare();
+
     const startedAt = Date.now();
 
     try {
@@ -218,6 +233,8 @@ export class OllamaProvider implements AIProvider {
   }
 
   async models(): Promise<AIProviderModel[]> {
+    await this.prepare();
+
     try {
       const response = await firstValueFrom(this.httpService.get(`${this.baseUrl}/api/tags`));
 
@@ -243,6 +260,8 @@ export class OllamaProvider implements AIProvider {
   }
 
   async thinking(model: string): Promise<AIThinkingOption[]> {
+    await this.prepare();
+
     try {
       const response = await firstValueFrom(
         this.httpService.post(`${this.baseUrl}/api/show`, {

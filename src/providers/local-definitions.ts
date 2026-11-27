@@ -1,5 +1,7 @@
 import * as path from 'node:path';
 
+import type { LocalAssistant } from '../back/config/local-assistant';
+import { DEFAULT_OLLAMA_URL } from '../settings/settings-defaults';
 import type { WhisperConfig } from '../shared/contracts/settings';
 import type { LocalProviderDefinition } from './local-providers.service';
 import { whisperModelPath } from './whisper-binary-resolver';
@@ -60,6 +62,8 @@ export function createWhisperDefinition(
 
 export function createOllamaDefinition(
   fetchFn: (url: string, init: { signal: AbortSignal }) => Promise<{ ok: boolean; status: number }>,
+  /** O assistente local instalado pelo app: com o endereço padrão, é ele que é testado (e ligado se preciso). */
+  assistant?: LocalAssistant,
 ): LocalProviderDefinition {
   return {
     id: 'ollama',
@@ -68,9 +72,13 @@ export function createOllamaDefinition(
     read: ({ local }) => ({ ...local.ollama }),
     toPatch: (config) => ({ local: { ollama: pickDefined(config, ['url']) } }),
     test: async (config) => {
-      const url = config.url.replace(/\/+$/, '');
+      const managed =
+        assistant?.isInstalled() && config.url === DEFAULT_OLLAMA_URL ? assistant : null;
+      const url = (managed?.baseUrl ?? config.url).replace(/\/+$/, '');
 
       try {
+        await managed?.ensureRunning();
+
         const response = await fetchFn(`${url}/api/tags`, {
           signal: AbortSignal.timeout(OLLAMA_TIMEOUT_MS),
         });

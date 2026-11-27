@@ -29,7 +29,11 @@ describe('COMPONENT_TEMPLATES', () => {
   it.each([WINDOWS, LINUX])(
     'when a component is downloadable on %s, should have an https url and a sha256',
     (target) => {
-      for (const spec of catalogFor(target).filter((item) => item.kind !== 'bundled')) {
+      const downloaded = catalogFor(target).filter(
+        (item) => item.kind !== 'bundled' && item.kind !== 'ollama-model',
+      );
+
+      for (const spec of downloaded) {
         expect(spec.download?.url).toMatch(/^https:\/\//);
         expect(spec.download?.sha256).toMatch(/^[0-9a-f]{64}$/);
         expect(spec.sizeBytes).toBeGreaterThan(0);
@@ -50,7 +54,7 @@ describe('COMPONENT_TEMPLATES', () => {
   it('when showing the components, should not expose tool or system names in labels or descriptions', () => {
     for (const template of COMPONENT_TEMPLATES) {
       expect(`${template.label} ${template.description}`).not.toMatch(
-        /ffmpeg|yt-dlp|whisper|cuda|large-v3|turbo|tesseract|traineddata|\.exe|win32|linux/i,
+        /ffmpeg|yt-dlp|whisper|cuda|large-v3|turbo|tesseract|traineddata|ollama|qwen|\.exe|win32|linux/i,
       );
     }
   });
@@ -100,6 +104,54 @@ describe('OCR language entries', () => {
 
   it('when listing the Whisper models, should not include the language entries', () => {
     expect(modelSpecs(WINDOWS).some((spec) => spec.id.startsWith('ocr-'))).toBe(false);
+  });
+});
+
+describe('assistente local', () => {
+  const runtime = () => findComponent('ollama-runtime', WINDOWS);
+  const assistants = () => catalogFor(WINDOWS).filter((spec) => spec.group === 'llm');
+
+  it('when asking for Windows, should offer the program as an optional package pinned by checksum', () => {
+    expect(runtime()).toMatchObject({
+      group: 'assistant',
+      kind: 'zip',
+      required: false,
+      extractTo: 'ollama',
+      provides: ['ollama.exe'],
+    });
+    expect(runtime()?.download?.url).toMatch(
+      /^https:\/\/github\.com\/ollama\/ollama\/releases\/download\/v[\d.]+\/ollama-windows-amd64\.zip$/,
+    );
+    expect(runtime()?.download?.sha256).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('when asking for Linux, should not offer the program or its models yet', () => {
+    expect(findComponent('ollama-runtime', LINUX)).toBeUndefined();
+    expect(catalogFor(LINUX).filter((spec) => spec.group === 'llm')).toEqual([]);
+  });
+
+  it('when listing the assistants, should go from light to heavy with growing sizes', () => {
+    const sizes = assistants().map((spec) => spec.sizeBytes);
+
+    expect(assistants().map((spec) => spec.id)).toEqual([
+      'llm-light',
+      'llm-balanced',
+      'llm-strong',
+      'llm-max',
+    ]);
+    expect(sizes).toEqual([...sizes].sort((a, b) => a - b));
+  });
+
+  it('when listing the assistants, should be optional models fetched by reference, not by download', () => {
+    for (const spec of assistants()) {
+      expect(spec).toMatchObject({ kind: 'ollama-model', required: false });
+      expect(spec.file).toMatch(/^qwen3\.5:\d+(\.\d+)?b$/);
+      expect(spec.download).toBeUndefined();
+    }
+  });
+
+  it('when listing the Whisper models, should not include the assistants', () => {
+    expect(modelSpecs(WINDOWS).some((spec) => spec.group === 'llm')).toBe(false);
   });
 });
 

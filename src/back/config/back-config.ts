@@ -1,6 +1,7 @@
 import type { AiPreference } from '../../shared/contracts/ai';
 import type { ExternalProviderId } from '../../shared/contracts/providers';
 import type { PlatformTools } from '../modules/video/platform-downloader';
+import type { LocalAssistant } from './local-assistant';
 
 /**
  * Configuração que os services do back precisam, já tipada (substitui o `AppConfig` do `.env`).
@@ -25,6 +26,9 @@ export abstract class BackConfig {
 
   /** Executável do ffmpeg (embutido ou `ffmpeg` do PATH); sem valor, usa o do PATH. */
   ffmpegPath?(): string | undefined;
+
+  /** O assistente local que o app instala e liga (IA no computador do usuário); sem valor, só o Ollama que o usuário configura. */
+  localAssistant?(): LocalAssistant | null;
 
   /** yt-dlp e cookies de login para baixar vídeos de plataformas; sem valor, só links diretos. */
   readonly platformTools?: PlatformTools;
