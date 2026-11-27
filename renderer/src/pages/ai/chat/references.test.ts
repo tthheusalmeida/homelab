@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ChatReference } from "#shared/contracts/chat";
 
-import { referenceLabel, referenceSection, referenceTarget } from "./references";
+import { referenceLabel, referenceSection, referenceTarget, usedReferences } from "./references";
 
 const reference = (overrides: Partial<ChatReference> = {}): ChatReference => ({
   documentId: "doc-1",
@@ -52,5 +52,32 @@ describe("referenceTarget", () => {
       pathname: "/library/doc-1",
       hash: "",
     });
+  });
+});
+
+describe("usedReferences", () => {
+  it("when the same section is used in several answers, should list it once with the count", () => {
+    const used = usedReferences([
+      { references: [reference()] },
+      {},
+      { references: [reference(), reference({ documentId: "doc-2", anchor: "b" })] },
+    ]);
+
+    expect(used.map((item) => [item.reference.documentId, item.answers])).toEqual([
+      ["doc-1", 2],
+      ["doc-2", 1],
+    ]);
+  });
+
+  it("when two sections of the same page are used, should keep them as different entries", () => {
+    const used = usedReferences([
+      { references: [reference({ anchor: "a" }), reference({ anchor: "b" })] },
+    ]);
+
+    expect(used).toHaveLength(2);
+  });
+
+  it("when no answer has references, should be empty", () => {
+    expect(usedReferences([{}, { references: [] }])).toEqual([]);
   });
 });

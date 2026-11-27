@@ -1,6 +1,14 @@
 /** Textos da tela de chat (interface em português). */
 export const ChatStrings = {
   newChat: "Novo chat",
+  referencesButton: (count: number) => (count === 0 ? "Referências" : `Referências (${count})`),
+  referencesOpen: (count: number) =>
+    count === 0 ? "Referências desta conversa (nenhuma ainda)" : `Referências desta conversa: ${count}`,
+  referencesTitle: "Referências desta conversa",
+  referencesDescription: "As páginas da biblioteca em que as respostas deste chat se apoiaram.",
+  referenceAnswers: (count: number) => (count === 1 ? "1 resposta" : `${count} respostas`),
+  hideList: "Esconder conversas",
+  showList: "Mostrar conversas",
   listTitle: "conversas",
   listLabel: "Conversas",
   emptyList: "Nenhuma conversa ainda. Envie uma mensagem para começar.",

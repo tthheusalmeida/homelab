@@ -185,8 +185,8 @@ export function withContext(question: string, passages: ChatContextPassage[]): s
 }
 
 /**
- * Referências da resposta: **todas** as páginas que acompanharam a pergunta, uma por seção e na
- * ordem em que foram numeradas para o modelo. O `number` de cada uma é o `[n]` que o texto usa
+ * Referências da resposta: **só as seções que ela citou**, uma por seção e na ordem em que foram
+ * numeradas para o modelo (o que acompanhou a pergunta mas não foi usado não aparece). O `number` de cada uma é o `[n]` que o texto usa
  * para apontar para ela (a tela o mostra no ícone, ligando o texto à fonte). Só há referências
  * quando a resposta se apoia nas páginas: o modelo citou ao menos uma seção (fora de uma frase que
  * nega as páginas) ou a primeira casa com quase toda a pergunta (modelos pequenos às vezes esquecem
@@ -211,23 +211,20 @@ export function referencesFor(answer: string, passages: ChatContextPassage[]): C
     return [];
   }
 
-  return sections.map((section, index) => ({
-    documentId: section.documentId,
-    title: section.title,
-    headingPath: section.headingPath,
-    anchor: section.anchor,
-    category: section.category,
-    number: index + 1,
-  }));
-}
-
-/** Menos palavras que isso é conversa ("oi", "tudo bem?"), não uma pergunta sobre as páginas. */
-const MIN_QUESTION_WORDS = 4;
-
-/**
- * Parece uma pergunta de verdade? É o que decide mostrar "não achei isso nas suas páginas" quando
- * nenhuma página serviu de referência: um "oi" não é uma busca que falhou.
- */
-export function looksLikeAQuestion(text: string): boolean {
-  return text.trim().split(/\s+/).filter(Boolean).length >= MIN_QUESTION_WORDS;
+  // Só as seções que a resposta citou. Sem citação (o modelo esqueceu), só a primeira, que casa com
+  // quase toda a pergunta. O número é o `[n]` que o modelo viu, então a lista pode ter buracos.
+  return sections.flatMap((section, index) =>
+    (anyCited ? cited.has(index + 1) : index === 0)
+      ? [
+          {
+            documentId: section.documentId,
+            title: section.title,
+            headingPath: section.headingPath,
+            anchor: section.anchor,
+            category: section.category,
+            number: index + 1,
+          },
+        ]
+      : [],
+  );
 }

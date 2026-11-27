@@ -40,26 +40,26 @@ export function ChatComposer({
 
   return (
     <footer className="shrink-0 pt-2">
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="mx-auto w-full max-w-4xl">
         <div className="relative rounded-xl border bg-card shadow-lg">
           <Textarea
             value={value}
             onChange={(event) => onChange(event.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Envie uma mensagem..."
-            className="min-h-16 resize-none border-0 bg-transparent pr-14 shadow-none focus-visible:ring-0"
+            className="min-h-14 resize-none border-0 bg-transparent pr-12 shadow-none focus-visible:ring-0"
           />
 
           <HexButton
-            className="absolute right-3 bottom-3"
+            className="absolute right-2.5 bottom-2.5 h-8 w-7"
             disabled={disabled}
             aria-label={isSending ? "Parar geração" : "Enviar mensagem"}
             onClick={onSend}
           >
             {isSending ? (
-              <Pause className="size-4 fill-current" />
+              <Pause className="size-3.5 fill-current" />
             ) : (
-              <Send className="size-4 top-2" />
+              <Send className="size-3.5" />
             )}
           </HexButton>
         </div>

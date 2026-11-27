@@ -80,18 +80,19 @@ describe('referencesFor', () => {
     passage({ documentId: 'doc-3', title: 'Terceira', anchor: 'terceira' }),
   ];
 
-  it('when the answer cites some passages, should list every page that came with the question, not only the cited ones', () => {
+  it('when the answer cites some passages, should list only the cited ones, numbered as the model saw them', () => {
     const references = referencesFor('Fala do fluxo [1] e do feedback [3].', passages);
 
-    expect(references.map((reference) => reference.documentId)).toEqual([
-      'doc-1',
-      'doc-2',
-      'doc-3',
+    expect(references.map((reference) => [reference.documentId, reference.number])).toEqual([
+      ['doc-1', 1],
+      ['doc-3', 3],
     ]);
   });
 
-  it('when the answer cites only one passage, should still show more than one reference', () => {
-    expect(referencesFor('Fala do fluxo [1].', passages).length).toBeGreaterThan(1);
+  it('when the answer cites only one passage, should show only that one', () => {
+    expect(referencesFor('Fala do fluxo [2].', passages).map((r) => r.documentId)).toEqual([
+      'doc-2',
+    ]);
   });
 
   it('when the answer cites none and the search is not sure, should list no reference at all', () => {
@@ -99,13 +100,13 @@ describe('referencesFor', () => {
     expect(referencesFor('Resposta sem marcas.', [passage({ coverage: 0.5 })])).toEqual([]);
   });
 
-  it('when the answer cites none but the first passage matches almost the whole question, should still list the pages', () => {
+  it('when the answer cites none but the first passage matches almost the whole question, should list only the first one', () => {
     const references = referencesFor('Resposta sem marcas.', [
       passage({ coverage: 0.8 }),
       passage({ documentId: 'doc-2', anchor: 'outra', coverage: 1 }),
     ]);
 
-    expect(references.map((reference) => reference.documentId)).toEqual(['doc-1', 'doc-2']);
+    expect(references.map((reference) => reference.documentId)).toEqual(['doc-1']);
   });
 
   it('when the answer cites a number that does not exist, should ignore it', () => {
@@ -155,8 +156,8 @@ describe('referencesFor', () => {
     ]);
   });
 
-  it('when the references are listed, should be numbered 1, 2, 3 in the order of the list, with no gaps', () => {
-    const references = referencesFor('[1]', [
+  it('when every passage is cited, should number them 1, 2, 3 in the order of the list', () => {
+    const references = referencesFor('[1] [2] [3] [4]', [
       passage(),
       passage({ documentId: 'doc-2', anchor: 'b' }),
       passage({ documentId: 'doc-3', anchor: 'c' }),
@@ -164,6 +165,15 @@ describe('referencesFor', () => {
     ]);
 
     expect(references.map((reference) => reference.number)).toEqual([1, 2, 3, 4]);
+  });
+
+  it('when no citation exists and the first passage is strong, should show only the first one', () => {
+    const references = referencesFor('Sem marcas.', [
+      passage({ coverage: 0.9 }),
+      passage({ documentId: 'doc-2', anchor: 'b' }),
+    ]);
+
+    expect(references.map((reference) => reference.documentId)).toEqual(['doc-1']);
   });
 
   it('when no citation exists and the first passage is strong, should number the references from 1', () => {

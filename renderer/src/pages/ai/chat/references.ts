@@ -19,3 +19,34 @@ export function referenceTarget(reference: ChatReference): { pathname: string; h
     hash: reference.anchor ? `#${reference.anchor}` : "",
   };
 }
+
+/** Uma página (seção) usada na conversa e em quantas respostas apareceu. */
+export interface UsedReference {
+  reference: ChatReference;
+  answers: number;
+}
+
+/**
+ * Todas as referências usadas numa conversa, sem repetir (a mesma página e seção em várias respostas
+ * vira uma só, com a contagem), na ordem em que apareceram pela primeira vez.
+ */
+export function usedReferences(
+  messages: ReadonlyArray<{ references?: ChatReference[] }>,
+): UsedReference[] {
+  const used = new Map<string, UsedReference>();
+
+  for (const message of messages) {
+    for (const reference of message.references ?? []) {
+      const key = `${reference.documentId}#${reference.anchor ?? ""}`;
+      const found = used.get(key);
+
+      if (found) {
+        found.answers += 1;
+      } else {
+        used.set(key, { reference, answers: 1 });
+      }
+    }
+  }
+
+  return [...used.values()];
+}

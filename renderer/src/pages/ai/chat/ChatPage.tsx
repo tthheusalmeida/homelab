@@ -27,10 +27,15 @@ import { ChatEmptyState } from "./components/ChatEmptyState";
 import { ChatList } from "./components/ChatList";
 import { ChatMessageList } from "./components/ChatMessageList";
 import { ChatComposer } from "./components/ChatComposer";
+import { ChatReferencesPanel } from "./components/ChatReferencesPanel";
 import { ChatSettings } from "./components/ChatSettings";
+import { usedReferences } from "./references";
 import { ContextWarningDialog } from "./components/ContextWarningDialog";
 import { useSnackbar } from "#components/Snackbar";
+import { FindBar } from "#components/FindBar";
+import { useFind } from "#hooks/use-find";
 import { useIpcEvent } from "#hooks/use-ipc-event";
+import { usePersistedFlag } from "#hooks/use-persisted-flag";
 import { IpcEvents } from "#shared/events";
 
 /** Parâmetro da URL com o chat aberto; sem ele, é um chat novo (que só é salvo ao enviar). */
@@ -60,8 +65,13 @@ export function ChatPage() {
   /** Texto da resposta que o modelo está escrevendo agora, recebido aos pedaços. */
   const [streamed, setStreamed] = useState<{ chatId: string; text: string } | null>(null);
 
+  /** A lista de conversas ocupa 240 px; recolhida, a leitura ganha a largura toda (lembrado entre aberturas). */
+  const [listOpen, setListOpen] = usePersistedFlag("homelab:chat-list-open", true);
+
   const [message, setMessage] = useState("");
   const [warning, setWarning] = useState<{ check: ContextCheck; content: string } | null>(null);
+  /** A área que rola com as mensagens: onde a pesquisa dentro do texto procura. */
+  const [textContainer, setTextContainer] = useState<HTMLElement | null>(null);
   const [chatToDelete, setChatToDelete] = useState<ChatSummary | null>(null);
 
   const { sendMessage, abort, isSending } = useAiChat();
@@ -86,6 +96,7 @@ export function ChatPage() {
   );
 
   const history = chat?.messages ?? NO_MESSAGES;
+  const chatReferences = useMemo(() => usedReferences(history), [history]);
   const showPending = pending !== null && history.length === pending.baseCount;
   const pendingContent = showPending ? pending.content : null;
   const streamingText = showPending && streamed?.chatId === chatId ? streamed.text : null;
@@ -248,6 +259,9 @@ export function ChatPage() {
     !isLoading &&
     !isSending;
 
+  // Ctrl+F: pesquisa flutuante no texto da conversa (a mesma do resumo), marcando as ocorrências.
+  const find = useFind(textContainer, messages);
+
   const showMessages = messages.length > 0 || chatStatus !== "idle" || sendError !== null;
 
   // O AppLayout não rola nesta rota: a raiz ocupa a área útil e só a lista de conversas e o
@@ -255,7 +269,15 @@ export function ChatPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       {/* Sem frase de descrição e com os seletores da IA na linha do título: mais altura para a conversa. */}
-      <PageHeader title="Conversa" command="ai --chat" actions={<ChatSettings {...ai} />} />
+      <PageHeader compact title="Conversa" command="ai --chat" 
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <ChatReferencesPanel references={chatReferences} />
+
+            <ChatSettings {...ai} />
+          </div>
+        }
+      />
 
       <div className="flex min-h-0 flex-1 gap-3">
       <ChatList
@@ -263,6 +285,8 @@ export function ChatPage() {
         isLoading={chatsQuery.isLoading}
         isError={chatsQuery.isError}
         activeId={urlChatId}
+        open={listOpen}
+        onToggle={() => setListOpen(!listOpen)}
         disabled={isSending}
         onSelect={openChat}
         onNew={() => startNewChat()}
@@ -281,7 +305,12 @@ export function ChatPage() {
             />
           </div>
         ) : showMessages ? (
-          <ChatMessageList messages={messages} status={chatStatus} error={sendError} />
+          <ChatMessageList
+            messages={messages}
+            status={chatStatus}
+            error={sendError}
+            onContainer={setTextContainer}
+          />
         ) : (
           <ChatEmptyState />
         )}
@@ -295,6 +324,15 @@ export function ChatPage() {
           contextHint={contextHint}
         />
       </div>
+
+      {find.open && (
+        <FindBar
+          {...find.barProps}
+          label="Pesquisar na conversa"
+          results={find.results}
+          onClose={find.close}
+        />
+      )}
 
       <ContextWarningDialog
         open={warning !== null}

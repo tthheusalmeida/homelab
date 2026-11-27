@@ -183,11 +183,9 @@ describe('referencesFor: citação dentro de frase que nega as páginas', () => 
     const answer =
       'O DORA mede quatro métricas [1]. Não há informação sobre o prazo nos trechos [2].';
 
-    // [1] vale (a resposta se apoia nas páginas), então todas as páginas da pergunta aparecem
+    // só [1] vale: o [2] está numa frase que diz que o trecho não serve
     expect(referencesFor(answer, passages).map((reference) => reference.documentId)).toEqual([
       'doc-1',
-      'doc-2',
-      'doc-3',
     ]);
   });
 
@@ -195,8 +193,6 @@ describe('referencesFor: citação dentro de frase que nega as páginas', () => 
     const answer = 'Não há uma definição única de DevOps [3], e o termo varia entre autores.';
 
     expect(referencesFor(answer, passages).map((reference) => reference.documentId)).toEqual([
-      'doc-1',
-      'doc-2',
       'doc-3',
     ]);
   });
@@ -206,7 +202,7 @@ describe('referencesFor: citação dentro de frase que nega as páginas', () => 
   });
 
   it('when the answer has no denial at all, should behave as before', () => {
-    expect(referencesFor('Fala do DORA [1] e do Scrum [2].', passages)).toHaveLength(3);
+    expect(referencesFor('Fala do DORA [1] e do Scrum [2].', passages)).toHaveLength(2);
   });
 });
 

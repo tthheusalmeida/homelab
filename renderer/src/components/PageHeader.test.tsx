@@ -4,6 +4,25 @@ import { render, screen } from "@testing-library/react";
 import { PageHeader } from "./PageHeader";
 import { PageHeaderSlotContext } from "./PageHeaderSlot";
 
+describe("PageHeader compacto", () => {
+  it("when compact, should keep the title, the command and the actions on one header without description", () => {
+    render(
+      <PageHeader
+        compact
+        title="Conversa"
+        command="ai --chat"
+        description="não aparece"
+        actions={<button>Provedor</button>}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { level: 1, name: "Conversa" })).toBeInTheDocument();
+    expect(screen.getByText("ai --chat")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Provedor" })).toBeInTheDocument();
+    expect(screen.queryByText("não aparece")).not.toBeInTheDocument();
+  });
+});
+
 describe("PageHeader", () => {
   it("when rendered, should show the title as the page heading and the terminal command", () => {
     render(<PageHeader title="Nova tarefa" command="jobs --new" />);
